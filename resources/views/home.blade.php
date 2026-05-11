@@ -1,40 +1,12 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Invitely — Create Beautiful Digital Invitations</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://images.unsplash.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
-<link rel="stylesheet" href="{{ asset('css/homepage.css') }}">
-@vite(['resources/css/app.css'])
-</head>
-<body>
+@extends('layouts.site')
 
-<!-- NAVIGATION -->
-<nav>
-  <a href="{{ url('/') }}" class="nav-logo">
-    <div class="logo-icon-eq" aria-hidden="true">
-      <span></span><span></span><span></span><span></span><span></span>
-    </div>
-    Invite<span>ly</span>
-  </a>
-  <div class="nav-links">
-    <a href="#hero">Home</a>
-    <a href="#why">About us</a>
-    <a href="#contact">Contact us</a>
-  </div>
-  <div class="nav-actions">
-    @auth
-      <a href="{{ url('/dashboard') }}" class="btn-ghost">Dashboard</a>
-    @else
-      <a href="{{ route('login') }}" class="btn-ghost">Sign in</a>
-      <a href="{{ route('register') }}" class="btn-primary">Sign up</a>
-    @endauth
-  </div>
-</nav>
+@section('title', 'Event Host — Create Beautiful Digital Invitations')
+
+@push('head')
+    <link rel="stylesheet" href="{{ asset('css/home.css') }}">
+@endpush
+
+@section('content')
 
 <!-- HERO -->
 <section id="hero">
@@ -49,9 +21,9 @@
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
           Create Free Event
         </button>
-        <button class="btn-hero-secondary">
+        <a href="{{ route('templates.index') }}" class="btn-hero-secondary">
           Browse Templates →
-        </button>
+        </a>
       </div>
     </div>
     <div class="hero-right">
@@ -123,16 +95,24 @@
         <h3>Birthdays</h3>
       </article>
       <article class="event-type-item">
-        <div class="event-type-card corporate" aria-hidden="true"></div>
-        <h3>Corporate</h3>
-      </article>
-      <article class="event-type-item">
         <div class="event-type-card graduation" aria-hidden="true"></div>
         <h3>Graduation</h3>
       </article>
       <article class="event-type-item">
-        <div class="event-type-card conference" aria-hidden="true"></div>
-        <h3>Conference</h3>
+        <div class="event-type-card corporate" aria-hidden="true"></div>
+        <h3>Corporate</h3>
+      </article>
+      <article class="event-type-item">
+        <div class="event-type-card baby-shower" aria-hidden="true"></div>
+        <h3>Baby Shower</h3>
+      </article>
+      <article class="event-type-item">
+        <div class="event-type-card memorial" aria-hidden="true"></div>
+        <h3>Memorial</h3>
+      </article>
+      <article class="event-type-item">
+        <div class="event-type-card church" aria-hidden="true"></div>
+        <h3>Church</h3>
       </article>
     </div>
   </div>
@@ -188,7 +168,7 @@
   <div class="section">
     <div class="section-row">
       <h2>Invitation Templates</h2>
-      <a href="#" class="see-all">See all templates →</a>
+      <a href="{{ route('templates.index') }}" class="see-all">See all templates →</a>
     </div>
     <div class="filter-tabs">
       <button type="button" class="filter-tab active">All</button>
@@ -380,9 +360,9 @@
         <img class="why-bg-photo" src="https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=960&h=1200&q=80" alt="Guests mingling at a lively indoor celebration" width="480" height="600" loading="lazy" decoding="async">
       </div>
       <div class="why-right">
-        <div class="hero-badge" style="margin-bottom:18px"><span class="dot"></span> Why Invitely</div>
+        <div class="hero-badge" style="margin-bottom:18px"><span class="dot"></span> Why Event Host</div>
         <h2>Built for Zambian hosts, designed for the world</h2>
-        <p>We know how Zambians celebrate—from weddings and Kitchen Parties to graduations and corporate launches. Invitely brings MTN, Airtel &amp; Zamtel mobile money together with cards and banking paths guests trust, plus WhatsApp-first sharing.</p>
+        <p>We know how Zambians celebrate—from weddings and Kitchen Parties to graduations and corporate launches. Event Host brings MTN, Airtel &amp; Zamtel mobile money together with cards and banking paths guests trust, plus WhatsApp-first sharing.</p>
         <div class="why-points">
           <div class="why-point">
             <div class="wp-icon" style="background:rgba(108,92,231,0.12)"><i class="fa-solid fa-bolt" aria-hidden="true"></i></div>
@@ -419,14 +399,14 @@
   <div class="section">
     <div class="section-header">
       <h2>Loved by hosts everywhere</h2>
-      <p>Don't just take our word for it — hear from people who've used Invitely for their special moments.</p>
+      <p>Don't just take our word for it — hear from people who've used Event Host for their special moments.</p>
     </div>
     <div class="testi-grid">
       <div class="testi-card">
         <div class="stars" aria-label="5 out of 5 stars">
           <i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i>
         </div>
-        <blockquote>"I used Invitely for my wedding and was completely blown away. 200 guests RSVPed with zero confusion. My mother-in-law even figured it out on WhatsApp!"</blockquote>
+        <blockquote>"I used Event Host for my wedding and was completely blown away. 200 guests RSVPed with zero confusion. My mother-in-law even figured it out on WhatsApp!"</blockquote>
         <div class="testi-author">
           <div class="testi-av"><img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=88&h=88&q=80" alt="Portrait of Namwali Musonda" width="44" height="44" loading="lazy" decoding="async"></div>
           <div class="testi-info"><h4>Namwali Musonda</h4><span>Wedding · Lusaka</span></div>
@@ -494,7 +474,7 @@
         <button class="btn-price btn-price-fill">Start Pro Trial</button>
       </div>
       <div class="price-card">
-        <div class="price-plan">Business</div>
+        <div class="price-plan">Pro+</div>
         <div class="price-amount"><sup>K</sup>1500<span class="period"> / event</span></div>
         <div class="price-desc">For event planners & agencies</div>
         <ul class="price-features">
@@ -521,7 +501,7 @@
     <div class="faq-grid">
       <div class="faq-item">
         <button type="button" class="faq-q">
-          Is Invitely really free to use?
+          Is Event Host really free to use?
           <span class="faq-icon">+</span>
         </button>
         <div class="faq-a"><p>Yes! Our Free plan lets you create your first event with up to 50 guests at absolutely no cost. No credit card required. Upgrade to Pro whenever you need more power.</p></div>
@@ -559,7 +539,7 @@
           What payment methods are supported?
           <span class="faq-icon">+</span>
         </button>
-        <div class="faq-a"><p>We support MTN Mobile Money, Airtel Money, Zamtel Kwacha, Visa &amp; Mastercard, and bank deposits where available. Business plans add invoicing and expanded settlement options across Zambia.</p></div>
+        <div class="faq-a"><p>We support MTN Mobile Money, Airtel Money, Zamtel Kwacha, Visa &amp; Mastercard, and bank deposits where available. Pro+ plans add invoicing and expanded settlement options across Zambia.</p></div>
       </div>
     </div>
   </div>
@@ -568,75 +548,15 @@
 <!-- FINAL CTA -->
 <section id="final-cta">
   <h2>Start creating unforgettable<br>invitations today</h2>
-  <p>Join thousands of hosts who trust Invitely to make their events shine. Your first invitation is completely free.</p>
+  <p>Join thousands of hosts who trust Event Host to make their events shine. Your first invitation is completely free.</p>
   <div class="ctas">
     <button type="button" class="btn-hero-primary" style="font-size:16px;padding:16px 36px">
       <i class="fa-solid fa-gift" aria-hidden="true"></i> Create Free Invitation
     </button>
-    <button type="button" class="btn-hero-secondary" style="font-size:16px;padding:16px 36px">
+    <a href="{{ route('templates.index') }}" class="btn-hero-secondary" style="font-size:16px;padding:16px 36px">
       Browse Templates →
-    </button>
+    </a>
   </div>
 </section>
 
-<!-- FOOTER -->
-<footer id="contact">
-  <div class="footer-inner">
-    <div class="footer-grid">
-      <div class="footer-brand">
-        <a href="{{ url('/') }}" class="nav-logo" style="display:inline-flex;margin-bottom:14px">
-          <div class="logo-icon-eq" aria-hidden="true">
-            <span></span><span></span><span></span><span></span><span></span>
-          </div>
-          Invite<span>ly</span>
-        </a>
-        <p>Create stunning digital invitations. Manage RSVPs. Host with confidence.</p>
-        <div class="social-links">
-          <a href="#" class="social-link" aria-label="X"><i class="fa-brands fa-x-twitter" aria-hidden="true"></i></a>
-          <a href="#" class="social-link" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in" aria-hidden="true"></i></a>
-          <a href="#" class="social-link" aria-label="Facebook"><i class="fa-brands fa-facebook-f" aria-hidden="true"></i></a>
-          <a href="#" class="social-link" aria-label="Instagram"><i class="fa-brands fa-instagram" aria-hidden="true"></i></a>
-        </div>
-      </div>
-      <div class="footer-col">
-        <h5>Product</h5>
-        <a href="#">Templates</a>
-        <a href="#">Features</a>
-        <a href="#">Pricing</a>
-        <a href="#">Changelog</a>
-      </div>
-      <div class="footer-col">
-        <h5>Company</h5>
-        <a href="#">About Us</a>
-        <a href="#">Blog</a>
-        <a href="#">Careers</a>
-        <a href="#">Press</a>
-      </div>
-      <div class="footer-col">
-        <h5>Support</h5>
-        <a href="#">Help Center</a>
-        <a href="#">Contact Us</a>
-        <a href="#">FAQ</a>
-        <a href="#">Status</a>
-      </div>
-      <div class="footer-col">
-        <h5>Legal</h5>
-        <a href="#">Privacy Policy</a>
-        <a href="#">Terms of Service</a>
-        <a href="#">Cookie Policy</a>
-      </div>
-    </div>
-    <div class="footer-bottom">
-      <p>© {{ date('Y') }} Invitely. All rights reserved.</p>
-      <div class="footer-links">
-        <a href="#">Privacy</a>
-        <a href="#">Terms</a>
-        <a href="#">Cookies</a>
-      </div>
-    </div>
-  </div>
-</footer>
-
-<script src="{{ asset('js/homepage.js') }}" defer></script>
-</body>
-</html>
+@endsection

@@ -1,0 +1,70 @@
+<?php
+
+namespace App\Support;
+
+use App\Services\InvitationCustomizationService;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+
+final class InvitationCustomizationPersistenceValidator
+{
+    private const MEDIA_PATH_PATTERN = '#^invitation-media/[0-9]+/[a-zA-Z0-9_\-]+\.[a-zA-Z0-9]{1,12}$#';
+
+    /**
+     * Ensure payload matches the persistence shape for invitation_customization (schema guards).
+     *
+     * @param  array<string, mixed>  $payload
+     *
+     * @throws ValidationException
+     */
+    public static function validate(array $payload): void
+    {
+        Validator::make($payload, [
+            'schema_version' => ['required', 'integer', Rule::in([InvitationCustomizationService::CURRENT_SCHEMA_VERSION])],
+
+            'content' => ['required', 'array'],
+            'content.story' => ['nullable', 'string', 'max:12000'],
+            'content.schedule' => ['present', 'array', 'max:24'],
+            'content.schedule.*.time' => ['nullable', 'string', 'max:48'],
+            'content.schedule.*.title' => ['required', 'string', 'max:160'],
+            'content.schedule.*.detail' => ['nullable', 'string', 'max:500'],
+
+            'theme' => ['required', 'array'],
+            'theme.primary' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'theme.accent' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'theme.background' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'theme.font_heading_key' => ['required', Rule::in(InvitationFonts::keys())],
+            'theme.font_body_key' => ['required', Rule::in(InvitationFonts::keys())],
+
+            'sections' => ['required', 'array', 'max:32'],
+            'sections.*.type' => ['required', 'string', Rule::in(InvitationSections::all())],
+            'sections.*.visible' => ['required', 'boolean'],
+
+            'media' => ['required', 'array'],
+            'media.gallery' => ['present', 'array', 'max:5'],
+            'media.gallery.*' => ['required', 'string', 'regex:#^invitation-gallery/[0-9]+/[a-zA-Z0-9_\-]+\.(webp|jpe?g|png|gif)$#i'],
+            'media.hero_portrait' => ['nullable', 'string', 'regex:#^invitation-hero/[0-9]+/[a-zA-Z0-9_\-]+\.(webp|jpe?g|png|gif)$#i'],
+            'media.couple_photos' => ['present', 'array', 'max:2'],
+            'media.couple_photos.*' => ['required', 'string', 'regex:#^invitation-couple/[0-9]+/[a-zA-Z0-9_\-]+\.(webp|jpe?g|png|gif)$#i'],
+
+            'effects' => ['required', 'array'],
+            'effects.animation_subtle' => ['required', 'boolean'],
+            'effects.countdown_enabled' => ['required', 'boolean'],
+            'effects.video_background' => ['nullable', self::mediaPathRule('video')],
+            'effects.audio_track' => ['nullable', self::mediaPathRule('audio')],
+        ])->validate();
+    }
+
+    private static function mediaPathRule(string $kind): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail) use ($kind): void {
+            if ($value === null || $value === '') {
+                return;
+            }
+            if (! is_string($value) || ! preg_match(self::MEDIA_PATH_PATTERN, $value)) {
+                $fail("Invalid {$kind} storage path.");
+            }
+        };
+    }
+}

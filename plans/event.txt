@@ -1,0 +1,731 @@
+# Laravel Implementation Plan
+
+## Module: Event Creation Features
+
+This module is the core of your invitation platform. It should be designed to support:
+
+* Multiple event types
+* Public invitation pages
+* RSVP systems
+* Guest management
+* Future scaling
+
+The goal is to make event creation:
+
+* Fast
+* Mobile friendly
+* Highly customizable
+
+---
+
+# 1. Recommended Architecture
+
+## Stack
+
+* Laravel 12
+* MySQL
+* Tailwind CSS
+* Laravel Breeze auth
+* Laravel Storage
+* Optional: Google Maps API
+
+---
+
+# 2. Event Module Overview
+
+# Core Features
+
+Users should be able to:
+
+* Create events
+* Edit/delete events
+* Publish/unpublish events
+* Customize event settings
+* Upload event cover image
+* Generate public invitation URLs
+
+---
+
+# 3. Database Design
+
+# Main Table: events
+
+Create migration:
+
+```bash id="ujckl9"
+php artisan make:model Event -m
+```
+
+---
+
+## Events Table Structure
+
+```php id="v7bjvt"
+Schema::create('events', function (Blueprint $table) {
+    $table->id();
+
+    $table->foreignId('user_id')->constrained()->onDelete('cascade');
+
+    $table->string('name');
+
+    $table->enum('event_type', [
+        'wedding',
+        'birthday',
+        'graduation',
+        'corporate',
+        'baby_shower',
+        'funeral',
+        'church'
+    ]);
+
+    $table->text('description')->nullable();
+
+    $table->date('event_date');
+    $table->time('event_time');
+
+    $table->string('venue')->nullable();
+
+    $table->string('location_name')->nullable();
+
+    $table->decimal('latitude', 10, 7)->nullable();
+    $table->decimal('longitude', 10, 7)->nullable();
+
+    $table->string('cover_image')->nullable();
+
+    $table->boolean('is_public')->default(true);
+
+    $table->timestamp('rsvp_deadline')->nullable();
+
+    $table->integer('guest_limit')->nullable();
+
+    $table->boolean('allow_plus_one')->default(false);
+
+    $table->boolean('show_guest_list')->default(false);
+
+    $table->string('slug')->unique();
+
+    $table->boolean('is_published')->default(false);
+
+    $table->timestamps();
+});
+```
+
+---
+
+# 4. Event Model Setup
+
+## Event Model
+
+```php id="qwo7sp"
+class Event extends Model
+{
+    protected $fillable = [
+        'user_id',
+        'name',
+        'event_type',
+        'description',
+        'event_date',
+        'event_time',
+        'venue',
+        'location_name',
+        'latitude',
+        'longitude',
+        'cover_image',
+        'is_public',
+        'rsvp_deadline',
+        'guest_limit',
+        'allow_plus_one',
+        'show_guest_list',
+        'slug',
+        'is_published'
+    ];
+
+    protected $casts = [
+        'event_date' => 'date',
+        'rsvp_deadline' => 'datetime',
+        'is_public' => 'boolean',
+        'allow_plus_one' => 'boolean',
+        'show_guest_list' => 'boolean',
+        'is_published' => 'boolean',
+    ];
+}
+```
+
+---
+
+# 5. Event Creation Flow
+
+# User Journey
+
+## Step 1 — Click “Create Event”
+
+---
+
+## Step 2 — Fill Event Form
+
+### Required Fields
+
+* Event name
+* Event type
+* Description
+* Date
+* Time
+* Venue
+* Location/map
+* Cover image
+
+---
+
+## Step 3 — Configure Settings
+
+Options:
+
+* Public/private
+* RSVP deadline
+* Guest limit
+* Plus-one settings
+* Show guest list
+* Custom URL
+
+---
+
+## Step 4 — Save Draft or Publish
+
+Buttons:
+
+* Save Draft
+* Publish Event
+
+---
+
+# 6. Form Validation
+
+## Create Event Request
+
+Generate:
+
+```bash id="zqjlwm"
+php artisan make:request StoreEventRequest
+```
+
+---
+
+## Validation Rules
+
+```php id="2r8pr4"
+return [
+    'name' => 'required|string|max:255',
+
+    'event_type' => [
+        'required',
+        Rule::in([
+            'wedding',
+            'birthday',
+            'graduation',
+            'corporate',
+            'baby_shower',
+            'funeral',
+            'church'
+        ])
+    ],
+
+    'description' => 'nullable|string',
+
+    'event_date' => 'required|date',
+
+    'event_time' => 'required',
+
+    'venue' => 'nullable|string|max:255',
+
+    'location_name' => 'nullable|string|max:255',
+
+    'latitude' => 'nullable|numeric',
+
+    'longitude' => 'nullable|numeric',
+
+    'cover_image' => 'nullable|image|max:4096',
+
+    'is_public' => 'boolean',
+
+    'rsvp_deadline' => 'nullable|date',
+
+    'guest_limit' => 'nullable|integer|min:1',
+
+    'allow_plus_one' => 'boolean',
+
+    'show_guest_list' => 'boolean',
+];
+```
+
+---
+
+# 7. Slug/Custom URL System
+
+# Goal
+
+Generate URLs like:
+
+```txt id="pqdkdh"
+yourwebsite.com/events/john-and-mary
+```
+
+---
+
+## Slug Generation
+
+Use:
+
+```bash id="q48xoz"
+composer require cviebrock/eloquent-sluggable
+```
+
+---
+
+## Example Slug
+
+```php id="4g5m8n"
+john-and-mary-wedding
+```
+
+---
+
+## Public Route
+
+```php id="baxhbg"
+Route::get('/events/{slug}', [PublicEventController::class, 'show']);
+```
+
+---
+
+# 8. Event Settings System
+
+# Public vs Private Event
+
+## Public Event
+
+Accessible to anyone with link.
+
+---
+
+## Private Event
+
+Requires:
+
+* Guest authentication
+  OR
+* Invitation token
+
+Future enhancement.
+
+---
+
+# RSVP Deadline
+
+Logic:
+
+* Prevent RSVP after deadline
+
+Example:
+
+```php id="zqzw6d"
+if(now()->gt($event->rsvp_deadline)) {
+    abort(403);
+}
+```
+
+---
+
+# Guest Limit
+
+Logic:
+
+* Prevent overbooking
+
+Future integration with RSVP counts.
+
+---
+
+# Plus-One System
+
+Field:
+
+```php id="j5b6gb"
+allow_plus_one
+```
+
+Later affects RSVP forms.
+
+---
+
+# Show Guest List
+
+Controls visibility:
+
+* Hide attendee list
+* Show attendee list
+
+---
+
+# 9. Cover Image Upload System
+
+# Storage
+
+Use:
+
+```bash id="kt2mo3"
+php artisan storage:link
+```
+
+---
+
+## Store Images
+
+Directory:
+
+```txt id="8m7j6z"
+storage/app/public/events
+```
+
+---
+
+## Upload Logic
+
+```php id="i8l8m7"
+$path = $request->file('cover_image')
+    ->store('events', 'public');
+```
+
+---
+
+# 10. Map & Location Features
+
+# MVP Option
+
+Use:
+
+* Google Maps Places API
+  OR
+* Mapbox
+
+---
+
+# Features
+
+* Search venue
+* Pin location
+* Save coordinates
+
+---
+
+# Database Fields
+
+```php id="0bq08n"
+latitude
+longitude
+location_name
+```
+
+---
+
+# Public Page Usage
+
+Later:
+
+* Display interactive map
+* “Open in Google Maps” button
+
+---
+
+# 11. Event Types System
+
+# Recommended Approach
+
+Use enum.
+
+---
+
+## Event Type Labels
+
+| Value       | Display         |
+| ----------- | --------------- |
+| wedding     | Wedding         |
+| birthday    | Birthday        |
+| graduation  | Graduation      |
+| corporate   | Corporate Event |
+| baby_shower | Baby Shower     |
+| funeral     | Memorial        |
+| church      | Church Event    |
+
+---
+
+# 12. Event Dashboard Pages
+
+# Required Pages
+
+## Event List Page
+
+Shows:
+
+* All user events
+* Draft/published status
+
+---
+
+## Create Event Page
+
+Large form:
+
+* General details
+* Media
+* Settings
+
+---
+
+## Edit Event Page
+
+Same as create page.
+
+---
+
+## Event Preview Page
+
+Preview invitation before publishing.
+
+---
+
+# 13. Controller Structure
+
+## Recommended Controllers
+
+```txt id="kfjbrs"
+app/Http/Controllers/
+
+EventController.php
+PublicEventController.php
+```
+
+---
+
+# EventController Responsibilities
+
+Methods:
+
+```php id="jov7bm"
+index()
+create()
+store()
+edit()
+update()
+destroy()
+publish()
+```
+
+---
+
+# PublicEventController
+
+Methods:
+
+```php id="3s4kk8"
+show()
+```
+
+---
+
+# 14. Route Structure
+
+## Protected Routes
+
+```php id="t14x0z"
+Route::middleware(['auth', 'verified'])->group(function () {
+
+    Route::resource('events', EventController::class);
+
+});
+```
+
+---
+
+## Public Routes
+
+```php id="m5y8s0"
+Route::get('/events/{slug}', [PublicEventController::class, 'show']);
+```
+
+---
+
+# 15. UI/UX Requirements
+
+# Create Event Page Layout
+
+## Suggested Sections
+
+### Section 1 — Event Details
+
+* Name
+* Type
+* Description
+
+---
+
+### Section 2 — Schedule & Venue
+
+* Date
+* Time
+* Venue
+* Map picker
+
+---
+
+### Section 3 — Media
+
+* Cover image upload
+
+---
+
+### Section 4 — Settings
+
+* Public/private
+* RSVP deadline
+* Guest limit
+* Plus-one
+* Guest list visibility
+
+---
+
+### Section 5 — Publish
+
+* Save draft
+* Publish button
+
+---
+
+# 16. Security Requirements
+
+Important.
+
+## Ownership Protection
+
+Users should ONLY edit their own events.
+
+Use:
+
+```php id="8ewwyt"
+Policies
+```
+
+Generate:
+
+```bash id="aajtw0"
+php artisan make:policy EventPolicy
+```
+
+---
+
+# Policy Logic
+
+```php id="rb4dmu"
+return $user->id === $event->user_id;
+```
+
+---
+
+# 17. Performance Considerations
+
+# Optimize:
+
+* Image uploads
+* Database indexing
+* Lazy loading
+
+---
+
+## Add Indexes
+
+```php id="y3k2vg"
+$table->index('slug');
+$table->index('event_date');
+```
+
+---
+
+# 18. Recommended Packages
+
+## Useful Packages
+
+### Sluggable
+
+Custom URLs
+
+### Spatie Media Library
+
+Advanced uploads
+
+### Intervention Image
+
+Image optimization
+
+### Laravel Google Maps Package
+
+Location handling
+
+---
+
+# 19. Suggested Development Phases
+
+# Phase 1 — Core Event CRUD
+
+2–3 days
+
+Implement:
+
+* Create/edit/delete events
+* Event listing
+* Public event pages
+
+---
+
+# Phase 2 — Settings & Media
+
+1–2 days
+
+Implement:
+
+* Cover uploads
+* RSVP settings
+* Slug system
+
+---
+
+# Phase 3 — Maps & Advanced UX
+
+2 days
+
+Implement:
+
+* Maps
+* Location autocomplete
+* Draft previews
+
+---
+
+# 20. MVP Scope Recommendation
+
+# MUST HAVE
+
+* Event CRUD
+* Event types
+* Cover image
+* Public invitation page
+* Slug URLs
+* Event settings
+* Draft/publish system
+
+# ADD LATER
+
+* Recurring events
+* Multiple schedules
+* Co-hosts
+* Password-protected events
+* QR invitations
+* AI-generated event pages

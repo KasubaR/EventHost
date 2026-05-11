@@ -1,36 +1,113 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="csrf-token" content="{{ csrf_token() }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ config('app.name', 'Laravel') }}</title>
+    <title>{{ $title ?? config('app.name') }} — {{ config('app.name') }}</title>
 
-        <!-- Fonts -->
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://images.unsplash.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
 
-        <!-- Scripts -->
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
-    </head>
-    <body class="font-sans antialiased">
-        <div class="min-h-screen bg-gray-100">
-            @include('layouts.navigation')
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <link rel="stylesheet" href="{{ asset('css/global.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/account-components.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/dashboard-shell.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/forms-app.css') }}">
+    @stack('styles')
+</head>
+<body class="dash-body">
 
-            <!-- Page Heading -->
-            @isset($header)
-                <header class="bg-white shadow">
-                    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                        {{ $header }}
-                    </div>
-                </header>
-            @endisset
+{{-- Top Nav --}}
+<x-site-header />
 
-            <!-- Page Content -->
-            <main>
-                {{ $slot }}
-            </main>
+<div class="dash-shell">
+
+    {{-- Sidebar --}}
+    <aside class="dash-sidebar" id="dashSidebar">
+
+        {{-- User avatar block --}}
+        <div class="dash-user-block">
+            <img src="{{ auth()->user()->profile_photo_url }}" alt="{{ auth()->user()->name }}" width="44" height="44" class="dash-user-avatar">
+            <div class="dash-user-info">
+                <strong>{{ auth()->user()->name }}</strong>
+                <span>{{ auth()->user()->email }}</span>
+            </div>
         </div>
-    </body>
+
+        <nav class="dash-nav">
+            <div class="dash-nav-section">
+                <span class="dash-nav-label">Main</span>
+                <a href="{{ route('dashboard') }}" class="dash-nav-link {{ request()->routeIs('dashboard') ? 'is-active' : '' }}">
+                    <i class="fa-solid fa-gauge-high"></i> Overview
+                </a>
+                <a href="{{ route('events.index') }}" class="dash-nav-link {{ request()->routeIs('events.*') ? 'is-active' : '' }}">
+                    <i class="fa-solid fa-envelope-open-text"></i> My Events
+                </a>
+                <a href="{{ route('templates.index') }}" class="dash-nav-link {{ request()->routeIs('templates.*') ? 'is-active' : '' }}">
+                    <i class="fa-solid fa-palette"></i> Templates
+                </a>
+                @if(auth()->user()->hasAnyRole(['super_admin', 'admin', 'support']))
+                    <a href="{{ route('admin.dashboard') }}" class="dash-nav-link {{ request()->routeIs('admin.*') ? 'is-active' : '' }}">
+                        <i class="fa-solid fa-user-shield"></i> Admin
+                    </a>
+                @endif
+            </div>
+
+            <div class="dash-nav-section">
+                <span class="dash-nav-label">Account</span>
+                <a href="{{ route('profile.edit') }}" class="dash-nav-link {{ request()->routeIs('profile.*') ? 'is-active' : '' }}">
+                    <i class="fa-solid fa-circle-user"></i> Profile
+                </a>
+                <a href="#" class="dash-nav-link">
+                    <i class="fa-solid fa-gear"></i> Settings
+                    <span class="dash-nav-soon">Soon</span>
+                </a>
+            </div>
+        </nav>
+
+        <form method="POST" action="{{ route('logout') }}" class="dash-sidebar-logout">
+            @csrf
+            <button type="submit" class="dash-nav-link dash-logout-btn">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign out
+            </button>
+        </form>
+
+    </aside>
+
+    {{-- Main content --}}
+    <main class="dash-main">
+
+        {{-- Page header --}}
+        @isset($pageHeader)
+            <div class="dash-page-header">
+                {{ $pageHeader }}
+            </div>
+        @endisset
+
+        <div class="dash-content">
+            {{ $slot }}
+        </div>
+
+    </main>
+
+</div>
+
+<script src="{{ asset('js/homepage.js') }}" defer></script>
+@stack('scripts')
+<script>
+    // Mobile sidebar toggle
+    document.addEventListener('DOMContentLoaded', () => {
+        const toggle = document.getElementById('sidebarToggle');
+        const sidebar = document.getElementById('dashSidebar');
+        if (toggle && sidebar) {
+            toggle.addEventListener('click', () => sidebar.classList.toggle('is-open'));
+        }
+    });
+</script>
+
+</body>
 </html>

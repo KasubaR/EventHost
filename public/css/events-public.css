@@ -1,0 +1,170 @@
+﻿/**
+ * Public invitation page (/e/{slug}). Depends on global.css.
+ */
+
+.evt-public-hero {
+    position: relative;
+    margin-bottom: 28px;
+}
+
+.evt-public-cover {
+    width: 100%;
+    max-height: 380px;
+    object-fit: cover;
+    border-radius: 16px;
+    box-shadow: var(--card-shadow, 0 4px 24px rgba(0, 0, 0, 0.1));
+    border: 1px solid var(--line, #e0e0e8);
+}
+
+.evt-public-inner {
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+.evt-public-page {
+    padding: 48px 40px 72px;
+}
+
+@media (max-width: 768px) {
+    .evt-public-page { padding: 32px 20px 48px; }
+}
+
+.evt-session-banner {
+    max-width: 720px;
+    margin: 24px auto 0;
+    padding: 14px 18px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    background: rgba(39, 174, 96, 0.1);
+    color: var(--green, #27ae60);
+}
+
+.evt-public-title {
+    font-family: var(--font-display, 'Outfit', sans-serif);
+    font-size: clamp(26px, 5vw, 38px);
+    font-weight: 800;
+    color: var(--navy, #1a2a4a);
+    margin: 0 0 10px;
+}
+
+.evt-public-type {
+    display: inline-flex;
+    align-items: center;
+    margin-bottom: 16px;
+    padding: 5px 12px;
+    border-radius: 50px;
+    background: rgba(108, 92, 231, 0.1);
+    border: 1px solid rgba(108, 92, 231, 0.2);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--accent, #6c5ce7);
+}
+
+.evt-public-desc {
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--gray-mid, #64748b);
+    margin-bottom: 24px;
+}
+
+.evt-desc-body {
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--gray-mid, #64748b);
+    margin-bottom: 24px;
+    white-space: pre-wrap;
+}
+
+.evt-detail-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 24px;
+    display: grid;
+    gap: 12px;
+}
+
+.evt-detail-list--after-cover {
+    margin-top: 20px;
+}
+
+.evt-detail-list li {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    font-size: 15px;
+    color: var(--navy-muted, #334155);
+    background: var(--white, #fff);
+    border: 1px solid var(--line, #e0e0e8);
+    border-radius: var(--radius-sm, 6px);
+    padding: 11px 14px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.evt-detail-list i {
+    margin-top: 3px;
+    color: var(--accent, #6c5ce7);
+    width: 18px;
+}
+
+.evt-rsvp-banner {
+    padding: 14px 18px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 24px;
+}
+
+.evt-rsvp-banner--open {
+    background: rgba(39, 174, 96, 0.1);
+    color: var(--green, #27ae60);
+}
+
+.evt-rsvp-banner--closed {
+    background: rgba(243, 156, 18, 0.12);
+    color: var(--orange, #d68910);
+}
+
+.evt-public-url {
+    word-break: break-all;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent, #6c5ce7);
+    text-decoration: none;
+}
+
+.evt-public-url:hover {
+    text-decoration: underline;
+}
+
+.evt-rsvp-actions {
+    margin-bottom: 24px;
+    padding: 20px;
+    border-radius: 14px;
+    border: 1px solid var(--line, #e0e0e8);
+    background: var(--white, #fff);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    text-align: center;
+}
+
+.evt-rsvp-actions .evt-rsvp-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+}
+
+.evt-rsvp-helper {
+    margin: 12px 0 0;
+    font-size: 13px;
+    color: var(--gray-mid, #64748b);
+}
+
+.evt-rsvp-actions--botanical {
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    padding: 8px 0 16px;
+}

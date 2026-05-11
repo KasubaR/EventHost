@@ -1,48 +1,76 @@
-<section>
-    <header>
-        <h2 class="text-lg font-medium text-gray-900">
-            {{ __('Update Password') }}
-        </h2>
+<form method="post" action="{{ route('password.update') }}" class="profile-form">
+    @csrf
+    @method('put')
 
-        <p class="mt-1 text-sm text-gray-600">
-            {{ __('Ensure your account is using a long, random password to stay secure.') }}
-        </p>
-    </header>
+    @if (session('status') === 'password-updated')
+        <div class="profile-success"><i class="fa-solid fa-circle-check"></i> Password updated successfully.</div>
+    @endif
 
-    <form method="post" action="{{ route('password.update') }}" class="mt-6 space-y-6">
-        @csrf
-        @method('put')
+    <div class="profile-fields">
 
-        <div>
-            <x-input-label for="update_password_current_password" :value="__('Current Password')" />
-            <x-text-input id="update_password_current_password" name="current_password" type="password" class="mt-1 block w-full" autocomplete="current-password" />
-            <x-input-error :messages="$errors->updatePassword->get('current_password')" class="mt-2" />
-        </div>
-
-        <div>
-            <x-input-label for="update_password_password" :value="__('New Password')" />
-            <x-text-input id="update_password_password" name="password" type="password" class="mt-1 block w-full" autocomplete="new-password" />
-            <x-input-error :messages="$errors->updatePassword->get('password')" class="mt-2" />
-        </div>
-
-        <div>
-            <x-input-label for="update_password_password_confirmation" :value="__('Confirm Password')" />
-            <x-text-input id="update_password_password_confirmation" name="password_confirmation" type="password" class="mt-1 block w-full" autocomplete="new-password" />
-            <x-input-error :messages="$errors->updatePassword->get('password_confirmation')" class="mt-2" />
-        </div>
-
-        <div class="flex items-center gap-4">
-            <x-primary-button>{{ __('Save') }}</x-primary-button>
-
-            @if (session('status') === 'password-updated')
-                <p
-                    x-data="{ show: true }"
-                    x-show="show"
-                    x-transition
-                    x-init="setTimeout(() => show = false, 2000)"
-                    class="text-sm text-gray-600"
-                >{{ __('Saved.') }}</p>
+        <div class="profile-field">
+            <label for="current_password" class="profile-label">Current password</label>
+            <div class="profile-input-wrap">
+                <input id="current_password" name="current_password" type="password"
+                       class="profile-input {{ $errors->updatePassword->has('current_password') ? 'profile-input--error' : '' }}"
+                       placeholder="Your current password" autocomplete="current-password">
+                <button type="button" class="profile-eye" data-target="current_password" aria-label="Toggle visibility">
+                    <i class="fa-solid fa-eye"></i>
+                </button>
+            </div>
+            @if ($errors->updatePassword->has('current_password'))
+                <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $errors->updatePassword->first('current_password') }}</span>
             @endif
         </div>
-    </form>
-</section>
+
+        <div class="profile-field">
+            <label for="new_password" class="profile-label">New password</label>
+            <div class="profile-input-wrap">
+                <input id="new_password" name="password" type="password"
+                       class="profile-input {{ $errors->updatePassword->has('password') ? 'profile-input--error' : '' }}"
+                       placeholder="Min. 8 characters" autocomplete="new-password">
+                <button type="button" class="profile-eye" data-target="new_password" aria-label="Toggle visibility">
+                    <i class="fa-solid fa-eye"></i>
+                </button>
+            </div>
+            @if ($errors->updatePassword->has('password'))
+                <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $errors->updatePassword->first('password') }}</span>
+            @endif
+        </div>
+
+        <div class="profile-field">
+            <label for="password_confirmation" class="profile-label">Confirm new password</label>
+            <div class="profile-input-wrap">
+                <input id="password_confirmation" name="password_confirmation" type="password"
+                       class="profile-input {{ $errors->updatePassword->has('password_confirmation') ? 'profile-input--error' : '' }}"
+                       placeholder="Repeat new password" autocomplete="new-password">
+                <button type="button" class="profile-eye" data-target="password_confirmation" aria-label="Toggle visibility">
+                    <i class="fa-solid fa-eye"></i>
+                </button>
+            </div>
+            @if ($errors->updatePassword->has('password_confirmation'))
+                <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $errors->updatePassword->first('password_confirmation') }}</span>
+            @endif
+        </div>
+
+    </div>
+
+    <div class="profile-form-actions">
+        <button type="submit" class="profile-save-btn">
+            <i class="fa-solid fa-lock"></i> Update Password
+        </button>
+    </div>
+
+</form>
+
+<script>
+document.querySelectorAll('.profile-eye').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const input = document.getElementById(btn.dataset.target);
+        if (!input) return;
+        const hidden = input.type === 'password';
+        input.type = hidden ? 'text' : 'password';
+        btn.querySelector('i').className = hidden ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+    });
+});
+</script>

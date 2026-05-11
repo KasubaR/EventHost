@@ -19,6 +19,8 @@ class VerifyEmailController extends Controller
         }
 
         if ($request->user()->markEmailAsVerified()) {
+            $request->user()->forceFill(['status' => 'active'])->save();
+
             event(new Verified($request->user()));
         }
 

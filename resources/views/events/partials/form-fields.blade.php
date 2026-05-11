@@ -1,0 +1,232 @@
+@push('styles')
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+@endpush
+
+@php
+    $typeLabels = [
+        'wedding' => 'Wedding',
+        'birthday' => 'Birthday',
+        'graduation' => 'Graduation',
+        'corporate' => 'Corporate Event',
+        'baby_shower' => 'Baby Shower',
+        'funeral' => 'Memorial',
+        'church' => 'Church Event',
+    ];
+
+    $timeRaw = old('event_time', isset($event) ? $event?->event_time : '12:00:00');
+    $timeForInput = is_string($timeRaw) && strlen($timeRaw) >= 5 ? substr($timeRaw, 0, 5) : '12:00';
+
+    $rsvpOld = old('rsvp_deadline');
+    $rsvpValue = $rsvpOld !== null
+        ? $rsvpOld
+        : (isset($event) && $event?->rsvp_deadline ? $event->rsvp_deadline->format('Y-m-d\TH:i') : '');
+@endphp
+
+<input type="hidden" name="is_public" value="0">
+<input type="hidden" name="allow_plus_one" value="0">
+<input type="hidden" name="show_guest_list" value="0">
+
+<div class="evt-stack">
+
+    <div class="evt-section">
+        <div class="evt-section-head">
+            <h2>Event details</h2>
+            <p>Name, type, and description.</p>
+        </div>
+        <div class="evt-section-body profile-fields">
+            <div class="profile-field">
+                <label for="name" class="profile-label">Event name</label>
+                <input id="name" name="name" type="text" required maxlength="255"
+                       class="profile-input {{ $errors->has('name') ? 'profile-input--error' : '' }}"
+                       value="{{ old('name', $event?->name ?? '') }}">
+                @error('name')
+                    <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
+                @enderror
+            </div>
+
+            <div class="profile-field">
+                <label for="event_type" class="profile-label">Event type</label>
+                <select id="event_type" name="event_type" required
+                        class="profile-input {{ $errors->has('event_type') ? 'profile-input--error' : '' }}">
+                    @foreach(\App\Models\Event::EVENT_TYPES as $type)
+                        <option value="{{ $type }}" @selected(old('event_type', $event?->event_type ?? 'wedding') === $type)>
+                            {{ $typeLabels[$type] ?? $type }}
+                        </option>
+                    @endforeach
+                </select>
+                @error('event_type')
+                    <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
+                @enderror
+            </div>
+
+            <div class="profile-field">
+                <label for="description" class="profile-label">Description <span class="profile-optional">optional</span></label>
+                <textarea id="description" name="description" rows="4"
+                          class="profile-input {{ $errors->has('description') ? 'profile-input--error' : '' }}"
+                          placeholder="Tell guests what to expect">{{ old('description', $event?->description ?? '') }}</textarea>
+                @error('description')
+                    <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
+                @enderror
+            </div>
+        </div>
+    </div>
+
+    <div class="evt-section">
+        <div class="evt-section-head">
+            <h2>Schedule &amp; venue</h2>
+            <p>When and where you are hosting.</p>
+        </div>
+        <div class="evt-section-body">
+            <div class="evt-grid-2 profile-fields">
+                <div class="profile-field">
+                    <label for="event_date" class="profile-label">Date</label>
+                    <input id="event_date" name="event_date" type="date" required
+                           class="profile-input {{ $errors->has('event_date') ? 'profile-input--error' : '' }}"
+                           value="{{ old('event_date', isset($event) ? $event->event_date->format('Y-m-d') : '') }}">
+                    @error('event_date')
+                        <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
+                    @enderror
+                </div>
+
+                <div class="profile-field">
+                    <label for="event_time" class="profile-label">Time</label>
+                    <input id="event_time" name="event_time" type="time" required step="60"
+                           class="profile-input {{ $errors->has('event_time') ? 'profile-input--error' : '' }}"
+                           value="{{ $timeForInput }}">
+                    @error('event_time')
+                        <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
+                    @enderror
+                </div>
+            </div>
+
+            <div class="profile-fields evt-fields-spaced">
+                <div class="profile-field">
+                    <label for="venue" class="profile-label">Venue <span class="profile-optional">optional</span></label>
+                    <input id="venue" name="venue" type="text" maxlength="255"
+                           class="profile-input {{ $errors->has('venue') ? 'profile-input--error' : '' }}"
+                           value="{{ old('venue', $event?->venue ?? '') }}">
+                    @error('venue')
+                        <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
+                    @enderror
+                </div>
+
+                <div class="profile-field">
+                    <label for="location_name" class="profile-label">Location label <span class="profile-optional">optional</span></label>
+                    <input id="location_name" name="location_name" type="text" maxlength="255"
+                           class="profile-input {{ $errors->has('location_name') ? 'profile-input--error' : '' }}"
+                           value="{{ old('location_name', $event?->location_name ?? '') }}"
+                           placeholder="City or neighbourhood">
+                    @error('location_name')
+                        <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
+                    @enderror
+                </div>
+
+                <div class="profile-field">
+                    <label class="profile-label">Location pin <span class="profile-optional">optional</span></label>
+                    <div class="evt-map-search">
+                        <input type="text" id="evt-map-search" class="profile-input" placeholder="Search address…" autocomplete="off">
+                        <button type="button" id="evt-map-search-btn" class="evt-btn-outline">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </button>
+                    </div>
+                    <div class="evt-map-wrap">
+                        <div id="evt-map" class="evt-map"></div>
+                    </div>
+                    <p class="evt-map-hint">Click the map or drag the pin to set location. Search auto-fills the pin.</p>
+                    <div class="evt-grid-2">
+                        <div class="profile-field">
+                            <label for="latitude" class="profile-label">Latitude</label>
+                            <input id="latitude" name="latitude" type="text" inputmode="decimal" readonly
+                                   class="profile-input evt-map-coord-input {{ $errors->has('latitude') ? 'profile-input--error' : '' }}"
+                                   value="{{ old('latitude', $event?->latitude ?? '') }}"
+                                   placeholder="Set via map">
+                            @error('latitude')
+                                <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="profile-field">
+                            <label for="longitude" class="profile-label">Longitude</label>
+                            <input id="longitude" name="longitude" type="text" inputmode="decimal" readonly
+                                   class="profile-input evt-map-coord-input {{ $errors->has('longitude') ? 'profile-input--error' : '' }}"
+                                   value="{{ old('longitude', $event?->longitude ?? '') }}"
+                                   placeholder="Set via map">
+                            @error('longitude')
+                                <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
+                            @enderror
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="evt-section">
+        <div class="evt-section-head">
+            <h2>Cover image</h2>
+            <p>Recommended wide image; we crop to 1200×630 for sharing.</p>
+        </div>
+        <div class="evt-section-body">
+            <div class="profile-photo-row">
+                <img src="{{ isset($event) ? $event->cover_image_url : asset('images/default-event.png') }}" alt="" width="120" height="68" class="profile-photo-preview evt-cover-preview" id="evt-cover-preview">
+                <div>
+                    <label for="cover_image" class="profile-photo-btn">
+                        <i class="fa-solid fa-image"></i> Upload cover
+                    </label>
+                    <input id="cover_image" name="cover_image" type="file" accept="image/jpeg,image/png,image/webp" class="profile-photo-input">
+                    <p class="profile-photo-hint">JPG, PNG or WEBP · Max 4MB</p>
+                    @error('cover_image')
+                        <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
+                    @enderror
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="evt-section">
+        <div class="evt-section-head">
+            <h2>Guest settings</h2>
+            <p>RSVP rules and visibility (RSVP form comes later).</p>
+        </div>
+        <div class="evt-section-body profile-fields">
+            <label class="profile-label evt-check-label">
+                <input type="checkbox" name="is_public" value="1" class="profile-input evt-check-input"
+                       @checked((string) old('is_public', ($event?->is_public ?? true) ? '1' : '0') === '1')>
+                Public invitation (anyone with the link)
+            </label>
+
+            <div class="profile-field">
+                <label for="rsvp_deadline" class="profile-label">RSVP deadline <span class="profile-optional">optional</span></label>
+                <input id="rsvp_deadline" name="rsvp_deadline" type="datetime-local"
+                       class="profile-input {{ $errors->has('rsvp_deadline') ? 'profile-input--error' : '' }}"
+                       value="{{ $rsvpValue }}">
+                @error('rsvp_deadline')
+                    <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
+                @enderror
+            </div>
+
+            <div class="profile-field">
+                <label for="guest_limit" class="profile-label">Guest limit <span class="profile-optional">optional</span></label>
+                <input id="guest_limit" name="guest_limit" type="number" min="1" step="1"
+                       class="profile-input {{ $errors->has('guest_limit') ? 'profile-input--error' : '' }}"
+                       value="{{ old('guest_limit', $event?->guest_limit ?? '') }}">
+                @error('guest_limit')
+                    <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
+                @enderror
+            </div>
+
+            <label class="profile-label evt-check-label">
+                <input type="checkbox" name="allow_plus_one" value="1" class="profile-input evt-check-input"
+                       @checked((string) old('allow_plus_one', ($event?->allow_plus_one ?? false) ? '1' : '0') === '1')>
+                Allow plus-one
+            </label>
+
+            <label class="profile-label evt-check-label">
+                <input type="checkbox" name="show_guest_list" value="1" class="profile-input evt-check-input"
+                       @checked((string) old('show_guest_list', ($event?->show_guest_list ?? false) ? '1' : '0') === '1')>
+                Show guest list on invitation
+            </label>
+        </div>
+    </div>
+
+</div>

@@ -1,0 +1,515 @@
+For a modern invitation and RSVP platform similar to [Eventifai](https://www.eventifai.com?utm_source=chatgpt.com) or [Cordially Invited](https://cordiallyinvited.online?utm_source=chatgpt.com), the features should be grouped into:
+
+1. Core invitation features
+2. RSVP & guest management
+3. Customization features
+4. Sharing & communication
+5. Business/admin features
+6. Premium/advanced features
+
+Here’s a professional feature breakdown.
+
+# 1. User Account Features
+
+## Authentication
+
+Required:
+
+* Sign up
+* Login
+* Forgot password
+* Email verification
+
+Optional:
+
+* Google login
+* Apple login
+
+---
+
+## User Profile
+
+Features:
+
+* Profile picture
+* Name/company
+* Phone number
+* Notification preferences
+
+---
+
+# 2. Event Creation Features
+
+## Create Event
+
+Required fields:
+
+* Event name
+* Event type
+* Description
+* Date & time
+* Venue
+* Location/map
+* Cover image
+
+Event types:
+
+* Wedding
+* Birthday
+* Graduation
+* Corporate
+* Baby shower
+* Funeral/memorial
+* Church events
+
+---
+
+## Event Settings
+
+Features:
+
+* Public/private event
+* RSVP deadline
+* Guest limit
+* Allow plus-one
+* Hide/show guest list
+* Custom URL
+
+Example:
+
+```txt id="hgrv2t"
+yourwebsite.com/events/john-and-mary
+```
+
+---
+
+# 3. Invitation Template Features
+
+## Template Library
+
+Features:
+
+* Multiple invitation styles
+* Category filtering
+* Search templates
+* Preview templates
+
+---
+
+## Template Customization
+
+Features:
+
+* Change colors
+* Change fonts
+* Upload images
+* Edit sections
+* Reorder sections
+
+Optional:
+
+* Drag-and-drop editor
+
+---
+
+## Visual Features
+
+Optional:
+
+* Background music
+* Video backgrounds
+* Animated invitations
+* Countdown timer
+
+---
+
+# 4. RSVP Features
+
+## RSVP Form
+
+Required:
+
+* Accept/decline
+* Number attending
+* Guest message
+
+Optional:
+
+* Meal preference
+* Transportation option
+* Song requests
+
+---
+
+## RSVP Management
+
+Host can:
+
+* View responses
+* Filter guests
+* Export guest list
+* Send reminders
+
+Status:
+
+* Pending
+* Confirmed
+* Declined
+
+---
+
+# 5. Guest Management Features
+
+## Guest List
+
+Features:
+
+* Add guests manually
+* Import CSV/Excel
+* Group guests
+* Search guests
+
+---
+
+## Invitation Distribution
+
+Features:
+
+* Share link
+* WhatsApp sharing
+* Email invitations
+* SMS invitations optional
+
+---
+
+## Unique Guest Links
+
+Each guest gets:
+
+* Personalized RSVP link
+* QR code optional
+
+Benefits:
+
+* Easier tracking
+* Prevent duplicate RSVPs
+
+---
+
+# 6. Public Invitation Page Features
+
+This is the actual event page.
+
+## Event Information
+
+Features:
+
+* Event title
+* Hero banner
+* Date/time
+* Venue
+* Map integration
+
+---
+
+## Countdown Timer
+
+Shows:
+
+* Days/hours until event
+
+---
+
+## Gallery
+
+Features:
+
+* Photo slider
+* Videos
+* Couple/event story
+
+---
+
+## Schedule/Timeline
+
+Example:
+
+* Ceremony
+* Reception
+* After party
+
+---
+
+## Contact Information
+
+Features:
+
+* Organizer contact
+* WhatsApp button
+* Email
+
+---
+
+# 7. Sharing & Communication Features
+
+## WhatsApp Integration
+
+Very important in Zambia/Africa.
+
+Features:
+
+* Share invitation directly
+* RSVP reminders
+* Guest notifications
+
+---
+
+## Email Notifications
+
+Features:
+
+* RSVP confirmations
+* Reminder emails
+* Event updates
+
+---
+
+## SMS Notifications (Optional)
+
+Useful for:
+
+* Reminders
+* RSVP confirmations
+
+---
+
+# 8. Analytics Features
+
+Hosts should see:
+
+## Dashboard Analytics
+
+Metrics:
+
+* Invitation views
+* RSVP count
+* Attendance percentage
+* Most active guests
+
+---
+
+## Charts
+
+Possible:
+
+* Daily RSVPs
+* RSVP conversion
+* Guest categories
+
+---
+
+# 9. Payment Features (Optional)
+
+## Subscription System
+
+Features:
+
+* Free plan
+* Premium plan
+* Upgrade flow
+
+---
+
+## Payment Methods
+
+Especially useful in Zambia.
+
+Possible integrations:
+
+* MTN Mobile Money
+* Airtel Money
+* Stripe
+* PayPal
+
+---
+
+## Premium Features Locking
+
+Example:
+Free:
+
+* 1 event
+* Basic templates
+
+Premium:
+
+* Unlimited events
+* Premium templates
+* Custom branding
+
+---
+
+# 10. Admin Features
+
+## Admin Dashboard
+
+Features:
+
+* Manage users
+* View events
+* Revenue analytics
+* Reports
+
+---
+
+## Template Management
+
+Admin can:
+
+* Upload templates
+* Edit templates
+* Categorize templates
+
+---
+
+## User Management
+
+Features:
+
+* Suspend users
+* Reset accounts
+* View subscriptions
+
+---
+
+# 11. Mobile Features
+
+Very important.
+
+Required:
+
+* Mobile-first UI
+* Responsive layouts
+* Fast loading
+* WhatsApp optimization
+
+---
+
+# 12. SEO Features
+
+For public invitation pages.
+
+Features:
+
+* SEO titles
+* Open Graph previews
+* Social sharing images
+
+---
+
+# 13. Security Features
+
+Required:
+
+* HTTPS
+* Rate limiting
+* Spam protection
+* Validation
+* Secure uploads
+
+Optional:
+
+* Two-factor authentication
+
+---
+
+# 14. Performance Features
+
+Required:
+
+* Image optimization
+* CDN
+* Lazy loading
+* Fast page speed
+
+---
+
+# 15. Accessibility Features
+
+Recommended:
+
+* Keyboard navigation
+* Screen reader support
+* Proper contrast
+* Alt text
+
+---
+
+# 16. Advanced Features (Future)
+
+These can make your platform stand out.
+
+## AI Invitation Generator
+
+User enters:
+
+* Event type
+* Theme
+
+AI generates:
+
+* Invitation text
+* Design suggestions
+
+---
+
+## Seating Arrangement System
+
+Features:
+
+* Table assignments
+* Guest seating planner
+
+---
+
+## QR Event Check-in
+
+At event entrance:
+
+* Scan guest QR codes
+* Mark attendance
+
+---
+
+## Event Livestream
+
+Features:
+
+* Embed YouTube/Facebook live streams
+
+---
+
+## Printable Invitations
+
+Generate:
+
+* PDF invitation cards
+
+---
+
+# Recommended MVP Features
+
+For your first version, focus on:
+
+## Essential Features
+
+* Authentication
+* Event creation
+* Invitation templates
+* RSVP forms
+* Guest management
+* Public event pages
+* WhatsApp sharing
+* Mobile responsive design
+
+That alone is enough to launch a strong product.

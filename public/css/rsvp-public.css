@@ -1,0 +1,290 @@
+/**
+ * Public RSVP forms (/rsvp/{token}, /e/{slug}/rsvp). Depends on global.css tokens.
+ */
+
+/* ── Page shell ── */
+.rsvp-page {
+    min-height: calc(100vh - 56px);
+    background: var(--gray-light, #f4f5f9);
+    padding: 48px 20px 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* ── Card ── */
+.rsvp-card {
+    background: var(--white, #fff);
+    border-radius: 20px;
+    box-shadow: 0 8px 40px rgba(13, 13, 43, 0.1), 0 1px 3px rgba(13, 13, 43, 0.06);
+    padding: 40px;
+    width: 100%;
+    max-width: 520px;
+}
+
+/* ── Event header ── */
+.rsvp-event-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    background: rgba(108, 92, 231, 0.1);
+    color: var(--accent, #6c5ce7);
+    border-radius: 50px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 14px;
+}
+
+.rsvp-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: clamp(22px, 5vw, 28px);
+    font-weight: 800;
+    color: var(--navy, #0d0d2b);
+    margin: 0 0 16px;
+    line-height: 1.2;
+}
+
+.rsvp-meta {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+
+.rsvp-meta li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--text-dark, #1a1a2e);
+}
+
+.rsvp-meta li i {
+    color: var(--accent, #6c5ce7);
+    width: 16px;
+    flex-shrink: 0;
+    text-align: center;
+}
+
+.rsvp-divider {
+    border: none;
+    border-top: 1px solid var(--line, #e0e0e8);
+    margin: 24px 0;
+}
+
+.rsvp-greeting,
+.rsvp-lead {
+    font-size: 15px;
+    color: var(--gray-mid, #8e8ea8);
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* ── Form ── */
+.rsvp-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-top: 4px;
+}
+
+.rsvp-field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.rsvp-field-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--navy, #0d0d2b);
+    letter-spacing: 0.01em;
+}
+
+.rsvp-optional {
+    font-weight: 500;
+    color: var(--gray-mid, #8e8ea8);
+    font-size: 12px;
+    margin-left: 2px;
+}
+
+/* ── Inputs ── */
+.rsvp-input,
+.rsvp-select,
+.rsvp-textarea {
+    width: 100%;
+    padding: 11px 14px;
+    border-radius: 10px;
+    border: 1.5px solid var(--line, #e0e0e8);
+    font-size: 15px;
+    font-family: 'DM Sans', sans-serif;
+    background: var(--white, #fff);
+    color: var(--navy, #0d0d2b);
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.rsvp-input:focus,
+.rsvp-select:focus,
+.rsvp-textarea:focus {
+    outline: none;
+    border-color: var(--accent, #6c5ce7);
+    box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.12);
+}
+
+.rsvp-input::placeholder,
+.rsvp-textarea::placeholder {
+    color: var(--gray-mid, #8e8ea8);
+}
+
+.rsvp-textarea {
+    resize: vertical;
+    min-height: 90px;
+}
+
+.rsvp-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238e8ea8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+    cursor: pointer;
+}
+
+/* ── Response buttons ── */
+.rsvp-status-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.rsvp-radio {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    padding: 16px 8px 14px;
+    border-radius: 12px;
+    border: 1.5px solid var(--line, #e0e0e8);
+    background: var(--gray-light, #f4f5f9);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--gray-mid, #8e8ea8);
+    text-align: center;
+    transition: border-color 0.15s, background 0.15s, color 0.15s, box-shadow 0.15s;
+    user-select: none;
+}
+
+.rsvp-radio:hover {
+    border-color: rgba(108, 92, 231, 0.3);
+    color: var(--navy, #0d0d2b);
+    background: #fff;
+}
+
+.rsvp-radio input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.rsvp-radio-icon {
+    font-size: 24px;
+    line-height: 1;
+    transition: color 0.15s;
+}
+
+/* Selected states per response type */
+.rsvp-radio[data-status="accepted"]:has(input:checked) {
+    border-color: var(--green, #27ae60);
+    background: rgba(39, 174, 96, 0.07);
+    color: var(--green, #27ae60);
+    box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.12);
+}
+
+.rsvp-radio[data-status="declined"]:has(input:checked) {
+    border-color: var(--pink, #e84393);
+    background: rgba(232, 67, 147, 0.07);
+    color: var(--pink, #e84393);
+    box-shadow: 0 0 0 3px rgba(232, 67, 147, 0.12);
+}
+
+.rsvp-radio[data-status="maybe"]:has(input:checked) {
+    border-color: var(--orange, #f39c12);
+    background: rgba(243, 156, 18, 0.07);
+    color: var(--orange, #f39c12);
+    box-shadow: 0 0 0 3px rgba(243, 156, 18, 0.12);
+}
+
+/* ── Errors & hints ── */
+.rsvp-field-error {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--pink, #e84393);
+    margin: 0;
+}
+
+.rsvp-field-hint {
+    font-size: 12px;
+    color: var(--gray-mid, #8e8ea8);
+    margin: 0;
+}
+
+/* ── Submit ── */
+.rsvp-submit {
+    width: 100%;
+    justify-content: center;
+    padding: 13px 20px;
+    font-size: 15px;
+    border-radius: 12px;
+    margin-top: 4px;
+    letter-spacing: 0.01em;
+}
+
+/* ── Closed / thanks states ── */
+.rsvp-closed-banner {
+    margin-top: 12px;
+}
+
+.rsvp-thanks {
+    text-align: center;
+    width: 100%;
+    max-width: 520px;
+}
+
+.rsvp-thanks-banner {
+    justify-content: center;
+}
+
+/* ── Mobile ── */
+@media (max-width: 560px) {
+    .rsvp-card {
+        padding: 28px 20px;
+    }
+
+    .rsvp-page {
+        padding: 24px 12px 60px;
+    }
+}
+
+@media (max-width: 380px) {
+    .rsvp-status-options {
+        grid-template-columns: 1fr;
+    }
+
+    .rsvp-radio {
+        flex-direction: row;
+        justify-content: flex-start;
+        padding: 12px 16px;
+    }
+
+    .rsvp-radio-icon {
+        font-size: 18px;
+    }
+}

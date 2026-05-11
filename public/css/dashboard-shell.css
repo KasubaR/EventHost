@@ -1,0 +1,204 @@
+﻿/**
+ * Authenticated app chrome (sidebar, header bar). Depends on global.css.
+ */
+
+/* ── DASHBOARD SHELL ── */
+.dash-body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--gray-light);
+  font-family: 'DM Sans', sans-serif;
+  color: var(--text-dark);
+}
+
+.dash-shell {
+  display: flex;
+  flex: 1;
+  min-height: calc(100vh - 56px);
+}
+
+/* ── SIDEBAR ── */
+.dash-sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--white);
+  display: flex;
+  flex-direction: column;
+  padding: 20px 0 16px;
+  position: sticky;
+  top: 56px;
+  height: calc(100vh - 56px);
+  overflow-y: auto;
+}
+
+.dash-user-block {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px 20px;
+  margin-bottom: 16px;
+}
+.dash-user-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--line);
+  flex-shrink: 0;
+}
+.dash-user-info { overflow: hidden; }
+.dash-user-info strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dash-user-info span {
+  display: block;
+  font-size: 11px;
+  color: var(--gray-mid);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Reset global nav{} styles from global.css */
+.dash-nav {
+  flex: 1;
+  padding: 0 8px;
+  position: static;
+  display: block;
+  height: auto;
+  background: none;
+  border: none;
+  z-index: auto;
+  justify-content: initial;
+  align-items: initial;
+}
+.dash-nav-section { margin-bottom: 24px; }
+.dash-nav-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--gray-mid);
+  padding: 0 8px;
+  margin-bottom: 4px;
+}
+
+.dash-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-mid);
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  font-family: 'DM Sans', sans-serif;
+}
+.dash-nav-link i { width: 16px; text-align: center; font-size: 13px; flex-shrink: 0; }
+.dash-nav-link:hover { background: var(--gray-light); color: var(--text-dark); }
+.dash-nav-link.is-active { background: rgba(108,92,231,0.1); color: var(--accent); }
+.dash-nav-link.is-active i { color: var(--accent); }
+
+.dash-nav-soon {
+  margin-left: auto;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gray-mid);
+  background: var(--gray-light);
+  padding: 2px 6px;
+  border-radius: 50px;
+}
+
+.dash-sidebar-logout {
+  padding: 12px 8px 0;
+  margin: 8px 0 0;
+  border-top: 1px solid #d0d0dc;
+}
+.dash-logout-btn { color: var(--gray-mid); }
+.dash-logout-btn:hover { color: var(--pink) !important; background: rgba(232,67,147,0.08) !important; }
+
+/* ── MAIN CONTENT ── */
+.dash-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dash-page-header {
+  background: var(--gray-light);
+  padding: 28px 36px;
+}
+.dph-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.dph-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text-dark);
+  margin-bottom: 3px;
+  letter-spacing: 0.01em;
+}
+.dph-sub {
+  font-size: 13px;
+  color: var(--gray-mid);
+  font-weight: 400;
+}
+
+.dash-content { padding: 28px 36px 48px; }
+
+/* Breadcrumb inside page header */
+.dash-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.dash-breadcrumb a {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-mid);
+  text-decoration: none;
+}
+.dash-breadcrumb a:hover { color: var(--text-dark); }
+.dash-breadcrumb .fa-chevron-right { font-size: 9px; color: var(--line); }
+.dash-breadcrumb span { font-size: 12px; font-weight: 700; color: var(--accent); }
+
+
+@media (max-width: 768px) {
+  .dash-sidebar {
+    position: fixed;
+    top: 56px;
+    left: -240px;
+    z-index: 900;
+    transition: left 0.25s ease;
+    height: calc(100vh - 56px);
+  }
+  .dash-sidebar.is-open { left: 0; box-shadow: 4px 0 24px rgba(0,0,0,0.12); }
+  .dash-content { padding: 20px 16px 40px; }
+  .dash-page-header { padding: 20px 16px; }
+}
+
