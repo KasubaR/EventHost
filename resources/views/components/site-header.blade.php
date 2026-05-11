@@ -13,17 +13,17 @@
     </div>
 
     <div class="nav-actions nav-actions-group">
-        @auth
+        @if(auth()->check() && !auth('admin')->check())
             <a href="{{ route('dashboard') }}" class="nav-user-link {{ request()->routeIs('dashboard') ? 'is-active' : '' }}">Dashboard</a>
             <a href="{{ route('profile.edit') }}" class="nav-user-link {{ request()->routeIs('profile.edit') ? 'is-active' : '' }}">Profile</a>
             <form method="POST" action="{{ route('logout') }}" class="nav-logout-form">
                 @csrf
                 <button type="submit" class="btn-ghost">{{ __('Log out') }}</button>
             </form>
-        @else
+        @elseif(!auth()->check() && !auth('admin')->check())
             <a href="{{ route('login') }}" class="btn-ghost">{{ __('Sign in') }}</a>
             <a href="{{ route('register') }}" class="btn-primary">{{ __('Sign up') }}</a>
-        @endauth
+        @endif
     </div>
 
     <button class="nav-hamburger" aria-label="Open menu" aria-expanded="false" aria-controls="nav-mobile-menu">
@@ -37,17 +37,17 @@
             <a href="{{ url('/#contact') }}">Contact Us</a>
         </div>
         <div class="nav-mobile-actions">
-            @auth
+            @if(auth()->check() && !auth('admin')->check())
                 <a href="{{ route('dashboard') }}" class="nav-user-link">Dashboard</a>
                 <a href="{{ route('profile.edit') }}" class="nav-user-link">Profile</a>
                 <form method="POST" action="{{ route('logout') }}" class="nav-logout-form">
                     @csrf
                     <button type="submit" class="btn-ghost">{{ __('Log out') }}</button>
                 </form>
-            @else
+            @elseif(!auth()->check() && !auth('admin')->check())
                 <a href="{{ route('login') }}" class="btn-ghost">{{ __('Sign in') }}</a>
                 <a href="{{ route('register') }}" class="btn-primary">{{ __('Sign up') }}</a>
-            @endauth
+            @endif
         </div>
     </div>
 </nav>

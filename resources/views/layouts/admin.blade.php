@@ -18,23 +18,28 @@
     <link rel="stylesheet" href="{{ asset('css/dashboard-shell.css') }}">
     <link rel="stylesheet" href="{{ asset('css/forms-app.css') }}">
     <link rel="stylesheet" href="{{ asset('css/admin-shell.css') }}">
+    <style>
+        .dash-shell   { min-height: 100vh; }
+        .dash-sidebar { top: 0; height: 100vh; position: sticky; }
+        @media (max-width: 900px) {
+            .dash-sidebar { top: 0; height: 100vh; }
+        }
+    </style>
     @stack('styles')
 </head>
 <body class="dash-body admin-shell">
-
-<x-site-header />
 
 <div class="dash-shell">
 
     <aside class="dash-sidebar" id="dashSidebar">
 
         <div class="dash-user-block admin-user-block">
-            <img src="{{ auth()->user()->profile_photo_url }}" alt="{{ auth()->user()->name }}" width="44" height="44" class="dash-user-avatar">
+            <img src="{{ auth('admin')->user()->profile_photo_url }}" alt="{{ auth('admin')->user()->name }}" width="44" height="44" class="dash-user-avatar">
             <div class="dash-user-info">
-                <strong>{{ auth()->user()->name }}</strong>
+                <strong>{{ auth('admin')->user()->name }}</strong>
                 <span class="admin-role-strip">
                     <span class="admin-role-badge">Admin</span>
-                    {{ auth()->user()->email }}
+                    {{ auth('admin')->user()->email }}
                 </span>
             </div>
         </div>
@@ -52,52 +57,52 @@
 
             <div class="dash-nav-section">
                 <span class="dash-nav-label">Platform</span>
-                @can('users.view')
+                @if(auth('admin')->user()?->can('users.view'))
                     <a href="{{ route('admin.users.index') }}" class="dash-nav-link {{ request()->routeIs('admin.users.*') ? 'is-active' : '' }}">
                         <i class="fa-solid fa-users"></i> Users
                     </a>
-                @endcan
-                @can('events.view')
+                @endif
+                @if(auth('admin')->user()?->can('events.view'))
                     <a href="{{ route('admin.events.index') }}" class="dash-nav-link {{ request()->routeIs('admin.events.*') ? 'is-active' : '' }}">
                         <i class="fa-solid fa-calendar-days"></i> Events
                     </a>
-                @endcan
-                @can('guests.view')
+                @endif
+                @if(auth('admin')->user()?->can('guests.view'))
                     <a href="{{ route('admin.guests.index') }}" class="dash-nav-link {{ request()->routeIs('admin.guests.*') ? 'is-active' : '' }}">
                         <i class="fa-solid fa-address-book"></i> Guests
                     </a>
-                @endcan
-                @can('rsvps.view')
+                @endif
+                @if(auth('admin')->user()?->can('rsvps.view'))
                     <a href="{{ route('admin.rsvps.index') }}" class="dash-nav-link {{ request()->routeIs('admin.rsvps.*') ? 'is-active' : '' }}">
                         <i class="fa-solid fa-reply"></i> RSVPs
                     </a>
-                @endcan
-                @can('notifications.view')
+                @endif
+                @if(auth('admin')->user()?->can('notifications.view'))
                     <a href="{{ route('admin.notifications.index') }}" class="dash-nav-link {{ request()->routeIs('admin.notifications.*') ? 'is-active' : '' }}">
                         <i class="fa-solid fa-paper-plane"></i> Notifications
                     </a>
-                @endcan
-                @can('reports.view')
+                @endif
+                @if(auth('admin')->user()?->can('reports.view'))
                     <a href="{{ route('admin.reports.index') }}" class="dash-nav-link {{ request()->routeIs('admin.reports.*') ? 'is-active' : '' }}">
                         <i class="fa-solid fa-flag"></i> Reports
                     </a>
-                @endcan
-                @can('settings.manage')
+                @endif
+                @if(auth('admin')->user()?->can('settings.manage'))
                     <a href="{{ route('admin.settings.edit') }}" class="dash-nav-link {{ request()->routeIs('admin.settings.*') ? 'is-active' : '' }}">
                         <i class="fa-solid fa-sliders"></i> Settings
                     </a>
-                @endcan
+                @endif
             </div>
 
             <div class="dash-nav-section">
                 <span class="dash-nav-label">Exit</span>
-                <a href="{{ route('dashboard') }}" class="dash-nav-link">
-                    <i class="fa-solid fa-arrow-left"></i> Back to app
+                <a href="{{ url('/') }}" class="dash-nav-link">
+                    <i class="fa-solid fa-arrow-left"></i> Back to site
                 </a>
             </div>
         </nav>
 
-        <form method="POST" action="{{ route('logout') }}" class="dash-sidebar-logout">
+        <form method="POST" action="{{ route('admin.logout') }}" class="dash-sidebar-logout">
             @csrf
             <button type="submit" class="dash-nav-link dash-logout-btn">
                 <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign out

@@ -50,11 +50,6 @@
                 <a href="{{ route('templates.index') }}" class="dash-nav-link {{ request()->routeIs('templates.*') ? 'is-active' : '' }}">
                     <i class="fa-solid fa-palette"></i> Templates
                 </a>
-                @if(auth()->user()->hasAnyRole(['super_admin', 'admin', 'support']))
-                    <a href="{{ route('admin.dashboard') }}" class="dash-nav-link {{ request()->routeIs('admin.*') ? 'is-active' : '' }}">
-                        <i class="fa-solid fa-user-shield"></i> Admin
-                    </a>
-                @endif
             </div>
 
             <div class="dash-nav-section">

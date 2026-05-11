@@ -32,14 +32,14 @@
             <p class="admin-mt-sm">{{ $report->message }}</p>
             <p class="admin-muted admin-mt-md"><strong>Reporter:</strong> {{ $report->user?->email ?? 'Anonymous' }}</p>
             <p class="admin-muted"><strong>Related event:</strong> {{ $report->event?->name ?? '—' }}</p>
-            @can('events.view')
+            @if(auth('admin')->user()?->can('events.view'))
                 @if ($report->event)
                     <p class="admin-mt-sm"><a href="{{ route('admin.events.show', $report->event) }}">Open event</a></p>
                 @endif
-            @endcan
+            @endif
         </div>
 
-        @can('reports.manage')
+        @if(auth('admin')->user()?->can('reports.manage'))
             <div class="admin-panel-card">
                 <h2>Resolution</h2>
                 <form method="post" action="{{ route('admin.reports.update', $report) }}" class="profile-form admin-mt-sm">
@@ -57,6 +57,6 @@
                     </div>
                 </form>
             </div>
-        @endcan
+        @endif
     </div>
 </x-admin-layout>

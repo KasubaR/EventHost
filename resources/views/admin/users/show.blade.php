@@ -38,8 +38,8 @@
             <p class="admin-muted admin-mt-sm">Status: {{ $u->status }} · Events: {{ $u->events_count }} · Phone: {{ $u->phone ?? '—' }}</p>
             <p class="admin-muted">Registered {{ $u->created_at->format('M j, Y g:i a') }}</p>
 
-            @can('users.manage_status')
-                @if (! auth()->user()->is($u))
+            @if(auth('admin')->user()?->can('users.manage_status'))
+                @if (! auth('admin')->user()->is($u))
                     <form method="post" action="{{ route('admin.users.status', $u) }}" class="profile-form admin-mt-md">
                         @csrf
                         @method('PATCH')
@@ -55,26 +55,26 @@
                 @else
                     <p class="admin-muted admin-mt-md">You cannot change your own status here.</p>
                 @endif
-            @endcan
+            @endif
 
-            @can('users.password_reset')
-                @if (! auth()->user()->is($u))
+            @if(auth('admin')->user()?->can('users.password_reset'))
+                @if (! auth('admin')->user()->is($u))
                     <form method="post" action="{{ route('admin.users.password-reset', $u) }}" class="profile-form admin-mt-md">
                         @csrf
                         <button type="submit" class="evt-btn-outline">Send password reset email</button>
                     </form>
                 @endif
-            @endcan
+            @endif
 
-            @can('users.delete')
-                @if (! auth()->user()->is($u))
+            @if(auth('admin')->user()?->can('users.delete'))
+                @if (! auth('admin')->user()->is($u))
                     <form method="post" action="{{ route('admin.users.destroy', $u) }}" class="profile-form admin-mt-md" data-confirm="Delete this user and all owned data?">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="evt-btn-danger-outline">Delete user</button>
                     </form>
                 @endif
-            @endcan
+            @endif
         </div>
 
         <div class="admin-panel-card">
@@ -97,9 +97,9 @@
                     </tbody>
                 </table>
             </div>
-            @can('events.view')
+            @if(auth('admin')->user()?->can('events.view'))
                 <p class="admin-mt-sm"><a href="{{ route('admin.events.index', ['q' => $u->email]) }}">View events for this owner</a></p>
-            @endcan
+            @endif
         </div>
     </div>
 </x-admin-layout>

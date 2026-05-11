@@ -11,11 +11,11 @@
                 <h1 class="dph-title">Platform overview</h1>
                 <p class="dph-sub">Operational snapshot across users, events, and messaging.</p>
             </div>
-            @can('analytics.view')
+            @if(auth('admin')->user()?->can('analytics.view'))
                 <a href="{{ route('admin.analytics') }}" class="btn-primary dash-header-cta">
                     <i class="fa-solid fa-chart-column" aria-hidden="true"></i> Analytics
                 </a>
-            @endcan
+            @endif
         </div>
     </x-slot>
 
@@ -87,9 +87,9 @@
                             <td>{{ $u->email }}</td>
                             <td>{{ $u->status }}</td>
                             <td>
-                                @can('users.view')
+                                @if(auth('admin')->user()?->can('users.view'))
                                     <a href="{{ route('admin.users.show', $u) }}">View</a>
-                                @endcan
+                                @endif
                             </td>
                         </tr>
                     @empty
@@ -120,9 +120,9 @@
                     </tbody>
                 </table>
             </div>
-            @can('notifications.view')
+            @if(auth('admin')->user()?->can('notifications.view'))
                 <p class="admin-mt-sm"><a href="{{ route('admin.notifications.index', ['status' => 'failed']) }}">View all failed</a></p>
-            @endcan
+            @endif
         </section>
     </div>
 

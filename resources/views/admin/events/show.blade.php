@@ -45,7 +45,7 @@
             <p class="admin-muted">Published: {{ $ev->is_published ? 'Yes' : 'No' }}</p>
             <p class="admin-muted">Public RSVP allowed: {{ $ev->is_public ? 'Yes' : 'No' }}</p>
 
-            @can('events.publish_toggle')
+            @if(auth('admin')->user()?->can('events.publish_toggle'))
                 <form method="post" action="{{ route('admin.events.publish', $ev) }}" class="profile-form admin-mt-md">
                     @csrf
                     @method('PATCH')
@@ -61,26 +61,26 @@
                         <button type="submit" class="btn-primary">Save publish state</button>
                     </div>
                 </form>
-            @endcan
+            @endif
 
-            @can('events.delete')
+            @if(auth('admin')->user()?->can('events.delete'))
                 <form method="post" action="{{ route('admin.events.destroy', $ev) }}" class="profile-form admin-mt-md" data-confirm="Permanently delete this event and related guests/RSVPs?">
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="evt-btn-danger-outline">Delete event</button>
                 </form>
-            @endcan
+            @endif
         </div>
 
         <div class="admin-panel-card">
             <h2>Owner account</h2>
             <p class="admin-muted admin-mt-sm">{{ $ev->user?->name ?? '—' }}</p>
             <p class="admin-muted">{{ $ev->user?->phone ?? 'No phone' }} · Status {{ $ev->user?->status ?? '—' }}</p>
-            @can('users.view')
+            @if(auth('admin')->user()?->can('users.view'))
                 @if ($ev->user)
                     <p class="admin-mt-md"><a href="{{ route('admin.users.show', $ev->user) }}">Open user</a></p>
                 @endif
-            @endcan
+            @endif
         </div>
     </div>
 </x-admin-layout>
