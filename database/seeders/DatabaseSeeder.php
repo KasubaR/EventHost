@@ -21,10 +21,14 @@ class DatabaseSeeder extends Seeder
 
         $adminEmail = env('ADMIN_EMAIL', 'test@example.com');
 
-        $user = User::factory()->create([
-            'name' => 'Test User',
-            'email' => $adminEmail,
-        ]);
+        $user = User::query()->firstWhere('email', $adminEmail);
+
+        if ($user === null) {
+            $user = User::factory()->create([
+                'name' => 'Test User',
+                'email' => $adminEmail,
+            ]);
+        }
 
         $user->assignRole('super_admin');
 

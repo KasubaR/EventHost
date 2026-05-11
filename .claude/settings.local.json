@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(taskkill /F /IM php.exe /T)",
+      "Bash(taskkill /F /IM node.exe /T)"
+    ]
+  }
+}

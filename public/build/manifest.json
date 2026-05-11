@@ -1,0 +1,39 @@
+{
+  "_auto-sRkgK8jz.js": {
+    "file": "assets/auto-sRkgK8jz.js",
+    "name": "auto"
+  },
+  "resources/css/app.css": {
+    "file": "assets/app-Dja9YCoT.css",
+    "src": "resources/css/app.css",
+    "isEntry": true,
+    "name": "app",
+    "names": [
+      "app.css"
+    ]
+  },
+  "resources/js/admin-analytics-charts.js": {
+    "file": "assets/admin-analytics-charts-BHJttqqC.js",
+    "name": "admin-analytics-charts",
+    "src": "resources/js/admin-analytics-charts.js",
+    "isEntry": true,
+    "imports": [
+      "_auto-sRkgK8jz.js"
+    ]
+  },
+  "resources/js/analytics-charts.js": {
+    "file": "assets/analytics-charts-PHKVF1Ya.js",
+    "name": "analytics-charts",
+    "src": "resources/js/analytics-charts.js",
+    "isEntry": true,
+    "imports": [
+      "_auto-sRkgK8jz.js"
+    ]
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-DsIK1Lmc.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true
+  }
+}
