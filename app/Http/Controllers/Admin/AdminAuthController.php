@@ -28,7 +28,7 @@ class AdminAuthController extends Controller
             return back()->withErrors(['email' => 'These credentials do not match our records.'])->onlyInput('email');
         }
 
-        if (! Auth::guard('admin')->user()->hasAnyRole(['super_admin', 'admin', 'support'])) {
+        if (! Auth::guard('admin')->user()->hasAnyRole(['super_admin', 'admin', 'support'], 'web')) {
             Auth::guard('admin')->logout();
 
             return back()->withErrors(['email' => 'You do not have permission to access the admin panel.'])->onlyInput('email');
