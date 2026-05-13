@@ -132,6 +132,8 @@ class Event extends Model
     protected function casts(): array
     {
         return [
+            'user_id' => 'integer',
+            'invitation_template_id' => 'integer',
             'event_date' => 'date',
             'rsvp_deadline' => 'datetime',
             'is_public' => 'boolean',
