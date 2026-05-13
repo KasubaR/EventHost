@@ -3,10 +3,7 @@
         <div class="footer-grid">
             <div class="footer-brand">
                 <a href="{{ url('/') }}" class="nav-logo" style="display:inline-flex;margin-bottom:14px">
-                    <div class="logo-icon-eq" aria-hidden="true">
-                        <span></span><span></span><span></span><span></span><span></span>
-                    </div>
-                    Event <span>Host</span>
+                    <img src="{{ asset('images/logo/EventHost Logo_Blue.svg') }}" alt="EventHost" class="nav-logo-img">
                 </a>
                 <p>Create stunning digital invitations. Manage RSVPs. Host with confidence.</p>
                 <div class="social-links">

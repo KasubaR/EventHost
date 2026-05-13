@@ -1,9 +1,6 @@
 <nav>
     <a href="{{ url('/') }}" class="nav-logo">
-        <div class="logo-icon-eq" aria-hidden="true">
-            <span></span><span></span><span></span><span></span><span></span>
-        </div>
-        Event <span>Host</span>
+        <img src="{{ asset('images/logo/EventHost Logo_Blue.svg') }}" alt="EventHost" class="nav-logo-img">
     </a>
 
     <div class="nav-links">
