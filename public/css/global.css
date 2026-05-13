@@ -131,10 +131,32 @@ nav {
   cursor: pointer;
   transition: all 0.25s;
   box-shadow: 0 4px 16px rgba(108, 92, 231, 0.35);
+  text-decoration: none;
 }
 .btn-primary:hover {
   filter: brightness(1.08);
   transform: translateY(-1px);
+}
+
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 20px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(26, 42, 74, 0.18);
+  background: transparent;
+  color: var(--navy, #1a2a4a);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color 0.2s, color 0.2s;
+}
+.btn-outline:hover {
+  border-color: var(--accent, #6c5ce7);
+  color: var(--accent, #6c5ce7);
 }
 
 .btn-hero-primary {
