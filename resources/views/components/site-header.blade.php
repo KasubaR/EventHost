@@ -32,7 +32,7 @@
                 @csrf
                 <button type="submit" class="btn-ghost">{{ __('Log out') }}</button>
             </form>
-        @elseif(!auth()->check() && !auth('admin')->check())
+        @elseif(!auth()->check())
             <a href="{{ route('login') }}" class="btn-ghost">{{ __('Sign in') }}</a>
             <a href="{{ route('register') }}" class="btn-primary">{{ __('Sign up') }}</a>
         @endif
@@ -56,7 +56,7 @@
                     @csrf
                     <button type="submit" class="btn-ghost">{{ __('Log out') }}</button>
                 </form>
-            @elseif(!auth()->check() && !auth('admin')->check())
+            @elseif(!auth()->check())
                 <a href="{{ route('login') }}" class="btn-ghost">{{ __('Sign in') }}</a>
                 <a href="{{ route('register') }}" class="btn-primary">{{ __('Sign up') }}</a>
             @endif
