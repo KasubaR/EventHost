@@ -55,7 +55,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     protected $attributes = [
         'status' => 'pending',
-        'subscription_tier' => 'base',
+        'subscription_tier' => 'none',
     ];
 
     protected static function booted(): void

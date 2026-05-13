@@ -4,6 +4,7 @@ namespace App\Enums;
 
 enum SubscriptionTier: string
 {
+    case None = 'none';
     case Base = 'base';
     case Pro = 'pro';
     case ProPlus = 'pro_plus';
@@ -11,6 +12,7 @@ enum SubscriptionTier: string
     public function rank(): int
     {
         return match ($this) {
+            self::None => -1,
             self::Base => 0,
             self::Pro => 1,
             self::ProPlus => 2,
@@ -28,12 +30,13 @@ enum SubscriptionTier: string
 
     public static function normalize(?string $value): self
     {
-        return self::tryFromString($value) ?? self::Base;
+        return self::tryFromString($value) ?? self::None;
     }
 
     public function label(): string
     {
         return match ($this) {
+            self::None => 'None',
             self::Base => 'Base',
             self::Pro => 'Pro',
             self::ProPlus => 'Pro+',
