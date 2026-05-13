@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Event list, create, edit, show (authenticated). Depends on forms-app.css.
  */
 
@@ -39,7 +39,7 @@
 .evt-section-head {
     padding: 16px 20px;
     border-bottom: 1px solid var(--border-soft, rgba(26, 42, 74, 0.08));
-    background: rgba(108, 92, 231, 0.04);
+    background: rgba(30, 71, 187, 0.04);
 }
 
 .evt-section-head h2 {
@@ -168,17 +168,17 @@
 }
 
 .evt-btn-outline:hover {
-    border-color: var(--accent, #6c5ce7);
-    color: var(--accent, #6c5ce7);
+    border-color: var(--accent, #1e47bb);
+    color: var(--accent, #1e47bb);
 }
 
 .evt-btn-danger-outline {
-    border-color: rgba(232, 67, 147, 0.35);
-    color: var(--pink, #e84393);
+    border-color: rgba(224, 14, 79, 0.35);
+    color: var(--pink, #e00e4f);
 }
 
 .evt-btn-danger-outline:hover {
-    border-color: var(--pink, #e84393);
+    border-color: var(--pink, #e00e4f);
 }
 
 .evt-show-cover {
@@ -226,7 +226,7 @@
 
 .evt-detail-list i {
     margin-top: 3px;
-    color: var(--accent, #6c5ce7);
+    color: var(--accent, #1e47bb);
     width: 18px;
 }
 
@@ -234,7 +234,7 @@
     word-break: break-all;
     font-size: 14px;
     font-weight: 600;
-    color: var(--accent, #6c5ce7);
+    color: var(--accent, #1e47bb);
     text-decoration: none;
 }
 
@@ -461,7 +461,7 @@
 }
 
 .evt-map-search--no-result {
-    outline: 2px solid var(--pink, #e84393);
+    outline: 2px solid var(--pink, #e00e4f);
     outline-offset: 1px;
 }
 
@@ -519,14 +519,14 @@
 }
 
 .evt-filter-chip:hover {
-    border-color: rgba(108, 92, 231, 0.35);
-    color: var(--accent, #6c5ce7);
+    border-color: rgba(30, 71, 187, 0.35);
+    color: var(--accent, #1e47bb);
 }
 
 .evt-filter-chip--active {
-    background: rgba(108, 92, 231, 0.12);
-    border-color: rgba(108, 92, 231, 0.35);
-    color: var(--accent, #6c5ce7);
+    background: rgba(30, 71, 187, 0.12);
+    border-color: rgba(30, 71, 187, 0.35);
+    color: var(--accent, #1e47bb);
 }
 
 .evt-table-wrap {
@@ -570,15 +570,15 @@
 
 .evt-btn-danger-outline {
     background: transparent;
-    border: 1px solid rgba(232, 67, 147, 0.45);
-    color: var(--pink, #e84393);
+    border: 1px solid rgba(224, 14, 79, 0.45);
+    color: var(--pink, #e00e4f);
     border-radius: 8px;
     cursor: pointer;
     font-weight: 600;
 }
 
 .evt-btn-danger-outline:hover {
-    background: rgba(232, 67, 147, 0.08);
+    background: rgba(224, 14, 79, 0.08);
 }
 
 .evt-code-chip {
@@ -667,7 +667,7 @@
 }
 
 .evt-step--active {
-    color: var(--accent, #6c5ce7);
+    color: var(--accent, #1e47bb);
 }
 
 .evt-step--done {
@@ -688,8 +688,8 @@
 }
 
 .evt-step--active .evt-step-num {
-    background: var(--accent, #6c5ce7);
-    border-color: var(--accent, #6c5ce7);
+    background: var(--accent, #1e47bb);
+    border-color: var(--accent, #1e47bb);
     color: #fff;
 }
 
@@ -802,8 +802,8 @@
 }
 
 .evt-icon-btn:hover {
-    border-color: rgba(108, 92, 231, 0.35);
-    color: var(--accent, #6c5ce7);
+    border-color: rgba(30, 71, 187, 0.35);
+    color: var(--accent, #1e47bb);
 }
 
 .evt-icon-btn--wa {
@@ -868,7 +868,7 @@
 }
 
 .evt-analytics-panel {
-    background: rgba(108, 92, 231, 0.03);
+    background: rgba(30, 71, 187, 0.03);
     border: 1px solid var(--border-soft, rgba(26, 42, 74, 0.08));
     border-radius: 12px;
     padding: 18px 18px 14px;
@@ -957,6 +957,6 @@
 .evt-analytics-top-seats {
     font-size: 13px;
     font-weight: 800;
-    color: var(--accent, #6c5ce7);
+    color: var(--accent, #1e47bb);
     white-space: nowrap;
 }

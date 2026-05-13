@@ -21,9 +21,6 @@
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
           Create Free Event
         </button>
-        <a href="{{ route('templates.index') }}" class="btn-hero-secondary">
-          Browse Templates →
-        </a>
       </div>
     </div>
     <div class="hero-right">
@@ -88,31 +85,31 @@
     <div class="event-types-grid">
       <article class="event-type-item">
         <div class="event-type-card weddings" aria-hidden="true"></div>
-        <h3>Weddings</h3>
+        <h3><span class="evt-type-tag">Weddings</span></h3>
       </article>
       <article class="event-type-item">
         <div class="event-type-card birthdays" aria-hidden="true"></div>
-        <h3>Birthdays</h3>
+        <h3><span class="evt-type-tag">Birthdays</span></h3>
       </article>
       <article class="event-type-item">
         <div class="event-type-card graduation" aria-hidden="true"></div>
-        <h3>Graduation</h3>
+        <h3><span class="evt-type-tag">Graduation</span></h3>
       </article>
       <article class="event-type-item">
         <div class="event-type-card corporate" aria-hidden="true"></div>
-        <h3>Corporate</h3>
+        <h3><span class="evt-type-tag">Corporate</span></h3>
       </article>
       <article class="event-type-item">
         <div class="event-type-card baby-shower" aria-hidden="true"></div>
-        <h3>Baby Shower</h3>
+        <h3><span class="evt-type-tag">Baby Shower</span></h3>
       </article>
       <article class="event-type-item">
         <div class="event-type-card memorial" aria-hidden="true"></div>
-        <h3>Memorial</h3>
+        <h3><span class="evt-type-tag">Funeral / Memorial</span></h3>
       </article>
       <article class="event-type-item">
         <div class="event-type-card church" aria-hidden="true"></div>
-        <h3>Church</h3>
+        <h3><span class="evt-type-tag">Church</span></h3>
       </article>
     </div>
   </div>
@@ -130,7 +127,7 @@
     </div>
     <div class="features-grid">
       <div class="feature-card">
-        <div class="feat-icon" style="background:rgba(108,92,231,0.12)"><i class="fa-solid fa-palette" aria-hidden="true"></i></div>
+        <div class="feat-icon" style="background:rgba(30,71,187,0.12)"><i class="fa-solid fa-palette" aria-hidden="true"></i></div>
         <h3>Beautiful Templates</h3>
         <p>Choose from 100+ professionally designed invitation templates for every occasion — weddings, birthdays, corporate events and more.</p>
       </div>
@@ -150,7 +147,7 @@
         <p>Manage seating, meal preferences, +1s and custom fields. Keep all your guest data organized in one place.</p>
       </div>
       <div class="feature-card">
-        <div class="feat-icon" style="background:rgba(108,92,231,0.12)"><i class="fa-solid fa-chart-column" aria-hidden="true"></i></div>
+        <div class="feat-icon" style="background:rgba(30,71,187,0.12)"><i class="fa-solid fa-chart-column" aria-hidden="true"></i></div>
         <h3>Event Analytics</h3>
         <p>Understand engagement with open rates, response timelines, and geographic insights for your events.</p>
       </div>
@@ -303,12 +300,12 @@
           <span class="dash-badge"><i class="fa-solid fa-circle dash-live-dot" aria-hidden="true"></i> Live</span>
         </div>
         <div class="rsvp-chart">
-          <div class="bar" style="height:55%;background:linear-gradient(to top,#1a1a6e,#6c5ce7)"></div>
-          <div class="bar" style="height:70%;background:linear-gradient(to top,#1a1a6e,#6c5ce7)"></div>
-          <div class="bar" style="height:45%;background:linear-gradient(to top,#1a1a6e,#6c5ce7)"></div>
+          <div class="bar" style="height:55%;background:linear-gradient(to top,#0f2870,#1e47bb)"></div>
+          <div class="bar" style="height:70%;background:linear-gradient(to top,#0f2870,#1e47bb)"></div>
+          <div class="bar" style="height:45%;background:linear-gradient(to top,#0f2870,#1e47bb)"></div>
           <div class="bar" style="height:90%;background:linear-gradient(to top,#4f3ec8,#00cec9)"></div>
           <div class="bar" style="height:75%;background:linear-gradient(to top,#4f3ec8,#00cec9)"></div>
-          <div class="bar" style="height:60%;background:linear-gradient(to top,#1a1a6e,#6c5ce7)"></div>
+          <div class="bar" style="height:60%;background:linear-gradient(to top,#0f2870,#1e47bb)"></div>
           <div class="bar" style="height:85%;background:linear-gradient(to top,#4f3ec8,#00cec9)"></div>
         </div>
         <div class="rsvp-stats">
@@ -317,7 +314,7 @@
             <div class="l">Attending</div>
           </div>
           <div class="rsvp-stat-box">
-            <div class="n" style="color:#e84393">12</div>
+            <div class="n" style="color:#e00e4f">12</div>
             <div class="l">Declined</div>
           </div>
           <div class="rsvp-stat-box">
@@ -365,7 +362,7 @@
         <p>We know how Zambians celebrate—from weddings and Kitchen Parties to graduations and corporate launches. Event Host brings MTN, Airtel &amp; Zamtel mobile money together with cards and banking paths guests trust, plus WhatsApp-first sharing.</p>
         <div class="why-points">
           <div class="why-point">
-            <div class="wp-icon" style="background:rgba(108,92,231,0.12)"><i class="fa-solid fa-bolt" aria-hidden="true"></i></div>
+            <div class="wp-icon" style="background:rgba(30,71,187,0.12)"><i class="fa-solid fa-bolt" aria-hidden="true"></i></div>
             <div class="wp-text"><h4>Fast Setup</h4><p>Live in under 5 minutes</p></div>
           </div>
           <div class="why-point">
@@ -381,8 +378,8 @@
             <div class="wp-text"><h4>Mobile-First</h4><p>Perfect on any device</p></div>
           </div>
           <div class="why-point">
-            <div class="wp-icon" style="background:rgba(108,92,231,0.12)"><i class="fa-solid fa-palette" aria-hidden="true"></i></div>
-            <div class="wp-text"><h4>Elegant Designs</h4><p>100+ premium templates</p></div>
+            <div class="wp-icon" style="background:rgba(30,71,187,0.12)"><i class="fa-solid fa-palette" aria-hidden="true"></i></div>
+            <div class="wp-text"><h4>Elegant Designs</h4><p>30+ premium templates</p></div>
           </div>
           <div class="why-point">
             <div class="wp-icon" style="background:rgba(79,62,200,0.1)"><i class="fa-solid fa-lock" aria-hidden="true"></i></div>
@@ -451,7 +448,7 @@
         <ul class="price-features">
           <li>1 active event</li>
           <li>Up to 50 guests</li>
-          <li>5 free templates</li>
+          <li>1 free template</li>
           <li>Basic RSVP tracking</li>
           <li>WhatsApp sharing</li>
         </ul>
@@ -465,10 +462,11 @@
         <ul class="price-features">
           <li>Unlimited events</li>
           <li>Unlimited guests</li>
-          <li>100+ premium templates</li>
+          <li>30+ premium templates</li>
           <li>Advanced RSVP dashboard</li>
-          <li>Custom branding</li>
-          <li>Email + WhatsApp reminders</li>
+          <li>WhatsApp reminders</li>
+          <li>Photo gallery</li>
+          <li>Countdown timer</li>
           <li>Analytics & exports</li>
         </ul>
         <button class="btn-price btn-price-fill">Start Pro Trial</button>
@@ -479,10 +477,11 @@
         <div class="price-desc">For event planners & agencies</div>
         <ul class="price-features">
           <li>Everything in Pro</li>
+          <li>Custom branding</li>
+          <li>Email + WhatsApp reminders</li>
           <li>Multiple team members</li>
           <li>White-label invitations</li>
           <li>Priority support</li>
-          <li>API access</li>
           <li>Dedicated account manager</li>
         </ul>
         <button class="btn-price btn-price-outline">Contact Sales</button>

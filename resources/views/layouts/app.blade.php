@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>{{ $title ?? config('app.name') }} — {{ config('app.name') }}</title>
+    <link rel="icon" type="image/svg+xml" href="{{ asset('images/logo/EventHost Logo_Icon.svg') }}">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://images.unsplash.com" crossorigin>

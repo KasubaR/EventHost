@@ -29,7 +29,7 @@ class InvitationTemplateFactory extends Factory
             'preview_image' => null,
             'default_theme' => [
                 'primary' => '#1a2a4a',
-                'accent' => '#6c5ce7',
+                'accent' => '#1e47bb',
                 'background' => '#fafafa',
                 'font_heading_key' => 'system_ui',
                 'font_body_key' => 'system_ui',

@@ -40,8 +40,8 @@
             justify-content: center;
             width: 52px;
             height: 52px;
-            background: rgba(108,92,231,.15);
-            border: 1px solid rgba(108,92,231,.3);
+            background: rgba(30,71,187,.15);
+            border: 1px solid rgba(30,71,187,.3);
             border-radius: 14px;
             margin-bottom: 14px;
             color: #a78bfa;
@@ -128,7 +128,7 @@
         }
 
         .al-input::placeholder { color: #475569; }
-        .al-input:focus { border-color: #6c5ce7; }
+        .al-input:focus { border-color: #1e47bb; }
         .al-input--error { border-color: #ef4444 !important; }
 
         .al-input-wrap { position: relative; }
@@ -167,7 +167,7 @@
         }
 
         .al-remember input[type="checkbox"] {
-            accent-color: #6c5ce7;
+            accent-color: #1e47bb;
             width: 15px;
             height: 15px;
             cursor: pointer;
@@ -175,7 +175,7 @@
 
         .al-btn {
             width: 100%;
-            background: #6c5ce7;
+            background: #1e47bb;
             color: #fff;
             border: none;
             border-radius: 8px;
@@ -222,7 +222,7 @@
             justify-content: center;
         }
 
-        .al-restricted i { color: #6c5ce7; }
+        .al-restricted i { color: #1e47bb; }
     </style>
 </head>
 <body>

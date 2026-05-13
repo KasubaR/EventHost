@@ -18,6 +18,10 @@ Route::get('/', function () {
     return view('home');
 });
 
+Route::get('/about', function () {
+    return view('about');
+})->name('about');
+
 Route::get('/e/{slug}', [PublicEventController::class, 'show'])->name('events.public');
 Route::get('/e/{slug}/calendar.ics', [PublicEventController::class, 'ics'])->name('events.public.ics');
 

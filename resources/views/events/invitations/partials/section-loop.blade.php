@@ -9,6 +9,10 @@
         $defaultPartial = 'events.invitations.sections.'.$section['type'];
     @endphp
 
+    @if (in_array($section['type'], \App\Support\InvitationLayoutVariant::blockedSections($layoutVariant), true))
+        @continue
+    @endif
+
     @switch($section['type'])
         @case('hero')
             @includeFirst([$variantPartial, $defaultPartial])

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Public invitation page (/e/{slug}). Depends on global.css.
  */
 
@@ -54,13 +54,13 @@
     margin-bottom: 16px;
     padding: 5px 12px;
     border-radius: 50px;
-    background: rgba(108, 92, 231, 0.1);
-    border: 1px solid rgba(108, 92, 231, 0.2);
+    background: color-mix(in srgb, var(--accent, #1e47bb) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent, #1e47bb) 22%, transparent);
     font-size: 12px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: var(--accent, #6c5ce7);
+    color: var(--accent, #1e47bb);
 }
 
 .evt-public-desc {
@@ -105,7 +105,7 @@
 
 .evt-detail-list i {
     margin-top: 3px;
-    color: var(--accent, #6c5ce7);
+    color: var(--accent, #1e47bb);
     width: 18px;
 }
 
@@ -131,7 +131,7 @@
     word-break: break-all;
     font-size: 14px;
     font-weight: 600;
-    color: var(--accent, #6c5ce7);
+    color: var(--accent, #1e47bb);
     text-decoration: none;
 }
 

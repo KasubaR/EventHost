@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #e00e4f;
+      }
+
+      .cls-2, .cls-3 {
+        fill: #fff;
+      }
+
+      .cls-4, .cls-5 {
+        font-family: Helvena-Lt, Helvena;
+      }
+
+      .cls-6 {
+        letter-spacing: -.02em;
+      }
+
+      .cls-6, .cls-7, .cls-8, .cls-9 {
+        font-family: Helvena-Bd, Helvena;
+      }
+
+      .cls-3 {
+        font-size: 121.48px;
+      }
+
+      .cls-5 {
+        letter-spacing: 0em;
+      }
+
+      .cls-8 {
+        letter-spacing: -.01em;
+      }
+
+      .cls-9 {
+        letter-spacing: 0em;
+      }
+
+      .cls-10 {
+        fill: #1e47bb;
+      }
+    </style>
+  </defs>
+  <rect class="cls-10" width="1080" height="1080"/>
+  <text class="cls-3" transform="translate(239.16 670.66)"><tspan class="cls-7" x="0" y="0">E</tspan><tspan class="cls-6" x="71.79" y="0">v</tspan><tspan class="cls-7" x="136.3" y="0">e</tspan><tspan class="cls-8" x="209.31" y="0">n</tspan><tspan class="cls-9" x="286.32" y="0">t</tspan><tspan class="cls-4" x="339.65" y="0">H</tspan><tspan class="cls-5" x="415.7" y="0">o</tspan><tspan class="cls-4" x="498.42" y="0">st</tspan></text>
+  <g>
+    <path class="cls-1" d="m657.57,325.97v117.57c0,65.06-52.52,117.57-117.57,117.57s-117.57-52.51-117.57-117.57,52.91-117.57,117.57-117.57h117.57Z"/>
+    <g>
+      <path class="cls-2" d="m605.66,455.72v35.57h18.16v-46.21c-4.55,5.44-10.92,9.3-18.16,10.64Zm-58.95,35.57h18.16v-35.05h-18.16v35.05Z"/>
+      <path class="cls-2" d="m490.12,475.21v-16.32c0-5.41,4.39-9.8,9.8-9.8h37.7v-16.2h-36.92c-15.87,0-28.74,12.87-28.74,28.74v29.93h52.38c9.03,0,16.34-7.32,16.34-16.34h0s-50.57,0-50.57,0Z"/>
+      <path class="cls-2" d="m539.58,407.32v-16.34h-51.27c-9.03,0-16.34,7.32-16.34,16.34h0s67.61,0,67.61,0Z"/>
+      <rect class="cls-2" x="503.52" y="432.89" width="67.61" height="16.2"/>
+      <path class="cls-2" d="m623.82,390.88v34.28c0,13.17-10.67,23.84-23.84,23.84h-53.28v-58.12h18.16v42.01h33.41c4.08,0,7.38-3.3,7.38-7.38v-34.63h18.16Z"/>
+    </g>
+  </g>
+</svg>

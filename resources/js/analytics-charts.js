@@ -133,7 +133,7 @@ function mountCharts(root, payload) {
                                 backgroundColor: statusRows.map(
                                     (r) =>
                                         colorsByKey[String(r.key ?? '')] ??
-                                        '#6c5ce7',
+                                        '#1e47bb',
                                 ),
                                 borderWidth: 0,
                             },
@@ -170,7 +170,7 @@ function mountCharts(root, payload) {
                             {
                                 label: 'Guests',
                                 data: groupRows.map((r) => Number(r.count ?? 0)),
-                                backgroundColor: 'rgba(108, 92, 231, 0.75)',
+                                backgroundColor: 'rgba(30, 71, 187, 0.75)',
                                 borderRadius: 6,
                             },
                         ],

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Shared UI: guest/Breeze controls, legacy account shell, site nav extras. Load after global.css.
  */
 .account-pages-body {
@@ -93,7 +93,7 @@
 .eh-text-input:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.22);
+  box-shadow: 0 0 0 3px rgba(30, 71, 187, 0.22);
 }
 
 .eh-text-input:disabled {
@@ -133,7 +133,7 @@
 
 .eh-primary-button:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.35);
+  box-shadow: 0 0 0 3px rgba(30, 71, 187, 0.35);
 }
 
 .eh-secondary-button {
@@ -161,7 +161,7 @@
 
 .eh-secondary-button:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.2);
+  box-shadow: 0 0 0 3px rgba(30, 71, 187, 0.2);
 }
 
 .eh-danger-button {
@@ -188,7 +188,7 @@
 
 .eh-danger-button:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(232, 67, 147, 0.35);
+  box-shadow: 0 0 0 3px rgba(224, 14, 79, 0.35);
 }
 
 .eh-primary-button:disabled,
@@ -236,7 +236,7 @@
 .eh-text-link:focus-visible {
   outline: none;
   border-radius: var(--radius-sm);
-  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.25);
+  box-shadow: 0 0 0 3px rgba(30, 71, 187, 0.25);
 }
 
 /* Authenticated nav */
@@ -260,11 +260,11 @@
 }
 
 .nav-user-link:hover {
-  color: var(--white);
+  color: var(--pink);
 }
 
 .nav-user-link.is-active {
-  color: var(--cyan);
+  color: var(--pink);
 }
 
 .nav-logout-form {
@@ -528,11 +528,11 @@
 .reg-input:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(108,92,231,0.18);
+  box-shadow: 0 0 0 3px rgba(30,71,187,0.18);
 }
 .reg-input--error {
   border-color: var(--pink);
-  box-shadow: 0 0 0 3px rgba(232,67,147,0.12);
+  box-shadow: 0 0 0 3px rgba(224,14,79,0.12);
 }
 
 .reg-error {
@@ -562,7 +562,7 @@
   font-weight: 700;
   cursor: pointer;
   transition: filter 0.2s, transform 0.15s;
-  box-shadow: 0 6px 20px rgba(108,92,231,0.35);
+  box-shadow: 0 6px 20px rgba(30,71,187,0.35);
 }
 .reg-submit:hover {
   filter: brightness(1.08);

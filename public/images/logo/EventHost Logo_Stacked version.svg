@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 540">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #e00e4f;
+      }
+
+      .cls-2 {
+        fill: #fff;
+      }
+
+      .cls-3, .cls-4 {
+        font-family: Helvena-Lt, Helvena;
+      }
+
+      .cls-5 {
+        fill: #1e47bb;
+        font-size: 85.96px;
+      }
+
+      .cls-4 {
+        letter-spacing: 0em;
+      }
+
+      .cls-6, .cls-7, .cls-8 {
+        font-family: Helvena-Bd, Helvena;
+      }
+
+      .cls-7 {
+        letter-spacing: -.02em;
+      }
+
+      .cls-8 {
+        letter-spacing: -.01em;
+      }
+    </style>
+  </defs>
+  <text class="cls-5" transform="translate(57.12 381.9)"><tspan class="cls-6" x="0" y="0">E</tspan><tspan class="cls-7" x="50.8" y="0">v</tspan><tspan class="cls-6" x="96.45" y="0">e</tspan><tspan class="cls-8" x="148.11" y="0">n</tspan><tspan class="cls-6" x="202.61" y="0">t</tspan><tspan class="cls-3" x="240.35" y="0">H</tspan><tspan class="cls-4" x="294.16" y="0">o</tspan><tspan class="cls-3" x="352.7" y="0">st</tspan></text>
+  <g>
+    <path class="cls-1" d="m353.2,137.98v83.2c0,46.04-37.16,83.2-83.2,83.2s-83.2-37.16-83.2-83.2,37.44-83.2,83.2-83.2h83.2Z"/>
+    <g>
+      <path class="cls-2" d="m316.46,229.8v25.17h12.85v-32.7c-3.22,3.85-7.73,6.58-12.85,7.53Zm-41.72,25.17h12.85v-24.8h-12.85v24.8Z"/>
+      <path class="cls-2" d="m234.7,243.6v-11.55c0-3.83,3.1-6.93,6.93-6.93h26.68v-11.46h-26.12c-11.23,0-20.34,9.1-20.34,20.34v21.18h37.07c6.39,0,11.56-5.18,11.56-11.56h0s-35.78,0-35.78,0Z"/>
+      <path class="cls-2" d="m269.7,195.55v-11.56h-36.28c-6.39,0-11.56,5.18-11.56,11.56h0s47.84,0,47.84,0Z"/>
+      <rect class="cls-2" x="244.18" y="213.65" width="47.84" height="11.46"/>
+      <path class="cls-2" d="m329.31,183.92v24.26c0,9.32-7.55,16.87-16.87,16.87h-37.7v-41.13h12.85v29.73h23.64c2.88,0,5.22-2.34,5.22-5.22v-24.5h12.85Z"/>
+    </g>
+  </g>
+</svg>

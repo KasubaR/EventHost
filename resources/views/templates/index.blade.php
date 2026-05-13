@@ -40,7 +40,7 @@
     <div class="tpl-grid">
         @forelse ($templates as $tpl)
             <article class="tpl-card tpl-gallery-card">
-                <div class="tpl-gallery-thumb tpl-card-visual" style="--tpl-primary: {{ $tpl->default_theme['primary'] ?? '#6c5ce7' }}; --tpl-accent: {{ $tpl->default_theme['accent'] ?? '#0ea5e9' }}; --tpl-bg: {{ $tpl->default_theme['background'] ?? '#fafafa' }};">
+                <div class="tpl-gallery-thumb tpl-card-visual" style="--tpl-primary: {{ $tpl->default_theme['primary'] ?? '#1e47bb' }}; --tpl-accent: {{ $tpl->default_theme['accent'] ?? '#e00e4f' }}; --tpl-bg: {{ $tpl->default_theme['background'] ?? '#fafafa' }};">
                     @if ($tpl->preview_image_url)
                         <img src="{{ $tpl->preview_image_url }}" alt="{{ $tpl->name }} thumbnail" width="640" height="800" loading="lazy" decoding="async">
                     @else

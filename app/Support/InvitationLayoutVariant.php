@@ -28,6 +28,20 @@ final class InvitationLayoutVariant
     }
 
     /**
+     * Section types that are not available for this layout variant.
+     * Sections in this list are never rendered, regardless of the per-event visibility toggle.
+     *
+     * @return list<string>
+     */
+    public static function blockedSections(string $variant): array
+    {
+        return match (self::normalize($variant)) {
+            self::STANDARD => ['gallery', 'countdown'],
+            default => [],
+        };
+    }
+
+    /**
      * Layout-specific CSS filename to push into the <head>, or null for the standard layout.
      * Add one entry here when introducing a new layout variant — no view changes needed.
      */

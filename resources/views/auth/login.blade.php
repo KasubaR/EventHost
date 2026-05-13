@@ -137,7 +137,7 @@
       <h3>Everything waiting for you</h3>
       <ul>
         <li>
-          <div class="auth-feat-icon" style="background:rgba(108,92,231,0.12)"><i class="fa-solid fa-chart-line"></i></div>
+          <div class="auth-feat-icon" style="background:rgba(30,71,187,0.12)"><i class="fa-solid fa-chart-line"></i></div>
           <div>
             <strong>Live RSVP Dashboard</strong>
             <span>Track responses the moment they arrive</span>
@@ -165,7 +165,7 @@
           </div>
         </li>
         <li>
-          <div class="auth-feat-icon" style="background:rgba(108,92,231,0.12)"><i class="fa-solid fa-file-arrow-down"></i></div>
+          <div class="auth-feat-icon" style="background:rgba(30,71,187,0.12)"><i class="fa-solid fa-file-arrow-down"></i></div>
           <div>
             <strong>Export Guest Lists</strong>
             <span>Download as CSV or PDF anytime</span>

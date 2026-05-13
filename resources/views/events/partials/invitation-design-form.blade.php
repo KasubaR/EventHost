@@ -35,6 +35,8 @@
     $fontChoices = InvitationFonts::MAP;
 
     $layoutVariant = $invitationMerged['layout_variant'] ?? InvitationLayoutVariant::STANDARD;
+    $blockedSections = InvitationLayoutVariant::blockedSections($layoutVariant);
+    $sectionLabels = array_diff_key($sectionLabels, array_flip($blockedSections));
     $heroPortraitSlots = InvitationLayoutVariant::maxInvitationHeroPortraitSlots($layoutVariant);
     $couplePhotoSlots = InvitationLayoutVariant::maxCouplePhotoSlots($layoutVariant);
     $currentCouple = array_values(array_filter(array_map('strval', $invitationMerged['media']['couple_photos'] ?? [])));
@@ -121,12 +123,14 @@
                 Subtle motion on the invitation page
             </label>
 
-            <input type="hidden" name="countdown_enabled" value="0">
-            <label class="profile-label evt-check-label">
-                <input type="checkbox" name="countdown_enabled" value="1" class="profile-input evt-check-input"
-                       @checked(old('countdown_enabled', ($invitationMerged['effects']['countdown_enabled'] ?? true) ? '1' : '0') === '1')>
-                Live countdown on the public invitation
-            </label>
+            @if (! in_array('countdown', $blockedSections, true))
+                <input type="hidden" name="countdown_enabled" value="0">
+                <label class="profile-label evt-check-label">
+                    <input type="checkbox" name="countdown_enabled" value="1" class="profile-input evt-check-input"
+                           @checked(old('countdown_enabled', ($invitationMerged['effects']['countdown_enabled'] ?? true) ? '1' : '0') === '1')>
+                    Live countdown on the public invitation
+                </label>
+            @endif
 
             <fieldset class="evt-design-fieldset">
                 <legend class="profile-label">Sections</legend>
@@ -269,6 +273,7 @@
                 </fieldset>
             @endif
 
+            @if (! in_array('gallery', $blockedSections, true))
             <fieldset class="evt-design-fieldset">
                 <legend class="profile-label">Gallery</legend>
                 <p class="evt-muted evt-design-hint">Up to five WebP images stored after upload (converted from JPG/PNG).</p>
@@ -295,6 +300,7 @@
                     @enderror
                 </div>
             </fieldset>
+            @endif
 
             <fieldset class="evt-design-fieldset">
                 <legend class="profile-label">Background video &amp; music</legend>

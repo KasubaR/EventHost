@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Authenticated app chrome (sidebar, header bar). Depends on global.css.
  */
 
@@ -112,7 +112,7 @@
 }
 .dash-nav-link i { width: 16px; text-align: center; font-size: 13px; flex-shrink: 0; }
 .dash-nav-link:hover { background: var(--gray-light); color: var(--text-dark); }
-.dash-nav-link.is-active { background: rgba(108,92,231,0.1); color: var(--accent); }
+.dash-nav-link.is-active { background: rgba(30,71,187,0.1); color: var(--accent); }
 .dash-nav-link.is-active i { color: var(--accent); }
 
 .dash-nav-soon {
@@ -133,7 +133,7 @@
   border-top: 1px solid #d0d0dc;
 }
 .dash-logout-btn { color: var(--gray-mid); }
-.dash-logout-btn:hover { color: var(--pink) !important; background: rgba(232,67,147,0.08) !important; }
+.dash-logout-btn:hover { color: var(--pink) !important; background: rgba(224,14,79,0.08) !important; }
 
 /* ── MAIN CONTENT ── */
 .dash-main {

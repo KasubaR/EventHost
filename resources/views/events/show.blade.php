@@ -31,7 +31,7 @@
         <div class="dph-inner">
             <div>
                 <h1 class="dph-title">{{ $event->name }}</h1>
-                <p class="dph-sub">{{ $typeLabels[$event->event_type] ?? $event->event_type }}</p>
+                <p class="dph-sub"><span class="evt-type-tag">{{ $typeLabels[$event->event_type] ?? $event->event_type }}</span></p>
             </div>
             <div class="evt-card-actions">
                 <a href="{{ route('events.guests.index', $event) }}" class="btn-primary"><i class="fa-solid fa-users"></i> Guests & RSVPs</a>

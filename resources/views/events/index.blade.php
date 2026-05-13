@@ -49,7 +49,7 @@
                         <div class="evt-card-body">
                             <h3>{{ $event->name }}</h3>
                             <p class="evt-card-meta">
-                                {{ $typeLabels[$event->event_type] ?? $event->event_type }}
+                                <span class="evt-type-tag">{{ $typeLabels[$event->event_type] ?? $event->event_type }}</span>
                                 · {{ $event->event_date->format('M j, Y') }}
                                 @if ($event->event_time)
                                     · {{ \Illuminate\Support\Str::substr($event->event_time, 0, 5) }}

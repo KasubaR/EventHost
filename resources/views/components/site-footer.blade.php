@@ -21,7 +21,7 @@
             </div>
             <div class="footer-col">
                 <h5>Company</h5>
-                <a href="#">About Us</a>
+                <a href="{{ route('about') }}">About Us</a>
                 <a href="#">Blog</a>
                 <a href="#">Careers</a>
                 <a href="#">Press</a>

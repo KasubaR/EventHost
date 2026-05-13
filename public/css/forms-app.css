@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Profile + shared app forms/cards (also used by event forms). Depends on dashboard-shell.css.
  */
 
@@ -15,7 +15,7 @@
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: rgba(108,92,231,0.1);
+  background: rgba(30,71,187,0.1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -104,7 +104,7 @@
 }
 .profile-status-active { background: rgba(39,174,96,0.12); color: var(--green); }
 .profile-status-pending { background: rgba(243,156,18,0.12); color: var(--orange); }
-.profile-status-suspended { background: rgba(232,67,147,0.12); color: var(--pink); }
+.profile-status-suspended { background: rgba(224,14,79,0.12); color: var(--pink); }
 
 /* Section cards */
 .profile-card {
@@ -114,7 +114,7 @@
   box-shadow: var(--card-shadow);
   overflow: hidden;
 }
-.profile-card--danger { border-color: rgba(232,67,147,0.25); }
+.profile-card--danger { border-color: rgba(224,14,79,0.25); }
 
 .profile-card-header {
   display: flex;
@@ -200,11 +200,11 @@
 .profile-input:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(108,92,231,0.18);
+  box-shadow: 0 0 0 3px rgba(30,71,187,0.18);
 }
 .profile-input--error {
   border-color: var(--pink);
-  box-shadow: 0 0 0 3px rgba(232,67,147,0.12);
+  box-shadow: 0 0 0 3px rgba(224,14,79,0.12);
 }
 
 .profile-input-wrap { position: relative; display: flex; align-items: center; }
@@ -280,8 +280,8 @@
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  background: rgba(108,92,231,0.08);
-  border: 1px solid rgba(108,92,231,0.2);
+  background: rgba(30,71,187,0.08);
+  border: 1px solid rgba(30,71,187,0.2);
   border-radius: var(--radius-sm);
   font-size: 13px;
   font-weight: 700;
@@ -290,7 +290,7 @@
   transition: background 0.15s;
   margin-bottom: 6px;
 }
-.profile-photo-btn:hover { background: rgba(108,92,231,0.14); }
+.profile-photo-btn:hover { background: rgba(30,71,187,0.14); }
 .profile-photo-hint {
   font-size: 11px;
   color: var(--gray-mid);
@@ -313,7 +313,7 @@
   font-weight: 700;
   cursor: pointer;
   transition: filter 0.2s, transform 0.15s;
-  box-shadow: 0 4px 14px rgba(108,92,231,0.3);
+  box-shadow: 0 4px 14px rgba(30,71,187,0.3);
 }
 .profile-save-btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
 
@@ -331,7 +331,7 @@
   width: 36px;
   height: 36px;
   border-radius: var(--radius-sm);
-  background: rgba(108,92,231,0.08);
+  background: rgba(30,71,187,0.08);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -391,9 +391,9 @@
   align-items: center;
   gap: 8px;
   padding: 10px 20px;
-  background: rgba(232,67,147,0.08);
+  background: rgba(224,14,79,0.08);
   color: var(--pink);
-  border: 1.5px solid rgba(232,67,147,0.3);
+  border: 1.5px solid rgba(224,14,79,0.3);
   border-radius: var(--radius-sm);
   font-family: 'DM Sans', sans-serif;
   font-size: 14px;
@@ -401,7 +401,7 @@
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
 }
-.danger-delete-btn:hover { background: rgba(232,67,147,0.14); border-color: var(--pink); }
+.danger-delete-btn:hover { background: rgba(224,14,79,0.14); border-color: var(--pink); }
 
 /* Delete confirm modal */
 .profile-modal-overlay {
@@ -428,7 +428,7 @@
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background: rgba(232,67,147,0.1);
+  background: rgba(224,14,79,0.1);
   display: flex;
   align-items: center;
   justify-content: center;

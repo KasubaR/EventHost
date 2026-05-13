@@ -10,7 +10,7 @@
   --indigo: #1a1a6e;
   --purple: #3b2fa0;
   --purple-mid: #4f3ec8;
-  --accent: #6c5ce7;
+  --accent: #1e47bb;
   --cyan: #00cec9;
   --white: #ffffff;
   --gray-light: #f4f5f9;
@@ -22,7 +22,22 @@
   --line: #e0e0e8;
   --green: #27ae60;
   --orange: #f39c12;
-  --pink: #e84393;
+  --pink: #e00e4f;
+}
+
+/* Accent pill for event categories (home, dashboard, etc.) */
+.evt-type-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent, #1e47bb) 12%, transparent);
+  color: var(--accent, #1e47bb);
+  border: 1px solid color-mix(in srgb, var(--accent, #1e47bb) 22%, transparent);
+  vertical-align: middle;
 }
 
 html { scroll-behavior: smooth; }
@@ -60,13 +75,9 @@ nav {
   text-decoration: none;
 }
 .nav-logo-img {
-  height: 72px;
+  height: 96px;
   width: auto;
   display: block;
-  filter: brightness(0) invert(1);
-}
-.footer-brand .nav-logo-img {
-  filter: none;
 }
 
 .nav-links { display: flex; align-items: center; gap: 32px; }
@@ -78,7 +89,7 @@ nav {
   letter-spacing: 0.2px;
   transition: color 0.2s;
 }
-.nav-links a:hover { color: #fff; }
+.nav-links a:hover { color: var(--pink); }
 .nav-links a.is-active {
   color: #fff;
   font-weight: 700;
@@ -108,8 +119,8 @@ nav {
   transition: all 0.2s;
 }
 .btn-ghost:hover {
-  border-color: #fff;
-  color: #fff;
+  border-color: var(--pink);
+  color: var(--pink);
 }
 .btn-primary {
   background: var(--accent);
@@ -122,7 +133,7 @@ nav {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.25s;
-  box-shadow: 0 4px 16px rgba(108, 92, 231, 0.35);
+  box-shadow: 0 4px 16px rgba(30, 71, 187, 0.35);
   text-decoration: none;
 }
 .btn-primary:hover {
@@ -147,8 +158,8 @@ nav {
   transition: border-color 0.2s, color 0.2s;
 }
 .btn-outline:hover {
-  border-color: var(--accent, #6c5ce7);
-  color: var(--accent, #6c5ce7);
+  border-color: var(--accent, #1e47bb);
+  color: var(--accent, #1e47bb);
 }
 
 .btn-hero-primary {

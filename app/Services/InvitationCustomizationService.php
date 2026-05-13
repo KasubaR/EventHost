@@ -140,7 +140,7 @@ class InvitationCustomizationService
             'layout_variant' => $layoutVariant,
             'theme' => [
                 'primary' => (string) ($theme['primary'] ?? '#1a2a4a'),
-                'accent' => (string) ($theme['accent'] ?? '#6c5ce7'),
+                'accent' => (string) ($theme['accent'] ?? '#1e47bb'),
                 'background' => (string) ($theme['background'] ?? '#fafafa'),
                 'font_heading_stack' => InvitationFonts::stack($headingFont),
                 'font_body_stack' => InvitationFonts::stack($bodyFont),
@@ -274,7 +274,7 @@ class InvitationCustomizationService
             'schema_version' => self::CURRENT_SCHEMA_VERSION,
             'theme' => [
                 'primary' => (string) ($dt['primary'] ?? '#1a2a4a'),
-                'accent' => (string) ($dt['accent'] ?? '#6c5ce7'),
+                'accent' => (string) ($dt['accent'] ?? '#1e47bb'),
                 'background' => (string) ($dt['background'] ?? '#fafafa'),
                 'font_heading_key' => InvitationFonts::normalizeKey((string) ($dt['font_heading_key'] ?? 'system_ui')),
                 'font_body_key' => InvitationFonts::normalizeKey((string) ($dt['font_body_key'] ?? 'system_ui')),

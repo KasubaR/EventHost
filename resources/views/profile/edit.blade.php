@@ -36,7 +36,7 @@
         {{-- Personal Information --}}
         <div class="profile-card">
             <div class="profile-card-header">
-                <div class="profile-card-icon" style="background:rgba(108,92,231,0.1)"><i class="fa-solid fa-circle-user" style="color:var(--accent)"></i></div>
+                <div class="profile-card-icon" style="background:rgba(30,71,187,0.1)"><i class="fa-solid fa-circle-user" style="color:var(--accent)"></i></div>
                 <div>
                     <h3>Personal Information</h3>
                     <p>Update your name, email, phone and company details.</p>
@@ -72,7 +72,7 @@
         {{-- Danger zone --}}
         <div class="profile-card profile-card--danger">
             <div class="profile-card-header">
-                <div class="profile-card-icon" style="background:rgba(232,67,147,0.1)"><i class="fa-solid fa-triangle-exclamation" style="color:var(--pink)"></i></div>
+                <div class="profile-card-icon" style="background:rgba(224,14,79,0.1)"><i class="fa-solid fa-triangle-exclamation" style="color:var(--pink)"></i></div>
                 <div>
                     <h3>Danger Zone</h3>
                     <p>Permanently delete your account and all associated data.</p>

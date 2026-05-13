@@ -125,7 +125,7 @@ function mountCharts(root, payload) {
                             {
                                 label: 'New users',
                                 data: monthly.map((r) => Number(r.count ?? 0)),
-                                backgroundColor: 'rgba(108, 92, 231, 0.75)',
+                                backgroundColor: 'rgba(30, 71, 187, 0.75)',
                                 borderRadius: 6,
                             },
                         ],
@@ -220,7 +220,7 @@ function mountCharts(root, payload) {
                                 backgroundColor: statusRows.map(
                                     (r) =>
                                         colorsByKey[String(r.key ?? '')] ??
-                                        '#6c5ce7',
+                                        '#1e47bb',
                                 ),
                                 borderWidth: 0,
                             },
@@ -257,11 +257,11 @@ function mountCharts(root, payload) {
                             {
                                 data: eventTypes.map((r) => Number(r.count ?? 0)),
                                 backgroundColor: [
-                                    '#6c5ce7',
+                                    '#1e47bb',
                                     '#00cec9',
                                     '#48c78e',
                                     '#f39c12',
-                                    '#e84393',
+                                    '#e00e4f',
                                     '#3b2fa0',
                                     '#1a1a6e',
                                 ],

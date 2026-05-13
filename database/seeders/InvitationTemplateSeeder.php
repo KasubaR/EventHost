@@ -61,8 +61,6 @@ class InvitationTemplateSeeder extends Seeder
                     ['type' => 'description', 'visible' => true],
                     ['type' => 'story', 'visible' => true],
                     ['type' => 'schedule', 'visible' => true],
-                    ['type' => 'countdown', 'visible' => true],
-                    ['type' => 'gallery', 'visible' => true],
                     ['type' => 'rsvp', 'visible' => true],
                 ],
             ],

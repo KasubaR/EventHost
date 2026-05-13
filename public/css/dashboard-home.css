@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Dashboard overview (stats + empty state). Loaded from dashboard.blade.php only.
  */
 
@@ -88,7 +88,7 @@
 }
 
 .dsc-icon--accent {
-  background: rgba(108, 92, 231, 0.1);
+  background: rgba(30, 71, 187, 0.1);
   color: var(--accent);
 }
 
@@ -103,7 +103,7 @@
 }
 
 .dsc-icon--purple {
-  background: rgba(108, 92, 231, 0.08);
+  background: rgba(30, 71, 187, 0.08);
   color: #7c6fdc;
 }
 

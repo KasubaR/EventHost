@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Login & register (marketing hero + auth fields). Depends on global.css.
  */
 
@@ -259,11 +259,11 @@
 .auth-input:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(108,92,231,0.18);
+  box-shadow: 0 0 0 3px rgba(30,71,187,0.18);
 }
 .auth-input--error {
   border-color: var(--pink);
-  box-shadow: 0 0 0 3px rgba(232,67,147,0.12);
+  box-shadow: 0 0 0 3px rgba(224,14,79,0.12);
 }
 
 /* Password toggle */
@@ -343,7 +343,7 @@
   font-weight: 700;
   cursor: pointer;
   transition: filter 0.2s, transform 0.15s;
-  box-shadow: 0 6px 20px rgba(108,92,231,0.35);
+  box-shadow: 0 6px 20px rgba(30,71,187,0.35);
 }
 .auth-submit:hover {
   filter: brightness(1.08);

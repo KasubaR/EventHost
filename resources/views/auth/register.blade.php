@@ -179,7 +179,7 @@
       <h3>Everything you need to host</h3>
       <ul>
         <li>
-          <div class="auth-feat-icon" style="background:rgba(108,92,231,0.12)"><i class="fa-solid fa-palette"></i></div>
+          <div class="auth-feat-icon" style="background:rgba(30,71,187,0.12)"><i class="fa-solid fa-palette"></i></div>
           <div>
             <strong>100+ Premium Templates</strong>
             <span>Weddings, birthdays, corporate &amp; more</span>
@@ -207,7 +207,7 @@
           </div>
         </li>
         <li>
-          <div class="auth-feat-icon" style="background:rgba(108,92,231,0.12)"><i class="fa-solid fa-mobile-screen-button"></i></div>
+          <div class="auth-feat-icon" style="background:rgba(30,71,187,0.12)"><i class="fa-solid fa-mobile-screen-button"></i></div>
           <div>
             <strong>Mobile Optimized</strong>
             <span>Flawless on any device, anywhere</span>
