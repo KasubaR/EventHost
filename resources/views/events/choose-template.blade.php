@@ -93,10 +93,13 @@
                             </button>
                         </form>
                     @else
-                        <p class="tpl-tier-lock-msg">Requires {{ $tpl->requiredTier()->label() }}. Preview anytime — upgrade to apply.</p>
+                        @if (auth()->user()?->isActive())
+                            <p class="tpl-tier-lock-msg">Requires {{ $tpl->requiredTier()->label() }}. Preview anytime — upgrade to apply.</p>
+                        @else
+                            <p class="tpl-tier-lock-msg">Requires an active subscription. Preview anytime — subscribe to apply.</p>
+                        @endif
                         <div class="tpl-tier-actions">
                             <a href="{{ url('/') }}#pricing" class="btn-outline tpl-btn-small">View plans</a>
-                            <a href="{{ route('templates.index') }}" class="btn-primary tpl-btn-small">Browse base layouts</a>
                         </div>
                     @endif
                 </div>

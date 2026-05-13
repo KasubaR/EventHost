@@ -32,7 +32,11 @@ class UserCanUseInvitationTemplate implements ValidationRule
         }
 
         if (! $user->canUseInvitationTemplate($template)) {
-            $fail('This template requires '.$template->requiredTier()->label().'.');
+            $fail(
+                $user->isActive()
+                    ? 'This template requires '.$template->requiredTier()->label().'.'
+                    : 'An active subscription is required to use a template.'
+            );
         }
     }
 }

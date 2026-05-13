@@ -122,7 +122,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function canUseInvitationTemplate(InvitationTemplate $template): bool
     {
-        return $this->subscriptionTierRank() >= $template->requiredTierRank();
+        return $this->isActive() && $this->subscriptionTierRank() >= $template->requiredTierRank();
     }
 
     /**
