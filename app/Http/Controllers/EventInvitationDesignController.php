@@ -203,6 +203,15 @@ class EventInvitationDesignController extends Controller
                     'content' => [
                         'story' => (string) ($validated['content_story'] ?? ''),
                         'schedule' => array_values($validated['schedule_items']),
+                        'speaker_cards' => InvitationCustomizationService::normalizeSpeakerCards($validated['speaker_cards'] ?? []),
+                        'venue_note' => (string) ($validated['venue_note'] ?? ''),
+                        'bfa_conference_theme' => (string) ($validated['bfa_conference_theme'] ?? ''),
+                        'bfa_dress_code' => (string) ($validated['bfa_dress_code'] ?? ''),
+                        'bfa_presenter_line' => (string) ($validated['bfa_presenter_line'] ?? ''),
+                        'bfa_presents_line' => (string) ($validated['bfa_presents_line'] ?? ''),
+                        'bfa_tagline_bar' => (string) ($validated['bfa_tagline_bar'] ?? ''),
+                        'contact_phone_primary' => (string) ($validated['contact_phone_primary'] ?? ''),
+                        'contact_phone_secondary' => (string) ($validated['contact_phone_secondary'] ?? ''),
                     ],
                     'media' => [
                         'gallery' => array_values(array_merge($galleryKeep, $newGallery)),

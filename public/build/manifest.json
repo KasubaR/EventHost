@@ -4,7 +4,7 @@
     "name": "auto"
   },
   "resources/css/app.css": {
-    "file": "assets/app-Dja9YCoT.css",
+    "file": "assets/app-CFWs1PBQ.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -13,7 +13,7 @@
     ]
   },
   "resources/js/admin-analytics-charts.js": {
-    "file": "assets/admin-analytics-charts-BHJttqqC.js",
+    "file": "assets/admin-analytics-charts-DnIv5ddZ.js",
     "name": "admin-analytics-charts",
     "src": "resources/js/admin-analytics-charts.js",
     "isEntry": true,
@@ -22,7 +22,7 @@
     ]
   },
   "resources/js/analytics-charts.js": {
-    "file": "assets/analytics-charts-PHKVF1Ya.js",
+    "file": "assets/analytics-charts-CRW195ks.js",
     "name": "analytics-charts",
     "src": "resources/js/analytics-charts.js",
     "isEntry": true,

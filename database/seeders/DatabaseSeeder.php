@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\Admin;
 use App\Models\PlatformSetting;
-use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -21,16 +21,16 @@ class DatabaseSeeder extends Seeder
 
         $adminEmail = env('ADMIN_EMAIL', 'test@example.com');
 
-        $user = User::query()->firstWhere('email', $adminEmail);
+        $admin = Admin::query()->firstWhere('email', $adminEmail);
 
-        if ($user === null) {
-            $user = User::factory()->create([
-                'name' => 'Test User',
+        if ($admin === null) {
+            $admin = Admin::factory()->create([
+                'name' => 'Super Admin',
                 'email' => $adminEmail,
             ]);
         }
 
-        $user->assignRole('super_admin');
+        $admin->assignRole('super_admin');
 
         PlatformSetting::setValue('site_name', config('app.name'), 'string');
         PlatformSetting::setValue('whatsapp_default_message', '', 'string');

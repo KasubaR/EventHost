@@ -7,6 +7,7 @@ use App\Http\Requests\Auth\RegisteredUserRequest;
 use App\Models\User;
 use App\Notifications\WelcomeNotification;
 use Illuminate\Auth\Events\Registered;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
@@ -36,6 +37,8 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        return redirect(route('verification.notice', absolute: false));
+        return $user instanceof MustVerifyEmail
+            ? redirect(route('verification.notice', absolute: false))
+            : redirect(route('dashboard', absolute: false));
     }
 }

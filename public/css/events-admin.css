@@ -282,6 +282,10 @@
     font-size: 13px;
 }
 
+.evt-bfa-speaker-heading {
+    margin-top: 1rem;
+}
+
 .evt-design-colors {
     display: flex;
     flex-wrap: wrap;

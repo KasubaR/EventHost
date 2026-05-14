@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Admin;
 use App\Models\Event;
 use App\Models\PlatformSetting;
 use App\Models\Report;
@@ -20,9 +21,9 @@ class AdminPanelTest extends TestCase
         $this->seed(RolePermissionSeeder::class);
     }
 
-    private function superAdmin(): User
+    private function superAdmin(): Admin
     {
-        $admin = User::factory()->create();
+        $admin = Admin::factory()->create();
         $admin->assignRole('super_admin');
 
         return $admin;
@@ -30,28 +31,28 @@ class AdminPanelTest extends TestCase
 
     public function test_guest_cannot_access_admin_dashboard(): void
     {
-        $this->get(route('admin.dashboard'))->assertRedirect(route('login'));
+        $this->get(route('admin.dashboard'))->assertRedirect(route('admin.login'));
     }
 
-    public function test_regular_user_is_forbidden_from_admin_area(): void
+    public function test_regular_user_is_redirected_from_admin_area_without_admin_session(): void
     {
         $user = User::factory()->create();
 
         $this->actingAs($user)
             ->get(route('admin.dashboard'))
-            ->assertForbidden();
+            ->assertRedirect(route('admin.login'));
     }
 
     public function test_super_admin_can_view_dashboard_and_analytics(): void
     {
         $admin = $this->superAdmin();
 
-        $this->actingAs($admin)
+        $this->actingAs($admin, 'admin')
             ->get(route('admin.dashboard'))
             ->assertOk()
             ->assertSee('Platform overview');
 
-        $this->actingAs($admin)
+        $this->actingAs($admin, 'admin')
             ->get(route('admin.analytics'))
             ->assertOk()
             ->assertSee('Platform analytics');
@@ -62,7 +63,7 @@ class AdminPanelTest extends TestCase
         $admin = $this->superAdmin();
         $target = User::factory()->create(['status' => 'active']);
 
-        $this->actingAs($admin)
+        $this->actingAs($admin, 'admin')
             ->patch(route('admin.users.status', $target), ['status' => 'suspended'])
             ->assertSessionHasNoErrors();
 
@@ -71,15 +72,20 @@ class AdminPanelTest extends TestCase
 
     public function test_super_admin_cannot_suspend_self_via_admin_form(): void
     {
-        $admin = $this->superAdmin();
+        $customer = User::factory()->create(['status' => 'active']);
+        $admin = Admin::factory()->create([
+            'user_id' => $customer->id,
+            'email' => $customer->email,
+        ]);
+        $admin->assignRole('super_admin');
 
-        $this->actingAs($admin)
-            ->from(route('admin.users.show', $admin))
-            ->patch(route('admin.users.status', $admin), ['status' => 'suspended'])
-            ->assertRedirect(route('admin.users.show', $admin))
+        $this->actingAs($admin, 'admin')
+            ->from(route('admin.users.show', $customer))
+            ->patch(route('admin.users.status', $customer), ['status' => 'suspended'])
+            ->assertRedirect(route('admin.users.show', $customer))
             ->assertSessionHasErrors(['status']);
 
-        $this->assertSame('active', $admin->fresh()->status);
+        $this->assertSame('active', $customer->fresh()->status);
     }
 
     public function test_super_admin_can_delete_another_user(): void
@@ -87,7 +93,7 @@ class AdminPanelTest extends TestCase
         $admin = $this->superAdmin();
         $target = User::factory()->create();
 
-        $this->actingAs($admin)
+        $this->actingAs($admin, 'admin')
             ->delete(route('admin.users.destroy', $target))
             ->assertRedirect(route('admin.users.index'));
 
@@ -96,25 +102,25 @@ class AdminPanelTest extends TestCase
 
     public function test_operation_admin_cannot_delete_users_without_permission(): void
     {
-        $operator = User::factory()->create();
+        $operator = Admin::factory()->create();
         $operator->assignRole('admin');
 
         $target = User::factory()->create();
 
-        $this->actingAs($operator)
+        $this->actingAs($operator, 'admin')
             ->delete(route('admin.users.destroy', $target))
             ->assertForbidden();
     }
 
     public function test_admin_can_toggle_event_publish_state(): void
     {
-        $operator = User::factory()->create();
+        $operator = Admin::factory()->create();
         $operator->assignRole('admin');
 
         $owner = User::factory()->create();
         $event = Event::factory()->for($owner)->published()->create();
 
-        $this->actingAs($operator)
+        $this->actingAs($operator, 'admin')
             ->patch(route('admin.events.publish', $event), ['is_published' => false])
             ->assertRedirect();
 
@@ -123,28 +129,28 @@ class AdminPanelTest extends TestCase
 
     public function test_support_user_can_resolve_reports_but_not_manage_settings(): void
     {
-        $support = User::factory()->create();
+        $support = Admin::factory()->create();
         $support->assignRole('support');
 
         $report = Report::factory()->create(['status' => Report::STATUS_PENDING]);
 
-        $this->actingAs($support)
+        $this->actingAs($support, 'admin')
             ->patch(route('admin.reports.update', $report), ['status' => Report::STATUS_RESOLVED])
             ->assertRedirect();
 
         $this->assertSame(Report::STATUS_RESOLVED, $report->fresh()->status);
 
-        $this->actingAs($support)
+        $this->actingAs($support, 'admin')
             ->get(route('admin.settings.edit'))
             ->assertForbidden();
     }
 
     public function test_admin_can_update_platform_settings(): void
     {
-        $operator = User::factory()->create();
+        $operator = Admin::factory()->create();
         $operator->assignRole('admin');
 
-        $this->actingAs($operator)
+        $this->actingAs($operator, 'admin')
             ->patch(route('admin.settings.update'), [
                 'site_name' => 'Ops branded title',
                 'whatsapp_default_message' => 'Hello world',

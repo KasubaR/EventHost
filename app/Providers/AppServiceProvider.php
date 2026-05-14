@@ -69,5 +69,9 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('admin-mutations', function (Request $request): Limit {
             return Limit::perMinute(120)->by((string) $request->user()?->id ?? 'guest');
         });
+
+        RateLimiter::for('admin-login', function (Request $request): Limit {
+            return Limit::perMinute(5)->by((string) $request->ip());
+        });
     }
 }

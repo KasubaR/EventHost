@@ -10,12 +10,14 @@ final class InvitationLayoutVariant
 
     public const BOTANICAL_GRADUATION = 'botanical_graduation';
 
+    public const BEAUTY_FOR_ASHES = 'beauty_for_ashes';
+
     /**
      * @return list<string>
      */
     public static function keys(): array
     {
-        return [self::STANDARD, self::PRO_MAGAZINE, self::BOTANICAL_GRADUATION];
+        return [self::STANDARD, self::PRO_MAGAZINE, self::BOTANICAL_GRADUATION, self::BEAUTY_FOR_ASHES];
     }
 
     public static function normalize(?string $value): string
@@ -37,6 +39,7 @@ final class InvitationLayoutVariant
     {
         return match (self::normalize($variant)) {
             self::STANDARD => ['gallery', 'countdown'],
+            self::BEAUTY_FOR_ASHES => ['countdown'],
             default => [],
         };
     }
@@ -50,6 +53,7 @@ final class InvitationLayoutVariant
         return match ($variant) {
             self::PRO_MAGAZINE => 'events-invitation-layout-pro-magazine.css',
             self::BOTANICAL_GRADUATION => 'events-invitation-layout-botanical-graduation.css',
+            self::BEAUTY_FOR_ASHES => 'events-invitation-layout-beauty-for-ashes.css',
             default => null,
         };
     }
@@ -62,7 +66,7 @@ final class InvitationLayoutVariant
     public static function pinnedFirst(string $variant): ?string
     {
         return match ($variant) {
-            self::PRO_MAGAZINE, self::BOTANICAL_GRADUATION => 'hero',
+            self::PRO_MAGAZINE, self::BOTANICAL_GRADUATION, self::BEAUTY_FOR_ASHES => 'hero',
             default => null,
         };
     }
@@ -87,6 +91,7 @@ final class InvitationLayoutVariant
     {
         return match (self::normalize($variant)) {
             self::BOTANICAL_GRADUATION => 2,
+            self::BEAUTY_FOR_ASHES => 4,
             default => 0,
         };
     }

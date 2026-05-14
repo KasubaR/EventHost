@@ -14,11 +14,6 @@ class AdminAuthenticate extends Authenticate
             $this->unauthenticated($request, ['admin']);
         }
 
-        // Set the user on the web guard (in-memory only) so Spatie can resolve
-        // permissions using guard_name='web' without shouldUse() corrupting
-        // config('auth.defaults.guard').
-        $this->auth->guard('web')->setUser($this->auth->guard('admin')->user());
-
         return $next($request);
     }
 

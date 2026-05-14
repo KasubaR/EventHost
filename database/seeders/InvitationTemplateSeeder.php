@@ -120,6 +120,33 @@ class InvitationTemplateSeeder extends Seeder
                     ['type' => 'rsvp', 'visible' => true],
                 ],
             ],
+            [
+                'slug' => 'beauty-for-ashes',
+                'name' => 'Beauty for Ashes (Conference)',
+                'description' => 'Dramatic purple-and-gold conference layout with speaker grid, rich typography, and jewel-tone panels. Pro minimum.',
+                'skin' => 'classic',
+                'sort_order' => 70,
+                'min_subscription_tier' => SubscriptionTier::Pro->value,
+                'layout_variant' => InvitationLayoutVariant::BEAUTY_FOR_ASHES,
+                'category_slugs' => ['church', 'corporate', 'graduation', 'wedding'],
+                'default_theme' => [
+                    'primary' => '#0e0020',
+                    'accent' => '#f5c518',
+                    'background' => '#1a003a',
+                    'font_heading_key' => 'cormorant_garamond',
+                    'font_body_key' => 'lato',
+                    'animation_subtle' => false,
+                ],
+                'default_sections' => [
+                    ['type' => 'hero', 'visible' => true],
+                    ['type' => 'gallery', 'visible' => true],
+                    ['type' => 'story', 'visible' => true],
+                    ['type' => 'details', 'visible' => true],
+                    ['type' => 'schedule', 'visible' => true],
+                    ['type' => 'rsvp', 'visible' => true],
+                    ['type' => 'description', 'visible' => true],
+                ],
+            ],
         ];
 
         $keptSlugs = collect($templates)->pluck('slug')->all();

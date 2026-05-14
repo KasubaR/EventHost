@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateAdminUserStatusRequest;
+use App\Models\Admin;
 use App\Models\User;
 use App\Support\AdminActivity;
 use Illuminate\Http\RedirectResponse;
@@ -50,7 +51,7 @@ class UserController extends Controller
 
     public function updateStatus(UpdateAdminUserStatusRequest $request, User $user): RedirectResponse
     {
-        if ($request->user()->is($user)) {
+        if ($this->adminActsOnLinkedCustomerAccount($request, $user)) {
             return redirect()->back()->withErrors(['status' => 'You cannot change your own account status here.']);
         }
 
@@ -79,7 +80,7 @@ class UserController extends Controller
 
     public function destroy(Request $request, User $user): RedirectResponse
     {
-        if ($request->user()->is($user)) {
+        if ($this->adminActsOnLinkedCustomerAccount($request, $user)) {
             return redirect()->route('admin.users.index')->withErrors(['delete' => 'You cannot delete your own account.']);
         }
 
@@ -91,5 +92,14 @@ class UserController extends Controller
         $user->delete();
 
         return redirect()->route('admin.users.index')->with('status', 'user-deleted');
+    }
+
+    private function adminActsOnLinkedCustomerAccount(Request $request, User $user): bool
+    {
+        $admin = $request->user('admin');
+
+        return $admin instanceof Admin
+            && $admin->user_id !== null
+            && (int) $admin->user_id === (int) $user->id;
     }
 }

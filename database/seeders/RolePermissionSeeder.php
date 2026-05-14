@@ -30,13 +30,20 @@ class RolePermissionSeeder extends Seeder
     {
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
+        foreach (['web', 'admin'] as $guardName) {
+            $this->seedRolesAndPermissionsForGuard($guardName);
+        }
+    }
+
+    private function seedRolesAndPermissionsForGuard(string $guardName): void
+    {
         foreach (self::PERMISSIONS as $name) {
-            Permission::query()->firstOrCreate(['name' => $name, 'guard_name' => 'web']);
+            Permission::query()->firstOrCreate(['name' => $name, 'guard_name' => $guardName]);
         }
 
-        $support = Role::query()->firstOrCreate(['name' => 'support', 'guard_name' => 'web']);
-        $admin = Role::query()->firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
-        $superAdmin = Role::query()->firstOrCreate(['name' => 'super_admin', 'guard_name' => 'web']);
+        $support = Role::query()->firstOrCreate(['name' => 'support', 'guard_name' => $guardName]);
+        $admin = Role::query()->firstOrCreate(['name' => 'admin', 'guard_name' => $guardName]);
+        $superAdmin = Role::query()->firstOrCreate(['name' => 'super_admin', 'guard_name' => $guardName]);
 
         $support->syncPermissions([
             'users.view',
@@ -56,6 +63,8 @@ class RolePermissionSeeder extends Seeder
 
         $admin->syncPermissions($adminPermissions);
 
-        $superAdmin->syncPermissions(Permission::query()->where('guard_name', 'web')->pluck('name')->all());
+        $superAdmin->syncPermissions(
+            Permission::query()->where('guard_name', $guardName)->pluck('name')->all()
+        );
     }
 }

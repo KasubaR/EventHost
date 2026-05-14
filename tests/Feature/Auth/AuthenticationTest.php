@@ -34,6 +34,35 @@ class AuthenticationTest extends TestCase
         $this->assertNotNull($user->last_login_ip);
     }
 
+    public function test_login_ignores_external_intended_session_url(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->withSession(['url.intended' => 'https://evil.com/phish'])
+            ->post('/login', [
+                'email' => $user->email,
+                'password' => 'password',
+            ]);
+
+        $this->assertAuthenticated();
+        $response->assertRedirect(route('dashboard', absolute: false));
+    }
+
+    public function test_login_honours_same_host_intended_session_url(): void
+    {
+        $user = User::factory()->create();
+        $intended = url('/profile');
+
+        $response = $this->withSession(['url.intended' => $intended])
+            ->post('/login', [
+                'email' => $user->email,
+                'password' => 'password',
+            ]);
+
+        $this->assertAuthenticated();
+        $response->assertRedirect($intended);
+    }
+
     public function test_users_can_not_authenticate_with_invalid_password(): void
     {
         $user = User::factory()->create();

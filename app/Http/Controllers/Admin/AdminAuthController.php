@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Support\SafeIntendedUrl;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -20,7 +21,7 @@ class AdminAuthController extends Controller
     public function store(Request $request)
     {
         $credentials = $request->validate([
-            'email'    => ['required', 'email'],
+            'email' => ['required', 'email'],
             'password' => ['required'],
         ]);
 
@@ -28,7 +29,7 @@ class AdminAuthController extends Controller
             return back()->withErrors(['email' => 'These credentials do not match our records.'])->onlyInput('email');
         }
 
-        if (! Auth::guard('admin')->user()->hasAnyRole(['super_admin', 'admin', 'support'], 'web')) {
+        if (! Auth::guard('admin')->user()->hasAnyRole(['super_admin', 'admin', 'support'])) {
             Auth::guard('admin')->logout();
 
             return back()->withErrors(['email' => 'You do not have permission to access the admin panel.'])->onlyInput('email');
@@ -36,7 +37,7 @@ class AdminAuthController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('admin.dashboard'));
+        return SafeIntendedUrl::redirect($request, route('admin.dashboard'));
     }
 
     public function destroy(Request $request)

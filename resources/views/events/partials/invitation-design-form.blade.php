@@ -35,6 +35,10 @@
     $fontChoices = InvitationFonts::MAP;
 
     $layoutVariant = $invitationMerged['layout_variant'] ?? InvitationLayoutVariant::STANDARD;
+    if ($layoutVariant === InvitationLayoutVariant::BEAUTY_FOR_ASHES) {
+        $sectionLabels['description'] = 'Contact & closing';
+        $sectionLabels['gallery'] = 'Speaker grid';
+    }
     $blockedSections = InvitationLayoutVariant::blockedSections($layoutVariant);
     $sectionLabels = array_diff_key($sectionLabels, array_flip($blockedSections));
     $heroPortraitSlots = InvitationLayoutVariant::maxInvitationHeroPortraitSlots($layoutVariant);
@@ -123,7 +127,7 @@
                 Subtle motion on the invitation page
             </label>
 
-            @if (! in_array('countdown', $blockedSections, true))
+            @if (! in_array('countdown', $blockedSections, true) || $layoutVariant === InvitationLayoutVariant::BEAUTY_FOR_ASHES)
                 <input type="hidden" name="countdown_enabled" value="0">
                 <label class="profile-label evt-check-label">
                     <input type="checkbox" name="countdown_enabled" value="1" class="profile-input evt-check-input"
@@ -213,6 +217,108 @@
                 </div>
             </fieldset>
 
+            @if ($layoutVariant === InvitationLayoutVariant::BEAUTY_FOR_ASHES)
+                @php
+                    $rawSpk = old('speaker_cards');
+                    $spkRows = [];
+                    if (is_array($rawSpk)) {
+                        foreach (array_slice($rawSpk, 0, 4) as $r) {
+                            $spkRows[] = is_array($r)
+                                ? ['role' => (string) ($r['role'] ?? ''), 'name' => (string) ($r['name'] ?? '')]
+                                : ['role' => '', 'name' => ''];
+                        }
+                    } else {
+                        foreach ($invitationMerged['content']['speaker_cards'] ?? [] as $r) {
+                            if (is_array($r)) {
+                                $spkRows[] = ['role' => (string) ($r['role'] ?? ''), 'name' => (string) ($r['name'] ?? '')];
+                            }
+                        }
+                    }
+                    while (count($spkRows) < 4) {
+                        $spkRows[] = ['role' => '', 'name' => ''];
+                    }
+                    $spkRows = array_slice($spkRows, 0, 4);
+                @endphp
+                <fieldset class="evt-design-fieldset">
+                    <legend class="profile-label">Beauty for Ashes — conference copy</legend>
+                    <p class="evt-muted evt-design-hint">Optional copy for the jewel-tone layout. The first four <strong>gallery</strong> images map to speakers in order. Use “Invitation hero photos” below for up to four speaker portrait uploads shown on the grid.</p>
+
+                    <div class="evt-grid-2 profile-fields">
+                        <div class="profile-field">
+                            <label for="bfa_presenter_line" class="profile-label">Presenter / ministry line</label>
+                            <input id="bfa_presenter_line" name="bfa_presenter_line" type="text" maxlength="200" class="profile-input"
+                                   value="{{ old('bfa_presenter_line', $invitationMerged['content']['bfa_presenter_line'] ?? '') }}"
+                                   placeholder="e.g. New Breed Christian Ministries International">
+                        </div>
+                        <div class="profile-field">
+                            <label for="bfa_presents_line" class="profile-label">“Presents” line</label>
+                            <input id="bfa_presents_line" name="bfa_presents_line" type="text" maxlength="120" class="profile-input"
+                                   value="{{ old('bfa_presents_line', $invitationMerged['content']['bfa_presents_line'] ?? '') }}"
+                                   placeholder="Presents">
+                        </div>
+                    </div>
+                    <div class="profile-field">
+                        <label for="bfa_tagline_bar" class="profile-label">Subtitle under the main title</label>
+                        <input id="bfa_tagline_bar" name="bfa_tagline_bar" type="text" maxlength="200" class="profile-input"
+                               value="{{ old('bfa_tagline_bar', $invitationMerged['content']['bfa_tagline_bar'] ?? '') }}"
+                               placeholder="e.g. New Breed of Women Conference">
+                    </div>
+                    <div class="evt-grid-2 profile-fields">
+                        <div class="profile-field">
+                            <label for="bfa_conference_theme" class="profile-label">Conference theme</label>
+                            <input id="bfa_conference_theme" name="bfa_conference_theme" type="text" maxlength="160" class="profile-input"
+                                   value="{{ old('bfa_conference_theme', $invitationMerged['content']['bfa_conference_theme'] ?? '') }}">
+                        </div>
+                        <div class="profile-field">
+                            <label for="bfa_dress_code" class="profile-label">Dress code</label>
+                            <input id="bfa_dress_code" name="bfa_dress_code" type="text" maxlength="160" class="profile-input"
+                                   value="{{ old('bfa_dress_code', $invitationMerged['content']['bfa_dress_code'] ?? '') }}">
+                        </div>
+                    </div>
+                    <div class="profile-field">
+                        <label for="venue_note" class="profile-label">Venue directions (extra line)</label>
+                        <input id="venue_note" name="venue_note" type="text" maxlength="500" class="profile-input"
+                               value="{{ old('venue_note', $invitationMerged['content']['venue_note'] ?? '') }}"
+                               placeholder="Gate, landmark, parking…">
+                    </div>
+                    <div class="evt-grid-2 profile-fields">
+                        <div class="profile-field">
+                            <label for="contact_phone_primary" class="profile-label">Contact phone (primary)</label>
+                            <input id="contact_phone_primary" name="contact_phone_primary" type="text" maxlength="40" class="profile-input"
+                                   value="{{ old('contact_phone_primary', $invitationMerged['content']['contact_phone_primary'] ?? '') }}">
+                        </div>
+                        <div class="profile-field">
+                            <label for="contact_phone_secondary" class="profile-label">Contact phone (secondary)</label>
+                            <input id="contact_phone_secondary" name="contact_phone_secondary" type="text" maxlength="40" class="profile-input"
+                                   value="{{ old('contact_phone_secondary', $invitationMerged['content']['contact_phone_secondary'] ?? '') }}">
+                        </div>
+                    </div>
+
+                    <p class="profile-label evt-bfa-speaker-heading">Speaker names (optional)</p>
+                    <ul class="evt-design-schedule-list">
+                        @foreach ($spkRows as $idx => $sp)
+                            <li class="evt-design-schedule-row">
+                                <div class="evt-design-schedule-fields">
+                                    <div class="profile-field">
+                                        <label class="profile-label evt-design-schedule-label" for="speaker_role_{{ $idx }}">Role</label>
+                                        <input id="speaker_role_{{ $idx }}" name="speaker_cards[{{ $idx }}][role]" type="text" maxlength="80" class="profile-input"
+                                               value="{{ $sp['role'] }}" placeholder="e.g. Prophetess">
+                                    </div>
+                                    <div class="profile-field">
+                                        <label class="profile-label evt-design-schedule-label" for="speaker_name_{{ $idx }}">Name</label>
+                                        <input id="speaker_name_{{ $idx }}" name="speaker_cards[{{ $idx }}][name]" type="text" maxlength="120" class="profile-input"
+                                               value="{{ $sp['name'] }}" placeholder="Full name">
+                                    </div>
+                                </div>
+                            </li>
+                        @endforeach
+                    </ul>
+                    @error('speaker_cards')
+                        <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
+                    @enderror
+                </fieldset>
+            @endif
+
             @if ($heroPortraitSlots === 0 && $couplePhotoSlots === 0)
                 <p class="evt-muted evt-design-hint">The invitation hero image uses your <strong>event cover photo</strong> (edit under Event details).</p>
             @endif
@@ -220,7 +326,13 @@
             @if ($heroPortraitSlots > 0 || $couplePhotoSlots > 0)
                 <fieldset class="evt-design-fieldset">
                     <legend class="profile-label">Invitation hero photos</legend>
-                    <p class="evt-muted evt-design-hint">Optional portraits beside your headline. When empty, the botanical layout falls back to your event cover for the framed photo.</p>
+                    <p class="evt-muted evt-design-hint">
+                        @if ($layoutVariant === InvitationLayoutVariant::BEAUTY_FOR_ASHES)
+                            Optional speaker portraits for the grid (up to four). When empty, the first gallery images are used as headshots, or a soft placeholder appears.
+                        @else
+                            Optional portraits beside your headline. When empty, the botanical layout falls back to your event cover for the framed photo.
+                        @endif
+                    </p>
 
                     @if ($heroPortraitSlots > 0)
                         @if ($currentHeroPortrait !== null)
@@ -259,9 +371,22 @@
                             </ul>
                         @endif
                         <div class="profile-field">
-                            <label for="couple_photos" class="profile-label">Couple / dual portraits</label>
+                            <label for="couple_photos" class="profile-label">
+                                @if ($layoutVariant === InvitationLayoutVariant::BEAUTY_FOR_ASHES)
+                                    Speaker portrait uploads
+                                @else
+                                    Couple / dual portraits
+                                @endif
+                            </label>
                             <input id="couple_photos" name="couple_photos[]" type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="profile-input" multiple @if ($coupleSlotsRemaining === 0) disabled @endif>
-                            <p class="evt-muted evt-design-hint">Up to {{ $couplePhotoSlots }} image(s); displayed as one or two framed portraits in the hero. {{ $coupleSlotsRemaining === 0 ? 'Remove one to add another.' : $coupleSlotsRemaining.' slot(s) left.' }}</p>
+                            <p class="evt-muted evt-design-hint">Up to {{ $couplePhotoSlots }} image(s).
+                                @if ($layoutVariant === InvitationLayoutVariant::BEAUTY_FOR_ASHES)
+                                    Shown on the speaker grid in upload order.
+                                @else
+                                    Displayed as one or two framed portraits in the hero.
+                                @endif
+                                {{ $coupleSlotsRemaining === 0 ? 'Remove one to add another.' : $coupleSlotsRemaining.' slot(s) left.' }}
+                            </p>
                             @error('couple_photos')
                                 <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                             @enderror

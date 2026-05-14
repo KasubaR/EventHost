@@ -112,16 +112,49 @@ class InvitationTemplate extends Model
         ]);
 
         $event->setRelation('invitationTemplate', $this);
-        $event->invitation_customization = [
-            'schema_version' => InvitationCustomizationService::CURRENT_SCHEMA_VERSION,
-            'content' => [
-                'story' => 'From a chance meeting to this celebration — we would love you to share the day with us.',
-                'schedule' => [
-                    ['time' => '4:00 PM', 'title' => 'Ceremony', 'detail' => 'Garden conservatory entrance'],
-                    ['time' => '6:00 PM', 'title' => 'Reception', 'detail' => 'Dinner, dancing, and toasts'],
+
+        if ($this->slug === 'beauty-for-ashes') {
+            $event->name = 'Beauty For Ashes';
+            $event->event_type = 'church';
+            $event->description = "New Breed Christian Ministries International\n\nNew Breed of Women Conference — join us for worship, teaching, and fellowship.";
+            $event->venue = 'Off Lime Road, Downtown Area, Lusaka';
+            $event->location_name = 'Lusaka, Zambia';
+            $event->invitation_customization = [
+                'schema_version' => InvitationCustomizationService::CURRENT_SCHEMA_VERSION,
+                'content' => [
+                    'story' => 'A time to reset to the set Standard, as we go back to the Beautiful Beginning',
+                    'schedule' => [
+                        ['time' => '09:30', 'title' => 'Doors open', 'detail' => 'Registration & refreshments'],
+                        ['time' => '10:00', 'title' => 'Main session', 'detail' => 'Worship and word'],
+                    ],
+                    'speaker_cards' => [
+                        ['role' => 'Dr Prophetess', 'name' => 'Christine Mwelwa'],
+                        ['role' => 'Prophetess', 'name' => 'Nomsa Maida'],
+                        ['role' => 'Minister', 'name' => 'Temwani'],
+                        ['role' => 'Dr Prophetess', 'name' => 'Tiko Silweya'],
+                    ],
+                    'venue_note' => '3rd gate after the curve — right next to CM Bakery.',
+                    'bfa_conference_theme' => 'All Shades of Purple',
+                    'bfa_dress_code' => 'Elegant Attire',
+                    'bfa_presenter_line' => 'New Breed Christian Ministries International',
+                    'bfa_presents_line' => 'Presents',
+                    'bfa_tagline_bar' => 'New Breed of Women Conference',
+                    'contact_phone_primary' => '+260 975 521 619',
+                    'contact_phone_secondary' => '+260 974 887 453',
                 ],
-            ],
-        ];
+            ];
+        } else {
+            $event->invitation_customization = [
+                'schema_version' => InvitationCustomizationService::CURRENT_SCHEMA_VERSION,
+                'content' => [
+                    'story' => 'From a chance meeting to this celebration — we would love you to share the day with us.',
+                    'schedule' => [
+                        ['time' => '4:00 PM', 'title' => 'Ceremony', 'detail' => 'Garden conservatory entrance'],
+                        ['time' => '6:00 PM', 'title' => 'Reception', 'detail' => 'Dinner, dancing, and toasts'],
+                    ],
+                ],
+            ];
+        }
 
         return $event;
     }

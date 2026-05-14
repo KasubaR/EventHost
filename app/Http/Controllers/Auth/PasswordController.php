@@ -10,6 +10,11 @@ use Illuminate\Validation\Rules\Password;
 
 class PasswordController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(['auth', 'verified']);
+    }
+
     /**
      * Update the user's password.
      */

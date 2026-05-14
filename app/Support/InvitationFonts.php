@@ -22,7 +22,7 @@ final class InvitationFonts
         ],
         'cormorant_garamond' => [
             'font_stack' => '"Cormorant Garamond", Georgia, "Times New Roman", serif',
-            'google_family' => 'Cormorant+Garamond:wght@400;600;700',
+            'google_family' => 'Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600',
         ],
         'inter' => [
             'font_stack' => 'Inter, system-ui, sans-serif',
@@ -31,6 +31,10 @@ final class InvitationFonts
         'dm_sans' => [
             'font_stack' => '"DM Sans", system-ui, sans-serif',
             'google_family' => 'DM+Sans:wght@400;600;700',
+        ],
+        'lato' => [
+            'font_stack' => 'Lato, system-ui, sans-serif',
+            'google_family' => 'Lato:ital,wght@0,300;0,400;0,700;1,300;1,400',
         ],
         'libre_baskerville' => [
             'font_stack' => '"Libre Baskerville", Georgia, serif',
@@ -58,7 +62,7 @@ final class InvitationFonts
         ],
         'cinzel' => [
             'font_stack' => '"Cinzel", Georgia, serif',
-            'google_family' => 'Cinzel:wght@400;600;700',
+            'google_family' => 'Cinzel:wght@400;700;900',
         ],
         'dancing_script' => [
             'font_stack' => '"Dancing Script", cursive',

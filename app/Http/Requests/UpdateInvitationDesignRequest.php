@@ -68,6 +68,26 @@ class UpdateInvitationDesignRequest extends FormRequest
         $story = $this->input('content_story');
         $story = is_string($story) ? Str::limit(trim($story), 12000, '') : '';
 
+        $trimLine = function (string $key, int $max): string {
+            $v = $this->input($key);
+
+            return is_string($v) ? Str::limit(trim($v), $max, '') : '';
+        };
+
+        $rawSpeakers = $this->input('speaker_cards', []);
+        $speakerRows = [];
+        if (is_array($rawSpeakers)) {
+            foreach (array_slice($rawSpeakers, 0, 4) as $row) {
+                if (! is_array($row)) {
+                    continue;
+                }
+                $speakerRows[] = [
+                    'role' => Str::limit(trim((string) ($row['role'] ?? '')), 80, ''),
+                    'name' => Str::limit(trim((string) ($row['name'] ?? '')), 120, ''),
+                ];
+            }
+        }
+
         $this->merge([
             'section_visible' => $boolVisibility,
             'animation_subtle' => $this->boolean('animation_subtle'),
@@ -77,6 +97,15 @@ class UpdateInvitationDesignRequest extends FormRequest
             'countdown_enabled' => $countdownEnabled,
             'schedule_items' => $scheduleClean,
             'content_story' => $story,
+            'speaker_cards' => $speakerRows,
+            'venue_note' => $trimLine('venue_note', 500),
+            'bfa_conference_theme' => $trimLine('bfa_conference_theme', 160),
+            'bfa_dress_code' => $trimLine('bfa_dress_code', 160),
+            'bfa_presenter_line' => $trimLine('bfa_presenter_line', 200),
+            'bfa_presents_line' => $trimLine('bfa_presents_line', 120),
+            'bfa_tagline_bar' => $trimLine('bfa_tagline_bar', 200),
+            'contact_phone_primary' => $trimLine('contact_phone_primary', 40),
+            'contact_phone_secondary' => $trimLine('contact_phone_secondary', 40),
         ]);
     }
 
@@ -108,7 +137,7 @@ class UpdateInvitationDesignRequest extends FormRequest
 
             'invitation_hero_portrait' => ['nullable', 'file', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:5120'],
             'clear_hero_portrait' => ['boolean'],
-            'couple_photos' => ['nullable', 'array', 'max:2'],
+            'couple_photos' => ['nullable', 'array', 'max:4'],
             'couple_photos.*' => ['file', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:5120'],
             'couple_remove' => ['nullable', 'array'],
             'couple_remove.*' => ['string', 'regex:/^invitation-couple\/[0-9]+\/[a-zA-Z0-9_\-]+\.(webp|jpe?g|png|gif)$/i'],
@@ -121,6 +150,17 @@ class UpdateInvitationDesignRequest extends FormRequest
             'template_fingerprint' => ['nullable', 'string', 'size:32'],
 
             'content_story' => ['nullable', 'string', 'max:12000'],
+            'speaker_cards' => ['nullable', 'array', 'max:4'],
+            'speaker_cards.*.role' => ['nullable', 'string', 'max:80'],
+            'speaker_cards.*.name' => ['nullable', 'string', 'max:120'],
+            'venue_note' => ['nullable', 'string', 'max:500'],
+            'bfa_conference_theme' => ['nullable', 'string', 'max:160'],
+            'bfa_dress_code' => ['nullable', 'string', 'max:160'],
+            'bfa_presenter_line' => ['nullable', 'string', 'max:200'],
+            'bfa_presents_line' => ['nullable', 'string', 'max:120'],
+            'bfa_tagline_bar' => ['nullable', 'string', 'max:200'],
+            'contact_phone_primary' => ['nullable', 'string', 'max:40'],
+            'contact_phone_secondary' => ['nullable', 'string', 'max:40'],
             'schedule_items' => ['present', 'array', 'max:24'],
             'schedule_items.*.time' => ['nullable', 'string', 'max:48'],
             'schedule_items.*.title' => ['nullable', 'string', 'max:160'],

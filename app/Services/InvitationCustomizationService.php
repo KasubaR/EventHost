@@ -8,6 +8,7 @@ use App\Support\InvitationFonts;
 use App\Support\InvitationLayoutVariant;
 use App\Support\InvitationSections;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class InvitationCustomizationService
 {
@@ -73,7 +74,19 @@ class InvitationCustomizationService
      *         video_background: ?string,
      *         audio_track: ?string
      *     },
-     *     content: array{story: string, schedule: list<array{time: ?string, title: string, detail: ?string}>},
+     *     content: array{
+     *         story: string,
+     *         schedule: list<array{time: ?string, title: string, detail: ?string}>,
+     *         speaker_cards: list<array{role: string, name: string}>,
+     *         venue_note: string,
+     *         bfa_conference_theme: string,
+     *         bfa_dress_code: string,
+     *         bfa_presenter_line: string,
+     *         bfa_presents_line: string,
+     *         bfa_tagline_bar: string,
+     *         contact_phone_primary: string,
+     *         contact_phone_secondary: string,
+     *     },
      * }
      */
     public function merge(Event $event): array
@@ -129,11 +142,28 @@ class InvitationCustomizationService
         $content = [
             'story' => isset($storedContent['story']) ? (string) $storedContent['story'] : '',
             'schedule' => self::normalizeScheduleItems($storedContent['schedule'] ?? []),
+            'speaker_cards' => self::normalizeSpeakerCards($storedContent['speaker_cards'] ?? []),
+            'venue_note' => self::normalizeOptionalLine($storedContent['venue_note'] ?? null, 500),
+            'bfa_conference_theme' => self::normalizeOptionalLine($storedContent['bfa_conference_theme'] ?? null, 160),
+            'bfa_dress_code' => self::normalizeOptionalLine($storedContent['bfa_dress_code'] ?? null, 160),
+            'bfa_presenter_line' => self::normalizeOptionalLine($storedContent['bfa_presenter_line'] ?? null, 200),
+            'bfa_presents_line' => self::normalizeOptionalLine($storedContent['bfa_presents_line'] ?? null, 120),
+            'bfa_tagline_bar' => self::normalizeOptionalLine($storedContent['bfa_tagline_bar'] ?? null, 200),
+            'contact_phone_primary' => self::normalizeOptionalLine($storedContent['contact_phone_primary'] ?? null, 40),
+            'contact_phone_secondary' => self::normalizeOptionalLine($storedContent['contact_phone_secondary'] ?? null, 40),
         ];
 
         $headingFont = InvitationFonts::normalizeKey((string) ($theme['font_heading_key'] ?? 'system_ui'));
         $bodyFont = InvitationFonts::normalizeKey((string) ($theme['font_body_key'] ?? 'system_ui'));
         $layoutVariant = InvitationLayoutVariant::normalize($template->layout_variant ?? null);
+
+        $googleFonts = InvitationFonts::googleFamiliesNeeded($headingFont, $bodyFont);
+        if ($layoutVariant === InvitationLayoutVariant::BEAUTY_FOR_ASHES) {
+            $cinzelSpec = InvitationFonts::MAP['cinzel']['google_family'] ?? null;
+            if (is_string($cinzelSpec) && $cinzelSpec !== '' && ! in_array($cinzelSpec, $googleFonts, true)) {
+                $googleFonts[] = $cinzelSpec;
+            }
+        }
 
         return [
             'skin' => $template->skin,
@@ -146,7 +176,7 @@ class InvitationCustomizationService
                 'font_body_stack' => InvitationFonts::stack($bodyFont),
                 'font_heading_key' => $headingFont,
                 'font_body_key' => $bodyFont,
-                'google_font_families' => InvitationFonts::googleFamiliesNeeded($headingFont, $bodyFont),
+                'google_font_families' => $googleFonts,
             ],
             'sections' => $sections,
             'content' => $content,
@@ -393,5 +423,36 @@ class InvitationCustomizationService
         }
 
         return $ordered;
+    }
+
+    /**
+     * @return list<array{role: string, name: string}>
+     */
+    public static function normalizeSpeakerCards(mixed $raw): array
+    {
+        if (! is_array($raw)) {
+            return [];
+        }
+        $out = [];
+        foreach (array_slice($raw, 0, 4) as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+            $role = Str::limit(trim((string) ($row['role'] ?? '')), 80, '');
+            $name = Str::limit(trim((string) ($row['name'] ?? '')), 120, '');
+            if ($role === '' && $name === '') {
+                continue;
+            }
+            $out[] = ['role' => $role, 'name' => $name];
+        }
+
+        return $out;
+    }
+
+    public static function normalizeOptionalLine(mixed $raw, int $max): string
+    {
+        $s = trim((string) $raw);
+
+        return $s === '' ? '' : Str::limit($s, $max, '');
     }
 }
