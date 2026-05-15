@@ -128,7 +128,7 @@ class InvitationTemplateSeeder extends Seeder
                 'sort_order' => 70,
                 'min_subscription_tier' => SubscriptionTier::Pro->value,
                 'layout_variant' => InvitationLayoutVariant::BEAUTY_FOR_ASHES,
-                'category_slugs' => ['church', 'corporate', 'graduation', 'wedding'],
+                'category_slugs' => ['church'],
                 'default_theme' => [
                     'primary' => '#0e0020',
                     'accent' => '#f5c518',

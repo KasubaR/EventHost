@@ -49,6 +49,12 @@ class InvitationGalleryProcessingTest extends TestCase
             'content_story' => '',
             'schedule_items' => [],
             'gallery_images' => [$file],
+            'rsvp_form' => [
+                'message'             => ['visible' => '1', 'label' => 'Message to host'],
+                'meal_preference'     => ['visible' => '1', 'label' => 'Meal preference'],
+                'transportation_note' => ['visible' => '1', 'label' => 'Transportation notes'],
+                'song_request'        => ['visible' => '1', 'label' => 'Song request'],
+            ],
         ])->assertSessionHas('status', 'invitation-design-saved');
 
         $event->refresh();
@@ -105,6 +111,12 @@ class InvitationGalleryProcessingTest extends TestCase
             'content_story' => '',
             'schedule_items' => [],
             'invitation_hero_portrait' => $file,
+            'rsvp_form' => [
+                'message'             => ['visible' => '1', 'label' => 'Message to host'],
+                'meal_preference'     => ['visible' => '1', 'label' => 'Meal preference'],
+                'transportation_note' => ['visible' => '1', 'label' => 'Transportation notes'],
+                'song_request'        => ['visible' => '1', 'label' => 'Song request'],
+            ],
         ])->assertSessionHas('status', 'invitation-design-saved');
 
         $event->refresh();
@@ -196,6 +208,12 @@ class InvitationGalleryProcessingTest extends TestCase
             'content_story' => '',
             'schedule_items' => [],
             'couple_photos' => [$one, $two],
+            'rsvp_form' => [
+                'message'             => ['visible' => '1', 'label' => 'Message to host'],
+                'meal_preference'     => ['visible' => '1', 'label' => 'Meal preference'],
+                'transportation_note' => ['visible' => '1', 'label' => 'Transportation notes'],
+                'song_request'        => ['visible' => '1', 'label' => 'Song request'],
+            ],
         ])->assertSessionHas('status', 'invitation-design-saved');
 
         $event->refresh();

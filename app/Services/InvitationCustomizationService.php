@@ -15,6 +15,75 @@ class InvitationCustomizationService
     /** Invitation JSON blob written to {@see Event::$invitation_customization}. */
     public const CURRENT_SCHEMA_VERSION = 2;
 
+    /** RSVP form optional fields (in display order). */
+    public const RSVP_FORM_FIELDS = ['message', 'meal_preference', 'transportation_note', 'song_request'];
+
+    /** Default labels for RSVP form fields (standard / non-template-specific). */
+    public const RSVP_FORM_DEFAULT_LABELS = [
+        'message'             => 'Message to host',
+        'meal_preference'     => 'Meal preference',
+        'transportation_note' => 'Transportation notes',
+        'song_request'        => 'Song request',
+    ];
+
+    /**
+     * Template-aware default RSVP form config (all fields visible, labels per variant).
+     *
+     * @return array<string, array{visible: bool, label: string}>
+     */
+    public static function defaultRsvpForm(string $variant): array
+    {
+        $labels = match ($variant) {
+            InvitationLayoutVariant::BEAUTY_FOR_ASHES => [
+                'message'             => 'What are your expectations',
+                'meal_preference'     => 'Meal preference',
+                'transportation_note' => 'Transportation notes',
+                'song_request'        => 'Prayer request',
+            ],
+            default => self::RSVP_FORM_DEFAULT_LABELS,
+        };
+
+        $out = [];
+        foreach (self::RSVP_FORM_FIELDS as $field) {
+            $out[$field] = ['visible' => true, 'label' => $labels[$field]];
+        }
+
+        return $out;
+    }
+
+    /**
+     * Resolve the RSVP form config for an event — uses stored values where present,
+     * falls back to template-variant defaults for any missing field.
+     *
+     * @return array<string, array{visible: bool, label: string}>
+     */
+    public function resolveRsvpFormConfig(Event $event): array
+    {
+        $stored = is_array($event->invitation_customization) ? $event->invitation_customization : [];
+        $storedRsvpForm = is_array($stored['rsvp_form'] ?? null) ? $stored['rsvp_form'] : [];
+
+        $variant = InvitationLayoutVariant::normalize(
+            $event->relationLoaded('invitationTemplate')
+                ? ($event->invitationTemplate?->layout_variant ?? null)
+                : null
+        );
+        $defaults = self::defaultRsvpForm($variant);
+
+        $out = [];
+        foreach (self::RSVP_FORM_FIELDS as $field) {
+            $storedField = is_array($storedRsvpForm[$field] ?? null) ? $storedRsvpForm[$field] : [];
+            $default = $defaults[$field];
+            $out[$field] = [
+                'visible' => isset($storedField['visible']) ? (bool) $storedField['visible'] : $default['visible'],
+                'label'   => (is_string($storedField['label'] ?? null) && trim((string) $storedField['label']) !== '')
+                    ? trim((string) $storedField['label'])
+                    : $default['label'],
+            ];
+        }
+
+        return $out;
+    }
+
     /**
      * Stable fingerprint of a template's section set (sorted types, MD5).
      * Embed in forms so a stale submit after a template change can be detected.
@@ -87,6 +156,7 @@ class InvitationCustomizationService
      *         contact_phone_primary: string,
      *         contact_phone_secondary: string,
      *     },
+     *     rsvp_form: array<string, array{visible: bool, label: string}>,
      * }
      */
     public function merge(Event $event): array
@@ -121,12 +191,22 @@ class InvitationCustomizationService
             $template
         );
 
+        $layoutVariant = InvitationLayoutVariant::normalize($template->layout_variant ?? null);
+
         $storedMedia = is_array($stored['media'] ?? null) ? $stored['media'] : [];
         $heroRaw = $storedMedia['hero_portrait'] ?? null;
         $heroPortrait = is_string($heroRaw) && $heroRaw !== '' ? $heroRaw : null;
-        $coupleRaw = $storedMedia['couple_photos'] ?? [];
-        $couplePhotos = [];
-        if (is_array($coupleRaw)) {
+        $coupleRaw = is_array($storedMedia['couple_photos'] ?? null) ? $storedMedia['couple_photos'] : [];
+
+        // For BFA: keep a fixed 4-slot positional array so each photo stays bound to its speaker slot.
+        // For other templates: compact (non-empty paths only).
+        if ($layoutVariant === InvitationLayoutVariant::BEAUTY_FOR_ASHES) {
+            $couplePhotos = [];
+            for ($i = 0; $i < 4; $i++) {
+                $raw = $coupleRaw[$i] ?? null;
+                $couplePhotos[] = (is_string($raw) && $raw !== '') ? $raw : '';
+            }
+        } else {
             $couplePhotos = array_values(array_filter(array_map('strval', $coupleRaw)));
         }
 
@@ -153,9 +233,9 @@ class InvitationCustomizationService
             'contact_phone_secondary' => self::normalizeOptionalLine($storedContent['contact_phone_secondary'] ?? null, 40),
         ];
 
+        $storedRsvpForm = is_array($stored['rsvp_form'] ?? null) ? $stored['rsvp_form'] : [];
         $headingFont = InvitationFonts::normalizeKey((string) ($theme['font_heading_key'] ?? 'system_ui'));
         $bodyFont = InvitationFonts::normalizeKey((string) ($theme['font_body_key'] ?? 'system_ui'));
-        $layoutVariant = InvitationLayoutVariant::normalize($template->layout_variant ?? null);
 
         $googleFonts = InvitationFonts::googleFamiliesNeeded($headingFont, $bodyFont);
         if ($layoutVariant === InvitationLayoutVariant::BEAUTY_FOR_ASHES) {
@@ -163,6 +243,19 @@ class InvitationCustomizationService
             if (is_string($cinzelSpec) && $cinzelSpec !== '' && ! in_array($cinzelSpec, $googleFonts, true)) {
                 $googleFonts[] = $cinzelSpec;
             }
+        }
+
+        $rsvpFormDefaults = self::defaultRsvpForm($layoutVariant);
+        $rsvpForm = [];
+        foreach (self::RSVP_FORM_FIELDS as $field) {
+            $storedField = is_array($storedRsvpForm[$field] ?? null) ? $storedRsvpForm[$field] : [];
+            $default = $rsvpFormDefaults[$field];
+            $rsvpForm[$field] = [
+                'visible' => isset($storedField['visible']) ? (bool) $storedField['visible'] : $default['visible'],
+                'label'   => (is_string($storedField['label'] ?? null) && trim((string) $storedField['label']) !== '')
+                    ? trim((string) $storedField['label'])
+                    : $default['label'],
+            ];
         }
 
         return [
@@ -191,6 +284,7 @@ class InvitationCustomizationService
                     ? (string) $effects['audio_track']
                     : null,
             ],
+            'rsvp_form' => $rsvpForm,
             'schema_version' => self::CURRENT_SCHEMA_VERSION,
         ];
     }

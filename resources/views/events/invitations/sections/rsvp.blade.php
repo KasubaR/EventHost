@@ -12,7 +12,11 @@
         <div class="evt-inline-rsvp" id="rsvp">
             <h2 class="evt-inline-rsvp-heading">RSVP</h2>
             <p class="evt-inline-rsvp-lead">Let the host know if you can make it — no account needed.</p>
-            @include('rsvp.partials.open-rsvp-form', ['event' => $event, 'maxAttendees' => 1])
+            @include('rsvp.partials.open-rsvp-form', [
+                'event'          => $event,
+                'maxAttendees'   => 1,
+                'rsvpFormConfig' => $invitation['rsvp_form'] ?? [],
+            ])
             <p class="evt-inline-rsvp-alt">
                 <a href="{{ route('rsvp.open.show', $event->slug) }}" class="evt-inline-rsvp-alt-link">Prefer a dedicated RSVP page</a>
             </p>

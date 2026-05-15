@@ -206,13 +206,30 @@
             </div>
 
             <div class="profile-field">
-                <label for="guest_limit" class="profile-label">Guest limit <span class="profile-optional">optional</span></label>
-                <input id="guest_limit" name="guest_limit" type="number" min="1" step="1"
-                       class="profile-input {{ $errors->has('guest_limit') ? 'profile-input--error' : '' }}"
-                       value="{{ old('guest_limit', $event?->guest_limit ?? '') }}">
-                @error('guest_limit')
-                    <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
-                @enderror
+                <span class="profile-label">Guest limit</span>
+                <div class="evt-guest-limit-radios">
+                    <label class="profile-label evt-check-label">
+                        <input type="radio" name="guest_limit_mode" value="open"
+                               class="profile-input evt-check-input"
+                               id="guest_limit_open">
+                        Open to all guests
+                    </label>
+                    <label class="profile-label evt-check-label">
+                        <input type="radio" name="guest_limit_mode" value="set"
+                               class="profile-input evt-check-input"
+                               id="guest_limit_set">
+                        Set a limit
+                    </label>
+                </div>
+                <div id="guest_limit_wrap">
+                    <input id="guest_limit" name="guest_limit" type="number" min="1" step="1"
+                           class="profile-input {{ $errors->has('guest_limit') ? 'profile-input--error' : '' }}"
+                           value="{{ old('guest_limit', $event?->guest_limit ?? '') }}"
+                           placeholder="e.g. 200">
+                    @error('guest_limit')
+                        <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
+                    @enderror
+                </div>
             </div>
 
             <label class="profile-label evt-check-label">

@@ -13,6 +13,33 @@ document.addEventListener('submit', (event) => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Guest limit radio toggle
+    const radioOpen    = document.getElementById('guest_limit_open');
+    const radioSet     = document.getElementById('guest_limit_set');
+    const limitWrap    = document.getElementById('guest_limit_wrap');
+    const limitInput   = document.getElementById('guest_limit');
+
+    if (radioOpen && radioSet && limitWrap && limitInput) {
+        const hasStoredLimit = limitInput.value.trim() !== '';
+
+        if (hasStoredLimit) {
+            radioSet.checked = true;
+        } else {
+            radioOpen.checked = true;
+            limitWrap.style.display = 'none';
+        }
+
+        radioOpen.addEventListener('change', () => {
+            limitWrap.style.display = 'none';
+            limitInput.value = '';
+        });
+
+        radioSet.addEventListener('change', () => {
+            limitWrap.style.display = '';
+            limitInput.focus();
+        });
+    }
+
     // Cover image preview
     const input = document.getElementById('cover_image');
     const preview = document.getElementById('evt-cover-preview');

@@ -27,8 +27,9 @@
     </div>
 
     @include('rsvp.partials.form-fields', [
-        'maxAttendees' => $maxAttendees,
-        'existingRsvp' => null,
+        'maxAttendees'    => $maxAttendees,
+        'existingRsvp'    => null,
+        'rsvpFormConfig'  => $rsvpFormConfig ?? [],
     ])
 
     <button type="submit" class="btn-primary rsvp-submit">

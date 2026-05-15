@@ -167,6 +167,55 @@
             </fieldset>
 
             <fieldset class="evt-design-fieldset">
+                <legend class="profile-label">Response form</legend>
+                <p class="evt-muted evt-design-hint">Choose which questions appear on your RSVP form and customize their labels.</p>
+                @php
+                    use App\Services\InvitationCustomizationService;
+                    $rsvpFormStored = $invitationMerged['rsvp_form'] ?? [];
+                    $rsvpFormDefaultLabels = [
+                        'message'             => 'Message to host',
+                        'meal_preference'     => 'Meal preference',
+                        'transportation_note' => 'Transportation notes',
+                        'song_request'        => 'Song request',
+                    ];
+                @endphp
+                @foreach (InvitationCustomizationService::RSVP_FORM_FIELDS as $rsvpField)
+                    @php
+                        $rsvpStored   = is_array($rsvpFormStored[$rsvpField] ?? null) ? $rsvpFormStored[$rsvpField] : [];
+                        $rsvpDefLabel = $rsvpFormDefaultLabels[$rsvpField];
+                        $rsvpLabel    = old("rsvp_form.$rsvpField.label", $rsvpStored['label'] ?? $rsvpDefLabel);
+                        $rsvpVisible  = old("rsvp_form.$rsvpField.visible") !== null
+                            ? old("rsvp_form.$rsvpField.visible") === '1'
+                            : (bool) ($rsvpStored['visible'] ?? true);
+                    @endphp
+                    <div class="evt-design-rsvp-field-row">
+                        <div class="profile-field">
+                            <label for="rsvp_form_label_{{ $rsvpField }}" class="profile-label">{{ $rsvpDefLabel }}</label>
+                            <input id="rsvp_form_label_{{ $rsvpField }}"
+                                   type="text"
+                                   name="rsvp_form[{{ $rsvpField }}][label]"
+                                   class="profile-input {{ $errors->has("rsvp_form.$rsvpField.label") ? 'profile-input--error' : '' }}"
+                                   maxlength="100"
+                                   value="{{ $rsvpLabel }}"
+                                   placeholder="{{ $rsvpDefLabel }}">
+                            @error("rsvp_form.$rsvpField.label")
+                                <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
+                            @enderror
+                        </div>
+                        <input type="hidden" name="rsvp_form[{{ $rsvpField }}][visible]" value="0">
+                        <label class="profile-label evt-check-label">
+                            <input type="checkbox"
+                                   name="rsvp_form[{{ $rsvpField }}][visible]"
+                                   value="1"
+                                   class="profile-input evt-check-input"
+                                   @checked($rsvpVisible)>
+                            Show this field
+                        </label>
+                    </div>
+                @endforeach
+            </fieldset>
+
+            <fieldset class="evt-design-fieldset">
                 <legend class="profile-label">Story &amp; schedule</legend>
                 <p class="evt-muted evt-design-hint">Story is separate from the short event description above. Schedule rows with an empty title are ignored.</p>
 
@@ -238,10 +287,18 @@
                         $spkRows[] = ['role' => '', 'name' => ''];
                     }
                     $spkRows = array_slice($spkRows, 0, 4);
+
+                    // Per-slot speaker photos (positional 4-slot array in BFA couple_photos)
+                    $spkPhotos = [];
+                    $rawCoupleSlots = $invitationMerged['media']['couple_photos'] ?? [];
+                    for ($__i = 0; $__i < 4; $__i++) {
+                        $__p = $rawCoupleSlots[$__i] ?? '';
+                        $spkPhotos[$__i] = (is_string($__p) && $__p !== '') ? $__p : null;
+                    }
                 @endphp
-                <fieldset class="evt-design-fieldset">
-                    <legend class="profile-label">Beauty for Ashes — conference copy</legend>
-                    <p class="evt-muted evt-design-hint">Optional copy for the jewel-tone layout. The first four <strong>gallery</strong> images map to speakers in order. Use “Invitation hero photos” below for up to four speaker portrait uploads shown on the grid.</p>
+                <fieldset class=”evt-design-fieldset”>
+                    <legend class=”profile-label”>Beauty for Ashes — conference copy</legend>
+                    <p class=”evt-muted evt-design-hint”>Optional copy for the jewel-tone layout.</p>
 
                     <div class="evt-grid-2 profile-fields">
                         <div class="profile-field">
@@ -294,10 +351,38 @@
                         </div>
                     </div>
 
-                    <p class="profile-label evt-bfa-speaker-heading">Speaker names (optional)</p>
-                    <ul class="evt-design-schedule-list">
+                    <p class="profile-label evt-bfa-speaker-heading">Speakers (optional)</p>
+                    <p class="evt-muted evt-design-hint">Upload a photo for each speaker — it will appear on their card on the public invitation.</p>
+                    <ul class="evt-design-schedule-list evt-bfa-speaker-list">
                         @foreach ($spkRows as $idx => $sp)
-                            <li class="evt-design-schedule-row">
+                            @php $spkCurrentPhoto = $spkPhotos[$idx] ?? null; @endphp
+                            <li class="evt-design-schedule-row evt-bfa-speaker-row">
+                                <div class="evt-bfa-speaker-photo-col">
+                                    @if ($spkCurrentPhoto)
+                                        <div class="evt-bfa-speaker-current-photo">
+                                            <img src="{{ asset('storage/'.$spkCurrentPhoto) }}" alt="" width="80" height="100" loading="lazy">
+                                        </div>
+                                        <label class="evt-design-remove-label">
+                                            <input type="checkbox" name="speaker_photo_clear[{{ $idx }}]" value="1"
+                                                   @checked(old("speaker_photo_clear.$idx") === '1')> Remove photo
+                                        </label>
+                                    @else
+                                        <div class="evt-bfa-speaker-photo-placeholder" aria-hidden="true"></div>
+                                    @endif
+                                    <div class="profile-field">
+                                        <label class="profile-label" for="speaker_photo_{{ $idx }}">
+                                            {{ $spkCurrentPhoto ? 'Replace photo' : 'Upload photo' }}
+                                        </label>
+                                        <input id="speaker_photo_{{ $idx }}"
+                                               name="speaker_photo[{{ $idx }}]"
+                                               type="file"
+                                               accept="image/jpeg,image/png,image/webp,image/gif"
+                                               class="profile-input">
+                                        @error("speaker_photo.$idx")
+                                            <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
+                                        @enderror
+                                    </div>
+                                </div>
                                 <div class="evt-design-schedule-fields">
                                     <div class="profile-field">
                                         <label class="profile-label evt-design-schedule-label" for="speaker_role_{{ $idx }}">Role</label>
@@ -323,7 +408,7 @@
                 <p class="evt-muted evt-design-hint">The invitation hero image uses your <strong>event cover photo</strong> (edit under Event details).</p>
             @endif
 
-            @if ($heroPortraitSlots > 0 || $couplePhotoSlots > 0)
+            @if (($heroPortraitSlots > 0 || $couplePhotoSlots > 0) && $layoutVariant !== InvitationLayoutVariant::BEAUTY_FOR_ASHES)
                 <fieldset class="evt-design-fieldset">
                     <legend class="profile-label">Invitation hero photos</legend>
                     <p class="evt-muted evt-design-hint">

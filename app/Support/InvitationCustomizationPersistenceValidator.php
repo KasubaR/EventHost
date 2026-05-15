@@ -57,13 +57,30 @@ final class InvitationCustomizationPersistenceValidator
             'media.gallery.*' => ['required', 'string', 'regex:#^invitation-gallery/[0-9]+/[a-zA-Z0-9_\-]+\.(webp|jpe?g|png|gif)$#i'],
             'media.hero_portrait' => ['nullable', 'string', 'regex:#^invitation-hero/[0-9]+/[a-zA-Z0-9_\-]+\.(webp|jpe?g|png|gif)$#i'],
             'media.couple_photos' => ['present', 'array', 'max:4'],
-            'media.couple_photos.*' => ['required', 'string', 'regex:#^invitation-couple/[0-9]+/[a-zA-Z0-9_\-]+\.(webp|jpe?g|png|gif)$#i'],
+            'media.couple_photos.*' => [function (string $attribute, mixed $value, \Closure $fail): void {
+                if (! is_string($value)) {
+                    $fail('Invalid couple photo value.');
+
+                    return;
+                }
+                // Empty string is allowed — it marks an unfilled speaker slot in the BFA layout.
+                if ($value === '') {
+                    return;
+                }
+                if (! preg_match('#^invitation-couple/[0-9]+/[a-zA-Z0-9_\-]+\.(webp|jpe?g|png|gif)$#i', $value)) {
+                    $fail('Invalid couple photo path.');
+                }
+            }],
 
             'effects' => ['required', 'array'],
             'effects.animation_subtle' => ['required', 'boolean'],
             'effects.countdown_enabled' => ['required', 'boolean'],
             'effects.video_background' => ['nullable', self::mediaPathRule('video')],
             'effects.audio_track' => ['nullable', self::mediaPathRule('audio')],
+
+            'rsvp_form' => ['required', 'array'],
+            'rsvp_form.*.visible' => ['required', 'boolean'],
+            'rsvp_form.*.label' => ['required', 'string', 'max:100'],
         ])->validate();
     }
 

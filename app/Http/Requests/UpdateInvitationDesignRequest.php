@@ -88,8 +88,28 @@ class UpdateInvitationDesignRequest extends FormRequest
             }
         }
 
+        $rawRsvpForm = $this->input('rsvp_form', []);
+        $normalizedRsvpForm = [];
+        if (is_array($rawRsvpForm)) {
+            foreach (\App\Services\InvitationCustomizationService::RSVP_FORM_FIELDS as $field) {
+                $fieldData = is_array($rawRsvpForm[$field] ?? null) ? $rawRsvpForm[$field] : [];
+                $normalizedRsvpForm[$field] = [
+                    'visible' => in_array($fieldData['visible'] ?? null, [true, 1, '1', 'true', 'on', 'yes'], true),
+                    'label'   => Str::limit(trim((string) ($fieldData['label'] ?? '')), 100, ''),
+                ];
+            }
+        }
+
+        $rawSpeakerPhotoClear = $this->input('speaker_photo_clear', []);
+        $speakerPhotoClear = [];
+        for ($i = 0; $i < 4; $i++) {
+            $speakerPhotoClear[$i] = in_array($rawSpeakerPhotoClear[$i] ?? null, [true, 1, '1', 'true', 'on', 'yes'], true);
+        }
+
         $this->merge([
-            'section_visible' => $boolVisibility,
+            'section_visible'     => $boolVisibility,
+            'rsvp_form'           => $normalizedRsvpForm,
+            'speaker_photo_clear' => $speakerPhotoClear,
             'animation_subtle' => $this->boolean('animation_subtle'),
             'clear_video' => $this->boolean('clear_video'),
             'clear_audio' => $this->boolean('clear_audio'),
@@ -165,6 +185,15 @@ class UpdateInvitationDesignRequest extends FormRequest
             'schedule_items.*.time' => ['nullable', 'string', 'max:48'],
             'schedule_items.*.title' => ['nullable', 'string', 'max:160'],
             'schedule_items.*.detail' => ['nullable', 'string', 'max:500'],
+
+            'rsvp_form' => ['required', 'array'],
+            'rsvp_form.*.visible' => ['required', 'boolean'],
+            'rsvp_form.*.label' => ['required', 'string', 'max:100'],
+
+            'speaker_photo' => ['nullable', 'array', 'max:4'],
+            'speaker_photo.*' => ['nullable', 'file', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:5120'],
+            'speaker_photo_clear' => ['nullable', 'array', 'max:4'],
+            'speaker_photo_clear.*' => ['boolean'],
         ];
     }
 

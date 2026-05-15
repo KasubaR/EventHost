@@ -31,8 +31,9 @@
             <form method="post" action="{{ route('rsvp.token.store', ['token' => $guest->invitation_token]) }}" class="rsvp-form">
                 @csrf
                 @include('rsvp.partials.form-fields', [
-                    'maxAttendees' => $maxAttendees,
-                    'existingRsvp' => $existingRsvp ?? null,
+                    'maxAttendees'   => $maxAttendees,
+                    'existingRsvp'   => $existingRsvp ?? null,
+                    'rsvpFormConfig' => $rsvpFormConfig ?? [],
                 ])
                 <button type="submit" class="btn-primary rsvp-submit">
                     <i class="fa-solid fa-paper-plane" aria-hidden="true"></i> Send my response

@@ -8,6 +8,7 @@ use App\Models\Event;
 use App\Models\Guest;
 use App\Models\Rsvp;
 use App\Services\CommunicationService;
+use App\Services\InvitationCustomizationService;
 use App\Services\RsvpSubmissionService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
@@ -15,11 +16,11 @@ use Illuminate\View\View;
 
 class RsvpController extends Controller
 {
-    public function showByToken(string $token): View
+    public function showByToken(string $token, InvitationCustomizationService $customizationService): View
     {
         $guest = Guest::query()
             ->where('invitation_token', $token)
-            ->with('event')
+            ->with(['event', 'event.invitationTemplate'])
             ->firstOrFail();
 
         $event = $guest->event;
@@ -31,10 +32,11 @@ class RsvpController extends Controller
         $guest->load('rsvp');
 
         return view('rsvp.token-show', [
-            'guest' => $guest,
-            'event' => $event,
-            'existingRsvp' => $guest->rsvp,
-            'maxAttendees' => $event->maxAttendeeSlotsForGuest($guest),
+            'guest'          => $guest,
+            'event'          => $event,
+            'existingRsvp'   => $guest->rsvp,
+            'maxAttendees'   => $event->maxAttendeeSlotsForGuest($guest),
+            'rsvpFormConfig' => $customizationService->resolveRsvpFormConfig($event),
         ]);
     }
 
@@ -59,12 +61,13 @@ class RsvpController extends Controller
         return $this->redirectThanks($event, $guest);
     }
 
-    public function showOpen(string $slug): View
+    public function showOpen(string $slug, InvitationCustomizationService $customizationService): View
     {
         $event = Event::query()
             ->where('slug', $slug)
             ->where('is_published', true)
             ->where('is_public', true)
+            ->with('invitationTemplate')
             ->firstOrFail();
 
         if (! $event->isRsvpOpen()) {
@@ -72,8 +75,9 @@ class RsvpController extends Controller
         }
 
         return view('rsvp.open-show', [
-            'event' => $event,
-            'maxAttendees' => 1,
+            'event'          => $event,
+            'maxAttendees'   => 1,
+            'rsvpFormConfig' => $customizationService->resolveRsvpFormConfig($event),
         ]);
     }
 

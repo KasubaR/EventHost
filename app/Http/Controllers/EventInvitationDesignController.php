@@ -119,9 +119,20 @@ class EventInvitationDesignController extends Controller
                     && $priorCustomization['media']['hero_portrait'] !== ''
                     ? $priorCustomization['media']['hero_portrait']
                     : null;
-                $priorCouple = [];
-                if (isset($priorCustomization['media']['couple_photos']) && is_array($priorCustomization['media']['couple_photos'])) {
-                    $priorCouple = array_values(array_filter(array_map('strval', $priorCustomization['media']['couple_photos'])));
+                $priorCoupleRaw = isset($priorCustomization['media']['couple_photos']) && is_array($priorCustomization['media']['couple_photos'])
+                    ? $priorCustomization['media']['couple_photos']
+                    : [];
+
+                // BFA uses a fixed positional 4-slot array; others use a compact array.
+                if ($layoutVariant === InvitationLayoutVariant::BEAUTY_FOR_ASHES) {
+                    $priorCouple = [];
+                    for ($i = 0; $i < 4; $i++) {
+                        $priorCouple[] = (is_string($priorCoupleRaw[$i] ?? null) && $priorCoupleRaw[$i] !== '')
+                            ? $priorCoupleRaw[$i]
+                            : '';
+                    }
+                } else {
+                    $priorCouple = array_values(array_filter(array_map('strval', $priorCoupleRaw)));
                 }
 
                 if ($maxPortrait === 0 && $priorHero !== null) {
@@ -129,7 +140,9 @@ class EventInvitationDesignController extends Controller
                 }
                 if ($maxCouple === 0 && $priorCouple !== []) {
                     foreach ($priorCouple as $p) {
-                        $pathsToDelete[] = $p;
+                        if ($p !== '') {
+                            $pathsToDelete[] = $p;
+                        }
                     }
                 }
 
@@ -157,17 +170,46 @@ class EventInvitationDesignController extends Controller
                 $coupleKeep = [];
                 $coupleOriginalPathsForJobs = [];
                 if ($maxCouple > 0) {
-                    $coupleRemove = array_values(array_intersect($validated['couple_remove'] ?? [], $priorCouple));
-                    foreach ($coupleRemove as $p) {
-                        $pathsToDelete[] = $p;
-                    }
-                    $coupleKeep = array_values(array_diff($priorCouple, $coupleRemove));
-                    foreach ($request->file('couple_photos', []) ?: [] as $file) {
-                        if ($file instanceof UploadedFile) {
-                            $path = $this->storeInvitationRasterOriginal($file, $fresh->id, 'invitation-couple', 'couple_src_');
-                            $coupleKeep[] = $path;
-                            $uploadedPaths[] = $path;
-                            $coupleOriginalPathsForJobs[] = $path;
+                    if ($layoutVariant === InvitationLayoutVariant::BEAUTY_FOR_ASHES) {
+                        // Per-slot: speaker_photo[i] uploads, speaker_photo_clear[i] clears.
+                        for ($i = 0; $i < 4; $i++) {
+                            $currentSlot = $priorCouple[$i] ?? '';
+                            $clearSlot = (bool) ($validated['speaker_photo_clear'][$i] ?? false);
+
+                            if ($clearSlot && $currentSlot !== '') {
+                                $pathsToDelete[] = $currentSlot;
+                                $coupleKeep[] = '';
+                            } elseif ($request->hasFile("speaker_photo.$i")) {
+                                $file = $request->file("speaker_photo.$i");
+                                if ($file instanceof UploadedFile) {
+                                    if ($currentSlot !== '') {
+                                        $pathsToDelete[] = $currentSlot;
+                                    }
+                                    $path = $this->storeInvitationRasterOriginal($file, $fresh->id, 'invitation-couple', 'couple_src_');
+                                    $coupleKeep[] = $path;
+                                    $uploadedPaths[] = $path;
+                                    $coupleOriginalPathsForJobs[] = $path;
+                                } else {
+                                    $coupleKeep[] = $currentSlot;
+                                }
+                            } else {
+                                $coupleKeep[] = $currentSlot;
+                            }
+                        }
+                    } else {
+                        // Batch upload for other templates (e.g. botanical_graduation).
+                        $coupleRemove = array_values(array_intersect($validated['couple_remove'] ?? [], $priorCouple));
+                        foreach ($coupleRemove as $p) {
+                            $pathsToDelete[] = $p;
+                        }
+                        $coupleKeep = array_values(array_diff($priorCouple, $coupleRemove));
+                        foreach ($request->file('couple_photos', []) ?: [] as $file) {
+                            if ($file instanceof UploadedFile) {
+                                $path = $this->storeInvitationRasterOriginal($file, $fresh->id, 'invitation-couple', 'couple_src_');
+                                $coupleKeep[] = $path;
+                                $uploadedPaths[] = $path;
+                                $coupleOriginalPathsForJobs[] = $path;
+                            }
                         }
                     }
                 }
@@ -224,6 +266,7 @@ class EventInvitationDesignController extends Controller
                         'video_background' => $videoPath,
                         'audio_track' => $audioPath,
                     ],
+                    'rsvp_form' => $validated['rsvp_form'],
                 ];
 
                 InvitationCustomizationPersistenceValidator::validate($newCustomization);

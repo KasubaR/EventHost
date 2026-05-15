@@ -2,6 +2,13 @@
     use App\Enums\RsvpStatus;
     $maxAttendees = $maxAttendees ?? 1;
     $existing = $existingRsvp ?? null;
+    $_rfc = $rsvpFormConfig ?? [];
+    $_rfcLabel = fn(string $field, string $default): string =>
+        (is_array($_rfc[$field] ?? null) && is_string($_rfc[$field]['label'] ?? null) && $_rfc[$field]['label'] !== '')
+            ? $_rfc[$field]['label']
+            : $default;
+    $_rfcVisible = fn(string $field): bool =>
+        ! is_array($_rfc[$field] ?? null) || (bool) ($_rfc[$field]['visible'] ?? true);
     $statusOld = old('status', $existing?->status?->value ?? RsvpStatus::Accepted->value);
     $countOld = old('attendee_count', $existing ? ($existing->status === \App\Enums\RsvpStatus::Accepted ? $existing->attendee_count : 0) : null);
     if ($countOld === null) {
@@ -49,34 +56,42 @@
     @endif
 </div>
 
+@if ($_rfcVisible('message'))
 <div class="rsvp-field-group">
-    <label class="rsvp-field-label" for="rsvp_message">Message to host <span class="rsvp-optional">optional</span></label>
+    <label class="rsvp-field-label" for="rsvp_message">{{ $_rfcLabel('message', 'Message to host') }} <span class="rsvp-optional">optional</span></label>
     <textarea id="rsvp_message" name="message" class="rsvp-textarea" rows="3" maxlength="1000">{{ old('message', $existing?->message) }}</textarea>
     @error('message')
         <p class="rsvp-field-error">{{ $message }}</p>
     @enderror
 </div>
+@endif
 
+@if ($_rfcVisible('meal_preference'))
 <div class="rsvp-field-group">
-    <label class="rsvp-field-label" for="rsvp_meal">Meal preference <span class="rsvp-optional">optional</span></label>
+    <label class="rsvp-field-label" for="rsvp_meal">{{ $_rfcLabel('meal_preference', 'Meal preference') }} <span class="rsvp-optional">optional</span></label>
     <input id="rsvp_meal" type="text" name="meal_preference" class="rsvp-input" maxlength="255" value="{{ old('meal_preference', $existing?->meal_preference) }}">
     @error('meal_preference')
         <p class="rsvp-field-error">{{ $message }}</p>
     @enderror
 </div>
+@endif
 
+@if ($_rfcVisible('transportation_note'))
 <div class="rsvp-field-group">
-    <label class="rsvp-field-label" for="rsvp_transport">Transportation notes <span class="rsvp-optional">optional</span></label>
+    <label class="rsvp-field-label" for="rsvp_transport">{{ $_rfcLabel('transportation_note', 'Transportation notes') }} <span class="rsvp-optional">optional</span></label>
     <input id="rsvp_transport" type="text" name="transportation_note" class="rsvp-input" maxlength="255" value="{{ old('transportation_note', $existing?->transportation_note) }}">
     @error('transportation_note')
         <p class="rsvp-field-error">{{ $message }}</p>
     @enderror
 </div>
+@endif
 
+@if ($_rfcVisible('song_request'))
 <div class="rsvp-field-group">
-    <label class="rsvp-field-label" for="rsvp_song">Song request <span class="rsvp-optional">optional</span></label>
+    <label class="rsvp-field-label" for="rsvp_song">{{ $_rfcLabel('song_request', 'Song request') }} <span class="rsvp-optional">optional</span></label>
     <input id="rsvp_song" type="text" name="song_request" class="rsvp-input" maxlength="255" value="{{ old('song_request', $existing?->song_request) }}">
     @error('song_request')
         <p class="rsvp-field-error">{{ $message }}</p>
     @enderror
 </div>
+@endif
