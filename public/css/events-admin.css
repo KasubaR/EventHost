@@ -12,6 +12,19 @@
     gap: 10px;
 }
 
+.evt-check-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.evt-guest-limit-radios {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
 .evt-check-input {
     width: auto;
 }
@@ -263,18 +276,23 @@
 
 /* Invitation design form */
 .evt-design-fields {
-    gap: 22px;
+    gap: 24px;
 }
 
 .evt-design-fieldset {
-    border: 1px dashed rgba(26, 42, 74, 0.14);
-    border-radius: 12px;
-    padding: 16px 18px;
+    border: 1px solid var(--border-soft, rgba(26, 42, 74, 0.12));
+    border-radius: 14px;
+    padding: 18px 20px;
     margin: 0;
+    background: var(--surface, #ffffff);
+    box-shadow:
+        0 1px 2px rgba(26, 42, 74, 0.04),
+        0 8px 26px rgba(26, 42, 74, 0.06);
 }
 
 .evt-design-fieldset legend {
     padding: 0 8px;
+    font-weight: 700;
 }
 
 .evt-design-hint {
@@ -282,40 +300,388 @@
     font-size: 13px;
 }
 
-.evt-bfa-speaker-heading {
-    margin-top: 1rem;
+/* RSVP field rows (invitation design) */
+.evt-design-rsvp-list {
+    list-style: none;
+    padding: 0;
+    margin: 16px 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.evt-design-rsvp-row {
+    border-radius: 12px;
+    border: 1px solid var(--border-soft, rgba(26, 42, 74, 0.1));
+    background: linear-gradient(
+        165deg,
+        rgba(248, 250, 252, 0.95) 0%,
+        rgba(255, 255, 255, 0.65) 100%
+    );
+    padding: 15px 17px 16px;
+    box-shadow: 0 1px 3px rgba(26, 42, 74, 0.04);
+}
+
+.evt-design-rsvp-row-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 18px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-soft, rgba(26, 42, 74, 0.08));
+}
+
+.evt-design-rsvp-builtin {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--navy, #1a2a4a);
+    line-height: 1.3;
+    min-width: 0;
+}
+
+.evt-design-rsvp-toggle-wrap {
+    flex-shrink: 0;
+}
+
+.evt-design-rsvp-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--navy-muted, #334155);
+    cursor: pointer;
+    user-select: none;
+}
+
+.evt-design-rsvp-toggle .evt-check-input {
+    margin: 0;
+}
+
+.evt-design-rsvp-row-fields {
+    margin: 0;
+}
+
+.evt-design-rsvp-prompt-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--navy-muted, #475569);
+    margin: 0 0 6px;
+}
+
+.evt-design-rsvp-input {
+    width: 100%;
+    margin: 0;
+}
+
+.evt-design-rsvp-row-fields .profile-field-error {
+    margin-top: 6px;
+}
+
+@media (max-width: 520px) {
+    .evt-design-rsvp-row-top {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .evt-design-rsvp-toggle-wrap {
+        padding-top: 2px;
+    }
+}
+
+/* Inset panels — gallery / media uploads (aligned with speaker inner cards) */
+.evt-design-inset-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 4px;
+}
+
+.evt-design-inset-panel {
+    border-radius: 12px;
+    border: 1px solid var(--border-soft, rgba(26, 42, 74, 0.12));
+    background: linear-gradient(
+        180deg,
+        var(--surface-muted, #f8fafc) 0%,
+        var(--surface, #ffffff) 38%
+    );
+    box-shadow: 0 1px 4px rgba(26, 42, 74, 0.05);
+    overflow: hidden;
+}
+
+.evt-design-inset-head-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: rgba(30, 71, 187, 0.05);
+    border-bottom: 1px solid var(--border-soft, rgba(26, 42, 74, 0.1));
+}
+
+.evt-design-inset-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--navy, #1a2a4a);
+}
+
+.evt-design-inset-body {
+    padding: 14px 16px 16px;
+}
+
+.evt-design-inset-field {
+    margin-bottom: 0 !important;
+}
+
+.evt-design-upload-micro {
+    font-size: 11px !important;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    margin-bottom: 6px !important;
+}
+
+.evt-design-current-media--inset {
+    margin: 0 0 12px;
+}
+
+.evt-design-media-remove-toggle {
+    margin-bottom: 14px;
+}
+
+.evt-design-hint-follow-code {
+    margin-top: -6px !important;
+}
+
+.evt-design-media-youtube-note {
+    margin-top: 8px !important;
+    margin-bottom: 0 !important;
+}
+
+/* Beauty for Ashes — speaker cards in invitation design */
+.evt-bfa-speakers {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+}
+
+.evt-bfa-speakers-intro {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px 12px;
+}
+
+.evt-bfa-speakers-intro .evt-bfa-speakers-badge {
+    flex-shrink: 0;
+}
+
+.evt-bfa-speakers-intro > span:last-child {
+    flex: 1;
+    min-width: 12rem;
+}
+
+.evt-bfa-speakers-badge {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--navy-muted, #334155);
+    background: rgba(26, 42, 74, 0.07);
+    border: 1px solid rgba(26, 42, 74, 0.1);
+}
+
+.evt-bfa-speaker-list {
+    margin-top: 12px !important;
+    gap: 16px !important;
 }
 
 /* BFA per-slot speaker row */
 .evt-bfa-speaker-row {
     display: flex !important;
-    gap: 1rem;
-    align-items: flex-start;
+    flex-direction: column;
+    gap: 0 !important;
+    padding: 0 !important;
+    overflow: hidden;
+    border: 1px solid var(--border-soft, rgba(26, 42, 74, 0.12));
+    background: linear-gradient(
+        180deg,
+        var(--surface-muted, #f8fafc) 0%,
+        var(--surface, #ffffff) 38%
+    );
+    box-shadow: 0 1px 4px rgba(26, 42, 74, 0.05);
+}
+
+.evt-bfa-speaker-row-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: rgba(30, 71, 187, 0.05);
+    border-bottom: 1px solid var(--border-soft, rgba(26, 42, 74, 0.1));
+}
+
+.evt-bfa-speaker-num {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--accent, #1e47bb);
+    background: rgba(30, 71, 187, 0.12);
+}
+
+.evt-bfa-speaker-row-heading {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--navy, #1a2a4a);
+}
+
+.evt-bfa-speaker-main {
+    display: grid;
+    grid-template-columns: 120px minmax(0, 1fr);
+    column-gap: 1.25rem;
+    row-gap: 14px;
+    align-items: start;
+    padding: 14px 16px 16px;
 }
 
 .evt-bfa-speaker-photo-col {
-    flex: 0 0 auto;
-    width: 100px;
+    grid-row: 1;
+    grid-column: 1;
+    width: 120px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
+}
+
+.evt-bfa-speaker-fields {
+    grid-row: 1;
+    grid-column: 2;
+    flex: 1;
+    min-width: 0;
+    grid-template-columns: minmax(100px, 1fr) minmax(140px, 1.25fr);
+    align-items: start;
+}
+
+.evt-bfa-speaker-upload-row {
+    grid-column: 1 / -1;
+    margin-bottom: 0;
+}
+
+.evt-bfa-speaker-upload-label {
+    font-size: 11px !important;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    margin-bottom: 4px !important;
+}
+
+.evt-bfa-speaker-remove {
+    margin-top: -2px;
+}
+
+.evt-design-media-file.profile-input[type="file"],
+.evt-bfa-speaker-file.profile-input[type="file"] {
+    padding: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    background: var(--surface, #fff);
+    color: var(--navy-muted, #334155);
+    width: 100%;
+    min-width: 0;
+}
+
+.evt-design-media-file.profile-input[type="file"]::-webkit-file-upload-button,
+.evt-bfa-speaker-file.profile-input[type="file"]::-webkit-file-upload-button {
+    margin-right: 12px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(26, 42, 74, 0.15);
+    background: rgba(26, 42, 74, 0.05);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--navy-muted, #334155);
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.evt-design-media-file.profile-input[type="file"]::-webkit-file-upload-button:hover,
+.evt-bfa-speaker-file.profile-input[type="file"]::-webkit-file-upload-button:hover {
+    background: rgba(30, 71, 187, 0.1);
+    border-color: rgba(30, 71, 187, 0.25);
+    color: var(--accent, #1e47bb);
+}
+
+.evt-design-media-file.profile-input[type="file"]::file-selector-button,
+.evt-bfa-speaker-file.profile-input[type="file"]::file-selector-button {
+    margin-right: 12px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(26, 42, 74, 0.15);
+    background: rgba(26, 42, 74, 0.05);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--navy-muted, #334155);
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.evt-design-media-file.profile-input[type="file"]::file-selector-button:hover,
+.evt-bfa-speaker-file.profile-input[type="file"]::file-selector-button:hover {
+    background: rgba(30, 71, 187, 0.1);
+    border-color: rgba(30, 71, 187, 0.25);
+    color: var(--accent, #1e47bb);
+}
+
+.evt-bfa-speaker-fields .profile-field:last-child {
+    margin-bottom: 0;
 }
 
 .evt-bfa-speaker-current-photo img {
     display: block;
     width: 100%;
-    height: 125px;
+    height: 148px;
     object-fit: cover;
-    border-radius: 4px;
+    border-radius: 10px;
     border: 1px solid var(--border);
+    box-shadow: 0 4px 12px rgba(26, 42, 74, 0.08);
 }
 
-.evt-bfa-speaker-photo-placeholder {
-    width: 100%;
-    height: 125px;
-    border-radius: 4px;
-    border: 2px dashed var(--border);
-    background: var(--surface-alt, #f5f5f5);
+@media (max-width: 640px) {
+    .evt-bfa-speaker-main {
+        grid-template-columns: 1fr;
+    }
+
+    .evt-bfa-speaker-photo-col {
+        grid-row: auto;
+        grid-column: auto;
+    }
+
+    .evt-bfa-speaker-fields {
+        grid-row: auto;
+        grid-column: auto;
+    }
+
+    .evt-bfa-speaker-photo-col {
+        width: 100%;
+        max-width: 200px;
+    }
+
+    .evt-bfa-speaker-fields {
+        grid-template-columns: 1fr;
+    }
 }
 
 .evt-design-colors {
@@ -380,10 +746,95 @@
     font-size: 13px;
     font-weight: 600;
     color: var(--navy-muted, #334155);
+    cursor: pointer;
+    user-select: none;
+}
+
+.evt-design-vis-label input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    position: relative;
+    width: 38px;
+    height: 22px;
+    border-radius: 11px;
+    background: #cbd5e1;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.2s;
+    margin: 0;
+}
+
+.evt-design-vis-label input[type="checkbox"]::before {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    top: 3px;
+    left: 3px;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.evt-design-vis-label input[type="checkbox"]:checked {
+    background: var(--brand, #2563eb);
+}
+
+.evt-design-vis-label input[type="checkbox"]:checked::before {
+    transform: translateX(16px);
 }
 
 .evt-design-schedule {
     margin-top: 8px;
+}
+
+.evt-schedule-row-top {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 6px;
+}
+
+.evt-schedule-remove-btn {
+    border: none;
+    background: transparent;
+    color: var(--gray-mid, #94a3b8);
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    line-height: 1;
+    transition: color 0.15s, background 0.15s;
+}
+
+.evt-schedule-remove-btn:hover:not(:disabled) {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.08);
+}
+
+.evt-schedule-remove-btn:disabled {
+    opacity: 0.3;
+    cursor: default;
+}
+
+.evt-schedule-add-btn {
+    margin-top: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 16px;
+    border-radius: 8px;
+    border: 1px dashed var(--border-soft, rgba(26, 42, 74, 0.2));
+    background: transparent;
+    color: var(--brand, #2563eb);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.evt-schedule-add-btn:hover {
+    background: rgba(37, 99, 235, 0.05);
+    border-color: var(--brand, #2563eb);
 }
 
 .evt-design-schedule-list {
@@ -432,6 +883,10 @@
     display: flex;
     flex-wrap: wrap;
     gap: 12px;
+}
+
+.evt-design-gallery-current--in-panel {
+    margin: 0;
 }
 
 .evt-design-gallery-current li {

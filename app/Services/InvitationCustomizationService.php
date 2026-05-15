@@ -20,10 +20,10 @@ class InvitationCustomizationService
 
     /** Default labels for RSVP form fields (standard / non-template-specific). */
     public const RSVP_FORM_DEFAULT_LABELS = [
-        'message'             => 'Message to host',
-        'meal_preference'     => 'Meal preference',
+        'message' => 'Message to host',
+        'meal_preference' => 'Meal preference',
         'transportation_note' => 'Transportation notes',
-        'song_request'        => 'Song request',
+        'song_request' => 'Song request',
     ];
 
     /**
@@ -35,10 +35,10 @@ class InvitationCustomizationService
     {
         $labels = match ($variant) {
             InvitationLayoutVariant::BEAUTY_FOR_ASHES => [
-                'message'             => 'What are your expectations',
-                'meal_preference'     => 'Meal preference',
+                'message' => 'What are your expectations',
+                'meal_preference' => 'Meal preference',
                 'transportation_note' => 'Transportation notes',
-                'song_request'        => 'Prayer request',
+                'song_request' => 'Prayer request',
             ],
             default => self::RSVP_FORM_DEFAULT_LABELS,
         };
@@ -75,7 +75,7 @@ class InvitationCustomizationService
             $default = $defaults[$field];
             $out[$field] = [
                 'visible' => isset($storedField['visible']) ? (bool) $storedField['visible'] : $default['visible'],
-                'label'   => (is_string($storedField['label'] ?? null) && trim((string) $storedField['label']) !== '')
+                'label' => (is_string($storedField['label'] ?? null) && trim((string) $storedField['label']) !== '')
                     ? trim((string) $storedField['label'])
                     : $default['label'],
             ];
@@ -153,6 +153,8 @@ class InvitationCustomizationService
      *         bfa_presenter_line: string,
      *         bfa_presents_line: string,
      *         bfa_tagline_bar: string,
+     *         bfa_tagline_quote: string,
+     *         bfa_host_slot: int,
      *         contact_phone_primary: string,
      *         contact_phone_secondary: string,
      *     },
@@ -229,6 +231,8 @@ class InvitationCustomizationService
             'bfa_presenter_line' => self::normalizeOptionalLine($storedContent['bfa_presenter_line'] ?? null, 200),
             'bfa_presents_line' => self::normalizeOptionalLine($storedContent['bfa_presents_line'] ?? null, 120),
             'bfa_tagline_bar' => self::normalizeOptionalLine($storedContent['bfa_tagline_bar'] ?? null, 200),
+            'bfa_tagline_quote' => self::normalizeOptionalLine($storedContent['bfa_tagline_quote'] ?? null, 300),
+            'bfa_host_slot' => max(0, min(3, (int) ($storedContent['bfa_host_slot'] ?? 1))),
             'contact_phone_primary' => self::normalizeOptionalLine($storedContent['contact_phone_primary'] ?? null, 40),
             'contact_phone_secondary' => self::normalizeOptionalLine($storedContent['contact_phone_secondary'] ?? null, 40),
         ];
@@ -252,7 +256,7 @@ class InvitationCustomizationService
             $default = $rsvpFormDefaults[$field];
             $rsvpForm[$field] = [
                 'visible' => isset($storedField['visible']) ? (bool) $storedField['visible'] : $default['visible'],
-                'label'   => (is_string($storedField['label'] ?? null) && trim((string) $storedField['label']) !== '')
+                'label' => (is_string($storedField['label'] ?? null) && trim((string) $storedField['label']) !== '')
                     ? trim((string) $storedField['label'])
                     : $default['label'],
             ];

@@ -8,6 +8,7 @@ use App\Models\Event;
 use App\Services\InvitationCustomizationService;
 use App\Support\InvitationCustomizationPersistenceValidator;
 use App\Support\InvitationLayoutVariant;
+use App\Support\InvitationVideoBackground;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -82,11 +83,10 @@ class EventInvitationDesignController extends Controller
                 $pathsToDelete = array_values($removeSet);
 
                 $videoToKeep = $prevEffects['video_background'] ?? null;
-                if ($request->boolean('clear_video') && $videoToKeep !== null) {
-                    $pathsToDelete[] = $videoToKeep;
-                    $videoToKeep = null;
-                } elseif ($request->hasFile('video_background') && $videoToKeep !== null) {
-                    $pathsToDelete[] = $videoToKeep;
+                if ($request->boolean('clear_video')) {
+                    if ($videoToKeep !== null && InvitationVideoBackground::isFilePath($videoToKeep)) {
+                        $pathsToDelete[] = $videoToKeep;
+                    }
                     $videoToKeep = null;
                 }
 
@@ -214,10 +214,18 @@ class EventInvitationDesignController extends Controller
                     }
                 }
 
-                $videoPath = $videoToKeep;
-                if ($request->hasFile('video_background')) {
-                    $videoPath = $this->storeMediaUpload($request->file('video_background'), $fresh->id, 'video');
-                    $uploadedPaths[] = $videoPath;
+                $youtubeRaw = isset($validated['video_background_youtube'])
+                    ? trim((string) $validated['video_background_youtube'])
+                    : '';
+
+                if ($youtubeRaw !== '') {
+                    $normalized = InvitationVideoBackground::normalizeUserInput($youtubeRaw);
+                    $videoPath = $normalized ?? $videoToKeep;
+                    if ($normalized !== null && $videoToKeep !== null && InvitationVideoBackground::isFilePath($videoToKeep)) {
+                        $pathsToDelete[] = $videoToKeep;
+                    }
+                } else {
+                    $videoPath = $videoToKeep;
                 }
 
                 $audioPath = $audioToKeep;
@@ -252,6 +260,8 @@ class EventInvitationDesignController extends Controller
                         'bfa_presenter_line' => (string) ($validated['bfa_presenter_line'] ?? ''),
                         'bfa_presents_line' => (string) ($validated['bfa_presents_line'] ?? ''),
                         'bfa_tagline_bar' => (string) ($validated['bfa_tagline_bar'] ?? ''),
+                        'bfa_tagline_quote' => (string) ($validated['bfa_tagline_quote'] ?? ''),
+                        'bfa_host_slot' => (int) ($validated['bfa_host_slot'] ?? 1),
                         'contact_phone_primary' => (string) ($validated['contact_phone_primary'] ?? ''),
                         'contact_phone_secondary' => (string) ($validated['contact_phone_secondary'] ?? ''),
                     ],
@@ -319,7 +329,7 @@ class EventInvitationDesignController extends Controller
                 'couple_uploads' => count($request->file('couple_photos') ?: []),
                 'cleared_video' => $request->boolean('clear_video'),
                 'cleared_audio' => $request->boolean('clear_audio'),
-                'has_new_video_upload' => $request->hasFile('video_background'),
+                'video_background_youtube_set' => trim((string) ($validated['video_background_youtube'] ?? '')) !== '',
                 'has_new_audio_upload' => $request->hasFile('audio_track'),
             ]);
         } catch (\Throwable $e) {

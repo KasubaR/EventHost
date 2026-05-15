@@ -9,6 +9,7 @@
         $cards = [];
     }
 
+    $hostSlot = max(0, min(3, (int) ($invitation['content']['bfa_host_slot'] ?? 1)));
     $slots = [];
     for ($i = 0; $i < 4; $i++) {
         $row = is_array($cards[$i] ?? null) ? $cards[$i] : [];
@@ -25,7 +26,7 @@
         } elseif (isset($gallery[$i]) && $gallery[$i] !== '') {
             $src = asset('storage/'.$gallery[$i]);
         }
-        $slots[] = ['role' => $role, 'name' => $nm, 'src' => $src, 'featured' => $i === 1 && $hasContent];
+        $slots[] = ['role' => $role, 'name' => $nm, 'src' => $src, 'featured' => $i === $hostSlot && $hasContent];
     }
 @endphp
 
@@ -47,7 +48,7 @@
                         @if ($slot['src'])
                             <img src="{{ $slot['src'] }}" alt="" width="400" height="533" loading="lazy">
                         @else
-                            <div class="bfa-speaker-placeholder" aria-hidden="true"></div>
+                            <img src="{{ asset('images/person-placeholder.jpg') }}" alt="" width="400" height="533" loading="lazy">
                         @endif
                     </div>
                     <div class="bfa-speaker-body">

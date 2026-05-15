@@ -8,6 +8,7 @@ use App\Services\InvitationCustomizationService;
 use App\Support\InvitationFonts;
 use App\Support\InvitationLayoutVariant;
 use App\Support\InvitationSections;
+use App\Support\InvitationVideoBackground;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -91,11 +92,11 @@ class UpdateInvitationDesignRequest extends FormRequest
         $rawRsvpForm = $this->input('rsvp_form', []);
         $normalizedRsvpForm = [];
         if (is_array($rawRsvpForm)) {
-            foreach (\App\Services\InvitationCustomizationService::RSVP_FORM_FIELDS as $field) {
+            foreach (InvitationCustomizationService::RSVP_FORM_FIELDS as $field) {
                 $fieldData = is_array($rawRsvpForm[$field] ?? null) ? $rawRsvpForm[$field] : [];
                 $normalizedRsvpForm[$field] = [
                     'visible' => in_array($fieldData['visible'] ?? null, [true, 1, '1', 'true', 'on', 'yes'], true),
-                    'label'   => Str::limit(trim((string) ($fieldData['label'] ?? '')), 100, ''),
+                    'label' => Str::limit(trim((string) ($fieldData['label'] ?? '')), 100, ''),
                 ];
             }
         }
@@ -107,8 +108,8 @@ class UpdateInvitationDesignRequest extends FormRequest
         }
 
         $this->merge([
-            'section_visible'     => $boolVisibility,
-            'rsvp_form'           => $normalizedRsvpForm,
+            'section_visible' => $boolVisibility,
+            'rsvp_form' => $normalizedRsvpForm,
             'speaker_photo_clear' => $speakerPhotoClear,
             'animation_subtle' => $this->boolean('animation_subtle'),
             'clear_video' => $this->boolean('clear_video'),
@@ -124,6 +125,8 @@ class UpdateInvitationDesignRequest extends FormRequest
             'bfa_presenter_line' => $trimLine('bfa_presenter_line', 200),
             'bfa_presents_line' => $trimLine('bfa_presents_line', 120),
             'bfa_tagline_bar' => $trimLine('bfa_tagline_bar', 200),
+            'bfa_tagline_quote' => $trimLine('bfa_tagline_quote', 300),
+            'bfa_host_slot' => (int) ($this->input('bfa_host_slot', 1)),
             'contact_phone_primary' => $trimLine('contact_phone_primary', 40),
             'contact_phone_secondary' => $trimLine('contact_phone_secondary', 40),
         ]);
@@ -162,7 +165,19 @@ class UpdateInvitationDesignRequest extends FormRequest
             'couple_remove' => ['nullable', 'array'],
             'couple_remove.*' => ['string', 'regex:/^invitation-couple\/[0-9]+\/[a-zA-Z0-9_\-]+\.(webp|jpe?g|png|gif)$/i'],
 
-            'video_background' => ['nullable', 'file', 'mimes:mp4,webm', 'max:10240'],
+            'video_background_youtube' => [
+                'nullable',
+                'string',
+                'max:500',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if ($value === null || trim((string) $value) === '') {
+                        return;
+                    }
+                    if (InvitationVideoBackground::parseVideoId((string) $value) === null) {
+                        $fail('Enter a valid YouTube link or video ID.');
+                    }
+                },
+            ],
             'audio_track' => ['nullable', 'file', 'mimes:mp3,mpeg,ogg,wav', 'max:5120'],
             'clear_video' => ['boolean'],
             'clear_audio' => ['boolean'],
@@ -179,6 +194,8 @@ class UpdateInvitationDesignRequest extends FormRequest
             'bfa_presenter_line' => ['nullable', 'string', 'max:200'],
             'bfa_presents_line' => ['nullable', 'string', 'max:120'],
             'bfa_tagline_bar' => ['nullable', 'string', 'max:200'],
+            'bfa_tagline_quote' => ['nullable', 'string', 'max:300'],
+            'bfa_host_slot' => ['nullable', 'integer', 'min:0', 'max:3'],
             'contact_phone_primary' => ['nullable', 'string', 'max:40'],
             'contact_phone_secondary' => ['nullable', 'string', 'max:40'],
             'schedule_items' => ['present', 'array', 'max:24'],

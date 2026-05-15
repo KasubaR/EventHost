@@ -72,6 +72,10 @@
     z-index: 0;
 }
 
+.evt-layout-beauty-for-ashes .bfa-hero .evt-inv-hero-video-embed {
+    border-radius: 0;
+}
+
 .evt-layout-beauty-for-ashes .bfa-hero-video-scrim {
     position: absolute;
     inset: 0;
@@ -534,12 +538,6 @@
     box-shadow: 0 2px 12px rgba(245, 197, 24, 0.45);
 }
 
-.evt-layout-beauty-for-ashes .bfa-speaker-placeholder {
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(145deg, rgba(123, 47, 190, 0.35), rgba(14, 0, 32, 0.6));
-}
-
 .evt-layout-beauty-for-ashes .bfa-speaker-body {
     padding: 1rem;
 }
@@ -663,6 +661,37 @@
     color: var(--bfa-gold-light);
     text-decoration: underline;
     text-underline-offset: 3px;
+}
+
+.evt-layout-beauty-for-ashes .bfa-details-aside {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1.75rem;
+}
+
+.evt-layout-beauty-for-ashes .bfa-tagline-quote {
+    border-left: 3px solid rgba(168, 85, 247, 0.5);
+    padding-left: 1.25rem;
+}
+
+.evt-layout-beauty-for-ashes .bfa-tagline-script {
+    font-family: var(--bfa-font-script);
+    font-size: clamp(1rem, 2.4vw, 1.45rem);
+    font-style: italic;
+    color: var(--bfa-glow);
+    line-height: 1.5;
+    display: block;
+    margin-bottom: 0.45rem;
+}
+
+.evt-layout-beauty-for-ashes .bfa-tagline-bold {
+    font-family: var(--bfa-font-sans);
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
 }
 
 .evt-layout-beauty-for-ashes .bfa-theme-panel {

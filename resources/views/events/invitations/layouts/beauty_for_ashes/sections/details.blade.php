@@ -2,6 +2,7 @@
     $venueNote = trim((string) ($invitation['content']['venue_note'] ?? ''));
     $theme = trim((string) ($invitation['content']['bfa_conference_theme'] ?? ''));
     $dress = trim((string) ($invitation['content']['bfa_dress_code'] ?? ''));
+    $taglineQuote = trim((string) ($invitation['content']['bfa_tagline_quote'] ?? ''));
     $timeFmt = '';
     if ($event->event_time) {
         $timeFmt = \Carbon\Carbon::parse('2000-01-01 '.substr((string) $event->event_time, 0, 8))->format('H:i').' hrs';
@@ -74,6 +75,11 @@
             </div>
 
             <div class="bfa-details-aside">
+                @if ($taglineQuote !== '')
+                    <div class="bfa-tagline-quote">
+                        <span class="bfa-tagline-script">&ldquo;{{ $taglineQuote }}&rdquo;</span>
+                    </div>
+                @endif
                 <div class="bfa-theme-panel">
                     @if ($theme !== '')
                         <div class="bfa-theme-row">
