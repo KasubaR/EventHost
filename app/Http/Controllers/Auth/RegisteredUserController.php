@@ -23,12 +23,15 @@ class RegisteredUserController extends Controller
     {
         $validated = $request->validated();
 
+        $isOrg = $validated['account_type'] === 'organisation';
+
         $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => $validated['password'],
-            'phone' => $validated['phone'] ?? null,
-            'company_name' => $validated['company_name'] ?? null,
+            'name'         => $validated['name'],
+            'account_type' => $validated['account_type'],
+            'email'        => $validated['email'],
+            'password'     => $validated['password'],
+            'phone'        => $validated['phone'] ?? null,
+            'company_name' => $isOrg ? $validated['name'] : ($validated['company_name'] ?? null),
         ]);
 
         event(new Registered($user));

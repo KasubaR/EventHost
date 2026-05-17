@@ -65,12 +65,26 @@
 
       <form method="POST" action="{{ route('register') }}">
         @csrf
+        <input type="hidden" name="account_type" id="account_type" value="{{ old('account_type', 'individual') }}">
 
         <div class="auth-fields">
 
-          {{-- Name --}}
+          {{-- Account type toggle --}}
           <div class="auth-field">
-            <label for="name" class="auth-label">
+            <label class="auth-label"><i class="fa-solid fa-id-card"></i> Account type</label>
+            <div class="auth-type-toggle" id="auth-type-toggle">
+              <button type="button" class="auth-type-btn auth-type-btn--active" data-type="individual">
+                <i class="fa-solid fa-user"></i> Individual
+              </button>
+              <button type="button" class="auth-type-btn" data-type="organisation">
+                <i class="fa-solid fa-building"></i> Organisation
+              </button>
+            </div>
+          </div>
+
+          {{-- Name (label/placeholder swaps based on type) --}}
+          <div class="auth-field">
+            <label for="name" class="auth-label" id="name-label">
               <i class="fa-solid fa-user"></i> Full name
             </label>
             <input id="name" type="text" name="name" value="{{ old('name') }}"
@@ -148,8 +162,8 @@
             @enderror
           </div>
 
-          {{-- Company --}}
-          <div class="auth-field">
+          {{-- Company (only for Individual, hidden for Organisation since name IS the org name) --}}
+          <div class="auth-field" id="company-field">
             <label for="company_name" class="auth-label">
               <i class="fa-solid fa-building"></i> Company / Event business name
             </label>
@@ -232,5 +246,41 @@
 
   </div>
 </section>
+
+<script>
+(function () {
+    var toggle     = document.getElementById('auth-type-toggle');
+    var typeInput  = document.getElementById('account_type');
+    var nameLabel  = document.getElementById('name-label');
+    var nameInput  = document.getElementById('name');
+    var companyField = document.getElementById('company-field');
+
+    var config = {
+        individual:   { icon: 'fa-user',     label: 'Full name',                        placeholder: 'Your full name',                  showCompany: true  },
+        organisation: { icon: 'fa-building',  label: 'Company / Event business name',    placeholder: 'Your company or event business name', showCompany: false }
+    };
+
+    function applyType(type) {
+        typeInput.value = type;
+        var c = config[type];
+
+        nameLabel.innerHTML = '<i class="fa-solid ' + c.icon + '"></i> ' + c.label;
+        nameInput.placeholder = c.placeholder;
+        companyField.style.display = c.showCompany ? '' : 'none';
+
+        toggle.querySelectorAll('.auth-type-btn').forEach(function (btn) {
+            btn.classList.toggle('auth-type-btn--active', btn.dataset.type === type);
+        });
+    }
+
+    toggle.addEventListener('click', function (e) {
+        var btn = e.target.closest('.auth-type-btn');
+        if (btn) applyType(btn.dataset.type);
+    });
+
+    // Restore state on validation failure
+    applyType(typeInput.value || 'individual');
+}());
+</script>
 
 @endsection

@@ -469,3 +469,34 @@
   .auth-form-card { padding: 24px 20px; }
   .auth-hero-headline { font-size: 28px; }
 }
+
+/* Account type toggle */
+.auth-type-toggle {
+  display: flex;
+  gap: 8px;
+}
+.auth-type-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 2px solid var(--gray-light, #e2e8f0);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--gray-mid, #64748b);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.auth-type-btn:hover {
+  border-color: var(--primary, #1e47bb);
+  color: var(--primary, #1e47bb);
+}
+.auth-type-btn--active {
+  border-color: var(--primary, #1e47bb);
+  background: var(--primary, #1e47bb);
+  color: #fff;
+}
