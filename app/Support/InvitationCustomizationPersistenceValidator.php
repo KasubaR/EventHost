@@ -66,7 +66,7 @@ final class InvitationCustomizationPersistenceValidator
             'sections.*.visible' => ['required', 'boolean'],
 
             'media' => ['required', 'array'],
-            'media.gallery' => ['present', 'array', 'max:5'],
+            'media.gallery' => ['present', 'array', 'max:6'],
             'media.gallery.*' => ['required', 'string', 'regex:#^invitation-gallery/[0-9]+/[a-zA-Z0-9_\-]+\.(webp|jpe?g|png|gif)$#i'],
             'media.hero_portrait' => ['nullable', 'string', 'regex:#^invitation-hero/[0-9]+/[a-zA-Z0-9_\-]+\.(webp|jpe?g|png|gif)$#i'],
             'media.couple_photos' => ['present', 'array', 'max:4'],

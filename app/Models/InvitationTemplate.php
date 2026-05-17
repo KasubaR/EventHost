@@ -184,19 +184,19 @@ class InvitationTemplate extends Model
                 ],
             ];
         } elseif ($this->slug === 'event-invite') {
-            $event->name = "Mukuba's";
+            $event->name = "Nalishebo's";
             $event->event_type = 'birthday';
             $event->description = 'A joyful birthday lunch celebration.';
-            $event->venue = 'Kabulonga Roan Road 45';
-            $event->location_name = 'Lusaka, Zambia';
+            $event->venue = 'Mwanachanya Function Hall';
+            $event->location_name = 'Kafwimbi, Zambia';
             $event->event_date = now()->addWeeks(2)->startOfDay();
             $event->event_time = '13:30:00';
             $event->invitation_customization = [
                 'schema_version' => InvitationCustomizationService::CURRENT_SCHEMA_VERSION,
                 'content' => [
                     'ei_color_theme' => 'Denim and Brown',
-                    'ei_guest_speaker' => 'Lucy Mulenga',
-                    'ei_mc' => 'Rabecca and Natasha',
+                    'ei_guest_speaker' => 'Mutinta Kapembwe',
+                    'ei_mc' => 'Chanda and Mumba',
                 ],
             ];
         } elseif ($this->slug === 'beauty-for-ashes') {

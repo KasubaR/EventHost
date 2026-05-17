@@ -1,5 +1,5 @@
 <div class="ei-rsvp-wrap">
-    <a href="#rsvp" class="ei-rsvp-btn">RSVP Now</a>
+    <a href="#rsvp" class="ei-rsvp-btn"><i class="fa-regular fa-envelope"></i> RSVP Now</a>
     <span class="ei-rsvp-note">Kindly confirm your attendance</span>
 </div>
 

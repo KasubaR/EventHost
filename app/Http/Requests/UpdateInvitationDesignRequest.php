@@ -166,7 +166,7 @@ class UpdateInvitationDesignRequest extends FormRequest
             'animation_subtle' => ['boolean'],
             'countdown_enabled' => ['boolean'],
 
-            'gallery_images' => ['nullable', 'array', 'max:5'],
+            'gallery_images' => ['nullable', 'array', 'max:6'],
             'gallery_images.*' => ['file', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:5120'],
             'gallery_remove' => ['nullable', 'array'],
             'gallery_remove.*' => ['string', 'regex:/^invitation-gallery\/[0-9]+\/[a-zA-Z0-9_\-]+\.(webp|jpe?g|png|gif)$/i'],
@@ -305,8 +305,8 @@ class UpdateInvitationDesignRequest extends FormRequest
 
             $keepCount = count($galleryKeep);
             $newCount = count($this->file('gallery_images', []) ?: []);
-            if ($keepCount + $newCount > 5) {
-                $validator->errors()->add('gallery_images', 'You may keep at most five gallery images.');
+            if ($keepCount + $newCount > 6) {
+                $validator->errors()->add('gallery_images', 'You may keep at most six gallery images.');
             }
 
             $cap = (int) config('invitations.gallery_max_total_bytes', 0);

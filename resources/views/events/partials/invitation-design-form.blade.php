@@ -609,10 +609,16 @@
 
             @if (($heroPortraitSlots > 0 || $couplePhotoSlots > 0) && $layoutVariant !== InvitationLayoutVariant::BEAUTY_FOR_ASHES)
                 <fieldset class="evt-design-fieldset">
-                    <legend class="profile-label">Invitation hero photos</legend>
+                    <legend class="profile-label">
+                        @if ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION)
+                            Couple portrait grid
+                        @else
+                            Invitation hero photos
+                        @endif
+                    </legend>
                     <p class="evt-muted evt-design-hint">
-                        @if ($layoutVariant === InvitationLayoutVariant::BEAUTY_FOR_ASHES)
-                            Optional speaker portraits for the grid (up to four). When empty, the first gallery images are used as headshots, or a soft placeholder appears.
+                        @if ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION)
+                            Upload three separate photos for the "Two hearts, one story" portrait grid — left portrait, centre portrait, and right portrait. When fewer than three are uploaded, the last image repeats to fill the grid.
                         @else
                             Optional portraits beside your headline. When empty, the botanical layout falls back to your event cover for the framed photo.
                         @endif
@@ -658,13 +664,17 @@
                             <label for="couple_photos" class="profile-label">
                                 @if ($layoutVariant === InvitationLayoutVariant::BEAUTY_FOR_ASHES)
                                     Speaker portrait uploads
+                                @elseif ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION)
+                                    Couple portraits (3 slots — left, centre, right)
                                 @else
                                     Couple / dual portraits
                                 @endif
                             </label>
                             <input id="couple_photos" name="couple_photos[]" type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="profile-input" multiple @if ($coupleSlotsRemaining === 0) disabled @endif>
-                            <p class="evt-muted evt-design-hint">Up to {{ $couplePhotoSlots }} image(s).
-                                @if ($layoutVariant === InvitationLayoutVariant::BEAUTY_FOR_ASHES)
+                            <p class="evt-muted evt-design-hint">
+                                @if ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION)
+                                    Select up to 3 different images — they fill the left, centre, and right columns of the portrait grid. You can select all three at once or upload in batches.
+                                @elseif ($layoutVariant === InvitationLayoutVariant::BEAUTY_FOR_ASHES)
                                     Shown on the speaker grid in upload order.
                                 @else
                                     Displayed as one or two framed portraits in the hero.
@@ -685,7 +695,7 @@
             @if (! in_array('gallery', $blockedSections, true))
             <fieldset class="evt-design-fieldset">
                 <legend class="profile-label">Gallery</legend>
-                <p class="evt-muted evt-design-hint">Up to five WebP images stored after upload (converted from JPG/PNG).</p>
+                <p class="evt-muted evt-design-hint">Up to six WebP images stored after upload (converted from JPG/PNG).</p>
                 <div class="evt-design-inset-stack">
                     @if (! empty($invitationMerged['media']['gallery']))
                         <div class="evt-design-inset-panel">

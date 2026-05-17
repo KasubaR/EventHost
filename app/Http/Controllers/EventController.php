@@ -75,12 +75,15 @@ class EventController extends Controller
             throw $e;
         }
 
-        $redirectParams = ['event' => $event];
         if ($preferredTemplateId !== null) {
-            $redirectParams['preferred'] = (int) $preferredTemplateId;
+            $preferredTemplate = InvitationTemplate::find((int) $preferredTemplateId);
+            if ($preferredTemplate && $request->user()->canUseInvitationTemplate($preferredTemplate)) {
+                $event->update(['invitation_template_id' => $preferredTemplate->id]);
+                return redirect()->route('events.edit', $event)->with('status', 'template-chosen');
+            }
         }
 
-        return redirect()->route('events.choose-template', $redirectParams)->with('status', 'draft-saved');
+        return redirect()->route('events.choose-template', ['event' => $event])->with('status', 'draft-saved');
     }
 
     public function show(Event $event, DashboardAnalyticsService $analyticsService): View
