@@ -160,6 +160,16 @@ class InvitationCustomizationService
      *         ei_color_theme: string,
      *         ei_guest_speaker: string,
      *         ei_mc: string,
+     *         wi_hero_eyebrow: string,
+     *         wi_couple_caption: string,
+     *         wi_footer_quote: string,
+     *         wi2_hero_tag: string,
+     *         wi2_invite_formal: string,
+     *         wi2_invite_body: string,
+     *         wi2_photo_quote: string,
+     *         wi2_photo_quote_cite: string,
+     *         wi2_footer_monogram: string,
+     *         wi2_footer_legal: string,
      *     },
      *     rsvp_form: array<string, array{visible: bool, label: string}>,
      * }
@@ -241,6 +251,16 @@ class InvitationCustomizationService
             'ei_color_theme' => self::normalizeOptionalLine($storedContent['ei_color_theme'] ?? null, 160),
             'ei_guest_speaker' => self::normalizeOptionalLine($storedContent['ei_guest_speaker'] ?? null, 120),
             'ei_mc' => self::normalizeOptionalLine($storedContent['ei_mc'] ?? null, 120),
+            'wi_hero_eyebrow' => self::normalizeOptionalLine($storedContent['wi_hero_eyebrow'] ?? null, 120),
+            'wi_couple_caption' => self::normalizeOptionalLine($storedContent['wi_couple_caption'] ?? null, 160),
+            'wi_footer_quote' => self::normalizeOptionalLine($storedContent['wi_footer_quote'] ?? null, 300),
+            'wi2_hero_tag' => self::normalizeOptionalLine($storedContent['wi2_hero_tag'] ?? null, 120),
+            'wi2_invite_formal' => self::normalizeOptionalLine($storedContent['wi2_invite_formal'] ?? null, 160),
+            'wi2_invite_body' => self::normalizeOptionalLine($storedContent['wi2_invite_body'] ?? null, 600),
+            'wi2_photo_quote' => self::normalizeOptionalLine($storedContent['wi2_photo_quote'] ?? null, 400),
+            'wi2_photo_quote_cite' => self::normalizeOptionalLine($storedContent['wi2_photo_quote_cite'] ?? null, 160),
+            'wi2_footer_monogram' => self::normalizeOptionalLine($storedContent['wi2_footer_monogram'] ?? null, 24),
+            'wi2_footer_legal' => self::normalizeOptionalLine($storedContent['wi2_footer_legal'] ?? null, 120),
         ];
 
         $storedRsvpForm = is_array($stored['rsvp_form'] ?? null) ? $stored['rsvp_form'] : [];
@@ -256,6 +276,30 @@ class InvitationCustomizationService
         }
         if ($layoutVariant === InvitationLayoutVariant::EVENT_INVITE) {
             foreach (['great_vibes', 'cormorant_garamond', 'montserrat'] as $fontKey) {
+                $spec = InvitationFonts::MAP[$fontKey]['google_family'] ?? null;
+                if (is_string($spec) && $spec !== '' && ! in_array($spec, $googleFonts, true)) {
+                    $googleFonts[] = $spec;
+                }
+            }
+        }
+        if ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION) {
+            foreach (['playfair', 'cormorant_garamond', 'jost'] as $fontKey) {
+                $spec = InvitationFonts::MAP[$fontKey]['google_family'] ?? null;
+                if (is_string($spec) && $spec !== '' && ! in_array($spec, $googleFonts, true)) {
+                    $googleFonts[] = $spec;
+                }
+            }
+        }
+        if ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION_NOIR) {
+            foreach (['bodoni_moda', 'eb_garamond', 'cinzel'] as $fontKey) {
+                $spec = InvitationFonts::MAP[$fontKey]['google_family'] ?? null;
+                if (is_string($spec) && $spec !== '' && ! in_array($spec, $googleFonts, true)) {
+                    $googleFonts[] = $spec;
+                }
+            }
+        }
+        if ($layoutVariant === InvitationLayoutVariant::MODERN_MINIMAL) {
+            foreach (['dm_sans', 'inter'] as $fontKey) {
                 $spec = InvitationFonts::MAP[$fontKey]['google_family'] ?? null;
                 if (is_string($spec) && $spec !== '' && ! in_array($spec, $googleFonts, true)) {
                     $googleFonts[] = $spec;

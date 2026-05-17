@@ -40,6 +40,16 @@
         $sectionLabels['description'] = 'Contact & closing';
         $sectionLabels['gallery'] = 'Speaker grid';
     }
+    if ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION) {
+        $sectionLabels['description'] = 'Save the date & couple photos';
+        $sectionLabels['details'] = 'Celebration details cards';
+        $sectionLabels['schedule'] = 'Detail cards (schedule data)';
+    }
+    if ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION_NOIR) {
+        $sectionLabels['description'] = 'Formal invitation card';
+        $sectionLabels['story'] = 'Quote interlude';
+        $sectionLabels['schedule'] = "Day's programme timeline";
+    }
     $blockedSections = InvitationLayoutVariant::blockedSections($layoutVariant);
     $sectionLabels = array_diff_key($sectionLabels, array_flip($blockedSections));
     $heroPortraitSlots = InvitationLayoutVariant::maxInvitationHeroPortraitSlots($layoutVariant);
@@ -320,6 +330,80 @@
                     </div>
                 </template>
             </fieldset>
+
+            @if ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION_NOIR)
+                <fieldset class="evt-design-fieldset">
+                    <legend class="profile-label">Noir wedding — copy &amp; footer</legend>
+                    <p class="evt-muted evt-design-hint">Headlines for the split hero, formal card, photo quote, and closing monogram.</p>
+
+                    <div class="evt-grid-2 profile-fields">
+                        <div class="profile-field">
+                            <label for="wi2_hero_tag" class="profile-label">Hero tagline</label>
+                            <input id="wi2_hero_tag" name="wi2_hero_tag" type="text" maxlength="120" class="profile-input"
+                                   value="{{ old('wi2_hero_tag', $invitationMerged['content']['wi2_hero_tag'] ?? '') }}"
+                                   placeholder="The Wedding of">
+                        </div>
+                        <div class="profile-field">
+                            <label for="wi2_invite_formal" class="profile-label">Formal card opener</label>
+                            <input id="wi2_invite_formal" name="wi2_invite_formal" type="text" maxlength="160" class="profile-input"
+                                   value="{{ old('wi2_invite_formal', $invitationMerged['content']['wi2_invite_formal'] ?? '') }}">
+                        </div>
+                    </div>
+                    <div class="profile-field">
+                        <label for="wi2_invite_body" class="profile-label">Formal card body</label>
+                        <textarea id="wi2_invite_body" name="wi2_invite_body" rows="3" maxlength="600" class="profile-input"
+                                  placeholder="request the honour of your presence…">{{ old('wi2_invite_body', $invitationMerged['content']['wi2_invite_body'] ?? '') }}</textarea>
+                    </div>
+                    <div class="profile-field">
+                        <label for="wi2_photo_quote" class="profile-label">Photo quote</label>
+                        <textarea id="wi2_photo_quote" name="wi2_photo_quote" rows="2" maxlength="400" class="profile-input">{{ old('wi2_photo_quote', $invitationMerged['content']['wi2_photo_quote'] ?? '') }}</textarea>
+                    </div>
+                    <div class="evt-grid-2 profile-fields">
+                        <div class="profile-field">
+                            <label for="wi2_photo_quote_cite" class="profile-label">Quote attribution</label>
+                            <input id="wi2_photo_quote_cite" name="wi2_photo_quote_cite" type="text" maxlength="160" class="profile-input"
+                                   value="{{ old('wi2_photo_quote_cite', $invitationMerged['content']['wi2_photo_quote_cite'] ?? '') }}">
+                        </div>
+                        <div class="profile-field">
+                            <label for="wi2_footer_monogram" class="profile-label">Footer monogram</label>
+                            <input id="wi2_footer_monogram" name="wi2_footer_monogram" type="text" maxlength="24" class="profile-input"
+                                   value="{{ old('wi2_footer_monogram', $invitationMerged['content']['wi2_footer_monogram'] ?? '') }}"
+                                   placeholder="N&amp;E">
+                        </div>
+                    </div>
+                    <div class="profile-field">
+                        <label for="wi2_footer_legal" class="profile-label">Footer closing line</label>
+                        <input id="wi2_footer_legal" name="wi2_footer_legal" type="text" maxlength="120" class="profile-input"
+                               value="{{ old('wi2_footer_legal', $invitationMerged['content']['wi2_footer_legal'] ?? '') }}">
+                    </div>
+                </fieldset>
+            @endif
+
+            @if ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION)
+                <fieldset class="evt-design-fieldset">
+                    <legend class="profile-label">Wedding invitation — headlines</legend>
+                    <p class="evt-muted evt-design-hint">Copy shown on the full-screen hero, couple grid caption, and closing footer.</p>
+
+                    <div class="profile-field">
+                        <label for="wi_hero_eyebrow" class="profile-label">Hero eyebrow line</label>
+                        <input id="wi_hero_eyebrow" name="wi_hero_eyebrow" type="text" maxlength="120" class="profile-input"
+                               value="{{ old('wi_hero_eyebrow', $invitationMerged['content']['wi_hero_eyebrow'] ?? '') }}"
+                               placeholder="Together with their families">
+                    </div>
+                    <div class="profile-field">
+                        <label for="wi_couple_caption" class="profile-label">Couple photo caption</label>
+                        <input id="wi_couple_caption" name="wi_couple_caption" type="text" maxlength="160" class="profile-input"
+                               value="{{ old('wi_couple_caption', $invitationMerged['content']['wi_couple_caption'] ?? '') }}"
+                               placeholder="Two hearts, one story">
+                    </div>
+                    <div class="profile-field">
+                        <label for="wi_footer_quote" class="profile-label">Footer quote</label>
+                        <input id="wi_footer_quote" name="wi_footer_quote" type="text" maxlength="300" class="profile-input"
+                               value="{{ old('wi_footer_quote', $invitationMerged['content']['wi_footer_quote'] ?? '') }}"
+                               placeholder="A short closing line for guests">
+                    </div>
+                </fieldset>
+            @endif
 
             @if ($layoutVariant === InvitationLayoutVariant::EVENT_INVITE)
                 <fieldset class="evt-design-fieldset">

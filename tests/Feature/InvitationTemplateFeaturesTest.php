@@ -35,6 +35,48 @@ class InvitationTemplateFeaturesTest extends TestCase
         $response->assertSee('Celebration', escape: false);
     }
 
+    public function test_preview_modern_minimal_renders_clean_markup(): void
+    {
+        $user = User::factory()->pro()->create();
+        $tpl = InvitationTemplate::query()->where('slug', 'modern-minimal')->firstOrFail();
+
+        $response = $this->actingAs($user)->get(route('templates.preview', $tpl));
+
+        $response->assertOk();
+        $response->assertSee('evt-layout-modern-minimal', escape: false);
+        $response->assertSee('mm-hero', escape: false);
+        $response->assertSee('Sofia', escape: false);
+        $response->assertSee('The Countdown', escape: false);
+    }
+
+    public function test_preview_wedding_invitation_noir_renders_dark_markup(): void
+    {
+        $user = User::factory()->pro()->create();
+        $tpl = InvitationTemplate::query()->where('slug', 'wedding-invitation-2')->firstOrFail();
+
+        $response = $this->actingAs($user)->get(route('templates.preview', $tpl));
+
+        $response->assertOk();
+        $response->assertSee('evt-layout-wedding-invitation-noir', escape: false);
+        $response->assertSee('wi2-hero', escape: false);
+        $response->assertSee('Nadia', escape: false);
+        $response->assertSee('wi2-timeline', escape: false);
+    }
+
+    public function test_preview_wedding_invitation_renders_ivory_gold_markup(): void
+    {
+        $user = User::factory()->pro()->create();
+        $tpl = InvitationTemplate::query()->where('slug', 'wedding-invitation')->firstOrFail();
+
+        $response = $this->actingAs($user)->get(route('templates.preview', $tpl));
+
+        $response->assertOk();
+        $response->assertSee('evt-layout-wedding-invitation', escape: false);
+        $response->assertSee('wi-hero', escape: false);
+        $response->assertSee('Amara', escape: false);
+        $response->assertSee('Save the', escape: false);
+    }
+
     public function test_preview_event_invite_renders_blush_card_markup(): void
     {
         $user = User::factory()->create();

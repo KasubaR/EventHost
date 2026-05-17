@@ -14,12 +14,18 @@ final class InvitationLayoutVariant
 
     public const EVENT_INVITE = 'event_invite';
 
+    public const WEDDING_INVITATION = 'wedding_invitation';
+
+    public const WEDDING_INVITATION_NOIR = 'wedding_invitation_noir';
+
+    public const MODERN_MINIMAL = 'modern_minimal';
+
     /**
      * @return list<string>
      */
     public static function keys(): array
     {
-        return [self::STANDARD, self::PRO_MAGAZINE, self::BOTANICAL_GRADUATION, self::BEAUTY_FOR_ASHES, self::EVENT_INVITE];
+        return [self::STANDARD, self::PRO_MAGAZINE, self::BOTANICAL_GRADUATION, self::BEAUTY_FOR_ASHES, self::EVENT_INVITE, self::WEDDING_INVITATION, self::WEDDING_INVITATION_NOIR, self::MODERN_MINIMAL];
     }
 
     public static function normalize(?string $value): string
@@ -43,6 +49,9 @@ final class InvitationLayoutVariant
             self::STANDARD => ['gallery', 'countdown'],
             self::BEAUTY_FOR_ASHES => ['countdown'],
             self::EVENT_INVITE => ['gallery', 'countdown', 'details', 'description', 'story', 'schedule'],
+            self::WEDDING_INVITATION => ['countdown', 'schedule'],
+            self::WEDDING_INVITATION_NOIR => ['countdown', 'details'],
+            self::MODERN_MINIMAL => ['description', 'schedule'],
             default => [],
         };
     }
@@ -58,6 +67,9 @@ final class InvitationLayoutVariant
             self::BOTANICAL_GRADUATION => 'events-invitation-layout-botanical-graduation.css',
             self::BEAUTY_FOR_ASHES => 'events-invitation-layout-beauty-for-ashes.css',
             self::EVENT_INVITE => 'events-invitation-layout-event-invite.css',
+            self::WEDDING_INVITATION => 'events-invitation-layout-wedding-invitation.css',
+            self::WEDDING_INVITATION_NOIR => 'events-invitation-layout-wedding-invitation-noir.css',
+            self::MODERN_MINIMAL => 'events-invitation-layout-modern-minimal.css',
             default => null,
         };
     }
@@ -70,7 +82,7 @@ final class InvitationLayoutVariant
     public static function pinnedFirst(string $variant): ?string
     {
         return match ($variant) {
-            self::PRO_MAGAZINE, self::BOTANICAL_GRADUATION, self::BEAUTY_FOR_ASHES, self::EVENT_INVITE => 'hero',
+            self::PRO_MAGAZINE, self::BOTANICAL_GRADUATION, self::BEAUTY_FOR_ASHES, self::EVENT_INVITE, self::WEDDING_INVITATION, self::WEDDING_INVITATION_NOIR, self::MODERN_MINIMAL => 'hero',
             default => null,
         };
     }
@@ -96,6 +108,7 @@ final class InvitationLayoutVariant
         return match (self::normalize($variant)) {
             self::BOTANICAL_GRADUATION => 2,
             self::BEAUTY_FOR_ASHES => 4,
+            self::WEDDING_INVITATION => 3,
             default => 0,
         };
     }

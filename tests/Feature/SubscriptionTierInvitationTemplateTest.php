@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\SubscriptionTier;
 use App\Models\Event;
 use App\Models\InvitationTemplate;
 use App\Models\User;
@@ -11,6 +12,102 @@ use Tests\TestCase;
 class SubscriptionTierInvitationTemplateTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_pro_templates_require_pro_tier(): void
+    {
+        foreach (['wedding-invitation', 'wedding-invitation-2', 'modern-minimal'] as $slug) {
+            $tpl = InvitationTemplate::query()->where('slug', $slug)->firstOrFail();
+            $this->assertSame(SubscriptionTier::Pro, $tpl->requiredTier(), $slug);
+        }
+    }
+
+    public function test_public_invitation_renders_modern_minimal_layout(): void
+    {
+        $owner = User::factory()->pro()->create();
+        $tpl = InvitationTemplate::query()->where('slug', 'modern-minimal')->firstOrFail();
+
+        $event = Event::factory()->for($owner)->create([
+            'invitation_template_id' => $tpl->id,
+            'is_published' => true,
+            'name' => 'Sofia & Leo',
+            'event_type' => 'wedding',
+            'location_name' => 'Brooklyn, New York',
+            'invitation_customization' => [
+                'schema_version' => 2,
+                'content' => [
+                    'story' => 'We cannot wait to celebrate with you.',
+                    'schedule' => [
+                        ['title' => 'Ceremony', 'time' => '4:00 PM', 'detail' => 'The Greenhouse'],
+                    ],
+                ],
+            ],
+        ]);
+
+        $response = $this->get(route('events.public', ['slug' => $event->slug]));
+
+        $response->assertOk();
+        $response->assertSee('evt-layout-modern-minimal', escape: false);
+        $response->assertSee('mm-details-row', escape: false);
+        $response->assertSee('Brooklyn', escape: false);
+    }
+
+    public function test_public_invitation_renders_wedding_invitation_noir_layout(): void
+    {
+        $owner = User::factory()->pro()->create();
+        $tpl = InvitationTemplate::query()->where('slug', 'wedding-invitation-2')->firstOrFail();
+
+        $event = Event::factory()->for($owner)->create([
+            'invitation_template_id' => $tpl->id,
+            'is_published' => true,
+            'name' => 'Nadia & Elias',
+            'event_type' => 'wedding',
+            'invitation_customization' => [
+                'schema_version' => 2,
+                'content' => [
+                    'schedule' => [
+                        ['time' => '4:00 PM', 'title' => 'The Ceremony', 'detail' => 'Estate chapel'],
+                    ],
+                ],
+            ],
+        ]);
+
+        $response = $this->get(route('events.public', ['slug' => $event->slug]));
+
+        $response->assertOk();
+        $response->assertSee('evt-layout-wedding-invitation-noir', escape: false);
+        $response->assertSee('wi2-invite-card', escape: false);
+        $response->assertSee('The Ceremony', escape: false);
+    }
+
+    public function test_public_invitation_renders_wedding_invitation_layout(): void
+    {
+        $owner = User::factory()->pro()->create();
+        $tpl = InvitationTemplate::query()->where('slug', 'wedding-invitation')->firstOrFail();
+
+        $event = Event::factory()->for($owner)->create([
+            'invitation_template_id' => $tpl->id,
+            'is_published' => true,
+            'name' => 'Amara & Julian',
+            'event_type' => 'wedding',
+            'invitation_customization' => [
+                'schema_version' => 2,
+                'content' => [
+                    'schedule' => [
+                        ['title' => 'Ceremony', 'detail' => "St. Mary's Chapel", 'time' => '3:00 PM'],
+                    ],
+                    'wi_couple_caption' => 'Two hearts, one story',
+                ],
+            ],
+        ]);
+
+        $response = $this->get(route('events.public', ['slug' => $event->slug]));
+
+        $response->assertOk();
+        $response->assertSee('evt-layout-wedding-invitation', escape: false);
+        $response->assertSee('wi-save-date', escape: false);
+        $response->assertSee('St. Mary', escape: false);
+        $response->assertSee('Chapel', escape: false);
+    }
 
     public function test_public_invitation_renders_event_invite_layout(): void
     {

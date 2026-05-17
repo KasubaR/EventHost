@@ -113,7 +113,77 @@ class InvitationTemplate extends Model
 
         $event->setRelation('invitationTemplate', $this);
 
-        if ($this->slug === 'event-invite') {
+        if ($this->slug === 'modern-minimal') {
+            $event->name = 'Sofia & Leo';
+            $event->event_type = 'wedding';
+            $event->description = "Two designers, one coffee shop, and a shared love for mid-century furniture. What started as a debate over Eames chairs turned into a lifetime of collaboration, adventure, and quiet Sunday mornings. We can't wait to celebrate with you.";
+            $event->venue = 'The Greenhouse';
+            $event->location_name = 'Brooklyn, New York';
+            $event->event_date = now()->addMonths(4)->startOfDay();
+            $event->event_time = '16:00:00';
+            $event->rsvp_deadline = now()->addMonths(3);
+            $event->invitation_customization = [
+                'schema_version' => InvitationCustomizationService::CURRENT_SCHEMA_VERSION,
+                'content' => [
+                    'story' => $event->description,
+                    'schedule' => [
+                        ['title' => 'Ceremony', 'time' => '4:00 PM', 'detail' => "The Greenhouse\nBotanical Gardens"],
+                        ['title' => 'Reception', 'time' => '6:00 PM', 'detail' => "The Atrium\nCocktails & Dinner"],
+                        ['title' => 'Attire', 'time' => 'Cocktail', 'detail' => "Smart Casual\nModern Elegance"],
+                    ],
+                ],
+            ];
+        } elseif ($this->slug === 'wedding-invitation-2') {
+            $event->name = 'Nadia & Elias';
+            $event->event_type = 'wedding';
+            $event->description = 'An evening of vows, dining, and dancing under the Cape Town sky.';
+            $event->venue = 'The Ridgecrest Estate Chapel';
+            $event->location_name = 'Cape Town, South Africa';
+            $event->event_date = now()->addMonths(3)->next('Sunday')->startOfDay();
+            $event->event_time = '16:00:00';
+            $event->rsvp_deadline = now()->addMonths(2);
+            $event->invitation_customization = [
+                'schema_version' => InvitationCustomizationService::CURRENT_SCHEMA_VERSION,
+                'content' => [
+                    'schedule' => [
+                        ['time' => '3:30 PM', 'title' => 'Guests Arrive', 'detail' => 'Welcome drinks & canapés in the rose garden'],
+                        ['time' => '4:00 PM', 'title' => 'The Ceremony', 'detail' => 'Exchange of vows in the estate chapel'],
+                        ['time' => '5:30 PM', 'title' => 'Cocktail Hour', 'detail' => 'Sunset terrace, live jazz & curated cocktails'],
+                        ['time' => '7:00 PM', 'title' => 'Dinner & Speeches', 'detail' => 'Candlelit banquet in the grand pavilion'],
+                        ['time' => '9:00 PM', 'title' => 'First Dance & Evening', 'detail' => 'Dancing, dessert table & midnight send-off'],
+                    ],
+                    'wi2_hero_tag' => 'The Wedding of',
+                    'wi2_invite_formal' => 'Together with their families',
+                    'wi2_invite_body' => "request the honour of your presence\nas they exchange vows and begin\ntheir life together in love",
+                    'wi2_photo_quote' => '"Two souls with but a single thought, two hearts that beat as one."',
+                    'wi2_photo_quote_cite' => '— Friedrich Halm',
+                    'wi2_footer_monogram' => 'N&E',
+                    'wi2_footer_legal' => 'With Love & Gratitude',
+                ],
+            ];
+        } elseif ($this->slug === 'wedding-invitation') {
+            $event->name = 'Amara & Julian';
+            $event->event_type = 'wedding';
+            $event->description = 'We joyfully invite you to celebrate the union of two souls as they begin their forever journey together in love and laughter.';
+            $event->venue = "St. Mary's Chapel";
+            $event->location_name = 'The Grand Pavilion';
+            $event->event_date = now()->addMonths(2)->next('Saturday')->startOfDay();
+            $event->event_time = '15:00:00';
+            $event->invitation_customization = [
+                'schema_version' => InvitationCustomizationService::CURRENT_SCHEMA_VERSION,
+                'content' => [
+                    'story' => 'It began with a glance across a crowded room — the kind that makes time pause. From that moment, they knew. Through seasons of laughter and quiet evenings, their love grew into something timeless. Now, surrounded by all the people they hold dear, they invite you to witness the beginning of forever.',
+                    'schedule' => [
+                        ['title' => 'Ceremony', 'detail' => "St. Mary's Chapel", 'time' => '3:00 PM · Doors open 2:30'],
+                        ['title' => 'Reception', 'detail' => 'The Grand Pavilion', 'time' => '5:30 PM · Dinner & Dancing'],
+                        ['title' => 'Dress Code', 'detail' => 'Garden Formal', 'time' => 'Ivory, sage & earth tones'],
+                    ],
+                    'wi_hero_eyebrow' => 'Together with their families',
+                    'wi_couple_caption' => 'Two hearts, one story',
+                    'wi_footer_quote' => '"To love and to be loved is to feel the sun from both sides."',
+                ],
+            ];
+        } elseif ($this->slug === 'event-invite') {
             $event->name = "Mukuba's";
             $event->event_type = 'birthday';
             $event->description = 'A joyful birthday lunch celebration.';

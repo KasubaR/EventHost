@@ -256,7 +256,7 @@
     var companyField = document.getElementById('company-field');
 
     var config = {
-        individual:   { icon: 'fa-user',     label: 'Full name',                        placeholder: 'Your full name',                  showCompany: true  },
+        individual:   { icon: 'fa-user',     label: 'Full name',                        placeholder: 'Your full name',                  showCompany: false },
         organisation: { icon: 'fa-building',  label: 'Company / Event business name',    placeholder: 'Your company or event business name', showCompany: false }
     };
 

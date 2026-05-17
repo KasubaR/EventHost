@@ -194,6 +194,109 @@
         });
     }
 
+    function initWeddingNoirReveal(root) {
+        var nodes = root.querySelectorAll('[data-wi2-reveal]');
+        if (nodes.length === 0) {
+            return;
+        }
+
+        var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (reduceMotion || typeof IntersectionObserver === 'undefined') {
+            nodes.forEach(function (node) {
+                node.classList.add('wi2-reveal--visible');
+            });
+
+            return;
+        }
+
+        var observer = new IntersectionObserver(
+            function (entries) {
+                entries.forEach(function (entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('wi2-reveal--visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            },
+            { threshold: 0.12 }
+        );
+
+        nodes.forEach(function (node) {
+            observer.observe(node);
+        });
+    }
+
+    function initModernMinimalLightbox(root) {
+        var links = root.querySelectorAll('.mm-gallery-lightbox');
+        if (links.length === 0 || typeof window.GLightbox === 'undefined') {
+            return;
+        }
+
+        window.GLightbox({
+            selector: '.mm-gallery-lightbox',
+            touchNavigation: true,
+            loop: links.length > 1,
+        });
+    }
+
+    function initWeddingNoirLightbox(root) {
+        var links = root.querySelectorAll('.wi2-gallery-lightbox');
+        if (links.length === 0 || typeof window.GLightbox === 'undefined') {
+            return;
+        }
+
+        window.GLightbox({
+            selector: '.wi2-gallery-lightbox',
+            touchNavigation: true,
+            loop: links.length > 1,
+        });
+    }
+
+    function initWeddingReveal(root) {
+        var nodes = root.querySelectorAll('[data-wi-reveal]');
+        if (nodes.length === 0) {
+            return;
+        }
+
+        var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (reduceMotion || typeof IntersectionObserver === 'undefined') {
+            nodes.forEach(function (node) {
+                node.classList.add('wi-reveal--visible');
+            });
+
+            return;
+        }
+
+        var observer = new IntersectionObserver(
+            function (entries) {
+                entries.forEach(function (entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('wi-reveal--visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            },
+            { threshold: 0.1 }
+        );
+
+        nodes.forEach(function (node) {
+            observer.observe(node);
+        });
+    }
+
+    function initWeddingLightbox(root) {
+        var grid = root.querySelector('.wi-gallery-grid');
+        if (!grid || typeof window.GLightbox === 'undefined') {
+            return;
+        }
+
+        window.GLightbox({
+            selector: '.wi-gallery-grid .glightbox',
+            touchNavigation: true,
+            loop: grid.querySelectorAll('.glightbox').length > 1,
+        });
+    }
+
     function initEventInviteLights(root) {
         var wrap = root.querySelector('[data-ei-lights]');
         if (!wrap || wrap.childElementCount > 0) {
@@ -225,6 +328,11 @@
             bindAudio(root);
             initGallery(root);
             initEventInviteLights(root);
+            initWeddingReveal(root);
+            initWeddingLightbox(root);
+            initWeddingNoirReveal(root);
+            initWeddingNoirLightbox(root);
+            initModernMinimalLightbox(root);
         });
     }
 

@@ -86,7 +86,9 @@
                             <span class="tpl-gallery-lock-hint">Requires {{ $tpl->requiredTier()->label() }} to apply.</span>
                             <div class="tpl-tier-actions tpl-gallery-tier-actions">
                                 <a href="{{ url('/') }}#pricing" class="btn-outline tpl-btn-small">View plans</a>
-                                <a href="{{ route('events.create') }}" class="btn-primary tpl-btn-small">Start with Base</a>
+                                @guest
+                                    <a href="{{ route('register') }}" class="btn-primary tpl-btn-small">Get started</a>
+                                @endguest
                             </div>
                         @endif
                     </div>

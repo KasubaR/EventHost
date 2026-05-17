@@ -72,6 +72,14 @@ final class InvitationFonts
             'font_stack' => '"Great Vibes", cursive',
             'google_family' => 'Great+Vibes',
         ],
+        'bodoni_moda' => [
+            'font_stack' => '"Bodoni Moda", Georgia, serif',
+            'google_family' => 'Bodoni+Moda:ital,wght@0,400;0,600;1,400;1,600',
+        ],
+        'eb_garamond' => [
+            'font_stack' => '"EB Garamond", Georgia, serif',
+            'google_family' => 'EB+Garamond:ital,wght@0,300;0,400;1,300;1,400',
+        ],
     ];
 
     /**

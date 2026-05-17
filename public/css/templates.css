@@ -137,6 +137,11 @@
     color: var(--gray-mid, #94a3b8);
 }
 
+/* Push Plan row + actions to bottom regardless of category count */
+.tpl-gallery-body > .tpl-gallery-block:not(.tpl-gallery-tier-row) {
+    flex: 1;
+}
+
 .tpl-gallery-tier-row {
     flex-direction: row;
     flex-wrap: wrap;

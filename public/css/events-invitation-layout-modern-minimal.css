@@ -1,0 +1,270 @@
+/**
+ * Modern minimal layout — scoped under .evt-layout-modern-minimal
+ * Visual reference: Temp/template_modern_minimal.html
+ */
+
+.evt-layout-modern-minimal.evt-invitation {
+    --mm-text: var(--evt-primary, #1a1a1a);
+    --mm-muted: color-mix(in srgb, var(--evt-primary, #1a1a1a) 55%, white);
+    --mm-faint: color-mix(in srgb, var(--evt-primary, #1a1a1a) 35%, white);
+    --mm-accent: var(--evt-accent, #c0a080);
+    --mm-surface: color-mix(in srgb, var(--evt-background, #ffffff) 96%, #fafafa);
+    --mm-border: color-mix(in srgb, var(--evt-primary, #1a1a1a) 12%, white);
+
+    background: var(--evt-background, #ffffff);
+    color: var(--mm-text);
+    font-family: var(--evt-font-body, Inter, system-ui, sans-serif);
+    line-height: 1.6;
+}
+
+.evt-layout-modern-minimal .evt-public-inner.evt-public-page,
+.evt-layout-modern-minimal .evt-invitation-page {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+}
+
+.evt-layout-modern-minimal .evt-preview-banner {
+    max-width: 680px;
+    margin: 1rem auto;
+    border-radius: 2px;
+}
+
+/* Hero */
+.evt-layout-modern-minimal .mm-hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 3.75rem 1.25rem;
+    background: var(--mm-surface);
+}
+
+.evt-layout-modern-minimal .mm-hero-name {
+    font-family: var(--evt-font-heading, "DM Sans", system-ui, sans-serif);
+    font-size: clamp(2.75rem, 10vw, 4rem);
+    font-weight: 300;
+    letter-spacing: -0.0625rem;
+    color: var(--mm-text);
+    line-height: 1.1;
+}
+
+.evt-layout-modern-minimal .mm-hero-ampersand {
+    display: block;
+    font-family: var(--evt-font-heading, "DM Sans", system-ui, sans-serif);
+    font-weight: 300;
+    font-size: 2rem;
+    color: var(--mm-accent);
+    margin: 0.5rem 0;
+}
+
+.evt-layout-modern-minimal .mm-hero-date {
+    font-size: 0.9rem;
+    color: var(--mm-muted);
+    letter-spacing: 0.375em;
+    text-transform: uppercase;
+    margin-top: 1.875rem;
+}
+
+.evt-layout-modern-minimal .mm-hero-location {
+    font-size: 0.85rem;
+    color: var(--mm-faint);
+    margin-top: 0.5rem;
+    letter-spacing: 0.125em;
+}
+
+.evt-layout-modern-minimal .mm-scroll-hint {
+    position: absolute;
+    bottom: 1.875rem;
+    font-size: 0.75rem;
+    color: color-mix(in srgb, var(--mm-faint) 80%, white);
+    letter-spacing: 0.1875em;
+    text-transform: uppercase;
+}
+
+/* Sections */
+.evt-layout-modern-minimal .mm-section {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 5rem 1.25rem;
+    text-align: center;
+}
+
+.evt-layout-modern-minimal .mm-section + .mm-section {
+    border-top: 1px solid var(--mm-border);
+}
+
+.evt-layout-modern-minimal .mm-section-title {
+    font-family: var(--evt-font-heading, "DM Sans", system-ui, sans-serif);
+    font-size: 1.4rem;
+    font-weight: 500;
+    color: var(--mm-text);
+    margin-bottom: 1.5rem;
+    letter-spacing: -0.03125rem;
+}
+
+/* Countdown */
+.evt-layout-modern-minimal .mm-countdown .evt-inv-countdown-heading,
+.evt-layout-modern-minimal .mm-countdown .evt-inv-countdown-done {
+    display: none;
+}
+
+.evt-layout-modern-minimal .mm-countdown .evt-inv-countdown-grid {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 3.125rem;
+}
+
+.evt-layout-modern-minimal .mm-countdown .evt-inv-countdown-unit {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 4rem;
+}
+
+.evt-layout-modern-minimal .mm-countdown .evt-inv-countdown-value {
+    font-family: var(--evt-font-heading, "DM Sans", system-ui, sans-serif);
+    font-size: 3rem;
+    font-weight: 300;
+    color: var(--mm-accent);
+    line-height: 1;
+}
+
+.evt-layout-modern-minimal .mm-countdown .evt-inv-countdown-label {
+    font-size: 0.75rem;
+    color: var(--mm-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1875em;
+    margin-top: 0.25rem;
+}
+
+.evt-layout-modern-minimal .mm-countdown .evt-inv-countdown--static .evt-inv-countdown-static {
+    font-size: 1rem;
+    color: var(--mm-muted);
+}
+
+/* Details */
+.evt-layout-modern-minimal .mm-details-row {
+    display: flex;
+    justify-content: center;
+    gap: 3.75rem;
+    flex-wrap: wrap;
+}
+
+.evt-layout-modern-minimal .mm-detail-block h3 {
+    font-family: var(--evt-font-heading, "DM Sans", system-ui, sans-serif);
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--mm-text);
+    text-transform: uppercase;
+    letter-spacing: 0.1875em;
+    margin-bottom: 0.75rem;
+}
+
+.evt-layout-modern-minimal .mm-detail-block p {
+    font-size: 0.9rem;
+    color: var(--mm-muted);
+    line-height: 1.8;
+}
+
+/* Story */
+.evt-layout-modern-minimal .mm-story-text {
+    font-size: 1.05rem;
+    color: color-mix(in srgb, var(--mm-text) 75%, white);
+    max-width: 520px;
+    margin: 0 auto;
+    font-weight: 300;
+}
+
+/* Gallery */
+.evt-layout-modern-minimal .mm-gallery {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.evt-layout-modern-minimal .mm-gallery-item {
+    aspect-ratio: 4 / 3;
+    background: color-mix(in srgb, var(--mm-border) 40%, var(--mm-surface));
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.evt-layout-modern-minimal .mm-gallery-item:first-child {
+    grid-column: span 2;
+    aspect-ratio: 16 / 9;
+}
+
+.evt-layout-modern-minimal .mm-gallery-item a {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.evt-layout-modern-minimal .mm-gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* RSVP */
+.evt-layout-modern-minimal .mm-rsvp-lead {
+    color: var(--mm-muted);
+    font-size: 0.9rem;
+    margin-bottom: 0.375rem;
+}
+
+.evt-layout-modern-minimal .mm-rsvp-cta {
+    display: inline-block;
+    padding: 1rem 3.5rem;
+    background: var(--mm-text);
+    color: var(--evt-background, #ffffff);
+    text-decoration: none;
+    font-family: var(--evt-font-heading, "DM Sans", system-ui, sans-serif);
+    font-size: 0.9rem;
+    font-weight: 500;
+    letter-spacing: 0.1875em;
+    text-transform: uppercase;
+    margin-top: 1.875rem;
+    transition: background 0.3s;
+}
+
+.evt-layout-modern-minimal .mm-rsvp-cta:hover {
+    background: color-mix(in srgb, var(--mm-text) 80%, black);
+    color: var(--evt-background, #ffffff);
+}
+
+.evt-layout-modern-minimal .mm-rsvp-form-panel {
+    margin-top: 2.5rem;
+    text-align: left;
+}
+
+.evt-layout-modern-minimal .mm-rsvp-form-panel .evt-inline-rsvp-heading,
+.evt-layout-modern-minimal .mm-rsvp-form-panel .evt-inline-rsvp-lead,
+.evt-layout-modern-minimal .mm-rsvp-form-panel .evt-rsvp-banner {
+    text-align: center;
+}
+
+/* Footer */
+.evt-layout-modern-minimal .mm-footer {
+    text-align: center;
+    padding: 3.125rem 1.25rem;
+    color: var(--mm-faint);
+    font-size: 0.8rem;
+    letter-spacing: 0.125em;
+}
+
+@media (max-width: 560px) {
+    .evt-layout-modern-minimal .mm-details-row {
+        gap: 2rem;
+    }
+
+    .evt-layout-modern-minimal .mm-countdown .evt-inv-countdown-grid {
+        gap: 1.5rem;
+    }
+}
