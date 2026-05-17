@@ -12,6 +12,34 @@ class SubscriptionTierInvitationTemplateTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_public_invitation_renders_event_invite_layout(): void
+    {
+        $owner = User::factory()->create();
+        $tpl = InvitationTemplate::query()->where('slug', 'event-invite')->firstOrFail();
+
+        $event = Event::factory()->for($owner)->create([
+            'invitation_template_id' => $tpl->id,
+            'is_published' => true,
+            'name' => "Mukuba's",
+            'event_type' => 'birthday',
+            'invitation_customization' => [
+                'schema_version' => 2,
+                'content' => [
+                    'ei_color_theme' => 'Denim and Brown',
+                    'ei_guest_speaker' => 'Lucy Mulenga',
+                    'ei_mc' => 'Rabecca and Natasha',
+                ],
+            ],
+        ]);
+
+        $response = $this->get(route('events.public', ['slug' => $event->slug]));
+
+        $response->assertOk();
+        $response->assertSee('evt-layout-event-invite', escape: false);
+        $response->assertSee('ei-card', escape: false);
+        $response->assertSee('Lucy Mulenga', escape: false);
+    }
+
     public function test_base_user_cannot_choose_botanical_graduation_template(): void
     {
         $user = User::factory()->create();

@@ -33,6 +33,34 @@ class InvitationTemplateSeeder extends Seeder
 
         $templates = [
             [
+                'slug' => 'event-invite',
+                'name' => 'Blush Celebration Card',
+                'description' => 'Romantic blush-and-gold invitation card with fairy lights, script headlines, and optional speaker and theme details. Included on the base plan.',
+                'skin' => 'classic',
+                'sort_order' => 15,
+                'layout_variant' => InvitationLayoutVariant::EVENT_INVITE,
+                'category_slugs' => [
+                    'wedding',
+                    'birthday',
+                    'graduation',
+                    'corporate',
+                    'baby-shower',
+                    'church',
+                ],
+                'default_theme' => [
+                    'primary' => '#5a1a20',
+                    'accent' => '#e8b4b8',
+                    'background' => '#f0e6e6',
+                    'font_heading_key' => 'great_vibes',
+                    'font_body_key' => 'montserrat',
+                    'animation_subtle' => false,
+                ],
+                'default_sections' => [
+                    ['type' => 'hero', 'visible' => true],
+                    ['type' => 'rsvp', 'visible' => true],
+                ],
+            ],
+            [
                 'slug' => 'slate-minimal',
                 'name' => 'Classic',
                 'description' => 'Standard invitation layout shared by all base accounts. Differentiate your page with colors, fonts, and sections under Design.',

@@ -36,6 +36,9 @@ final class InvitationCustomizationPersistenceValidator
             'content.bfa_tagline_bar' => ['nullable', 'string', 'max:200'],
             'content.contact_phone_primary' => ['nullable', 'string', 'max:40'],
             'content.contact_phone_secondary' => ['nullable', 'string', 'max:40'],
+            'content.ei_color_theme' => ['nullable', 'string', 'max:160'],
+            'content.ei_guest_speaker' => ['nullable', 'string', 'max:120'],
+            'content.ei_mc' => ['nullable', 'string', 'max:120'],
             'content.schedule' => ['present', 'array', 'max:24'],
             'content.schedule.*.time' => ['nullable', 'string', 'max:48'],
             'content.schedule.*.title' => ['required', 'string', 'max:160'],
@@ -75,7 +78,21 @@ final class InvitationCustomizationPersistenceValidator
             'effects' => ['required', 'array'],
             'effects.animation_subtle' => ['required', 'boolean'],
             'effects.countdown_enabled' => ['required', 'boolean'],
-            'effects.video_background' => ['nullable', self::mediaPathRule('video')],
+            'effects.video_background' => ['nullable', function (string $attribute, mixed $value, \Closure $fail): void {
+                if ($value === null || $value === '') {
+                    return;
+                }
+                if (! is_string($value)) {
+                    $fail('Invalid video background value.');
+
+                    return;
+                }
+                if (InvitationVideoBackground::isYoutube($value)) {
+                    return;
+                }
+                $rule = self::mediaPathRule('video');
+                $rule($attribute, $value, $fail);
+            }],
             'effects.audio_track' => ['nullable', self::mediaPathRule('audio')],
 
             'rsvp_form' => ['required', 'array'],

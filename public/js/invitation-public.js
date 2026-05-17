@@ -194,11 +194,37 @@
         });
     }
 
+    function initEventInviteLights(root) {
+        var wrap = root.querySelector('[data-ei-lights]');
+        if (!wrap || wrap.childElementCount > 0) {
+            return;
+        }
+
+        var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var count = reduceMotion ? 10 : 22;
+
+        for (var i = 0; i < count; i++) {
+            var light = document.createElement('div');
+            light.className = 'ei-light';
+            light.style.left = Math.random() * 100 + '%';
+            light.style.top = Math.random() * 100 + '%';
+            if (!reduceMotion) {
+                light.style.animationDelay = Math.random() * 3 + 's';
+                light.style.animationDuration = 1.5 + Math.random() * 2 + 's';
+            }
+            var size = 4 + Math.random() * 5;
+            light.style.width = size + 'px';
+            light.style.height = size + 'px';
+            wrap.appendChild(light);
+        }
+    }
+
     function boot() {
         document.querySelectorAll('.evt-invitation').forEach(function (root) {
             tickCountdown(root);
             bindAudio(root);
             initGallery(root);
+            initEventInviteLights(root);
         });
     }
 

@@ -264,6 +264,9 @@ class EventInvitationDesignController extends Controller
                         'bfa_host_slot' => (int) ($validated['bfa_host_slot'] ?? 1),
                         'contact_phone_primary' => (string) ($validated['contact_phone_primary'] ?? ''),
                         'contact_phone_secondary' => (string) ($validated['contact_phone_secondary'] ?? ''),
+                        'ei_color_theme' => (string) ($validated['ei_color_theme'] ?? ''),
+                        'ei_guest_speaker' => (string) ($validated['ei_guest_speaker'] ?? ''),
+                        'ei_mc' => (string) ($validated['ei_mc'] ?? ''),
                     ],
                     'media' => [
                         'gallery' => array_values(array_merge($galleryKeep, $newGallery)),

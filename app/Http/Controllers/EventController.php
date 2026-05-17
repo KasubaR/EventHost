@@ -9,6 +9,7 @@ use App\Models\Event;
 use App\Models\InvitationTemplate;
 use App\Services\DashboardAnalyticsService;
 use App\Services\InvitationCustomizationService;
+use App\Support\InvitationVideoBackground;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -182,7 +183,7 @@ class EventController extends Controller
                 }
                 $video = $customization['effects']['video_background'] ?? null;
                 $audio = $customization['effects']['audio_track'] ?? null;
-                if (is_string($video) && $video !== '') {
+                if (is_string($video) && $video !== '' && ! InvitationVideoBackground::isYoutube($video)) {
                     Storage::disk('public')->delete($video);
                 }
                 if (is_string($audio) && $audio !== '') {

@@ -321,6 +321,32 @@
                 </template>
             </fieldset>
 
+            @if ($layoutVariant === InvitationLayoutVariant::EVENT_INVITE)
+                <fieldset class="evt-design-fieldset">
+                    <legend class="profile-label">Celebration card — extra details</legend>
+                    <p class="evt-muted evt-design-hint">Optional rows shown on the blush invitation card beneath the date.</p>
+
+                    <div class="profile-field">
+                        <label for="ei_color_theme" class="profile-label">Color theme</label>
+                        <input id="ei_color_theme" name="ei_color_theme" type="text" maxlength="160" class="profile-input"
+                               value="{{ old('ei_color_theme', $invitationMerged['content']['ei_color_theme'] ?? '') }}"
+                               placeholder="e.g. Denim and Brown">
+                    </div>
+                    <div class="evt-grid-2 profile-fields">
+                        <div class="profile-field">
+                            <label for="ei_guest_speaker" class="profile-label">Guest speaker</label>
+                            <input id="ei_guest_speaker" name="ei_guest_speaker" type="text" maxlength="120" class="profile-input"
+                                   value="{{ old('ei_guest_speaker', $invitationMerged['content']['ei_guest_speaker'] ?? '') }}">
+                        </div>
+                        <div class="profile-field">
+                            <label for="ei_mc" class="profile-label">MC</label>
+                            <input id="ei_mc" name="ei_mc" type="text" maxlength="120" class="profile-input"
+                                   value="{{ old('ei_mc', $invitationMerged['content']['ei_mc'] ?? '') }}">
+                        </div>
+                    </div>
+                </fieldset>
+            @endif
+
             @if ($layoutVariant === InvitationLayoutVariant::BEAUTY_FOR_ASHES)
                 @php
                     $rawSpk = old('speaker_cards');

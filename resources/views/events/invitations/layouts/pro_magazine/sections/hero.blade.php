@@ -1,5 +1,12 @@
 @php
-    $videoPath = $invitation['effects']['video_background'] ?? null;
+    use App\Support\InvitationVideoBackground;
+
+    $videoRaw = $invitation['effects']['video_background'] ?? null;
+    $videoRaw = is_string($videoRaw) && $videoRaw !== '' ? $videoRaw : null;
+    $videoYoutubeId = InvitationVideoBackground::extractIdFromStored($videoRaw);
+    $videoFilePath = InvitationVideoBackground::isFilePath($videoRaw) ? $videoRaw : null;
+    $videoEmbedSrc = $videoYoutubeId !== null ? InvitationVideoBackground::embedUrl($videoYoutubeId) : null;
+
     $audioPath = $invitation['effects']['audio_track'] ?? null;
 @endphp
 
@@ -10,8 +17,19 @@
         <span class="evt-inv-pm-masthead-line"></span>
     </div>
 
-    <div class="evt-public-hero evt-inv-hero evt-inv-pm-hero @if ($videoPath) evt-inv-hero--video @endif">
-        @if ($videoPath)
+    <div class="evt-public-hero evt-inv-hero evt-inv-pm-hero @if ($videoEmbedSrc || $videoFilePath) evt-inv-hero--video @endif">
+        @if ($videoEmbedSrc)
+            <div class="evt-inv-hero-video-embed" aria-hidden="true">
+                <iframe
+                    class="evt-inv-hero-video-iframe"
+                    src="{{ $videoEmbedSrc }}"
+                    title="Background video"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    referrerpolicy="strict-origin-when-cross-origin"
+                ></iframe>
+            </div>
+            <div class="evt-inv-hero-video-scrim" aria-hidden="true"></div>
+        @elseif ($videoFilePath)
             <video
                 class="evt-inv-hero-video"
                 muted
@@ -21,7 +39,7 @@
                 poster="{{ $event->cover_image_url }}"
                 aria-hidden="true"
             >
-                <source src="{{ asset('storage/'.$videoPath) }}" type="{{ str_ends_with(strtolower($videoPath), '.webm') ? 'video/webm' : 'video/mp4' }}">
+                <source src="{{ asset('storage/'.$videoFilePath) }}" type="{{ str_ends_with(strtolower($videoFilePath), '.webm') ? 'video/webm' : 'video/mp4' }}">
             </video>
             <div class="evt-inv-hero-video-scrim" aria-hidden="true"></div>
         @endif

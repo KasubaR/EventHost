@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Event;
+use App\Support\InvitationVideoBackground;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -138,6 +139,9 @@ class PruneOrphanedInvitationFilesCommand extends Command
         $effects = $customization['effects'] ?? [];
         foreach (['video_background', 'audio_track'] as $key) {
             $val = $effects[$key] ?? null;
+            if ($key === 'video_background' && InvitationVideoBackground::isYoutube(is_string($val) ? $val : null)) {
+                continue;
+            }
             if (is_string($val) && $val !== '') {
                 $set[$val] = true;
             }

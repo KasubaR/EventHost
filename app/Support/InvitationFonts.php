@@ -68,6 +68,10 @@ final class InvitationFonts
             'font_stack' => '"Dancing Script", cursive',
             'google_family' => 'Dancing+Script:wght@400;600;700',
         ],
+        'great_vibes' => [
+            'font_stack' => '"Great Vibes", cursive',
+            'google_family' => 'Great+Vibes',
+        ],
     ];
 
     /**

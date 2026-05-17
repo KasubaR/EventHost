@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateAdminEventPublishRequest;
 use App\Models\Event;
 use App\Support\AdminActivity;
+use App\Support\InvitationVideoBackground;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -104,7 +105,7 @@ class EventController extends Controller
                 }
                 $video = $custom['effects']['video_background'] ?? null;
                 $audio = $custom['effects']['audio_track'] ?? null;
-                if (is_string($video) && $video !== '') {
+                if (is_string($video) && $video !== '' && ! InvitationVideoBackground::isYoutube($video)) {
                     Storage::disk('public')->delete($video);
                 }
                 if (is_string($audio) && $audio !== '') {

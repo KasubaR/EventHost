@@ -35,6 +35,20 @@ class InvitationTemplateFeaturesTest extends TestCase
         $response->assertSee('Celebration', escape: false);
     }
 
+    public function test_preview_event_invite_renders_blush_card_markup(): void
+    {
+        $user = User::factory()->create();
+        $tpl = InvitationTemplate::query()->where('slug', 'event-invite')->firstOrFail();
+
+        $response = $this->actingAs($user)->get(route('templates.preview', $tpl));
+
+        $response->assertOk();
+        $response->assertSee('evt-layout-event-invite', escape: false);
+        $response->assertSee('ei-card', escape: false);
+        $response->assertSee('Join Us For', escape: false);
+        $response->assertSee('Denim and Brown', escape: false);
+    }
+
     public function test_preview_botanical_graduation_renders_split_hero_markup(): void
     {
         $user = User::factory()->pro()->create();
@@ -108,10 +122,10 @@ class InvitationTemplateFeaturesTest extends TestCase
             'content_story' => '',
             'schedule_items' => [],
             'rsvp_form' => [
-                'message'             => ['visible' => '1', 'label' => 'Message to host'],
-                'meal_preference'     => ['visible' => '1', 'label' => 'Meal preference'],
+                'message' => ['visible' => '1', 'label' => 'Message to host'],
+                'meal_preference' => ['visible' => '1', 'label' => 'Meal preference'],
                 'transportation_note' => ['visible' => '1', 'label' => 'Transportation notes'],
-                'song_request'        => ['visible' => '1', 'label' => 'Song request'],
+                'song_request' => ['visible' => '1', 'label' => 'Song request'],
             ],
         ]);
 

@@ -1,7 +1,7 @@
 @php
+    use App\Support\InvitationVideoBackground;
     use Illuminate\Support\Str;
 
-    $videoPath = $invitation['effects']['video_background'] ?? null;
     $audioPath = $invitation['effects']['audio_track'] ?? null;
 
     $nameTrim = trim((string) $event->name);
@@ -52,10 +52,27 @@
 
     $startsAt = \Carbon\Carbon::parse($event->event_date->format('Y-m-d').($event->event_time ? ' '.substr((string) $event->event_time, 0, 8) : ' 00:00:00'));
     $countdownLive = $invitation['effects']['countdown_enabled'] ?? true;
+
+    $videoRaw = $invitation['effects']['video_background'] ?? null;
+    $videoRaw = is_string($videoRaw) && $videoRaw !== '' ? $videoRaw : null;
+    $videoYoutubeId = InvitationVideoBackground::extractIdFromStored($videoRaw);
+    $videoFilePath = InvitationVideoBackground::isFilePath($videoRaw) ? $videoRaw : null;
+    $videoEmbedSrc = $videoYoutubeId !== null ? InvitationVideoBackground::embedUrl($videoYoutubeId) : null;
 @endphp
 
 <section class="bfa-hero" id="home">
-    @if ($videoPath)
+    @if ($videoEmbedSrc)
+        <div class="evt-inv-hero-video-embed bfa-hero-video-embed" aria-hidden="true">
+            <iframe
+                class="evt-inv-hero-video-iframe"
+                src="{{ $videoEmbedSrc }}"
+                title="Background video"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerpolicy="strict-origin-when-cross-origin"
+            ></iframe>
+        </div>
+        <div class="bfa-hero-video-scrim" aria-hidden="true"></div>
+    @elseif ($videoFilePath)
         <video
             class="bfa-hero-video"
             muted
@@ -65,7 +82,7 @@
             poster="{{ $event->cover_image_url }}"
             aria-hidden="true"
         >
-            <source src="{{ asset('storage/'.$videoPath) }}" type="{{ str_ends_with(strtolower((string) $videoPath), '.webm') ? 'video/webm' : 'video/mp4' }}">
+            <source src="{{ asset('storage/'.$videoFilePath) }}" type="{{ str_ends_with(strtolower((string) $videoFilePath), '.webm') ? 'video/webm' : 'video/mp4' }}">
         </video>
         <div class="bfa-hero-video-scrim" aria-hidden="true"></div>
     @endif

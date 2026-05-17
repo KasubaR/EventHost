@@ -129,6 +129,9 @@ class UpdateInvitationDesignRequest extends FormRequest
             'bfa_host_slot' => (int) ($this->input('bfa_host_slot', 1)),
             'contact_phone_primary' => $trimLine('contact_phone_primary', 40),
             'contact_phone_secondary' => $trimLine('contact_phone_secondary', 40),
+            'ei_color_theme' => $trimLine('ei_color_theme', 160),
+            'ei_guest_speaker' => $trimLine('ei_guest_speaker', 120),
+            'ei_mc' => $trimLine('ei_mc', 120),
         ]);
     }
 
@@ -198,6 +201,9 @@ class UpdateInvitationDesignRequest extends FormRequest
             'bfa_host_slot' => ['nullable', 'integer', 'min:0', 'max:3'],
             'contact_phone_primary' => ['nullable', 'string', 'max:40'],
             'contact_phone_secondary' => ['nullable', 'string', 'max:40'],
+            'ei_color_theme' => ['nullable', 'string', 'max:160'],
+            'ei_guest_speaker' => ['nullable', 'string', 'max:120'],
+            'ei_mc' => ['nullable', 'string', 'max:120'],
             'schedule_items' => ['present', 'array', 'max:24'],
             'schedule_items.*.time' => ['nullable', 'string', 'max:48'],
             'schedule_items.*.title' => ['nullable', 'string', 'max:160'],

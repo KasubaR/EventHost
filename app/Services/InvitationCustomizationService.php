@@ -157,6 +157,9 @@ class InvitationCustomizationService
      *         bfa_host_slot: int,
      *         contact_phone_primary: string,
      *         contact_phone_secondary: string,
+     *         ei_color_theme: string,
+     *         ei_guest_speaker: string,
+     *         ei_mc: string,
      *     },
      *     rsvp_form: array<string, array{visible: bool, label: string}>,
      * }
@@ -235,6 +238,9 @@ class InvitationCustomizationService
             'bfa_host_slot' => max(0, min(3, (int) ($storedContent['bfa_host_slot'] ?? 1))),
             'contact_phone_primary' => self::normalizeOptionalLine($storedContent['contact_phone_primary'] ?? null, 40),
             'contact_phone_secondary' => self::normalizeOptionalLine($storedContent['contact_phone_secondary'] ?? null, 40),
+            'ei_color_theme' => self::normalizeOptionalLine($storedContent['ei_color_theme'] ?? null, 160),
+            'ei_guest_speaker' => self::normalizeOptionalLine($storedContent['ei_guest_speaker'] ?? null, 120),
+            'ei_mc' => self::normalizeOptionalLine($storedContent['ei_mc'] ?? null, 120),
         ];
 
         $storedRsvpForm = is_array($stored['rsvp_form'] ?? null) ? $stored['rsvp_form'] : [];
@@ -246,6 +252,14 @@ class InvitationCustomizationService
             $cinzelSpec = InvitationFonts::MAP['cinzel']['google_family'] ?? null;
             if (is_string($cinzelSpec) && $cinzelSpec !== '' && ! in_array($cinzelSpec, $googleFonts, true)) {
                 $googleFonts[] = $cinzelSpec;
+            }
+        }
+        if ($layoutVariant === InvitationLayoutVariant::EVENT_INVITE) {
+            foreach (['great_vibes', 'cormorant_garamond', 'montserrat'] as $fontKey) {
+                $spec = InvitationFonts::MAP[$fontKey]['google_family'] ?? null;
+                if (is_string($spec) && $spec !== '' && ! in_array($spec, $googleFonts, true)) {
+                    $googleFonts[] = $spec;
+                }
             }
         }
 

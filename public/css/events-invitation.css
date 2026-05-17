@@ -129,6 +129,27 @@
     z-index: 0;
 }
 
+.evt-inv-hero-video-embed {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    border-radius: 16px;
+    pointer-events: none;
+}
+
+.evt-inv-hero-video-iframe {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 177.77vh;
+    height: 100%;
+    min-width: 100%;
+    min-height: 56.25vw;
+    transform: translate(-50%, -50%);
+    border: 0;
+}
+
 .evt-inv-hero-video-scrim {
     position: absolute;
     inset: 0;
@@ -444,6 +465,7 @@
 }
 
 .evt-skin-botanical-blush .evt-inv-hero--video .evt-inv-hero-video,
+.evt-skin-botanical-blush .evt-inv-hero--video .evt-inv-hero-video-embed,
 .evt-skin-botanical-blush .evt-inv-hero-video-scrim {
     border-radius: 50% 50% 24px 24px / 28% 28% 24px 24px;
 }
