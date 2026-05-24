@@ -13,6 +13,9 @@
                 <p class="dph-sub">{{ $event->name }}</p>
             </div>
             <div class="evt-card-actions">
+                @php $exportParams = array_merge(['event' => $event], array_filter(['response' => request('response'), 'q' => request('q'), 'group' => request('group'), 'invitation_sent' => request('invitation_sent'), 'plus_one' => request('plus_one')], fn($v) => $v !== null && $v !== '')); @endphp
+                <a href="{{ route('events.guests.export', $exportParams) }}" class="evt-btn-outline"><i class="fa-solid fa-file-csv"></i> Export CSV</a>
+                <a href="{{ route('events.guests.export-pdf', $exportParams) }}" class="evt-btn-outline"><i class="fa-solid fa-file-pdf"></i> Export PDF</a>
                 <a href="{{ route('events.guests.import.create', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-file-import"></i> Import</a>
                 <a href="{{ route('events.guests.create', $event) }}" class="btn-primary"><i class="fa-solid fa-user-plus"></i> Add guest</a>
                 <a href="{{ route('events.guest-groups.index', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-layer-group"></i> Groups</a>
@@ -108,11 +111,12 @@
         <div class="evt-filter-row">
             @php
                 $filters = [
-                    'all' => 'All',
-                    'pending' => 'Pending',
-                    'accepted' => 'Accepted',
-                    'declined' => 'Declined',
-                    'maybe' => 'Maybe',
+                    'all'       => 'All',
+                    'pending'   => 'Pending',
+                    'responded' => 'Responded',
+                    'accepted'  => 'Accepted',
+                    'declined'  => 'Declined',
+                    'maybe'     => 'Maybe',
                 ];
                 $filterParams = array_filter([
                     'q' => request('q'),

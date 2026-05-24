@@ -58,6 +58,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('events.guest-groups', GuestGroupController::class)
         ->only(['index', 'store', 'update', 'destroy']);
 
+    Route::get('/events/{event}/guests/export', [GuestController::class, 'export'])
+        ->name('events.guests.export');
+
+    Route::get('/events/{event}/guests/export-pdf', [GuestController::class, 'exportPdf'])
+        ->name('events.guests.export-pdf');
+
     Route::patch('/events/{event}/guests/{guest}/invitation-sent', [GuestController::class, 'markInvitationSent'])
         ->name('events.guests.mark-invitation-sent');
 

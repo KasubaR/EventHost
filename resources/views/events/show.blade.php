@@ -154,7 +154,10 @@
 
                 @if (count($eventAnalytics['top_guests']) > 0)
                     <div class="evt-analytics-top-guests">
-                        <h3 class="evt-analytics-panel-title">Highest accepted seat counts</h3>
+                        <div class="evt-analytics-top-guests-head">
+                            <h3 class="evt-analytics-panel-title">Highest accepted seat counts</h3>
+                            <a href="{{ route('events.guests.index', ['event' => $event, 'response' => 'responded']) }}" class="evt-btn-outline evt-btn-tiny">View all responded</a>
+                        </div>
                         <ul class="evt-analytics-top-list">
                             @foreach ($eventAnalytics['top_guests'] as $row)
                                 <li class="evt-analytics-top-item">
@@ -165,6 +168,13 @@
                                 </li>
                             @endforeach
                         </ul>
+                    </div>
+                @else
+                    <div class="evt-analytics-top-guests">
+                        <div class="evt-analytics-top-guests-head">
+                            <h3 class="evt-analytics-panel-title">Responses</h3>
+                            <a href="{{ route('events.guests.index', ['event' => $event, 'response' => 'responded']) }}" class="evt-btn-outline evt-btn-tiny">View all responded</a>
+                        </div>
                     </div>
                 @endif
             </div>

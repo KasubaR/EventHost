@@ -7,10 +7,13 @@ use App\Http\Requests\StoreGuestRequest;
 use App\Http\Requests\UpdateGuestRequest;
 use App\Models\Event;
 use App\Models\Guest;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class GuestController extends Controller
 {
@@ -32,6 +35,8 @@ class GuestController extends Controller
 
         if ($filter === 'pending') {
             $guestsQuery->whereDoesntHave('rsvp');
+        } elseif ($filter === 'responded') {
+            $guestsQuery->whereHas('rsvp');
         } elseif ($filter === RsvpStatus::Accepted->value) {
             $guestsQuery->whereHas('rsvp', fn ($q) => $q->where('status', RsvpStatus::Accepted));
         } elseif ($filter === RsvpStatus::Declined->value) {
@@ -50,6 +55,113 @@ class GuestController extends Controller
         ];
 
         return view('events.guests.index', compact('event', 'guests', 'filter', 'groups', 'stats'));
+    }
+
+    public function export(Request $request, Event $event): StreamedResponse
+    {
+        $this->authorize('update', $event);
+
+        $filter = (string) $request->query('response', 'all');
+
+        $guestsQuery = $event->guests()
+            ->with(['rsvp', 'group'])
+            ->search($request->query('q'))
+            ->forGuestGroupFilter($request->query('group'))
+            ->forInvitationSentFilter($request->query('invitation_sent'))
+            ->forPlusOneFilter($request->query('plus_one'))
+            ->orderBy('name');
+
+        if ($filter === 'pending') {
+            $guestsQuery->whereDoesntHave('rsvp');
+        } elseif ($filter === 'responded') {
+            $guestsQuery->whereHas('rsvp');
+        } elseif ($filter === RsvpStatus::Accepted->value) {
+            $guestsQuery->whereHas('rsvp', fn ($q) => $q->where('status', RsvpStatus::Accepted));
+        } elseif ($filter === RsvpStatus::Declined->value) {
+            $guestsQuery->whereHas('rsvp', fn ($q) => $q->where('status', RsvpStatus::Declined));
+        } elseif ($filter === RsvpStatus::Maybe->value) {
+            $guestsQuery->whereHas('rsvp', fn ($q) => $q->where('status', RsvpStatus::Maybe));
+        }
+
+        $filename = 'guests-' . str($event->name)->slug() . '.csv';
+
+        return response()->streamDownload(function () use ($guestsQuery) {
+            $handle = fopen('php://output', 'w');
+
+            fputcsv($handle, [
+                'Name', 'Email', 'Phone', 'Group',
+                'RSVP Status', 'Attendee Count', 'Message',
+                'Meal Preference', 'Transportation Note', 'Song Request',
+                'Invitation Sent', 'Invitation Sent At',
+            ]);
+
+            $guestsQuery->chunk(200, function ($chunk) use ($handle) {
+                foreach ($chunk as $guest) {
+                    $rsvp = $guest->rsvp;
+                    fputcsv($handle, [
+                        $guest->name,
+                        $guest->email ?? '',
+                        $guest->phone ?? '',
+                        $guest->group?->name ?? '',
+                        $rsvp ? $rsvp->status->value : 'pending',
+                        $rsvp && $rsvp->status->countsTowardGuestLimit() ? $rsvp->attendee_count : '',
+                        $rsvp?->message ?? '',
+                        $rsvp?->meal_preference ?? '',
+                        $rsvp?->transportation_note ?? '',
+                        $rsvp?->song_request ?? '',
+                        $guest->invitation_sent ? 'Yes' : 'No',
+                        $guest->invitation_sent_at?->format('Y-m-d H:i') ?? '',
+                    ]);
+                }
+            });
+
+            fclose($handle);
+        }, $filename, ['Content-Type' => 'text/csv']);
+    }
+
+    public function exportPdf(Request $request, Event $event): Response
+    {
+        $this->authorize('update', $event);
+
+        $filter = (string) $request->query('response', 'all');
+
+        $guestsQuery = $event->guests()
+            ->with(['rsvp', 'group'])
+            ->search($request->query('q'))
+            ->forGuestGroupFilter($request->query('group'))
+            ->forInvitationSentFilter($request->query('invitation_sent'))
+            ->forPlusOneFilter($request->query('plus_one'))
+            ->orderBy('name');
+
+        if ($filter === 'pending') {
+            $guestsQuery->whereDoesntHave('rsvp');
+        } elseif ($filter === 'responded') {
+            $guestsQuery->whereHas('rsvp');
+        } elseif ($filter === RsvpStatus::Accepted->value) {
+            $guestsQuery->whereHas('rsvp', fn ($q) => $q->where('status', RsvpStatus::Accepted));
+        } elseif ($filter === RsvpStatus::Declined->value) {
+            $guestsQuery->whereHas('rsvp', fn ($q) => $q->where('status', RsvpStatus::Declined));
+        } elseif ($filter === RsvpStatus::Maybe->value) {
+            $guestsQuery->whereHas('rsvp', fn ($q) => $q->where('status', RsvpStatus::Maybe));
+        }
+
+        $guests = $guestsQuery->get();
+
+        $filterLabels = [
+            'pending'   => 'Pending',
+            'responded' => 'Responded',
+            'accepted'  => 'Accepted',
+            'declined'  => 'Declined',
+            'maybe'     => 'Maybe',
+        ];
+        $filterLabel = $filter !== 'all' ? ($filterLabels[$filter] ?? null) : null;
+
+        $filename = 'guests-' . str($event->name)->slug() . '.pdf';
+
+        $pdf = Pdf::loadView('events.guests.export-pdf', compact('event', 'guests', 'filterLabel'))
+            ->setPaper('a4', 'landscape');
+
+        return $pdf->download($filename);
     }
 
     public function create(Event $event): View

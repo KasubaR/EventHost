@@ -1413,6 +1413,13 @@
     padding-top: 8px;
     border-top: 1px solid var(--border-soft, rgba(26, 42, 74, 0.08));
 }
+.evt-analytics-top-guests-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 4px;
+}
 
 .evt-analytics-top-list {
     list-style: none;
