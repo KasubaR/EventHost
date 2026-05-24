@@ -34,12 +34,13 @@
 @section('content')
 
     <div class="evt-host-bar">
-        <span class="evt-host-bar-text">
-            Hosted by <strong>{{ config('app.name') }}</strong>
-        </span>
-        <a href="{{ url('/') }}" class="evt-host-bar-brand" target="_blank" rel="noopener noreferrer">
-            <img src="{{ asset('images/logo/EventHost Logo_Icon.svg') }}" alt="EventHost" width="18" height="18">
-            EventHost
+        <a href="{{ url('/') }}" class="evt-host-bar-logo" target="_blank" rel="noopener noreferrer">
+            <img src="{{ asset('images/logo/EventHost Logo_Icon.svg') }}" alt="{{ config('app.name') }}" width="22" height="22">
+            <span>{{ config('app.name') }}</span>
+        </a>
+        <p class="evt-host-bar-tagline">Create beautiful event invitations &amp; track RSVPs in one place.</p>
+        <a href="{{ url('/') }}" class="evt-host-bar-cta" target="_blank" rel="noopener noreferrer">
+            Get started free <i class="fa-solid fa-arrow-right"></i>
         </a>
     </div>
 
