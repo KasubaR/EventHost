@@ -119,6 +119,12 @@ This app requires the **GD** extension (or Imagick) for image processing (profil
 4. Click **Save** / **Apply**
 5. If `imagick` is available in the list, enabling it is preferred over GD for better image quality
 
+### Event Credits (Payments)
+
+Users have an `event_credits` column. Each event creation costs 1 credit (`User::canCreateEvent()` checks `event_credits > 0`, controller decrements on success). Admins assign credits manually via the user show page in the admin panel.
+
+When payments are implemented, call `$user->increment('event_credits')` in the payment webhook and it will plug straight in.
+
 ### Asset Bundling
 
 Vite bundles `resources/css/app.css` (Tailwind) and `resources/js/app.js`. These are loaded with `@vite()` in the layouts. The custom CSS files in `public/css/` are loaded directly with `<link>` tags — they are not processed by Vite.
