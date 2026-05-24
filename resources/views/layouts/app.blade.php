@@ -45,8 +45,11 @@
                 <a href="{{ route('dashboard') }}" class="dash-nav-link {{ request()->routeIs('dashboard') ? 'is-active' : '' }}">
                     <i class="fa-solid fa-gauge-high"></i> Overview
                 </a>
-                <a href="{{ route('events.index') }}" class="dash-nav-link {{ request()->routeIs('events.*') ? 'is-active' : '' }}">
+                <a href="{{ route('events.index') }}" class="dash-nav-link {{ request()->routeIs('events.*') && !request()->routeIs('events.guests.*', 'events.guest-groups.*') ? 'is-active' : '' }}">
                     <i class="fa-solid fa-envelope-open-text"></i> My Events
+                </a>
+                <a href="{{ route('events.index', ['from' => 'guests']) }}" class="dash-nav-link {{ request()->routeIs('events.guests.*', 'events.guest-groups.*') ? 'is-active' : '' }}">
+                    <i class="fa-solid fa-users"></i> Guests &amp; RSVPs
                 </a>
                 <a href="{{ route('templates.index') }}" class="dash-nav-link {{ request()->routeIs('templates.*') ? 'is-active' : '' }}">
                     <i class="fa-solid fa-palette"></i> Templates

@@ -34,12 +34,21 @@
     @endphp
 
     @if ($events->isEmpty())
-        <div class="dash-empty">
-            <div class="dash-empty-icon"><i class="fa-solid fa-envelope-open-text"></i></div>
-            <h2>No events yet</h2>
-            <p>Create your first invitation to see it here.</p>
-            <a href="{{ route('events.create') }}" class="btn-primary"><i class="fa-solid fa-plus"></i> Create event</a>
-        </div>
+        @if (request('from') === 'guests')
+            <div class="dash-empty">
+                <div class="dash-empty-icon"><i class="fa-solid fa-users"></i></div>
+                <h2>No events yet</h2>
+                <p>You need an event before you can manage guests and RSVPs. Create one to get started.</p>
+                <a href="{{ route('events.create') }}" class="btn-primary"><i class="fa-solid fa-plus"></i> Create event</a>
+            </div>
+        @else
+            <div class="dash-empty">
+                <div class="dash-empty-icon"><i class="fa-solid fa-envelope-open-text"></i></div>
+                <h2>No events yet</h2>
+                <p>Create your first invitation to see it here.</p>
+                <a href="{{ route('events.create') }}" class="btn-primary"><i class="fa-solid fa-plus"></i> Create event</a>
+            </div>
+        @endif
     @else
         <div class="evt-list">
             @foreach ($events as $event)
