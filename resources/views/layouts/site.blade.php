@@ -16,7 +16,9 @@
 </head>
 <body>
 
-<x-site-header />
+@if (! ($hideSiteHeader ?? false))
+    <x-site-header />
+@endif
 
 <main>
     @yield('content')

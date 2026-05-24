@@ -1,4 +1,5 @@
 @extends('layouts.site')
+@php $hideSiteHeader = true; $hideSiteFooter = true; @endphp
 
 @push('head')
     @include('events.partials.public-invitation-meta', ['event' => $event, 'invitation' => $invitation])
@@ -31,6 +32,16 @@
 @section('title', $event->name.' — '.config('app.name'))
 
 @section('content')
+
+    <div class="evt-host-bar">
+        <span class="evt-host-bar-text">
+            Hosted by <strong>{{ config('app.name') }}</strong>
+        </span>
+        <a href="{{ url('/') }}" class="evt-host-bar-brand" target="_blank" rel="noopener noreferrer">
+            <img src="{{ asset('images/logo/EventHost Logo_Icon.svg') }}" alt="EventHost" width="18" height="18">
+            EventHost
+        </a>
+    </div>
 
     @if (session('status') === 'published')
         <div class="evt-session-banner">
