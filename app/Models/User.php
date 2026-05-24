@@ -41,6 +41,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'last_login_at',
         'last_login_ip',
         'subscription_tier',
+        'event_credits',
     ];
 
     /**
@@ -119,6 +120,11 @@ class User extends Authenticatable implements MustVerifyEmail
     public function wantsEmailRsvpUpdates(): bool
     {
         return (bool) ($this->notification_preferences['email_rsvp_updates'] ?? true);
+    }
+
+    public function canCreateEvent(): bool
+    {
+        return $this->event_credits > 0;
     }
 
     public function canUseInvitationTemplate(InvitationTemplate $template): bool

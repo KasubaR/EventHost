@@ -35,8 +35,23 @@
     <div class="admin-detail-grid">
         <div class="admin-panel-card">
             <h2>Account</h2>
-            <p class="admin-muted admin-mt-sm">Status: {{ $u->status }} · Events: {{ $u->events_count }} · Phone: {{ $u->phone ?? '—' }}</p>
+            <p class="admin-muted admin-mt-sm">Status: {{ $u->status }} · Events: {{ $u->events_count }} · Credits: {{ $u->event_credits }} · Phone: {{ $u->phone ?? '—' }}</p>
             <p class="admin-muted">Registered {{ $u->created_at->format('M j, Y g:i a') }}</p>
+
+            @if(auth('admin')->user()?->can('users.manage_status'))
+                <div class="admin-mt-md">
+                    <h3 style="font-size:14px;font-weight:600;margin-bottom:8px;">Event Credits</h3>
+                    <p class="admin-muted" style="margin-bottom:10px;">Current balance: <strong>{{ $u->event_credits }}</strong></p>
+                    <form method="post" action="{{ route('admin.users.add-credits', $u) }}" class="profile-form" style="display:flex;gap:8px;align-items:flex-end;">
+                        @csrf
+                        <div style="flex:1;">
+                            <label for="credits-input" style="font-size:13px;">Add credits</label>
+                            <input id="credits-input" type="number" name="credits" min="1" max="100" value="1" class="profile-input" style="margin-top:4px;">
+                        </div>
+                        <button type="submit" class="btn-primary" style="white-space:nowrap;">Add credits</button>
+                    </form>
+                </div>
+            @endif
 
             @if(auth('admin')->user()?->can('users.manage_status'))
                 @if (! auth('admin')->user()->is($u))

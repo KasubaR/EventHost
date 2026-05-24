@@ -36,8 +36,12 @@ class EventController extends Controller
         return view('events.index', compact('events'));
     }
 
-    public function create(Request $request): View
+    public function create(Request $request): View|RedirectResponse
     {
+        if (! $request->user()->canCreateEvent()) {
+            return redirect()->route('events.index')->with('status', 'no-event-credits');
+        }
+
         $prefTemplateId = null;
         $slug = $request->query('template');
         if (is_string($slug) && $slug !== '') {
@@ -52,6 +56,10 @@ class EventController extends Controller
 
     public function store(StoreEventRequest $request): RedirectResponse
     {
+        if (! $request->user()->canCreateEvent()) {
+            return redirect()->route('events.index')->with('status', 'no-event-credits');
+        }
+
         $data = $request->validated();
         $preferredTemplateId = $data['preferred_invitation_template_id'] ?? null;
         unset($data['preferred_invitation_template_id']);
@@ -68,6 +76,8 @@ class EventController extends Controller
             $data['is_published'] = false;
 
             $event = Event::create($data);
+
+            $request->user()->decrement('event_credits');
         } catch (\Throwable $e) {
             if ($newPath) {
                 Storage::disk('public')->delete($newPath);

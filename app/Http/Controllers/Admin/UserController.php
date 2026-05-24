@@ -94,6 +94,23 @@ class UserController extends Controller
         return redirect()->route('admin.users.index')->with('status', 'user-deleted');
     }
 
+    public function addCredits(Request $request, User $user): RedirectResponse
+    {
+        $validated = $request->validate([
+            'credits' => ['required', 'integer', 'min:1', 'max:100'],
+        ]);
+
+        $user->increment('event_credits', $validated['credits']);
+
+        AdminActivity::log('Admin added event credits', [
+            'target_user_id' => $user->id,
+            'credits_added' => $validated['credits'],
+            'new_total' => $user->fresh()->event_credits,
+        ]);
+
+        return redirect()->back()->with('status', 'Credits added successfully.');
+    }
+
     private function adminActsOnLinkedCustomerAccount(Request $request, User $user): bool
     {
         $admin = $request->user('admin');

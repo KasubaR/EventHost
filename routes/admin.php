@@ -41,6 +41,7 @@ Route::prefix('admin')
 
         Route::middleware(['permission:users.manage_status,admin', 'throttle:admin-mutations'])->group(function (): void {
             Route::patch('/users/{user}/status', [AdminUserController::class, 'updateStatus'])->name('users.status');
+            Route::post('/users/{user}/credits', [AdminUserController::class, 'addCredits'])->name('users.add-credits');
         });
 
         Route::middleware(['permission:users.password_reset,admin', 'throttle:admin-mutations'])->group(function (): void {
