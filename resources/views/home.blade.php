@@ -1,6 +1,6 @@
 @extends('layouts.site')
 
-@section('title', 'Event Host — Create Beautiful Digital Invitations')
+@section('title', 'Event Host | Create Beautiful Digital Invitations')
 
 @push('head')
     <link rel="stylesheet" href="{{ asset('css/home.css') }}">
@@ -276,7 +276,6 @@
   <div class="section">
     <div class="dash-grid">
       <div class="dash-left">
-        <div class="hero-badge" style="margin-bottom:20px"><span class="dot"></span> Real-time tracking</div>
         <h2>Track every RSVP as it happens</h2>
         <p>No more chasing guests. Our dashboard gives you a live view of who's coming, who's not, and who hasn't responded — so you can plan with confidence.</p>
         <div class="dash-points">
@@ -357,7 +356,6 @@
         <img class="why-bg-photo" src="https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=960&h=1200&q=80" alt="Guests mingling at a lively indoor celebration" width="480" height="600" loading="lazy" decoding="async">
       </div>
       <div class="why-right">
-        <div class="hero-badge" style="margin-bottom:18px"><span class="dot"></span> Why Event Host</div>
         <h2>Built for Zambian hosts, designed for the world</h2>
         <p>We know how Zambians celebrate—from weddings and Kitchen Parties to graduations and corporate launches. Event Host brings MTN, Airtel &amp; Zamtel mobile money together with cards and banking paths guests trust, plus WhatsApp-first sharing.</p>
         <div class="why-points">
@@ -452,7 +450,7 @@
           <li>Basic RSVP tracking</li>
           <li>WhatsApp sharing</li>
         </ul>
-        <button class="btn-price btn-price-outline">Get Started</button>
+        <a href="{{ auth()->check() ? route('billing.show', ['plan' => 'base']) : route('register') }}" class="btn-price btn-price-outline">Get Started</a>
       </div>
       <div class="price-card popular">
         <span class="popular-badge">Most Popular</span>
@@ -469,7 +467,7 @@
           <li>Countdown timer</li>
           <li>Analytics & exports</li>
         </ul>
-        <button class="btn-price btn-price-fill">Start Pro Trial</button>
+        <a href="{{ auth()->check() ? route('billing.show', ['plan' => 'pro']) : route('register') }}" class="btn-price btn-price-fill">Get Pro</a>
       </div>
       <div class="price-card">
         <div class="price-plan">Pro+</div>
@@ -484,7 +482,7 @@
           <li>Priority support</li>
           <li>Dedicated account manager</li>
         </ul>
-        <button class="btn-price btn-price-outline">Contact Sales</button>
+        <a href="{{ auth()->check() ? route('billing.show', ['plan' => 'pro_plus']) : route('contact') }}" class="btn-price btn-price-outline">Contact Sales</a>
       </div>
     </div>
   </div>
@@ -503,7 +501,7 @@
           Is Event Host really free to use?
           <span class="faq-icon">+</span>
         </button>
-        <div class="faq-a"><p>Yes! Our Free plan lets you create your first event with up to 50 guests at absolutely no cost. No credit card required. Upgrade to Pro whenever you need more power.</p></div>
+        <div class="faq-a"><p>Creating an account is free. Each event requires a paid credit — Base from K450, Pro from K750, or Pro+ from K1500. Pay with MTN, Airtel, or bank transfer after you sign up.</p></div>
       </div>
       <div class="faq-item">
         <button type="button" class="faq-q">

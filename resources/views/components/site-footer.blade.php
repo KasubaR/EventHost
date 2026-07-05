@@ -29,7 +29,7 @@
             <div class="footer-col">
                 <h5>Support</h5>
                 <a href="#">Help Center</a>
-                <a href="#">Contact Us</a>
+                <a href="{{ route('contact') }}">Contact Us</a>
                 <a href="#">FAQ</a>
                 <a href="#">Status</a>
             </div>

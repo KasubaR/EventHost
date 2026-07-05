@@ -1,6 +1,6 @@
 @extends('layouts.site')
 
-@section('title', 'Sign in — Event Host')
+@section('title', 'Sign in | Event Host')
 
 @push('head')
     <link rel="stylesheet" href="{{ asset('css/auth.css') }}">

@@ -34,7 +34,23 @@ class UserFactory extends Factory
             'last_login_at' => null,
             'last_login_ip' => null,
             'subscription_tier' => SubscriptionTier::Base,
+            'event_credits' => 1,
         ];
+    }
+
+    public function withoutCredits(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'event_credits' => 0,
+            'subscription_tier' => SubscriptionTier::None,
+        ]);
+    }
+
+    public function withCredits(int $credits = 1): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'event_credits' => $credits,
+        ]);
     }
 
     public function unverified(): static

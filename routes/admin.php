@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EventController as AdminEventController;
 use App\Http\Controllers\Admin\GuestController as AdminGuestController;
 use App\Http\Controllers\Admin\NotificationLogController;
+use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Admin\ReportController as AdminReportController;
 use App\Http\Controllers\Admin\RsvpController as AdminRsvpController;
 use App\Http\Controllers\Admin\SettingController;
@@ -75,6 +76,11 @@ Route::prefix('admin')
 
         Route::middleware('permission:notifications.view,admin')->group(function (): void {
             Route::get('/notifications', [NotificationLogController::class, 'index'])->name('notifications.index');
+        });
+
+        Route::middleware('permission:payments.view,admin')->group(function (): void {
+            Route::get('/payments', [AdminPaymentController::class, 'index'])->name('payments.index');
+            Route::get('/payments/{payment}', [AdminPaymentController::class, 'show'])->name('payments.show');
         });
 
         Route::middleware('permission:reports.view,admin')->group(function (): void {

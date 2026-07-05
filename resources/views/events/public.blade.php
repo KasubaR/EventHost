@@ -29,7 +29,7 @@
     <script src="{{ asset('js/invitation-public.js') }}" defer></script>
 @endpush
 
-@section('title', $event->name.' — '.config('app.name'))
+@section('title', $event->name.' | '.config('app.name'))
 
 @section('content')
 

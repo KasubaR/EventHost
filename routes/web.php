@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EventChooseTemplateController;
 use App\Http\Controllers\EventController;
@@ -8,11 +9,19 @@ use App\Http\Controllers\GuestBulkActionController;
 use App\Http\Controllers\GuestController;
 use App\Http\Controllers\GuestGroupController;
 use App\Http\Controllers\GuestImportController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicEventController;
 use App\Http\Controllers\RsvpController;
 use App\Http\Controllers\TemplateLibraryController;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
+
+$lencoWebhookPath = trim((string) config('services.lenco.webhook_path'), '/') ?: 'lenco/webhook';
+
+Route::post($lencoWebhookPath, [PaymentController::class, 'webhook'])
+    ->withoutMiddleware([VerifyCsrfToken::class])
+    ->name('lenco.webhook');
 
 Route::get('/', function () {
     return view('home');
@@ -21,6 +30,9 @@ Route::get('/', function () {
 Route::get('/about', function () {
     return view('about');
 })->name('about');
+
+Route::get('/contact', [ContactController::class, 'show'])->name('contact');
+Route::post('/contact', [ContactController::class, 'store'])->name('contact.store')->middleware('throttle:5,1');
 
 Route::get('/e/{slug}', [PublicEventController::class, 'show'])->name('events.public');
 Route::get('/e/{slug}/calendar.ics', [PublicEventController::class, 'ics'])->name('events.public.ics');
@@ -79,6 +91,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('events.invitation-design.update');
     Route::resource('events', EventController::class)->except('store');
     Route::post('/events', [EventController::class, 'store'])->name('events.store')->middleware('throttle:10,1');
+
+    Route::get('/billing', [PaymentController::class, 'show'])->name('billing.show');
+    Route::post('/payment/initiate', [PaymentController::class, 'initiate'])->name('payment.initiate');
+    Route::get('/payment/verify/{transactionId}', [PaymentController::class, 'verify'])
+        ->where('transactionId', '[A-Za-z0-9_\-]{1,64}')
+        ->name('payment.verify');
+    Route::get('/payment/verify-ref/{reference}', [PaymentController::class, 'verifyByReference'])
+        ->where('reference', '[A-Za-z0-9_\-]{1,128}')
+        ->name('payment.verify.ref');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

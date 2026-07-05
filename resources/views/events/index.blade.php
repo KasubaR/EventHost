@@ -17,9 +17,9 @@
                     <span class="evt-credit-badge">{{ auth()->user()->event_credits }} credit{{ auth()->user()->event_credits === 1 ? '' : 's' }}</span>
                 </a>
             @else
-                <span class="btn-primary btn-primary--disabled" title="No event credits remaining">
-                    <i class="fa-solid fa-lock"></i> New event
-                </span>
+                <a href="{{ route('billing.show') }}" class="btn-primary">
+                    <i class="fa-solid fa-credit-card"></i> Buy event credit
+                </a>
             @endif
         </div>
     </x-slot>
@@ -27,7 +27,7 @@
     @if (session('status') === 'event-deleted')
         <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Event deleted.</div>
     @elseif (session('status') === 'no-event-credits')
-        <div class="evt-flash evt-flash--warn"><i class="fa-solid fa-triangle-exclamation"></i> You have no event credits. Please make a payment to create a new event.</div>
+        <div class="evt-flash evt-flash--warn"><i class="fa-solid fa-triangle-exclamation"></i> You have no event credits. <a href="{{ route('billing.show') }}">Buy an event credit</a> to create a new event.</div>
     @endif
 
     @php

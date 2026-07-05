@@ -21,17 +21,27 @@
     <div class="nav-links">
         <a href="{{ url('/#hero') }}">Home</a>
         <a href="{{ route('about') }}">About Us</a>
-        <a href="{{ url('/#contact') }}">Contact Us</a>
+        <a href="{{ route('contact') }}" class="{{ request()->routeIs('contact') ? 'is-active' : '' }}">Contact Us</a>
     </div>
 
     <div class="nav-actions nav-actions-group">
-        @if(auth()->check() && !auth('admin')->check())
-            <a href="{{ route('dashboard') }}" class="nav-user-link {{ request()->routeIs('dashboard') ? 'is-active' : '' }}">Dashboard</a>
-            <a href="{{ route('profile.edit') }}" class="nav-user-link {{ request()->routeIs('profile.edit') ? 'is-active' : '' }}">Profile</a>
-            <form method="POST" action="{{ route('logout') }}" class="nav-logout-form">
-                @csrf
-                <button type="submit" class="btn-ghost">{{ __('Log out') }}</button>
-            </form>
+        @if(auth()->check())
+            <div class="nav-account" id="nav-account">
+                <button class="nav-account-btn" id="nav-account-toggle" aria-haspopup="true" aria-expanded="false">
+                    <img src="{{ auth()->user()->profile_photo_url }}" alt="{{ auth()->user()->name }}" class="nav-avatar">
+                    <span class="nav-account-name">{{ auth()->user()->name }}</span>
+                    <svg class="nav-account-caret" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="nav-account-dropdown" id="nav-account-dropdown" role="menu" hidden>
+                    <a href="{{ route('dashboard') }}" role="menuitem" class="{{ request()->routeIs('dashboard') ? 'is-active' : '' }}">Dashboard</a>
+                    <a href="{{ route('profile.edit') }}" role="menuitem" class="{{ request()->routeIs('profile.edit') ? 'is-active' : '' }}">Profile</a>
+                    <div class="nav-account-divider"></div>
+                    <form method="POST" action="{{ route('logout') }}" class="nav-logout-form">
+                        @csrf
+                        <button type="submit" role="menuitem">Log out</button>
+                    </form>
+                </div>
+            </div>
         @elseif(!auth()->check())
             <a href="{{ route('login') }}" class="btn-ghost">{{ __('Sign in') }}</a>
             <a href="{{ route('register') }}" class="btn-primary">{{ __('Sign up') }}</a>
@@ -46,10 +56,14 @@
         <div class="nav-mobile-links">
             <a href="{{ url('/#hero') }}">Home</a>
             <a href="{{ route('about') }}">About Us</a>
-            <a href="{{ url('/#contact') }}">Contact Us</a>
+            <a href="{{ route('contact') }}">Contact Us</a>
         </div>
         <div class="nav-mobile-actions">
-            @if(auth()->check() && !auth('admin')->check())
+            @if(auth()->check())
+                <div class="nav-mobile-user">
+                    <img src="{{ auth()->user()->profile_photo_url }}" alt="{{ auth()->user()->name }}" class="nav-avatar nav-avatar--sm">
+                    <span class="nav-mobile-username">{{ auth()->user()->name }}</span>
+                </div>
                 <a href="{{ route('dashboard') }}" class="nav-user-link">Dashboard</a>
                 <a href="{{ route('profile.edit') }}" class="nav-user-link">Profile</a>
                 <form method="POST" action="{{ route('logout') }}" class="nav-logout-form">

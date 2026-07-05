@@ -24,6 +24,7 @@ class RolePermissionSeeder extends Seeder
         'reports.manage',
         'settings.manage',
         'analytics.view',
+        'payments.view',
     ];
 
     public function run(): void
@@ -54,6 +55,7 @@ class RolePermissionSeeder extends Seeder
             'reports.view',
             'reports.manage',
             'analytics.view',
+            'payments.view',
         ]);
 
         $adminPermissions = array_values(array_filter(

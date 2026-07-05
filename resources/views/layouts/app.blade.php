@@ -45,6 +45,9 @@
                 <a href="{{ route('dashboard') }}" class="dash-nav-link {{ request()->routeIs('dashboard') ? 'is-active' : '' }}">
                     <i class="fa-solid fa-gauge-high"></i> Overview
                 </a>
+                <a href="{{ route('billing.show') }}" class="dash-nav-link {{ request()->routeIs('billing.*', 'payment.*') ? 'is-active' : '' }}">
+                    <i class="fa-solid fa-credit-card"></i> Billing
+                </a>
                 <a href="{{ route('events.index') }}" class="dash-nav-link {{ request()->routeIs('events.*') && !request()->routeIs('events.guests.*', 'events.guest-groups.*') ? 'is-active' : '' }}">
                     <i class="fa-solid fa-envelope-open-text"></i> My Events
                 </a>

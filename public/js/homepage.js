@@ -63,6 +63,29 @@ if (navHamburger && navMobileMenu) {
   });
 }
 
+// Nav account dropdown toggle
+const navAccountToggle = document.getElementById('nav-account-toggle');
+const navAccountDropdown = document.getElementById('nav-account-dropdown');
+if (navAccountToggle && navAccountDropdown) {
+  navAccountToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = !navAccountDropdown.hidden;
+    navAccountDropdown.hidden = isOpen;
+    navAccountToggle.setAttribute('aria-expanded', String(!isOpen));
+  });
+  document.addEventListener('click', () => {
+    navAccountDropdown.hidden = true;
+    navAccountToggle.setAttribute('aria-expanded', 'false');
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !navAccountDropdown.hidden) {
+      navAccountDropdown.hidden = true;
+      navAccountToggle.setAttribute('aria-expanded', 'false');
+      navAccountToggle.focus();
+    }
+  });
+}
+
 // Password visibility toggle
 document.querySelectorAll('.auth-eye').forEach((btn) => {
   btn.addEventListener('click', () => {

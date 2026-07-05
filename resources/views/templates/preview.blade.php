@@ -24,7 +24,7 @@
     <script src="{{ asset('js/invitation-public.js') }}" defer></script>
 @endpush
 
-@section('title', $invitation_template->name.' — Templates — '.config('app.name'))
+@section('title', $invitation_template->name.' | Templates | '.config('app.name'))
 
 @section('content')
 

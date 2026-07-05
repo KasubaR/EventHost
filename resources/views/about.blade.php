@@ -1,6 +1,6 @@
 @extends('layouts.site')
 
-@section('title', 'About Us — Event Host')
+@section('title', 'About Us | Event Host')
 
 @push('head')
     <link rel="stylesheet" href="{{ asset('css/about.css') }}">
@@ -11,14 +11,13 @@
 <!-- HERO -->
 <section class="about-hero">
     <div class="about-hero-inner">
-        <div class="about-eyebrow"><span class="dot"></span> Our Story</div>
         <h1>Building a better way to celebrate together</h1>
         <p>Event Host was born from a simple idea — that every host deserves beautiful, stress-free invitations and every guest deserves a seamless experience, no matter where they are.</p>
         <div class="about-hero-ctas">
             <a href="{{ route('register') }}" class="btn-hero-primary">
                 <i class="fa-solid fa-gift" aria-hidden="true"></i> Create Free Event
             </a>
-            <a href="{{ url('/#contact') }}" class="btn-hero-secondary">Contact Us →</a>
+            <a href="{{ route('contact') }}" class="btn-hero-secondary">Contact Us →</a>
         </div>
     </div>
 </section>

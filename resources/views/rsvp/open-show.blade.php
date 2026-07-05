@@ -4,7 +4,7 @@
     <link rel="stylesheet" href="{{ asset('css/rsvp-public.css') }}">
 @endpush
 
-@section('title', 'RSVP — '.$event->name)
+@section('title', 'RSVP | '.$event->name)
 
 @section('content')
     <article class="rsvp-page">

@@ -39,7 +39,7 @@ class EventController extends Controller
     public function create(Request $request): View|RedirectResponse
     {
         if (! $request->user()->canCreateEvent()) {
-            return redirect()->route('events.index')->with('status', 'no-event-credits');
+            return redirect()->route('billing.show')->with('status', 'no-event-credits');
         }
 
         $prefTemplateId = null;
@@ -57,7 +57,7 @@ class EventController extends Controller
     public function store(StoreEventRequest $request): RedirectResponse
     {
         if (! $request->user()->canCreateEvent()) {
-            return redirect()->route('events.index')->with('status', 'no-event-credits');
+            return redirect()->route('billing.show')->with('status', 'no-event-credits');
         }
 
         $data = $request->validated();
@@ -89,6 +89,7 @@ class EventController extends Controller
             $preferredTemplate = InvitationTemplate::find((int) $preferredTemplateId);
             if ($preferredTemplate && $request->user()->canUseInvitationTemplate($preferredTemplate)) {
                 $event->update(['invitation_template_id' => $preferredTemplate->id]);
+
                 return redirect()->route('events.edit', $event)->with('status', 'template-chosen');
             }
         }

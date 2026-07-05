@@ -8,7 +8,7 @@
     $meta = session('thanks_meta', []);
 @endphp
 
-@section('title', 'Thank you — '.config('app.name'))
+@section('title', 'Thank you | '.config('app.name'))
 
 @section('content')
     <article class="rsvp-page evt-public-inner rsvp-thanks">

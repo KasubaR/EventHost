@@ -369,6 +369,101 @@ footer {
   display: inline-flex;
 }
 
+/* Nav account dropdown */
+.nav-account { position: relative; }
+
+.nav-account-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  color: rgba(255, 255, 255, 0.85);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+}
+.nav-account-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+
+.nav-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  flex-shrink: 0;
+}
+.nav-avatar--sm { width: 28px; height: 28px; }
+
+.nav-account-name {
+  max-width: 130px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav-account-caret {
+  opacity: 0.6;
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+.nav-account-btn[aria-expanded="true"] .nav-account-caret { transform: rotate(180deg); }
+
+.nav-account-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 170px;
+  background: #1a1a2e;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  z-index: 200;
+  overflow: hidden;
+}
+.nav-account-dropdown a,
+.nav-account-dropdown button {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.8);
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s, color 0.15s;
+  box-sizing: border-box;
+}
+.nav-account-dropdown a:hover,
+.nav-account-dropdown button:hover { background: rgba(255,255,255,0.07); color: #fff; }
+.nav-account-dropdown a.is-active { color: var(--pink); font-weight: 600; }
+
+.nav-account-divider { height: 1px; background: rgba(255,255,255,0.08); margin: 4px 0; }
+
+/* Mobile user identity row */
+.nav-mobile-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 4px 0 12px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.nav-mobile-username {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+
 @media (max-width: 768px) {
   nav { padding: 0 20px; }
   .nav-links { display: none; }

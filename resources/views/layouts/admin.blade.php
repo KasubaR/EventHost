@@ -82,6 +82,11 @@
                         <i class="fa-solid fa-paper-plane"></i> Notifications
                     </a>
                 @endif
+                @if(auth('admin')->user()?->can('payments.view'))
+                    <a href="{{ route('admin.payments.index') }}" class="dash-nav-link {{ request()->routeIs('admin.payments.*') ? 'is-active' : '' }}">
+                        <i class="fa-solid fa-credit-card"></i> Payments
+                    </a>
+                @endif
                 @if(auth('admin')->user()?->can('reports.view'))
                     <a href="{{ route('admin.reports.index') }}" class="dash-nav-link {{ request()->routeIs('admin.reports.*') ? 'is-active' : '' }}">
                         <i class="fa-solid fa-flag"></i> Reports
