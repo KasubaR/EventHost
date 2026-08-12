@@ -59,6 +59,22 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(10)->by((string) $request->ip().'|'.$suffix);
         });
 
+        RateLimiter::for('staff-checkin', function (Request $request): Limit {
+            $route = $request->route();
+            $staffToken = $route?->parameter('staffToken');
+            $suffix = is_string($staffToken) && $staffToken !== '' ? 'token:'.$staffToken : 'global';
+
+            return Limit::perMinute(30)->by((string) $request->ip().'|'.$suffix);
+        });
+
+        RateLimiter::for('table-upload', function (Request $request): Limit {
+            $route = $request->route();
+            $code = $route?->parameter('code');
+            $suffix = is_string($code) && $code !== '' ? 'code:'.$code : 'global';
+
+            return Limit::perMinutes(10, 10)->by((string) $request->ip().'|'.$suffix);
+        });
+
         RateLimiter::for('guest-bulk-send', function (Request $request): Limit {
             $perHour = max(1, (int) config('communications.bulk_send_per_hour', 12));
             $userId = $request->user()?->id ?? 'guest';

@@ -1,0 +1,118 @@
+/**
+ * Tables & Photo Wall admin — table CRUD grid, QR previews, photo moderation grid.
+ * Loaded by events/tables/index.blade.php and events/photos/index.blade.php.
+ */
+
+.tbl-settings-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 24px;
+  margin-bottom: 10px;
+}
+
+.tbl-settings-row {
+  display: flex;
+  align-items: center;
+}
+
+.tbl-add-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  max-width: 480px;
+}
+
+.tbl-add-form .profile-input {
+  flex: 1;
+  min-width: 200px;
+}
+
+.tbl-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 18px;
+}
+
+.tbl-card {
+  border: 1px solid var(--line, #e0e0e8);
+  border-radius: var(--radius, 8px);
+  padding: 16px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: var(--white, #fff);
+}
+
+.tbl-card-qr {
+  width: 140px;
+  height: 140px;
+  border-radius: var(--radius-sm, 6px);
+  border: 1px solid var(--line, #e0e0e8);
+  padding: 6px;
+  background: #fff;
+}
+
+.tbl-card-rename {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+}
+
+.tbl-card-rename .profile-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.tbl-card-meta {
+  font-size: 12px;
+}
+
+/* ── Photo moderation grid ── */
+
+.tbl-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.tbl-photo-card {
+  border: 1px solid var(--line, #e0e0e8);
+  border-radius: var(--radius, 8px);
+  overflow: hidden;
+  background: var(--white, #fff);
+  display: flex;
+  flex-direction: column;
+}
+
+.tbl-photo-thumb {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  display: block;
+  background: var(--gray-light, #f4f5f9);
+}
+
+.tbl-photo-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 10px 0;
+  font-size: 12px;
+}
+
+.tbl-photo-uploader {
+  padding: 4px 10px 0;
+  font-size: 12px;
+}
+
+.tbl-photo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px;
+  margin-top: auto;
+}

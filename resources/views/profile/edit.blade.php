@@ -4,12 +4,7 @@
     <x-slot name="pageHeader">
         <div class="dph-inner">
             <div>
-                <nav class="dash-breadcrumb">
-                    <a href="{{ route('dashboard') }}">Dashboard</a>
-                    <i class="fa-solid fa-chevron-right"></i>
-                    <span>Profile</span>
-                </nav>
-                <h1 class="dph-title">Your Profile</h1>
+<h1 class="dph-title">Your Profile</h1>
                 <p class="dph-sub">Manage your personal information, security and preferences.</p>
             </div>
         </div>

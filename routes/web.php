@@ -1,18 +1,25 @@
 <?php
 
+use App\Http\Controllers\CheckInController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EventChooseTemplateController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\EventGalleryController;
 use App\Http\Controllers\EventInvitationDesignController;
+use App\Http\Controllers\EventPhotoController;
+use App\Http\Controllers\EventStaffLinkController;
+use App\Http\Controllers\EventTableController;
 use App\Http\Controllers\GuestBulkActionController;
 use App\Http\Controllers\GuestController;
 use App\Http\Controllers\GuestGroupController;
 use App\Http\Controllers\GuestImportController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PublicCheckInController;
 use App\Http\Controllers\PublicEventController;
 use App\Http\Controllers\RsvpController;
+use App\Http\Controllers\TableUploadController;
 use App\Http\Controllers\TemplateLibraryController;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
@@ -36,6 +43,21 @@ Route::post('/contact', [ContactController::class, 'store'])->name('contact.stor
 
 Route::get('/e/{slug}', [PublicEventController::class, 'show'])->name('events.public');
 Route::get('/e/{slug}/calendar.ics', [PublicEventController::class, 'ics'])->name('events.public.ics');
+
+Route::get('/e/{slug}/table/{code}', [TableUploadController::class, 'show'])->name('table.upload.show');
+Route::post('/e/{slug}/table/{code}/photos', [TableUploadController::class, 'store'])
+    ->middleware('throttle:table-upload')
+    ->name('table.upload.store');
+
+Route::get('/e/{slug}/gallery', [EventGalleryController::class, 'show'])->name('event.gallery.show');
+Route::get('/e/{slug}/gallery/feed', [EventGalleryController::class, 'feed'])->name('event.gallery.feed');
+
+Route::get('/checkin/{staffToken}', [PublicCheckInController::class, 'scan'])->name('checkin.public.scan');
+Route::middleware('throttle:staff-checkin')->group(function () {
+    Route::get('/checkin/{staffToken}/lookup', [PublicCheckInController::class, 'lookup'])->name('checkin.public.lookup');
+    Route::post('/checkin/{staffToken}/guest/{guest}', [PublicCheckInController::class, 'confirmGuest'])->name('checkin.public.confirm-guest');
+    Route::post('/checkin/{staffToken}/{token}', [PublicCheckInController::class, 'confirmToken'])->name('checkin.public.confirm-token');
+});
 
 Route::get('/rsvp/thanks', [RsvpController::class, 'thanks'])->name('rsvp.thanks');
 Route::get('/rsvp/{token}', [RsvpController::class, 'showByToken'])->name('rsvp.token.show');
@@ -79,11 +101,45 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/events/{event}/guests/{guest}/invitation-sent', [GuestController::class, 'markInvitationSent'])
         ->name('events.guests.mark-invitation-sent');
 
+    Route::get('/events/{event}/guests/{guest}/qr.svg', [GuestController::class, 'qr'])
+        ->name('events.guests.qr');
+
+    Route::get('/events/{event}/guests/qr-sheet.pdf', [GuestController::class, 'qrSheet'])
+        ->name('events.guests.qr-sheet');
+
     Route::resource('events.guests', GuestController::class)
         ->only(['index', 'create', 'store', 'edit', 'update', 'destroy'])
         ->scoped([
             'guest' => 'guests',
         ]);
+
+    Route::get('/events/{event}/tables/qr-sheet.pdf', [EventTableController::class, 'qrSheet'])
+        ->name('events.tables.qr-sheet');
+    Route::get('/events/{event}/tables/{table}/qr.svg', [EventTableController::class, 'qr'])
+        ->name('events.tables.qr');
+    Route::resource('events.tables', EventTableController::class)
+        ->only(['index', 'store', 'update', 'destroy']);
+
+    Route::post('/events/{event}/checkin/links', [EventStaffLinkController::class, 'store'])
+        ->name('events.checkin.links.store');
+    Route::delete('/events/{event}/checkin/links/{link}', [EventStaffLinkController::class, 'destroy'])
+        ->name('events.checkin.links.destroy');
+
+    Route::get('/events/{event}/checkin/lookup', [CheckInController::class, 'lookup'])
+        ->name('events.checkin.lookup');
+    Route::post('/events/{event}/checkin/guest/{guest}', [CheckInController::class, 'confirmGuest'])
+        ->name('events.checkin.confirm-guest');
+    Route::post('/events/{event}/checkin/{token}', [CheckInController::class, 'confirmToken'])
+        ->name('events.checkin.confirm-token');
+    Route::get('/events/{event}/checkin', [CheckInController::class, 'scan'])
+        ->name('events.checkin.scan');
+
+    Route::patch('/events/{event}/photos/{photo}', [EventPhotoController::class, 'update'])
+        ->name('events.photos.update');
+    Route::delete('/events/{event}/photos/{photo}', [EventPhotoController::class, 'destroy'])
+        ->name('events.photos.destroy');
+    Route::get('/events/{event}/photos', [EventPhotoController::class, 'index'])
+        ->name('events.photos.index');
 
     Route::patch('/events/{event}/publish', [EventController::class, 'publish'])->name('events.publish');
     Route::patch('/events/{event}/invitation-design', [EventInvitationDesignController::class, 'update'])

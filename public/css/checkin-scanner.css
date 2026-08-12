@@ -1,0 +1,172 @@
+/**
+ * Staff QR check-in scanner. Loaded by events/checkin/scan.blade.php.
+ */
+
+.ckin-root {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.ckin-camera-pane {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radius, 8px);
+  overflow: hidden;
+  background: var(--navy, #0d0d2b);
+}
+
+.ckin-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ckin-canvas-hidden {
+  display: none;
+}
+
+.ckin-frame {
+  position: absolute;
+  inset: 12%;
+  border: 3px solid color-mix(in srgb, var(--cyan, #00cec9) 80%, white);
+  border-radius: 18px;
+  pointer-events: none;
+}
+
+.ckin-camera-hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 10px;
+  text-align: center;
+  color: #fff;
+  font-size: 12px;
+  padding: 0 16px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+.ckin-result {
+  min-height: 28px;
+  text-align: center;
+  font-weight: 700;
+  border-radius: var(--radius-sm, 6px);
+  padding: 10px 14px;
+}
+
+.ckin-result:empty {
+  padding: 0;
+  min-height: 0;
+}
+
+.ckin-result--success {
+  background: color-mix(in srgb, var(--green, #27ae60) 14%, transparent);
+  color: var(--green, #27ae60);
+}
+
+.ckin-result--warn {
+  background: color-mix(in srgb, var(--orange, #f39c12) 16%, transparent);
+  color: #8a5a00;
+}
+
+.ckin-result--error {
+  background: color-mix(in srgb, var(--pink, #e00e4f) 12%, transparent);
+  color: var(--pink, #e00e4f);
+}
+
+.ckin-result--busy {
+  background: var(--gray-light, #f4f5f9);
+  color: var(--gray-mid, #8e8ea8);
+}
+
+.ckin-manual {
+  border-top: 1px solid var(--line, #e0e0e8);
+  padding-top: 16px;
+}
+
+.ckin-lookup-results {
+  list-style: none;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.ckin-lookup-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--line, #e0e0e8);
+  border-radius: var(--radius-sm, 6px);
+  font-size: 14px;
+}
+
+.ckin-lookup-empty {
+  list-style: none;
+  padding: 8px 4px;
+  color: var(--gray-mid, #8e8ea8);
+  font-size: 13px;
+}
+
+/* ── Arrivals trend bars ── */
+
+.ckin-trend {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 140px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.ckin-trend-bar-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 28px;
+  height: 100%;
+}
+
+.ckin-trend-bar {
+  width: 18px;
+  min-height: 4px;
+  border-radius: 4px 4px 0 0;
+  background: var(--accent, #1e47bb);
+}
+
+.ckin-trend-label {
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--gray-mid, #8e8ea8);
+  white-space: nowrap;
+}
+
+/* ── Staff scanner links ── */
+
+.ckin-links-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.ckin-links-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border: 1px solid var(--line, #e0e0e8);
+  border-radius: var(--radius-sm, 6px);
+}

@@ -1,0 +1,174 @@
+@extends('layouts.site')
+
+@section('title', 'Contact Us | Event Host')
+
+@push('head')
+    <link rel="stylesheet" href="{{ asset('css/contact.css') }}">
+@endpush
+
+@section('content')
+
+<!-- HERO -->
+<section class="contact-hero">
+    <div class="contact-hero-inner">
+        <h1>We'd love to <span>hear from you</span></h1>
+        <p>Have a question, a feature request, or just want to say hello? Our team is here and happy to help.</p>
+    </div>
+</section>
+
+<!-- MAIN CONTENT -->
+<section class="contact-main">
+    <div class="contact-inner">
+
+        <!-- Contact Info -->
+        <div class="contact-info">
+            <h2>Contact information</h2>
+            <p class="contact-info-sub">Reach us through any of the channels below, or fill in the form and we'll get back to you within one business day.</p>
+
+            <div class="contact-info-items">
+                <div class="contact-info-item">
+                    <div class="contact-info-icon" style="background:rgba(30,71,187,0.12);color:var(--accent)">
+                        <i class="fa-solid fa-envelope" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <div class="contact-info-label">Email</div>
+                        <a href="mailto:hello@eventhost.co.zm" class="contact-info-value">hello@eventhost.co.zm</a>
+                    </div>
+                </div>
+                <div class="contact-info-item">
+                    <div class="contact-info-icon" style="background:rgba(39,174,96,0.12);color:var(--green)">
+                        <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <div class="contact-info-label">WhatsApp</div>
+                        <a href="https://wa.me/260970000000" class="contact-info-value" target="_blank" rel="noopener">+260 970 000 000</a>
+                    </div>
+                </div>
+                <div class="contact-info-item">
+                    <div class="contact-info-icon" style="background:rgba(224,14,79,0.12);color:var(--pink)">
+                        <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <div class="contact-info-label">Location</div>
+                        <div class="contact-info-value">Lusaka, Zambia</div>
+                    </div>
+                </div>
+                <div class="contact-info-item">
+                    <div class="contact-info-icon" style="background:rgba(0,206,201,0.12);color:var(--cyan)">
+                        <i class="fa-solid fa-clock" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <div class="contact-info-label">Response time</div>
+                        <div class="contact-info-value">Within 1 business day</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="contact-socials">
+                <p class="contact-socials-label">Follow us</p>
+                <div class="social-links">
+                    <a href="#" class="social-link" aria-label="X"><i class="fa-brands fa-x-twitter" aria-hidden="true"></i></a>
+                    <a href="#" class="social-link" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in" aria-hidden="true"></i></a>
+                    <a href="#" class="social-link" aria-label="Facebook"><i class="fa-brands fa-facebook-f" aria-hidden="true"></i></a>
+                    <a href="#" class="social-link" aria-label="Instagram"><i class="fa-brands fa-instagram" aria-hidden="true"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Form -->
+        <div class="contact-form-wrap">
+            @if(session('success'))
+                <div class="contact-success">
+                    <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+                    <div>
+                        <strong>Message sent!</strong>
+                        <p>Thanks for reaching out. We'll get back to you within one business day.</p>
+                    </div>
+                </div>
+            @endif
+
+            <form action="{{ route('contact.store') }}" method="POST" class="contact-form" novalidate>
+                @csrf
+                <div class="contact-form-row">
+                    <div class="contact-field">
+                        <label for="contact_name">Your name <span aria-hidden="true">*</span></label>
+                        <input type="text" id="contact_name" name="name" value="{{ old('name') }}"
+                               placeholder="John Banda" required autocomplete="name"
+                               class="{{ $errors->has('name') ? 'is-error' : '' }}">
+                        @error('name')
+                            <span class="contact-field-error">{{ $message }}</span>
+                        @enderror
+                    </div>
+                    <div class="contact-field">
+                        <label for="contact_email">Email address <span aria-hidden="true">*</span></label>
+                        <input type="email" id="contact_email" name="email" value="{{ old('email') }}"
+                               placeholder="john@example.com" required autocomplete="email"
+                               class="{{ $errors->has('email') ? 'is-error' : '' }}">
+                        @error('email')
+                            <span class="contact-field-error">{{ $message }}</span>
+                        @enderror
+                    </div>
+                </div>
+                <div class="contact-field">
+                    <label for="contact_subject">Subject <span aria-hidden="true">*</span></label>
+                    <select id="contact_subject" name="subject"
+                            class="{{ $errors->has('subject') ? 'is-error' : '' }}">
+                        <option value="" disabled {{ old('subject') ? '' : 'selected' }}>Select a topic…</option>
+                        <option value="General enquiry" {{ old('subject') === 'General enquiry' ? 'selected' : '' }}>General enquiry</option>
+                        <option value="Technical support" {{ old('subject') === 'Technical support' ? 'selected' : '' }}>Technical support</option>
+                        <option value="Billing & payments" {{ old('subject') === 'Billing & payments' ? 'selected' : '' }}>Billing &amp; payments</option>
+                        <option value="Feature request" {{ old('subject') === 'Feature request' ? 'selected' : '' }}>Feature request</option>
+                        <option value="Partnership" {{ old('subject') === 'Partnership' ? 'selected' : '' }}>Partnership</option>
+                        <option value="Other" {{ old('subject') === 'Other' ? 'selected' : '' }}>Other</option>
+                    </select>
+                    @error('subject')
+                        <span class="contact-field-error">{{ $message }}</span>
+                    @enderror
+                </div>
+                <div class="contact-field">
+                    <label for="contact_message">Message <span aria-hidden="true">*</span></label>
+                    <textarea id="contact_message" name="message" rows="6"
+                              placeholder="Tell us how we can help…" required
+                              class="{{ $errors->has('message') ? 'is-error' : '' }}">{{ old('message') }}</textarea>
+                    @error('message')
+                        <span class="contact-field-error">{{ $message }}</span>
+                    @enderror
+                </div>
+                <button type="submit" class="contact-submit">
+                    <i class="fa-solid fa-paper-plane" aria-hidden="true"></i> Send message
+                </button>
+            </form>
+        </div>
+
+    </div>
+</section>
+
+<!-- FAQ STRIP -->
+<section class="contact-faq">
+    <div class="contact-faq-inner">
+        <div class="contact-faq-header">
+            <span class="contact-label">Quick answers</span>
+            <h2>Frequently asked questions</h2>
+        </div>
+        <div class="contact-faq-grid">
+            <div class="contact-faq-item">
+                <h3>Is Event Host free to use?</h3>
+                <p>You get one free event credit on sign-up. Additional credits can be purchased to create more events.</p>
+            </div>
+            <div class="contact-faq-item">
+                <h3>How do guests RSVP?</h3>
+                <p>Guests click a personalised link — no account required. RSVPs work seamlessly via WhatsApp, SMS, or any browser.</p>
+            </div>
+            <div class="contact-faq-item">
+                <h3>Can I use Event Host for large events?</h3>
+                <p>Absolutely. Event Host handles intimate dinners and 1,000-person weddings with the same ease.</p>
+            </div>
+            <div class="contact-faq-item">
+                <h3>What payment methods are supported?</h3>
+                <p>We support MTN MoMo, Airtel Money, and card payments so guests can pay in the way they prefer.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+@endsection

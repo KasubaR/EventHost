@@ -35,6 +35,12 @@
             </div>
             <div class="evt-card-actions">
                 <a href="{{ route('events.guests.index', $event) }}" class="btn-primary"><i class="fa-solid fa-users"></i> Guests & RSVPs</a>
+                <a href="{{ route('events.tables.index', $event) }}" class="evt-btn-outline">
+                    <i class="fa-solid fa-qrcode"></i> QR check-in & photo wall
+                    @unless ($event->ownerHasPremiumEventTools())
+                        <span class="evt-credit-badge">Pro</span>
+                    @endunless
+                </a>
                 <a href="{{ route('events.edit', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-pen-to-square"></i> Edit</a>
                 <a href="{{ route('events.index') }}" class="evt-btn-outline"><i class="fa-solid fa-list"></i> All events</a>
             </div>

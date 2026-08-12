@@ -1,0 +1,150 @@
+/**
+ * Public table photo upload page. Loaded by events/tables/upload.blade.php.
+ */
+
+.tbup-page {
+  padding: 24px 16px 48px;
+}
+
+.tbup-card {
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.tbup-closed {
+  text-align: center;
+  color: var(--gray-mid, #8e8ea8);
+  padding: 20px 0;
+}
+
+.tbup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tbup-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 2px dashed var(--line, #e0e0e8);
+  border-radius: var(--radius, 8px);
+  padding: 32px 16px;
+  cursor: pointer;
+  color: var(--gray-mid, #8e8ea8);
+  text-align: center;
+}
+
+.tbup-drop:hover,
+.tbup-drop--active {
+  border-color: var(--accent, #1e47bb);
+  color: var(--accent, #1e47bb);
+  background: color-mix(in srgb, var(--accent, #1e47bb) 6%, transparent);
+}
+
+.tbup-drop input[type="file"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+}
+
+.tbup-drop-icon {
+  font-size: 28px;
+}
+
+.tbup-drop-label {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.tbup-queue {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 8px;
+}
+
+.tbup-queue:empty {
+  display: none;
+}
+
+.tbup-queue-item {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radius-sm, 6px);
+  overflow: hidden;
+  background: var(--gray-light, #f4f5f9);
+}
+
+.tbup-queue-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.tbup-queue-badge {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  bottom: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-align: center;
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+}
+
+.tbup-queue-badge--busy {
+  background: color-mix(in srgb, var(--accent, #1e47bb) 85%, black);
+}
+
+.tbup-queue-badge--done {
+  background: color-mix(in srgb, var(--green, #27ae60) 85%, black);
+}
+
+.tbup-queue-badge--error {
+  background: color-mix(in srgb, var(--pink, #e00e4f) 85%, black);
+}
+
+.tbup-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tbup-submit {
+  width: 100%;
+  justify-content: center;
+}
+
+.tbup-status {
+  text-align: center;
+  font-size: 13px;
+  min-height: 18px;
+}
+
+.tbup-status--success {
+  color: var(--green, #27ae60);
+  font-weight: 600;
+}
+
+.tbup-status--error {
+  color: var(--pink, #e00e4f);
+}
+
+.tbup-status--busy {
+  color: var(--gray-mid, #8e8ea8);
+}
+
+.tbup-gallery-link {
+  text-align: center;
+  margin-top: 18px;
+  font-size: 13px;
+}

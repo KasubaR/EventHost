@@ -141,6 +141,14 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * QR check-in + table photo wall — premium event tools, Pro tier and above.
+     */
+    public function canUsePremiumEventTools(): bool
+    {
+        return $this->isActive() && $this->subscriptionTierRank() >= SubscriptionTier::Pro->rank();
+    }
+
+    /**
      * @return array<string, bool>
      */
     public static function defaultNotificationPreferences(): array

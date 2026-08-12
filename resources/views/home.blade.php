@@ -73,45 +73,61 @@
 <!-- EVENT TYPES -->
 <section id="event-types">
   <div class="section">
-    <div class="event-types-header">
-      <p class="event-types-note">
-        @auth
-          <a href="{{ url('/dashboard') }}">Go to your dashboard</a> to create and manage your event invitations.
-        @else
-          <a href="{{ route('login') }}">Sign in</a> or <a href="{{ route('register') }}">Sign up</a> to create and manage your event invitations.
-        @endauth
-      </p>
+    <div class="section-header">
+      <h2>Invitations for every occasion</h2>
+      <p>From intimate gatherings to grand celebrations — beautifully crafted for any event.</p>
     </div>
     <div class="event-types-grid">
-      <article class="event-type-item">
-        <div class="event-type-card weddings" aria-hidden="true"></div>
-        <h3><span class="evt-type-tag">Weddings</span></h3>
-      </article>
-      <article class="event-type-item">
-        <div class="event-type-card birthdays" aria-hidden="true"></div>
-        <h3><span class="evt-type-tag">Birthdays</span></h3>
-      </article>
-      <article class="event-type-item">
-        <div class="event-type-card graduation" aria-hidden="true"></div>
-        <h3><span class="evt-type-tag">Graduation</span></h3>
-      </article>
-      <article class="event-type-item">
-        <div class="event-type-card corporate" aria-hidden="true"></div>
-        <h3><span class="evt-type-tag">Corporate</span></h3>
-      </article>
-      <article class="event-type-item">
-        <div class="event-type-card baby-shower" aria-hidden="true"></div>
-        <h3><span class="evt-type-tag">Baby Shower</span></h3>
-      </article>
-      <article class="event-type-item">
-        <div class="event-type-card memorial" aria-hidden="true"></div>
-        <h3><span class="evt-type-tag">Funeral / Memorial</span></h3>
-      </article>
-      <article class="event-type-item">
-        <div class="event-type-card church" aria-hidden="true"></div>
-        <h3><span class="evt-type-tag">Church</span></h3>
-      </article>
+      <a class="etc-card weddings" href="{{ auth()->check() ? url('/dashboard') : route('register') }}">
+        <div class="etc-inner">
+          <div class="etc-icon"><i class="fa-solid fa-ring" aria-hidden="true"></i></div>
+          <span class="etc-label">Weddings</span>
+        </div>
+      </a>
+      <a class="etc-card birthdays" href="{{ auth()->check() ? url('/dashboard') : route('register') }}">
+        <div class="etc-inner">
+          <div class="etc-icon"><i class="fa-solid fa-cake-candles" aria-hidden="true"></i></div>
+          <span class="etc-label">Birthdays</span>
+        </div>
+      </a>
+      <a class="etc-card graduation" href="{{ auth()->check() ? url('/dashboard') : route('register') }}">
+        <div class="etc-inner">
+          <div class="etc-icon"><i class="fa-solid fa-graduation-cap" aria-hidden="true"></i></div>
+          <span class="etc-label">Graduation</span>
+        </div>
+      </a>
+      <a class="etc-card corporate" href="{{ auth()->check() ? url('/dashboard') : route('register') }}">
+        <div class="etc-inner">
+          <div class="etc-icon"><i class="fa-solid fa-briefcase" aria-hidden="true"></i></div>
+          <span class="etc-label">Corporate</span>
+        </div>
+      </a>
+      <a class="etc-card baby-shower" href="{{ auth()->check() ? url('/dashboard') : route('register') }}">
+        <div class="etc-inner">
+          <div class="etc-icon"><i class="fa-solid fa-baby" aria-hidden="true"></i></div>
+          <span class="etc-label">Baby Shower</span>
+        </div>
+      </a>
+      <a class="etc-card memorial" href="{{ auth()->check() ? url('/dashboard') : route('register') }}">
+        <div class="etc-inner">
+          <div class="etc-icon"><i class="fa-solid fa-dove" aria-hidden="true"></i></div>
+          <span class="etc-label">Memorial</span>
+        </div>
+      </a>
+      <a class="etc-card church" href="{{ auth()->check() ? url('/dashboard') : route('register') }}">
+        <div class="etc-inner">
+          <div class="etc-icon"><i class="fa-solid fa-church" aria-hidden="true"></i></div>
+          <span class="etc-label">Church</span>
+        </div>
+      </a>
     </div>
+    <p class="event-types-note">
+      @auth
+        <a href="{{ url('/dashboard') }}">Go to your dashboard</a> to create and manage your event invitations.
+      @else
+        <a href="{{ route('login') }}">Sign in</a> or <a href="{{ route('register') }}">Sign up</a> to create and manage your event invitations.
+      @endauth
+    </p>
   </div>
 </section>
 

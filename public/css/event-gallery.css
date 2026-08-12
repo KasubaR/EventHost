@@ -1,0 +1,65 @@
+/**
+ * Public live photo gallery. Loaded by events/gallery/show.blade.php.
+ */
+
+.egal-page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+.egal-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.egal-grid {
+  columns: 2;
+  column-gap: 10px;
+}
+
+@media (min-width: 640px) {
+  .egal-grid {
+    columns: 3;
+  }
+}
+
+@media (min-width: 960px) {
+  .egal-grid {
+    columns: 4;
+  }
+}
+
+.egal-item {
+  break-inside: avoid;
+  margin-bottom: 10px;
+  border-radius: var(--radius-sm, 6px);
+  overflow: hidden;
+  background: var(--gray-light, #f4f5f9);
+}
+
+.egal-item img {
+  width: 100%;
+  display: block;
+}
+
+.egal-item figcaption {
+  font-size: 11px;
+  color: var(--gray-mid, #8e8ea8);
+  padding: 4px 8px 6px;
+}
+
+@keyframes egal-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.egal-item--new {
+  animation: egal-fade-in 0.4s ease-out;
+}
+
+.egal-empty {
+  text-align: center;
+  color: var(--gray-mid, #8e8ea8);
+  padding: 32px 0;
+}

@@ -47,6 +47,8 @@ class UpdateEventRequest extends FormRequest
             'guest_limit' => ['nullable', 'integer', 'min:1', 'max:100000'],
             'allow_plus_one' => ['boolean'],
             'show_guest_list' => ['boolean'],
+            'photo_wall_enabled' => ['boolean'],
+            'photo_wall_requires_approval' => ['boolean'],
         ];
     }
 }

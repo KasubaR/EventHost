@@ -425,12 +425,98 @@
 #faq { background: var(--white); }
 
 /* ── EVENT TYPES ── */
-#event-types .section { padding-top: 40px; padding-bottom: 40px; }
-.event-types-header { margin-bottom: 20px; }
+#event-types { background: #fafafa; }
+#event-types .section { padding-top: 60px; padding-bottom: 64px; }
+
+.event-types-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 36px;
+}
+
+/* Card */
+.etc-card {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  border-radius: 16px;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  text-decoration: none;
+  display: block;
+  transition: transform 0.28s ease, box-shadow 0.28s ease;
+}
+.etc-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(8,8,32,0.82) 0%, rgba(8,8,32,0.18) 55%, transparent 100%);
+  transition: background 0.28s ease;
+}
+.etc-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 48px rgba(0,0,0,0.45);
+}
+.etc-card:hover::after {
+  background: linear-gradient(to top, rgba(8,8,32,0.88) 0%, rgba(8,8,32,0.3) 55%, transparent 100%);
+}
+
+/* Card inner content */
+.etc-inner {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 10px 16px;
+}
+.etc-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 17px;
+  transition: background 0.25s, transform 0.25s;
+}
+.etc-card:hover .etc-icon {
+  background: var(--pink);
+  transform: scale(1.1);
+}
+.etc-label {
+  color: #fff;
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 0.3px;
+  line-height: 1.3;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+}
+
+/* Background images */
+.etc-card.weddings   { background-image: url('https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=400&h=540&q=80'); }
+.etc-card.birthdays  { background-image: url('https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=400&h=540&q=80'); }
+.etc-card.graduation { background-image: url('https://images.unsplash.com/photo-1523580846011-d3a5bc25702b?auto=format&fit=crop&w=400&h=540&q=80'); }
+.etc-card.corporate  { background-image: url('https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=400&h=540&q=80'); }
+.etc-card.baby-shower{ background-image: url('https://images.unsplash.com/photo-1519689680058-324335c77eba?auto=format&fit=crop&w=400&h=540&q=80'); }
+.etc-card.memorial   { background-image: url('https://images.unsplash.com/photo-1518156677180-95a2893f3e9f?auto=format&fit=crop&w=400&h=540&q=80'); }
+.etc-card.church     { background-image: url('https://images.unsplash.com/photo-1438232992991-995b671e4668?auto=format&fit=crop&w=400&h=540&q=80'); }
+
+/* Note text */
 .event-types-note {
-  font-size: clamp(15px, 1.8vw, 18px);
+  font-size: 15px;
   font-weight: 500;
-  color: var(--text-dark);
+  color: var(--gray-mid);
+  text-align: center;
   line-height: 1.5;
 }
 .event-types-note a {
@@ -443,62 +529,6 @@
   outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: 4px;
-}
-.event-types-grid {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 14px;
-}
-.event-type-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  text-align: center;
-}
-.event-type-item h3 {
-  margin: 0;
-  font-family: 'Outfit', sans-serif;
-  font-size: inherit;
-  font-weight: inherit;
-  line-height: 1.2;
-}
-.event-type-card {
-  width: min(100%, 170px);
-  aspect-ratio: 1 / 1;
-  border-radius: 50%;
-  overflow: hidden;
-  position: relative;
-  box-shadow: var(--card-shadow);
-  background-size: cover;
-  background-position: center;
-}
-.event-type-card::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(13, 13, 43, 0.12) 0%, rgba(13, 13, 43, 0.38) 100%);
-}
-.event-type-card.weddings {
-  background-image: url('https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=700&h=900&q=80');
-}
-.event-type-card.birthdays {
-  background-image: url('https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=700&h=900&q=80');
-}
-.event-type-card.corporate {
-  background-image: url('https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=700&h=900&q=80');
-}
-.event-type-card.graduation {
-  background-image: url('https://images.unsplash.com/photo-1523580846011-d3a5bc25702b?auto=format&fit=crop&w=700&h=900&q=80');
-}
-.event-type-card.baby-shower {
-  background-image: url('https://images.unsplash.com/photo-1519689680058-324335c77eba?auto=format&fit=crop&w=700&h=900&q=80');
-}
-.event-type-card.memorial {
-  background-image: url('https://images.unsplash.com/photo-1518156677180-95a2893f3e9f?auto=format&fit=crop&w=700&h=900&q=80');
-}
-.event-type-card.church {
-  background-image: url('https://images.unsplash.com/photo-1438232992991-995b671e4668?auto=format&fit=crop&w=700&h=900&q=80');
 }
 
 /* ── FEATURES ── */
@@ -1262,6 +1292,7 @@
   .pricing-grid { grid-template-columns: repeat(2, 1fr); }
   .templates-grid { grid-template-columns: repeat(2, 1fr); }
   .event-types-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .etc-label { font-size: 11px; }
 }
 
 @media (max-width: 768px) {
@@ -1276,6 +1307,6 @@
   .templates-grid,
   .steps,
   .why-points { grid-template-columns: 1fr; }
-  .event-types-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .event-types-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .steps::before { display: none; }
 }

@@ -48,6 +48,8 @@ class Event extends Model
         'show_guest_list',
         'slug',
         'is_published',
+        'photo_wall_enabled',
+        'photo_wall_requires_approval',
     ];
 
     /**
@@ -105,6 +107,30 @@ class Event extends Model
     }
 
     /**
+     * @return HasMany<EventTable, $this>
+     */
+    public function tables(): HasMany
+    {
+        return $this->hasMany(EventTable::class)->orderBy('sort_order')->orderBy('id');
+    }
+
+    /**
+     * @return HasMany<EventPhoto, $this>
+     */
+    public function photos(): HasMany
+    {
+        return $this->hasMany(EventPhoto::class);
+    }
+
+    /**
+     * @return HasMany<EventStaffLink, $this>
+     */
+    public function staffLinks(): HasMany
+    {
+        return $this->hasMany(EventStaffLink::class)->orderByDesc('created_at');
+    }
+
+    /**
      * Sum of attendee counts for accepted RSVPs only (capacity enforcement).
      */
     public function acceptedAttendeeHeadcount(): int
@@ -140,6 +166,8 @@ class Event extends Model
             'allow_plus_one' => 'boolean',
             'show_guest_list' => 'boolean',
             'is_published' => 'boolean',
+            'photo_wall_enabled' => 'boolean',
+            'photo_wall_requires_approval' => 'boolean',
             'invitation_views_count' => 'integer',
             'invitation_customization' => 'array',
             'invitation_customization_previous' => 'array',
@@ -175,5 +203,24 @@ class Event extends Model
         }
 
         return now()->lte($this->rsvp_deadline);
+    }
+
+    /**
+     * Whether this event's owner is currently entitled to QR check-in / table photo wall.
+     * Re-checked live (not cached at event-creation time) so a plan change takes effect immediately.
+     */
+    public function ownerHasPremiumEventTools(): bool
+    {
+        return $this->loadMissing('user')->user->canUsePremiumEventTools();
+    }
+
+    /**
+     * Whether the table photo wall should currently accept uploads and show a public gallery.
+     */
+    public function photoWallIsLive(): bool
+    {
+        return $this->is_public
+            && $this->photo_wall_enabled
+            && $this->ownerHasPremiumEventTools();
     }
 }

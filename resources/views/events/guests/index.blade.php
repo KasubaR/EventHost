@@ -17,6 +17,9 @@
                 <a href="{{ route('events.guests.export', $exportParams) }}" class="evt-btn-outline"><i class="fa-solid fa-file-csv"></i> Export CSV</a>
                 <a href="{{ route('events.guests.export-pdf', $exportParams) }}" class="evt-btn-outline"><i class="fa-solid fa-file-pdf"></i> Export PDF</a>
                 <a href="{{ route('events.guests.import.create', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-file-import"></i> Import</a>
+                @if ($event->ownerHasPremiumEventTools())
+                    <a href="{{ route('events.guests.qr-sheet', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-qrcode"></i> Print QR badges</a>
+                @endif
                 <a href="{{ route('events.guests.create', $event) }}" class="btn-primary"><i class="fa-solid fa-user-plus"></i> Add guest</a>
                 <a href="{{ route('events.guest-groups.index', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-layer-group"></i> Groups</a>
                 <a href="{{ route('events.show', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-arrow-left"></i> Event</a>
@@ -252,6 +255,9 @@
                                                     <a href="{{ $waUrl }}" class="evt-icon-btn evt-icon-btn--wa" target="_blank" rel="noopener noreferrer" title="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
                                                 @else
                                                     <span class="evt-muted evt-icon-btn evt-icon-btn--disabled" title="Add a phone number for WhatsApp sharing"><i class="fa-brands fa-whatsapp"></i></span>
+                                                @endif
+                                                @if ($event->ownerHasPremiumEventTools())
+                                                    <a href="{{ route('events.guests.qr', ['event' => $event, 'guest' => $guestRow->id]) }}" class="evt-icon-btn" target="_blank" rel="noopener noreferrer" title="Check-in QR code"><i class="fa-solid fa-qrcode"></i></a>
                                                 @endif
                                             </div>
                                         @else

@@ -7,6 +7,7 @@ use App\Http\Requests\StoreGuestRequest;
 use App\Http\Requests\UpdateGuestRequest;
 use App\Models\Event;
 use App\Models\Guest;
+use App\Services\QrCodeService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -83,7 +84,7 @@ class GuestController extends Controller
             $guestsQuery->whereHas('rsvp', fn ($q) => $q->where('status', RsvpStatus::Maybe));
         }
 
-        $filename = 'guests-' . str($event->name)->slug() . '.csv';
+        $filename = 'guests-'.str($event->name)->slug().'.csv';
 
         return response()->streamDownload(function () use ($guestsQuery) {
             $handle = fopen('php://output', 'w');
@@ -148,15 +149,15 @@ class GuestController extends Controller
         $guests = $guestsQuery->get();
 
         $filterLabels = [
-            'pending'   => 'Pending',
+            'pending' => 'Pending',
             'responded' => 'Responded',
-            'accepted'  => 'Accepted',
-            'declined'  => 'Declined',
-            'maybe'     => 'Maybe',
+            'accepted' => 'Accepted',
+            'declined' => 'Declined',
+            'maybe' => 'Maybe',
         ];
         $filterLabel = $filter !== 'all' ? ($filterLabels[$filter] ?? null) : null;
 
-        $filename = 'guests-' . str($event->name)->slug() . '.pdf';
+        $filename = 'guests-'.str($event->name)->slug().'.pdf';
 
         $pdf = Pdf::loadView('events.guests.export-pdf', compact('event', 'guests', 'filterLabel'))
             ->setPaper('a4', 'landscape');
@@ -248,6 +249,41 @@ class GuestController extends Controller
         ])->save();
 
         return back()->with('status', 'guest-invitation-marked-sent');
+    }
+
+    public function qr(Event $event, Guest $guest, QrCodeService $qrCodeService): Response
+    {
+        $guest->loadMissing('event.user');
+        $this->authorize('update', $guest);
+        abort_unless($guest->event_id === $event->id, 404);
+        abort_unless($event->ownerHasPremiumEventTools(), 403);
+
+        $url = $guest->checkInQrUrl();
+        abort_if($url === null, 404);
+
+        $svg = $qrCodeService->svg($url);
+
+        return response($svg, 200, ['Content-Type' => 'image/svg+xml']);
+    }
+
+    public function qrSheet(Event $event, QrCodeService $qrCodeService): Response
+    {
+        $this->authorize('update', $event);
+        abort_unless($event->ownerHasPremiumEventTools(), 403);
+
+        $guests = $event->guests()
+            ->whereNotNull('invitation_token')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Guest $guest) => [
+                'name' => $guest->name,
+                'qr_data_uri' => 'data:image/svg+xml;base64,'.base64_encode($qrCodeService->svg((string) $guest->checkInQrUrl(), 220)),
+            ]);
+
+        $pdf = Pdf::loadView('events.guests.qr-sheet', compact('event', 'guests'))
+            ->setPaper('a4', 'portrait');
+
+        return $pdf->download('guest-qr-codes-'.$event->slug.'.pdf');
     }
 
     public function destroy(Event $event, Guest $guest): RedirectResponse

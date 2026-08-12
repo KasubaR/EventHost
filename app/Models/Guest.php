@@ -68,12 +68,24 @@ class Guest extends Model
         return $this->hasMany(NotificationLog::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function checkedInBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'checked_in_by');
+    }
+
     public function hasResponded(): bool
     {
         return $this->rsvp()->exists();
     }
 
-    // TODO: generate a QR code from personalRsvpUrl() — consider bacon/bacon-qr-code or a JS-side approach
+    public function isCheckedIn(): bool
+    {
+        return $this->checked_in_at !== null;
+    }
+
     public function personalRsvpUrl(): ?string
     {
         if ($this->invitation_token === null) {
@@ -81,6 +93,24 @@ class Guest extends Model
         }
 
         return route('rsvp.token.show', ['token' => $this->invitation_token], absolute: true);
+    }
+
+    /**
+     * URL encoded into the guest's printable/emailed QR code. It targets the staff-only,
+     * auth-protected check-in confirm endpoint — not the public RSVP link — so a guest
+     * scanning their own invitation cannot self-check-in before arriving; only a logged-in
+     * host/staff member's scanner page can act on it. See CheckInController.
+     */
+    public function checkInQrUrl(): ?string
+    {
+        if ($this->invitation_token === null) {
+            return null;
+        }
+
+        return route('events.checkin.confirm-token', [
+            'event' => $this->event_id,
+            'token' => $this->invitation_token,
+        ], absolute: true);
     }
 
     /**
@@ -156,6 +186,8 @@ class Guest extends Model
             'invitation_sent' => 'boolean',
             'invitation_sent_at' => 'datetime',
             'rsvp_reminders_sent' => AsRsvpRemindersSent::class,
+            'checked_in_at' => 'datetime',
+            'checked_in_by' => 'integer',
         ];
     }
 }

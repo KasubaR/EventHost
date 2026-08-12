@@ -1,0 +1,512 @@
+/* ─── BILLING PAGE ──────────────────────────────────────────────────── */
+
+.billing-page {
+  max-width: 980px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Credits bar */
+.billing-credits-bar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px 20px;
+  box-shadow: var(--card-shadow);
+}
+
+.billing-credits-stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.billing-credits-stat > i {
+  color: var(--accent);
+  font-size: 14px;
+}
+
+.billing-credits-val {
+  font-family: 'Outfit', sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-dark);
+}
+
+.billing-credits-lbl {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-mid);
+}
+
+.billing-credits-divider {
+  width: 1px;
+  height: 22px;
+  background: var(--line);
+  flex-shrink: 0;
+}
+
+/* Section card */
+.billing-section {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--card-shadow);
+}
+
+.billing-section-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-dark);
+  margin-bottom: 4px;
+}
+
+.billing-section-sub {
+  font-size: 13px;
+  color: var(--gray-mid);
+  font-weight: 500;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+/* ── Plan grid ── */
+.billing-plans {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.billing-plan-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px;
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color 0.18s, box-shadow 0.18s, transform 0.18s;
+  overflow: hidden;
+}
+
+.billing-plan-card:hover {
+  border-color: rgba(30, 71, 187, 0.4);
+  box-shadow: 0 4px 20px rgba(30, 71, 187, 0.08);
+  transform: translateY(-2px);
+}
+
+.billing-plan-card.is-selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), 0 6px 24px rgba(30, 71, 187, 0.13);
+}
+
+.billing-plan-card.is-popular {
+  background: linear-gradient(150deg, rgba(30, 71, 187, 0.035) 0%, var(--white) 55%);
+}
+
+.billing-plan-popular-tag {
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: var(--accent);
+  color: var(--white);
+  padding: 4px 10px;
+  border-bottom-left-radius: var(--radius-sm);
+}
+
+.billing-plan-input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.billing-plan-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: rgba(30, 71, 187, 0.1);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  margin-bottom: 6px;
+  transition: background 0.18s, color 0.18s;
+}
+
+.billing-plan-card.is-selected .billing-plan-icon {
+  background: var(--accent);
+  color: var(--white);
+}
+
+.billing-plan-name {
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-dark);
+}
+
+.billing-plan-price {
+  font-family: 'Outfit', sans-serif;
+  font-size: 34px;
+  font-weight: 800;
+  color: var(--text-dark);
+  line-height: 1;
+  margin: 4px 0 2px;
+}
+
+.billing-plan-currency {
+  font-size: 16px;
+  font-weight: 700;
+  vertical-align: super;
+  line-height: 0;
+}
+
+.billing-plan-period {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gray-mid);
+  margin-bottom: 10px;
+}
+
+.billing-plan-features {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+  margin-top: 4px;
+  flex: 1;
+}
+
+.billing-plan-features li {
+  font-size: 12px;
+  color: var(--gray-mid);
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  line-height: 1.4;
+}
+
+.billing-plan-features i {
+  color: var(--green);
+  margin-top: 2px;
+  flex-shrink: 0;
+  font-size: 11px;
+}
+
+.billing-plan-select-indicator {
+  display: none;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(30, 71, 187, 0.15);
+}
+
+.billing-plan-card.is-selected .billing-plan-select-indicator {
+  display: flex;
+}
+
+/* ── Checkout 2-col ── */
+.billing-checkout {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 16px;
+  align-items: start;
+}
+
+/* ── Order summary card ── */
+.billing-summary-card {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--card-shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: sticky;
+  top: 76px;
+}
+
+.billing-summary-header {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gray-mid);
+}
+
+.billing-summary-plan {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.billing-summary-plan-name {
+  font-family: 'Outfit', sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-dark);
+}
+
+.billing-summary-plan-price {
+  font-family: 'Outfit', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.billing-summary-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-mid);
+}
+
+.billing-summary-item i {
+  color: var(--accent);
+}
+
+.billing-pay-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.billing-pay-btn[disabled] {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.billing-summary-note {
+  font-size: 11px;
+  color: var(--gray-mid);
+  font-weight: 500;
+  line-height: 1.55;
+  text-align: center;
+}
+
+.billing-summary-note i {
+  color: var(--green);
+}
+
+/* ── Payment method tabs ── */
+.billing-method-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.billing-method-tab {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 16px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-mid);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.billing-method-tab:hover {
+  border-color: rgba(30, 71, 187, 0.35);
+  color: var(--accent);
+}
+
+.billing-method-tab.is-active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(30, 71, 187, 0.06);
+}
+
+.billing-method-panel {
+  display: none;
+}
+
+.billing-method-panel.is-active {
+  display: block;
+}
+
+/* ── Provider toggle ── */
+.billing-provider-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.billing-provider-option {
+  cursor: pointer;
+}
+
+.billing-provider-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.billing-provider-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 14px 12px;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-sm);
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  cursor: pointer;
+}
+
+.billing-provider-icon {
+  font-family: 'Outfit', sans-serif;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.billing-provider-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-mid);
+}
+
+.billing-provider-mtn .billing-provider-icon  { color: #e6a800; }
+.billing-provider-airtel .billing-provider-icon { color: #d40000; }
+
+.billing-provider-option input:checked + .billing-provider-mtn {
+  border-color: #e6a800;
+  background: rgba(230, 168, 0, 0.07);
+}
+
+.billing-provider-option input:checked + .billing-provider-airtel {
+  border-color: #d40000;
+  background: rgba(212, 0, 0, 0.06);
+}
+
+/* Phone / bank field */
+.billing-phone-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.billing-field-note {
+  font-size: 12px;
+  color: var(--gray-mid);
+  font-weight: 500;
+}
+
+/* ── Status/feedback ── */
+.billing-status,
+.billing-instructions,
+.billing-bank-details {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-dark);
+  font-weight: 500;
+}
+
+.billing-status.is-hidden,
+.billing-instructions.is-hidden,
+.billing-bank-details.is-hidden {
+  display: none;
+}
+
+.billing-status--success {
+  border-color: rgba(39, 174, 96, 0.4);
+  background: rgba(39, 174, 96, 0.07);
+  color: #1a6e3c;
+}
+
+.billing-status--error {
+  border-color: rgba(231, 76, 60, 0.4);
+  background: rgba(231, 76, 60, 0.07);
+  color: #8b1a14;
+}
+
+.billing-status--pending {
+  border-color: rgba(243, 156, 18, 0.4);
+  background: rgba(243, 156, 18, 0.07);
+  color: #7a5100;
+}
+
+.billing-bank-details dl {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.billing-bank-details dt {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--gray-mid);
+}
+
+.billing-bank-details dd {
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+
+/* ── Responsive ── */
+@media (max-width: 860px) {
+  .billing-plans {
+    grid-template-columns: 1fr;
+  }
+
+  .billing-checkout {
+    grid-template-columns: 1fr;
+  }
+
+  .billing-summary-card {
+    position: static;
+    order: -1;
+  }
+}
+
+@media (max-width: 600px) {
+  .billing-credits-bar {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .billing-credits-divider {
+    display: none;
+  }
+}
