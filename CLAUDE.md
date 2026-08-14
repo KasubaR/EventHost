@@ -54,6 +54,7 @@ Laravel 12 application. Auth via Laravel Breeze (Blade stack). No Alpine.js — 
 | `public/css/dashboard-home.css` | `dashboard.blade.php` via `@push('styles')` — overview stats / empty state |
 | `public/css/events-admin.css` | Event CRUD views (`events/*` except public) via `@push('styles')` |
 | `public/css/events-public.css` | `events/public.blade.php` — public invitation page |
+| `public/css/event-cards.css` | Public event cards (`.event-card-*`) + `/discover` page — pushed by `home.blade.php` and `events/discover.blade.php` |
 | `public/css/datetime-picker.css` | Custom date/time picker (`.dtp-*`) — pair with `js/datetime-picker.js` |
 | `public/css/custom-select.css` | Custom dropdown (`.cs-*`) — pair with `js/custom-select.js` |
 

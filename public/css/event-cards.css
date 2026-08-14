@@ -1,0 +1,219 @@
+/**
+ * Public event cards — shared by the homepage "Upcoming events" strip and
+ * the /discover listing. Pushed from home.blade.php and events/discover.blade.php.
+ * Requires global.css (design tokens, and .evt-type-tag used on the cover).
+ */
+
+.event-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.event-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--white);
+  border: 1px solid rgba(26, 42, 74, 0.08);
+  border-radius: 14px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.event-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(30, 71, 187, 0.28);
+  box-shadow: 0 14px 32px rgba(13, 13, 43, 0.12);
+}
+
+.event-card:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.event-card-img {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: var(--gray-light);
+  overflow: hidden;
+}
+
+.event-card-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.35s ease;
+}
+
+.event-card:hover .event-card-img img {
+  transform: scale(1.05);
+}
+
+/* Sits on the cover; needs an opaque backdrop to stay readable over photos. */
+.event-card-tag.evt-type-tag {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: var(--white);
+  border-color: rgba(30, 71, 187, 0.2);
+  box-shadow: 0 2px 8px rgba(13, 13, 43, 0.16);
+}
+
+.event-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px 16px;
+}
+
+.event-card-title {
+  margin: 0;
+  font-family: 'Outfit', sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--navy);
+  /* Keep cards in a row the same height regardless of title length. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.event-card:hover .event-card-title {
+  color: var(--accent);
+}
+
+.event-card-when,
+.event-card-where {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--gray-mid);
+}
+
+.event-card-when i,
+.event-card-where i {
+  flex: none;
+  width: 14px;
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.event-card-when span,
+.event-card-where span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.event-card-when {
+  color: var(--text-dark);
+  font-weight: 500;
+}
+
+/* ── DISCOVER PAGE ── */
+
+.discover-hero {
+  padding: 48px 24px 8px;
+  text-align: center;
+}
+
+.discover-hero h1 {
+  margin: 0 0 8px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 34px;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.discover-hero p {
+  margin: 0;
+  font-size: 15px;
+  color: var(--gray-mid);
+}
+
+.discover-wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 32px 24px 72px;
+}
+
+.discover-empty {
+  padding: 64px 24px;
+  text-align: center;
+  color: var(--gray-mid);
+}
+
+.discover-empty i {
+  font-size: 34px;
+  color: rgba(30, 71, 187, 0.28);
+  margin-bottom: 14px;
+  display: block;
+}
+
+.discover-empty h2 {
+  margin: 0 0 6px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.discover-empty p {
+  margin: 0 0 20px;
+  font-size: 14.5px;
+}
+
+/* Laravel's default paginator markup is Tailwind-flavoured; these keep it
+   legible alongside the rest of the site styling. */
+.discover-pagination {
+  margin-top: 32px;
+}
+
+.discover-pagination svg {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+}
+
+@media (max-width: 640px) {
+  .discover-hero {
+    padding: 32px 18px 4px;
+  }
+
+  .discover-hero h1 {
+    font-size: 26px;
+  }
+
+  .discover-wrap {
+    padding: 24px 18px 56px;
+  }
+
+  .event-card-grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .event-card,
+  .event-card-img img {
+    transition: none;
+  }
+
+  .event-card:hover {
+    transform: none;
+  }
+
+  .event-card:hover .event-card-img img {
+    transform: none;
+  }
+}

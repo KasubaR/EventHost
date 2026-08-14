@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\RsvpStatus;
 use Cviebrock\EloquentSluggable\Sluggable;
 use Database\Factories\EventFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -23,6 +24,21 @@ class Event extends Model
         'baby_shower',
         'funeral',
         'church',
+    ];
+
+    /**
+     * Display labels for EVENT_TYPES. Note "funeral" reads as "Memorial".
+     *
+     * @var array<string, string>
+     */
+    public const TYPE_LABELS = [
+        'wedding' => 'Wedding',
+        'birthday' => 'Birthday',
+        'graduation' => 'Graduation',
+        'corporate' => 'Corporate Event',
+        'baby_shower' => 'Baby Shower',
+        'funeral' => 'Memorial',
+        'church' => 'Church Event',
     ];
 
     /**
@@ -174,6 +190,38 @@ class Event extends Model
             'invitation_customization_previous_captured_at' => 'datetime',
             'invitation_customization_previous_captured_by_user_id' => 'integer',
         ];
+    }
+
+    /**
+     * Events anyone may see: published by the host and flagged public.
+     *
+     * This pair is the app's definition of "publicly visible" (see
+     * PublicEventController::show()), and is what makes an event eligible for
+     * the homepage strip and the discover listing.
+     *
+     * @param  Builder<Event>  $query
+     * @return Builder<Event>
+     */
+    public function scopePubliclyListed(Builder $query): Builder
+    {
+        return $query->where('is_published', true)->where('is_public', true);
+    }
+
+    /**
+     * Events happening today or later. Compared by date only — an event earlier
+     * today still counts as upcoming, since event_time is not part of the check.
+     *
+     * @param  Builder<Event>  $query
+     * @return Builder<Event>
+     */
+    public function scopeUpcoming(Builder $query): Builder
+    {
+        return $query->whereDate('event_date', '>=', today());
+    }
+
+    public function getEventTypeLabelAttribute(): string
+    {
+        return self::TYPE_LABELS[$this->event_type] ?? $this->event_type;
     }
 
     public function getCoverImageUrlAttribute(): string

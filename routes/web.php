@@ -14,6 +14,7 @@ use App\Http\Controllers\GuestBulkActionController;
 use App\Http\Controllers\GuestController;
 use App\Http\Controllers\GuestGroupController;
 use App\Http\Controllers\GuestImportController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicCheckInController;
@@ -30,9 +31,7 @@ Route::post($lencoWebhookPath, [PaymentController::class, 'webhook'])
     ->withoutMiddleware([VerifyCsrfToken::class])
     ->name('lenco.webhook');
 
-Route::get('/', function () {
-    return view('home');
-});
+Route::get('/', [HomeController::class, 'index'])->name('home');
 
 Route::get('/about', function () {
     return view('about');
@@ -40,6 +39,9 @@ Route::get('/about', function () {
 
 Route::get('/contact', [ContactController::class, 'show'])->name('contact');
 Route::post('/contact', [ContactController::class, 'store'])->name('contact.store')->middleware('throttle:5,1');
+
+// Public browse listing. Note /events is taken by the authenticated events.index.
+Route::get('/discover', [PublicEventController::class, 'index'])->name('events.discover');
 
 Route::get('/e/{slug}', [PublicEventController::class, 'show'])->name('events.public');
 Route::get('/e/{slug}/calendar.ics', [PublicEventController::class, 'ics'])->name('events.public.ics');

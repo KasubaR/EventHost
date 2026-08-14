@@ -10,6 +10,22 @@ use Illuminate\View\View;
 
 class PublicEventController extends Controller
 {
+    /**
+     * Public listing of every upcoming event hosts have made public.
+     * Reached from the homepage strip's "See all" link and the site nav.
+     */
+    public function index(): View
+    {
+        $events = Event::query()
+            ->publiclyListed()
+            ->upcoming()
+            ->orderBy('event_date')
+            ->orderBy('event_time')
+            ->paginate(12);
+
+        return view('events.discover', compact('events'));
+    }
+
     public function show(string $slug, InvitationCustomizationService $customizationService): View
     {
         $event = Event::query()

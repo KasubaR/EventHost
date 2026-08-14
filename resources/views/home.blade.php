@@ -4,6 +4,7 @@
 
 @push('head')
     <link rel="stylesheet" href="{{ asset('css/home.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/event-cards.css') }}">
 @endpush
 
 @section('content')
@@ -131,50 +132,22 @@
   </div>
 </section>
 
-<!-- FEATURES -->
-<div id="features">
+<!-- UPCOMING EVENTS -->
+@if ($upcomingEvents->isNotEmpty())
+<div id="upcoming-events">
   <div class="section">
-    <div class="section-header">
-      <h2>Everything you need to host with confidence</h2>
-      <p>Powerful features designed for hosts who care about every detail.</p>
+    <div class="section-row">
+      <h2>Upcoming events</h2>
+      <a href="{{ route('events.discover') }}" class="see-all">See all events →</a>
     </div>
-    <div class="features-banner">
-      <img src="https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?auto=format&fit=crop&w=1400&h=560&q=80" alt="Elegant event table setup with florals and glassware" width="1400" height="560" loading="lazy" decoding="async">
-    </div>
-    <div class="features-grid">
-      <div class="feature-card">
-        <div class="feat-icon" style="background:rgba(30,71,187,0.12)"><i class="fa-solid fa-palette" aria-hidden="true"></i></div>
-        <h3>Beautiful Templates</h3>
-        <p>Choose from 100+ professionally designed invitation templates for every occasion — weddings, birthdays, corporate events and more.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feat-icon" style="background:rgba(0,206,201,0.12)"><i class="fa-solid fa-chart-line" aria-hidden="true"></i></div>
-        <h3>RSVP Tracking</h3>
-        <p>See who's coming in real time. Get instant notifications, track responses, and export your guest list with a single click.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feat-icon" style="background:rgba(72,199,142,0.12)"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i></div>
-        <h3>WhatsApp Sharing</h3>
-        <p>Share invitations directly via WhatsApp. Guests can RSVP without downloading any app — just a tap and they're in.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feat-icon" style="background:rgba(243,156,18,0.12)"><i class="fa-solid fa-users" aria-hidden="true"></i></div>
-        <h3>Guest Management</h3>
-        <p>Manage seating, meal preferences, +1s and custom fields. Keep all your guest data organized in one place.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feat-icon" style="background:rgba(30,71,187,0.12)"><i class="fa-solid fa-chart-column" aria-hidden="true"></i></div>
-        <h3>Event Analytics</h3>
-        <p>Understand engagement with open rates, response timelines, and geographic insights for your events.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feat-icon" style="background:rgba(79,62,200,0.1)"><i class="fa-solid fa-mobile-screen-button" aria-hidden="true"></i></div>
-        <h3>Mobile Optimized</h3>
-        <p>Every invitation looks stunning on any device. Your guests get a flawless experience whether on iPhone, Android, or desktop.</p>
-      </div>
+    <div class="event-card-grid">
+      @foreach ($upcomingEvents as $event)
+        @include('events.partials.public-event-card', ['event' => $event])
+      @endforeach
     </div>
   </div>
 </div>
+@endif
 
 <!-- TEMPLATES SHOWCASE -->
 <div id="templates">
@@ -282,124 +255,6 @@
         <div class="step-icon"><i class="fa-solid fa-paper-plane" aria-hidden="true"></i></div>
         <h3>Share & Track RSVPs</h3>
         <p>Send via WhatsApp, email, or a link. Watch confirmations roll in and manage your guest list live.</p>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- RSVP DASHBOARD PREVIEW -->
-<div id="dashboard">
-  <div class="section">
-    <div class="dash-grid">
-      <div class="dash-left">
-        <h2>Track every RSVP as it happens</h2>
-        <p>No more chasing guests. Our dashboard gives you a live view of who's coming, who's not, and who hasn't responded — so you can plan with confidence.</p>
-        <div class="dash-points">
-          <div class="dash-point">
-            <div class="check"><i class="fa-solid fa-check" aria-hidden="true"></i></div>
-            <div class="txt"><h4>Instant notifications</h4><p>Get alerted the moment someone RSVPs</p></div>
-          </div>
-          <div class="dash-point">
-            <div class="check"><i class="fa-solid fa-check" aria-hidden="true"></i></div>
-            <div class="txt"><h4>Guest list export</h4><p>Download as CSV or PDF anytime</p></div>
-          </div>
-          <div class="dash-point">
-            <div class="check"><i class="fa-solid fa-check" aria-hidden="true"></i></div>
-            <div class="txt"><h4>Reminder automation</h4><p>Auto-send reminders to non-responders</p></div>
-          </div>
-        </div>
-      </div>
-      <div class="dash-mockup">
-        <div class="dash-header">
-          <h4>Sarah's Birthday · Jun 14</h4>
-          <span class="dash-badge"><i class="fa-solid fa-circle dash-live-dot" aria-hidden="true"></i> Live</span>
-        </div>
-        <div class="rsvp-chart">
-          <div class="bar" style="height:55%;background:linear-gradient(to top,#0f2870,#1e47bb)"></div>
-          <div class="bar" style="height:70%;background:linear-gradient(to top,#0f2870,#1e47bb)"></div>
-          <div class="bar" style="height:45%;background:linear-gradient(to top,#0f2870,#1e47bb)"></div>
-          <div class="bar" style="height:90%;background:linear-gradient(to top,#4f3ec8,#00cec9)"></div>
-          <div class="bar" style="height:75%;background:linear-gradient(to top,#4f3ec8,#00cec9)"></div>
-          <div class="bar" style="height:60%;background:linear-gradient(to top,#0f2870,#1e47bb)"></div>
-          <div class="bar" style="height:85%;background:linear-gradient(to top,#4f3ec8,#00cec9)"></div>
-        </div>
-        <div class="rsvp-stats">
-          <div class="rsvp-stat-box">
-            <div class="n" style="color:#48c78e">84</div>
-            <div class="l">Attending</div>
-          </div>
-          <div class="rsvp-stat-box">
-            <div class="n" style="color:#e00e4f">12</div>
-            <div class="l">Declined</div>
-          </div>
-          <div class="rsvp-stat-box">
-            <div class="n" style="color:#f39c12">31</div>
-            <div class="l">Awaiting</div>
-          </div>
-        </div>
-        <div class="guest-list">
-          <div class="guest-row">
-            <div class="guest-av"><img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=56&h=56&q=80" alt="" width="28" height="28" loading="lazy" decoding="async"></div>
-            <span class="guest-name">Mutinta Mulenga</span>
-            <span class="guest-status st-yes">Confirmed</span>
-          </div>
-          <div class="guest-row">
-            <div class="guest-av"><img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=56&h=56&q=80" alt="" width="28" height="28" loading="lazy" decoding="async"></div>
-            <span class="guest-name">Patrick Lungu</span>
-            <span class="guest-status st-maybe">Maybe</span>
-          </div>
-          <div class="guest-row">
-            <div class="guest-av"><img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=56&h=56&q=80" alt="" width="28" height="28" loading="lazy" decoding="async"></div>
-            <span class="guest-name">Naomi Mukelabai</span>
-            <span class="guest-status st-yes">Confirmed</span>
-          </div>
-          <div class="guest-row">
-            <div class="guest-av"><img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=56&h=56&q=80" alt="" width="28" height="28" loading="lazy" decoding="async"></div>
-            <span class="guest-name">Joseph Tembo</span>
-            <span class="guest-status st-no">Declined</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- WHY CHOOSE US -->
-<div id="why">
-  <div class="section">
-    <div class="why-grid">
-      <div class="why-img-block">
-        <img class="why-bg-photo" src="https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=960&h=1200&q=80" alt="Guests mingling at a lively indoor celebration" width="480" height="600" loading="lazy" decoding="async">
-      </div>
-      <div class="why-right">
-        <h2>Built for Zambian hosts, designed for the world</h2>
-        <p>We know how Zambians celebrate—from weddings and Kitchen Parties to graduations and corporate launches. Event Host brings MTN, Airtel &amp; Zamtel mobile money together with cards and banking paths guests trust, plus WhatsApp-first sharing.</p>
-        <div class="why-points">
-          <div class="why-point">
-            <div class="wp-icon" style="background:rgba(30,71,187,0.12)"><i class="fa-solid fa-bolt" aria-hidden="true"></i></div>
-            <div class="wp-text"><h4>Fast Setup</h4><p>Live in under 5 minutes</p></div>
-          </div>
-          <div class="why-point">
-            <div class="wp-icon" style="background:rgba(0,206,201,0.12)"><i class="fa-solid fa-credit-card" aria-hidden="true"></i></div>
-            <div class="wp-text"><h4>Local Payments</h4><p>MTN MoMo, Airtel Money, Zamtel Kwacha &amp; cards</p></div>
-          </div>
-          <div class="why-point">
-            <div class="wp-icon" style="background:rgba(72,199,142,0.12)"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i></div>
-            <div class="wp-text"><h4>WhatsApp RSVP</h4><p>No app needed for guests</p></div>
-          </div>
-          <div class="why-point">
-            <div class="wp-icon" style="background:rgba(243,156,18,0.12)"><i class="fa-solid fa-mobile-screen-button" aria-hidden="true"></i></div>
-            <div class="wp-text"><h4>Mobile-First</h4><p>Perfect on any device</p></div>
-          </div>
-          <div class="why-point">
-            <div class="wp-icon" style="background:rgba(30,71,187,0.12)"><i class="fa-solid fa-palette" aria-hidden="true"></i></div>
-            <div class="wp-text"><h4>Elegant Designs</h4><p>30+ premium templates</p></div>
-          </div>
-          <div class="why-point">
-            <div class="wp-icon" style="background:rgba(79,62,200,0.1)"><i class="fa-solid fa-lock" aria-hidden="true"></i></div>
-            <div class="wp-text"><h4>Private & Secure</h4><p>Your guest data stays yours</p></div>
-          </div>
-        </div>
       </div>
     </div>
   </div>

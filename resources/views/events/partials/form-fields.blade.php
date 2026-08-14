@@ -194,7 +194,7 @@
             <label class="profile-label evt-check-label">
                 <input type="checkbox" name="is_public" value="1" class="profile-input evt-check-input"
                        @checked((string) old('is_public', ($event?->is_public ?? true) ? '1' : '0') === '1')>
-                Public invitation (anyone with the link)
+                Public invitation (listed on our Discover page and shareable by link)
             </label>
 
             <div class="profile-field">
