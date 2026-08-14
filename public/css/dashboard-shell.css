@@ -29,7 +29,11 @@
   padding: 20px 0 16px;
   position: sticky;
   top: 0;
+  /* dvh tracks the visible area; plain vh ignores mobile browser chrome and
+     would push the pinned sign-out button below the fold. vh stays first as
+     the fallback for browsers without dvh. */
   height: 100vh;
+  height: 100dvh;
   overflow-y: auto;
 }
 
@@ -202,6 +206,7 @@
     z-index: 900;
     transition: left 0.25s ease;
     height: 100vh;
+    height: 100dvh;
   }
   .dash-sidebar.is-open { left: 0; box-shadow: 4px 0 24px rgba(0,0,0,0.12); }
 
