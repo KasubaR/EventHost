@@ -457,3 +457,40 @@
   background: var(--gray-light);
   font-weight: 700;
 }
+
+/* Current video + poster, shown above the edit fields on a video review. */
+.admin-review-video {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  margin-bottom: 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--gray-light);
+}
+
+.admin-review-poster {
+  width: 160px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  display: block;
+  flex-shrink: 0;
+}
+
+.admin-review-poster.is-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--white);
+  border: 1px dashed var(--line);
+  color: var(--gray-mid);
+  font-size: 20px;
+}
+
+.admin-review-video-info {
+  min-width: 0;
+  font-size: 12px;
+  word-break: break-all;
+}

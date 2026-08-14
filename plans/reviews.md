@@ -1,9 +1,19 @@
 # Feature Plan: Customer Reviews (text + video)
 
-Status: **Phase 1 shipped** (2026-08-14) — text reviews end to end: hosts submit from `/reviews`, admins
-moderate and feature at `/admin/reviews`, and the homepage strip is now driven by `Review::featuredForHomepage()`.
-Phase 2 (admin-authored video reviews) is still open; its `video_ref` / `video_poster` columns already
-exist, so it needs no schema change. See §8.
+Status: **Phase 1 and Phase 2 shipped** (2026-08-14). Phase 1: text reviews end to end — hosts submit from
+`/reviews`, admins moderate and feature at `/admin/reviews`, and the homepage strip is now driven by
+`Review::featuredForHomepage()`. Phase 2: admin-authored video reviews — the "Add a video review" form,
+click-to-play cards, and poster upload/replace/remove. As planned it needed **no schema change**; the
+`video_ref` / `video_poster` columns shipped in the phase 1 migration.
+
+Two deviations from the plan below, both deliberate:
+
+1. **No separate "Video reviews" section** in the admin panel (§4 proposed one). Video reviews are created
+   approved, so they already appear under **Published** with an "Added by admin" badge; a fourth section
+   would have listed the same rows twice. The "Add a video review" form sits above the status groups.
+2. `InvitationVideoBackground` gained a second embed builder, `playerEmbedUrl()` — the existing
+   `embedUrl()` is muted, looping and chrome-less because it plays behind an invitation hero, which is
+   wrong for a testimonial someone clicks to watch.
 
 The three fictional testimonials the homepage used to hardcode were **not** seeded into the new table —
 see the flag in §1.
@@ -333,6 +343,25 @@ admin-curated and real.
 the `.testi-card.is-video` variant, the click-to-play toggle in `homepage.js`.
 
 Both columns land in the phase 1 migration so phase 2 adds no schema change.
+
+### Phase 2 — what shipped
+
+- `Admin\StoreReviewRequest` + `Admin\ReviewController::store()` — creates the review as `admin`/`video`,
+  already approved (the admin is the moderator, so there is no queue to join), normalizing the pasted link
+  through `InvitationVideoBackground::normalizeUserInput()`
+- Poster and reviewer-photo uploads reuse the `InvitationTemplateController::storePreviewImage()` shape —
+  Imagick when loaded, GD otherwise, `cover()` to 640×360 / 88×88, WebP at 85 on the `public` disk, old
+  file dropped in `DB::afterCommit()` only once the new path is committed
+- `destroyPoster()` clears the still without unfeaturing the review, unlike the template equivalent: a
+  template with no image cannot render a card at all, whereas a video review just falls back to a plain
+  play button
+- On edit, a blank link keeps the stored video — the admin is usually there to fix wording. The
+  "cannot feature a video review without a video" rule now also accepts a link supplied in the same request
+- Homepage cards render a poster and a button carrying the embed URL in `data-testi-video`; `homepage.js`
+  builds the iframe on click, so the page ships with no third-party frame and none loads until asked
+- Verified in the browser: 16:9 box, zero iframes on first paint, one iframe with the `youtube-nocookie`
+  src after a click, focus moved to the frame, sibling cards untouched, and the poster-less fallback
+  rendering as a play button on the navy ground
 
 ---
 

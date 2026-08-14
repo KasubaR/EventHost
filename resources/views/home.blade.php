@@ -239,7 +239,19 @@
     </div>
     <div class="testi-grid">
       @foreach ($featuredReviews as $review)
-      <div class="testi-card">
+      @php $videoEmbed = $review->isVideo() ? $review->videoEmbedUrl() : null; @endphp
+      <div class="testi-card {{ $videoEmbed ? 'is-video' : '' }}">
+        @if ($videoEmbed)
+        {{-- The iframe is only built once the viewer clicks — see homepage.js. --}}
+        <div class="testi-video" data-testi-video="{{ $videoEmbed }}">
+          <button type="button" class="testi-video-play" aria-label="Play the video review from {{ $review->author_name }}">
+            @if ($review->video_poster_url)
+              <img src="{{ $review->video_poster_url }}" alt="" width="640" height="360" loading="lazy" decoding="async">
+            @endif
+            <span class="testi-video-icon"><i class="fa-solid fa-play" aria-hidden="true"></i></span>
+          </button>
+        </div>
+        @endif
         @if ($review->rating)
         <div class="stars" aria-label="{{ $review->rating }} out of 5 stars">
           @for ($star = 1; $star <= 5; $star++)

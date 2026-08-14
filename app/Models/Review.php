@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\ReviewMediaType;
 use App\Enums\ReviewStatus;
+use App\Support\InvitationVideoBackground;
 use Database\Factories\ReviewFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -117,6 +118,41 @@ class Review extends Model
         }
 
         return asset('images/default-avatar.png');
+    }
+
+    /**
+     * Poster still for a video review, or null when none was uploaded — the
+     * homepage then falls back to a plain play button.
+     */
+    public function getVideoPosterUrlAttribute(): ?string
+    {
+        $path = $this->video_poster;
+
+        if (is_string($path) && $path !== '' && ! str_contains($path, '://')) {
+            return asset('storage/'.$path);
+        }
+
+        return null;
+    }
+
+    /**
+     * Click-to-play embed, or null when the stored reference is missing or
+     * malformed. Nothing renders an iframe until the viewer asks for it.
+     */
+    public function videoEmbedUrl(): ?string
+    {
+        $id = InvitationVideoBackground::extractIdFromStored($this->video_ref);
+
+        return $id !== null ? InvitationVideoBackground::playerEmbedUrl($id) : null;
+    }
+
+    /**
+     * Share URL for the admin panel, so the stored `youtube:<id>` value round
+     * trips back into the field the admin pasted into.
+     */
+    public function videoWatchUrl(): ?string
+    {
+        return InvitationVideoBackground::watchUrlFromStored($this->video_ref);
     }
 
     /**

@@ -4,6 +4,9 @@ namespace App\Support;
 
 /**
  * Invitation hero background may be an uploaded file path or a YouTube reference ({@see PREFIX}).
+ *
+ * Also owns the YouTube reference format for admin-authored video reviews, which store the same
+ * {@see PREFIX} value but render through {@see playerEmbedUrl()} rather than the muted background embed.
  */
 final class InvitationVideoBackground
 {
@@ -107,6 +110,23 @@ final class InvitationVideoBackground
             'loop' => '1',
             'playlist' => $videoId,
             'controls' => '0',
+            'modestbranding' => '1',
+            'rel' => '0',
+        ]);
+
+        return 'https://www.youtube-nocookie.com/embed/'.$videoId.'?'.$query;
+    }
+
+    /**
+     * Embed URL for a video the viewer has chosen to play: real controls, sound
+     * on, no loop. {@see embedUrl()} is muted and chrome-less because it plays
+     * behind an invitation hero — a testimonial nobody can hear is useless.
+     */
+    public static function playerEmbedUrl(string $videoId): string
+    {
+        $query = http_build_query([
+            'autoplay' => '1',
+            'playsinline' => '1',
             'modestbranding' => '1',
             'rel' => '0',
         ]);

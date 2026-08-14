@@ -31,8 +31,12 @@
 
     @if (session('status') === 'review-updated')
         <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Review saved.</div>
+    @elseif (session('status') === 'review-created')
+        <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Video review added.</div>
     @elseif (session('status') === 'review-deleted')
         <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Review deleted.</div>
+    @elseif (session('status') === 'review-poster-removed')
+        <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Poster image removed.</div>
     @endif
 
     @if ($errors->any())
@@ -57,6 +61,76 @@
             {{ $featuredCount === 1 ? 'is' : 'are' }} featured. If a host edits a review it comes straight back here as
             pending and drops off the homepage. Review text is plain text — HTML is escaped, not rendered.
         </p>
+    </div>
+
+    <div class="admin-panel-card admin-mt-lg">
+        <h2>Add a video review</h2>
+        <p class="admin-muted">
+            Video testimonials are added here by you, never uploaded by hosts. Paste a public or unlisted YouTube link —
+            only videos that allow embedding will play. The poster image is the still shown before someone clicks play;
+            without one the card falls back to a plain play button. A video review is published as soon as you add it,
+            and appears in <strong>Published</strong> below where you can edit or unpublish it like any other.
+        </p>
+
+        <form method="post" action="{{ route('admin.reviews.store') }}" enctype="multipart/form-data" class="admin-mt-sm">
+            @csrf
+            <input type="hidden" name="_form" value="create">
+
+            <label class="admin-tpl-field admin-field-wide">
+                <span>Quote shown under the video</span>
+                <textarea name="body" rows="3" maxlength="1500" required>{{ $oldFor('create', 'body', '') }}</textarea>
+            </label>
+
+            <label class="admin-tpl-field admin-field-wide">
+                <span>YouTube link or video ID</span>
+                <input type="text" name="video_ref" value="{{ $oldFor('create', 'video_ref', '') }}" maxlength="500"
+                       placeholder="https://www.youtube.com/watch?v=… or youtu.be/…" required>
+            </label>
+
+            <div class="admin-row-fields">
+                <label class="admin-tpl-field">
+                    <span>Name shown</span>
+                    <input type="text" name="author_name" value="{{ $oldFor('create', 'author_name', '') }}" maxlength="255" required>
+                </label>
+
+                <label class="admin-tpl-field">
+                    <span>Context line</span>
+                    <input type="text" name="author_context" value="{{ $oldFor('create', 'author_context', '') }}" maxlength="255" placeholder="Wedding · Lusaka">
+                </label>
+
+                <label class="admin-tpl-field">
+                    <span>Rating <span class="admin-muted">optional</span></span>
+                    <input type="number" name="rating" value="{{ $oldFor('create', 'rating', '') }}" min="1" max="5" step="1">
+                </label>
+
+                <label class="admin-tpl-field">
+                    <span>Order</span>
+                    <input type="number" name="featured_sort_order" value="{{ $oldFor('create', 'featured_sort_order', 0) }}" min="0" max="999" step="1" required>
+                </label>
+
+                <label class="admin-tpl-check admin-faq-check">
+                    <input type="hidden" name="is_featured" value="0">
+                    <input type="checkbox" name="is_featured" value="1" @checked((bool) $oldFor('create', 'is_featured', false))>
+                    <span>Feature on homepage</span>
+                </label>
+            </div>
+
+            <div class="admin-row-fields">
+                <label class="admin-tpl-field admin-tpl-file">
+                    <span>Poster image <span class="admin-muted">optional, cropped to 16:9</span></span>
+                    <input type="file" name="video_poster" accept="image/jpeg,image/png,image/webp">
+                </label>
+
+                <label class="admin-tpl-field admin-tpl-file">
+                    <span>Photo of the reviewer <span class="admin-muted">optional, cropped square</span></span>
+                    <input type="file" name="author_photo" accept="image/jpeg,image/png,image/webp">
+                </label>
+            </div>
+
+            <div class="admin-actions admin-mt-sm">
+                <button type="submit" class="btn-primary evt-btn-tiny"><i class="fa-solid fa-plus"></i> Add video review</button>
+            </div>
+        </form>
     </div>
 
     @foreach ([
@@ -97,14 +171,47 @@
                 </div>
 
                 {{-- The review text is not repeated read-only above; the editable field below is the only copy. --}}
-                <form method="post" action="{{ route('admin.reviews.update', $review) }}">
+                <form method="post" action="{{ route('admin.reviews.update', $review) }}" enctype="multipart/form-data">
                     @csrf
                     @method('PATCH')
                     <input type="hidden" name="_form" value="edit">
                     <input type="hidden" name="_review_id" value="{{ $review->id }}">
 
+                    @if ($review->isVideo())
+                        <div class="admin-review-video">
+                            @if ($review->video_poster_url)
+                                <img src="{{ $review->video_poster_url }}" alt="" width="160" height="90" class="admin-review-poster">
+                            @else
+                                <span class="admin-review-poster is-empty"><i class="fa-solid fa-image"></i></span>
+                            @endif
+
+                            <div class="admin-review-video-info">
+                                @if ($review->videoWatchUrl())
+                                    <a href="{{ $review->videoWatchUrl() }}" target="_blank" rel="noopener noreferrer" class="admin-link">
+                                        <i class="fa-brands fa-youtube"></i> {{ $review->videoWatchUrl() }}
+                                    </a>
+                                @else
+                                    <span class="admin-muted"><i class="fa-solid fa-triangle-exclamation"></i> No video set — this review cannot be featured.</span>
+                                @endif
+                            </div>
+                        </div>
+
+                        <div class="admin-row-fields">
+                            <label class="admin-tpl-field admin-field-wide">
+                                <span>Replace the YouTube link <span class="admin-muted">leave blank to keep the current video</span></span>
+                                <input type="text" name="video_ref" value="{{ $oldFor('edit', 'video_ref', '', $review->id) }}" maxlength="500"
+                                       placeholder="https://www.youtube.com/watch?v=…">
+                            </label>
+
+                            <label class="admin-tpl-field admin-tpl-file">
+                                <span>Replace the poster image</span>
+                                <input type="file" name="video_poster" accept="image/jpeg,image/png,image/webp">
+                            </label>
+                        </div>
+                    @endif
+
                     <label class="admin-tpl-field admin-field-wide">
-                        <span>Review text</span>
+                        <span>{{ $review->isVideo() ? 'Quote shown under the video' : 'Review text' }}</span>
                         <textarea name="body" rows="3" maxlength="1500" required>{{ $oldFor('edit', 'body', $review->body, $review->id) }}</textarea>
                     </label>
 
@@ -158,12 +265,24 @@
                     </div>
                 </form>
 
-                <form method="post" action="{{ route('admin.reviews.destroy', $review) }}" class="admin-faq-delete"
-                      data-confirm="Delete this review by {{ $review->author_name }}? This cannot be undone.">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="evt-btn-outline evt-btn-tiny admin-tpl-remove"><i class="fa-solid fa-trash"></i> Delete</button>
-                </form>
+                {{-- Sibling forms, never nested inside the edit form above. --}}
+                <div class="admin-faq-delete admin-actions">
+                    @if ($review->isVideo() && $review->video_poster)
+                        <form method="post" action="{{ route('admin.reviews.poster.destroy', $review) }}"
+                              data-confirm="Remove the poster image? The video itself stays, and the card falls back to a plain play button.">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="evt-btn-outline evt-btn-tiny"><i class="fa-solid fa-image-slash"></i> Remove poster</button>
+                        </form>
+                    @endif
+
+                    <form method="post" action="{{ route('admin.reviews.destroy', $review) }}"
+                          data-confirm="Delete this review by {{ $review->author_name }}? This cannot be undone.">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="evt-btn-outline evt-btn-tiny admin-tpl-remove"><i class="fa-solid fa-trash"></i> Delete</button>
+                    </form>
+                </div>
             </article>
         @empty
             <p class="admin-muted">{{ $group['empty'] }}</p>

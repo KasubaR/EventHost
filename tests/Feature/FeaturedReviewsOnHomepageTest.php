@@ -71,6 +71,24 @@ class FeaturedReviewsOnHomepageTest extends TestCase
             ->assertDontSee('Featured Host 8', escape: false);
     }
 
+    public function test_a_featured_video_review_renders_a_play_button_and_no_iframe(): void
+    {
+        Review::factory()->video()->featured(10)->create([
+            'author_name' => 'Video Host',
+            'body' => 'Watching it back, the whole day ran itself.',
+        ]);
+
+        $response = $this->get(route('home'));
+
+        $response->assertOk()
+            ->assertSee('Video Host', escape: false)
+            ->assertSee('Play the video review from Video Host', escape: false)
+            // The embed URL is handed to JS as data, so nothing third-party
+            // loads until the viewer clicks.
+            ->assertSee('youtube-nocookie.com/embed/dQw4w9WgXcQ', escape: false)
+            ->assertDontSee('<iframe', escape: false);
+    }
+
     public function test_the_rating_renders_as_stars(): void
     {
         Review::factory()->featured(10)->create([

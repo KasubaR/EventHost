@@ -713,6 +713,63 @@
 }
 .stars i { color: var(--orange); }
 .stars i.is-empty { color: var(--line); }
+/* Video reviews: poster + play button until clicked, then an iframe. */
+.testi-video {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--navy);
+  margin-bottom: 16px;
+}
+.testi-video iframe,
+.testi-video-play {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+.testi-video-play {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  background: transparent;
+}
+.testi-video-play img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.testi-video-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--navy);
+  font-size: 17px;
+  /* Nudge the glyph off-centre — a play triangle looks left-heavy centred. */
+  padding-left: 4px;
+  transition: transform 0.2s, background 0.2s;
+}
+.testi-video-play:hover .testi-video-icon,
+.testi-video-play:focus-visible .testi-video-icon {
+  transform: scale(1.08);
+  background: var(--white);
+}
+.testi-video-play:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: -3px;
+}
+
 .testi-card blockquote {
   font-size: 14px;
   color: var(--text-dark);

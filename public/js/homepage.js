@@ -61,6 +61,30 @@ if (navAccountToggle && navAccountDropdown) {
   });
 }
 
+// Video reviews: click to play.
+// The iframe is built on demand so no YouTube frame loads on first paint —
+// the card ships as a poster image and a button until someone asks for it.
+document.querySelectorAll('[data-testi-video]').forEach((holder) => {
+  const button = holder.querySelector('.testi-video-play');
+  if (!button) return;
+
+  button.addEventListener('click', () => {
+    const src = holder.getAttribute('data-testi-video');
+    if (!src) return;
+
+    const frame = document.createElement('iframe');
+    frame.src = src;
+    frame.title = button.getAttribute('aria-label') || 'Video review';
+    frame.allow = 'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture';
+    frame.allowFullscreen = true;
+    frame.loading = 'lazy';
+    frame.referrerPolicy = 'strict-origin-when-cross-origin';
+
+    holder.replaceChildren(frame);
+    frame.focus();
+  });
+});
+
 // Password visibility toggle
 document.querySelectorAll('.auth-eye').forEach((btn) => {
   btn.addEventListener('click', () => {

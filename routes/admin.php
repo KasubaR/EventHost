@@ -119,8 +119,10 @@ Route::prefix('admin')
         });
 
         Route::middleware(['permission:reviews.manage,admin', 'throttle:admin-mutations'])->group(function (): void {
+            Route::post('/reviews', [AdminReviewController::class, 'store'])->name('reviews.store');
             Route::patch('/reviews/{review}', [AdminReviewController::class, 'update'])->name('reviews.update');
             Route::delete('/reviews/{review}', [AdminReviewController::class, 'destroy'])->name('reviews.destroy');
+            Route::delete('/reviews/{review}/poster', [AdminReviewController::class, 'destroyPoster'])->name('reviews.poster.destroy');
         });
 
         Route::middleware('permission:settings.manage,admin')->group(function (): void {

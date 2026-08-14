@@ -4,6 +4,8 @@ namespace App\Http\Requests\Admin;
 
 use App\Enums\ReviewStatus;
 use App\Models\Review;
+use App\Support\InvitationVideoBackground;
+use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -34,6 +36,23 @@ class UpdateReviewRequest extends FormRequest
             'author_context' => ['nullable', 'string', 'max:255'],
             'is_featured' => ['required', 'boolean'],
             'featured_sort_order' => ['required', 'integer', 'min:0', 'max:999'],
+
+            // Video reviews only. Left blank the stored reference is kept, so
+            // the admin can edit the wording without re-pasting the link.
+            'video_ref' => [
+                'nullable',
+                'string',
+                'max:500',
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    if (trim((string) $value) === '') {
+                        return;
+                    }
+                    if (InvitationVideoBackground::parseVideoId((string) $value) === null) {
+                        $fail('Enter a valid YouTube link or video ID.');
+                    }
+                },
+            ],
+            'video_poster' => ['nullable', 'file', 'image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
         ];
     }
 
@@ -54,7 +73,9 @@ class UpdateReviewRequest extends FormRequest
                     return;
                 }
 
-                $hasVideo = is_string($review->video_ref) && $review->video_ref !== '';
+                // Either already stored, or being supplied by this very request.
+                $hasVideo = (is_string($review->video_ref) && $review->video_ref !== '')
+                    || InvitationVideoBackground::normalizeUserInput($this->input('video_ref')) !== null;
 
                 if ($this->boolean('is_featured') && ! $hasVideo) {
                     $validator->errors()->add(
