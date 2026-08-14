@@ -34,7 +34,7 @@
             <p class="admin-muted"><strong>Related event:</strong> {{ $report->event?->name ?? '—' }}</p>
             @if(auth('admin')->user()?->can('events.view'))
                 @if ($report->event)
-                    <p class="admin-mt-sm"><a href="{{ route('admin.events.show', $report->event) }}">Open event</a></p>
+                    <p class="admin-mt-sm"><a href="{{ route('admin.events.show', $report->event) }}" class="admin-link">Open event</a></p>
                 @endif
             @endif
         </div>

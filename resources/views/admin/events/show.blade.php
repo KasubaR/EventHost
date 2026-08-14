@@ -67,7 +67,7 @@
                 <form method="post" action="{{ route('admin.events.destroy', $ev) }}" class="profile-form admin-mt-md" data-confirm="Permanently delete this event and related guests/RSVPs?">
                     @csrf
                     @method('DELETE')
-                    <button type="submit" class="evt-btn-danger-outline">Delete event</button>
+                    <button type="submit" class="evt-btn-outline evt-btn-danger-outline">Delete event</button>
                 </form>
             @endif
         </div>
@@ -78,7 +78,7 @@
             <p class="admin-muted">{{ $ev->user?->phone ?? 'No phone' }} · Status {{ $ev->user?->status ?? '—' }}</p>
             @if(auth('admin')->user()?->can('users.view'))
                 @if ($ev->user)
-                    <p class="admin-mt-md"><a href="{{ route('admin.users.show', $ev->user) }}">Open user</a></p>
+                    <p class="admin-mt-md"><a href="{{ route('admin.users.show', $ev->user) }}" class="admin-link">Open user</a></p>
                 @endif
             @endif
         </div>

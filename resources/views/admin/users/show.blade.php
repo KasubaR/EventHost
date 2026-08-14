@@ -86,7 +86,7 @@
                     <form method="post" action="{{ route('admin.users.destroy', $u) }}" class="profile-form admin-mt-md" data-confirm="Delete this user and all owned data?">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="evt-btn-danger-outline">Delete user</button>
+                        <button type="submit" class="evt-btn-outline evt-btn-danger-outline">Delete user</button>
                     </form>
                 @endif
             @endif
@@ -113,7 +113,7 @@
                 </table>
             </div>
             @if(auth('admin')->user()?->can('events.view'))
-                <p class="admin-mt-sm"><a href="{{ route('admin.events.index', ['q' => $u->email]) }}">View events for this owner</a></p>
+                <p class="admin-mt-sm"><a href="{{ route('admin.events.index', ['q' => $u->email]) }}" class="admin-link">View events for this owner</a></p>
             @endif
         </div>
     </div>

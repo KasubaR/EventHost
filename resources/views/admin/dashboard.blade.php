@@ -1,6 +1,7 @@
 <x-admin-layout>
     @push('styles')
         <link rel="stylesheet" href="{{ asset('css/dashboard-home.css') }}">
+        <link rel="stylesheet" href="{{ asset('css/events-admin.css') }}">
     @endpush
 
     <x-slot name="title">Admin dashboard</x-slot>
@@ -72,6 +73,45 @@
         </div>
     </div>
 
+    @if ($finance !== null)
+        <section class="admin-finance">
+            <div class="admin-section-head">
+                <h2 class="admin-section-title">Finance</h2>
+                <a href="{{ route('admin.payments.index') }}" class="admin-link">All payments</a>
+            </div>
+            <div class="dash-stats admin-stat-grid">
+                <div class="dash-stat-card">
+                    <div class="dsc-icon dsc-icon--green"><i class="fa-solid fa-sack-dollar" aria-hidden="true"></i></div>
+                    <div class="dsc-body">
+                        <div class="dsc-value">{{ number_format($finance['revenue_total'], 2) }}</div>
+                        <div class="dsc-label">Total revenue ({{ $currency }})</div>
+                    </div>
+                </div>
+                <div class="dash-stat-card">
+                    <div class="dsc-icon dsc-icon--cyan"><i class="fa-solid fa-arrow-trend-up" aria-hidden="true"></i></div>
+                    <div class="dsc-body">
+                        <div class="dsc-value">{{ number_format($finance['revenue_month'], 2) }}</div>
+                        <div class="dsc-label">Revenue this month ({{ $currency }})</div>
+                    </div>
+                </div>
+                <div class="dash-stat-card">
+                    <div class="dsc-icon dsc-icon--accent"><i class="fa-solid fa-receipt" aria-hidden="true"></i></div>
+                    <div class="dsc-body">
+                        <div class="dsc-value">{{ number_format($finance['completed_payments']) }}</div>
+                        <div class="dsc-label">Completed payments</div>
+                    </div>
+                </div>
+                <div class="dash-stat-card">
+                    <div class="dsc-icon dsc-icon--orange"><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i></div>
+                    <div class="dsc-body">
+                        <div class="dsc-value">{{ number_format($finance['pending_payments']) }}</div>
+                        <div class="dsc-label">Payments in progress</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    @endif
+
     <div class="admin-detail-grid admin-mt-lg">
         <section class="admin-panel-card">
             <h2>Recent users</h2>
@@ -88,7 +128,7 @@
                             <td>{{ $u->status }}</td>
                             <td>
                                 @if(auth('admin')->user()?->can('users.view'))
-                                    <a href="{{ route('admin.users.show', $u) }}">View</a>
+                                    <a href="{{ route('admin.users.show', $u) }}" class="evt-btn-outline evt-btn-tiny">View</a>
                                 @endif
                             </td>
                         </tr>
@@ -121,7 +161,7 @@
                 </table>
             </div>
             @if(auth('admin')->user()?->can('notifications.view'))
-                <p class="admin-mt-sm"><a href="{{ route('admin.notifications.index', ['status' => 'failed']) }}">View all failed</a></p>
+                <p class="admin-mt-sm"><a href="{{ route('admin.notifications.index', ['status' => 'failed']) }}" class="admin-link">View all failed</a></p>
             @endif
         </section>
     </div>

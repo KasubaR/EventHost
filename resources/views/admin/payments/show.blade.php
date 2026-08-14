@@ -34,7 +34,7 @@
                 <dt>User</dt>
                 <dd>
                     @if ($payment->user)
-                        <a href="{{ route('admin.users.show', $payment->user) }}">{{ $payment->user->name }}</a>
+                        <a href="{{ route('admin.users.show', $payment->user) }}" class="admin-link">{{ $payment->user->name }}</a>
                         <span class="admin-muted">({{ $payment->user->email }})</span>
                     @else
                         —

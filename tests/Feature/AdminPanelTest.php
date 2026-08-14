@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Admin;
 use App\Models\Event;
+use App\Models\Payment;
 use App\Models\PlatformSetting;
 use App\Models\Report;
 use App\Models\User;
@@ -41,6 +42,24 @@ class AdminPanelTest extends TestCase
         $this->actingAs($user)
             ->get(route('admin.dashboard'))
             ->assertRedirect(route('admin.login'));
+    }
+
+    public function test_dashboard_revenue_counts_only_completed_payments_in_billing_currency(): void
+    {
+        Payment::factory()->completed()->create(['amount' => 450.00]);
+        Payment::factory()->completed()->create(['amount' => 50.50]);
+        Payment::factory()->create(['amount' => 999.00]);                       // pending — excluded
+        Payment::factory()->completed()->create([
+            'amount' => 700.00,
+            'currency' => 'USD',                                                // other currency — excluded
+        ]);
+
+        $this->actingAs($this->superAdmin(), 'admin')
+            ->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee('Total revenue (ZMW)')
+            ->assertSee('500.50')
+            ->assertDontSee('2,199.50');
     }
 
     public function test_super_admin_can_view_dashboard_and_analytics(): void

@@ -108,7 +108,7 @@
                     </td>
                     <td><code>{{ $payment->payment_reference }}</code></td>
                     <td>{{ $payment->created_at?->format('M j, Y H:i') }}</td>
-                    <td><a href="{{ route('admin.payments.show', $payment) }}">View</a></td>
+                    <td><a href="{{ route('admin.payments.show', $payment) }}" class="evt-btn-outline evt-btn-tiny">View</a></td>
                 </tr>
             @empty
                 <tr><td colspan="8">No payments found.</td></tr>
