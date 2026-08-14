@@ -346,3 +346,59 @@
   border-radius: 4px;
   padding: 1px 5px;
 }
+
+/* FAQs */
+.admin-faq-card {
+  margin-top: 12px;
+}
+
+.admin-faq-card.is-unpublished {
+  opacity: 0.72;
+  border-left: 3px solid var(--gray-mid);
+}
+
+.admin-faq-field-wide input[type="text"],
+.admin-faq-field-wide textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--text-dark);
+}
+
+.admin-faq-field-wide textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.admin-faq-row-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+.admin-faq-row-fields .admin-tpl-field {
+  margin-top: 10px;
+}
+
+.admin-faq-row-fields select {
+  min-width: 160px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.admin-faq-check {
+  padding-bottom: 8px;
+}
+
+.admin-faq-delete {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}

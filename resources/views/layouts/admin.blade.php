@@ -96,6 +96,11 @@
                         <i class="fa-solid fa-swatchbook"></i> Templates
                     </a>
                 @endif
+                @if(auth('admin')->user()?->can('faqs.manage'))
+                    <a href="{{ route('admin.faqs.index') }}" class="dash-nav-link {{ request()->routeIs('admin.faqs.*') ? 'is-active' : '' }}">
+                        <i class="fa-solid fa-circle-question"></i> FAQs
+                    </a>
+                @endif
                 @if(auth('admin')->user()?->can('settings.manage'))
                     <a href="{{ route('admin.settings.edit') }}" class="dash-nav-link {{ request()->routeIs('admin.settings.*') ? 'is-active' : '' }}">
                         <i class="fa-solid fa-sliders"></i> Settings

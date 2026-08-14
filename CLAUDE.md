@@ -154,6 +154,17 @@ The homepage "Invitation Templates" strip is curated from the admin panel, not h
 - A template cannot be featured without an image — enforced in `UpdateInvitationTemplateRequest` and again in the scope
 - `templates.preview` is **public** (sample data only) so visitors can preview before signing up; `templates.index` still requires auth
 
+### FAQs (homepage + contact page)
+
+Both FAQ blocks are database-driven, not hardcoded:
+
+- `/admin/faqs` (`Admin\FaqController`, permission `faqs.manage`) is a single-page CRUD — add, edit, delete, reorder and publish/unpublish
+- `Faq::PLACEMENTS` (`homepage` | `contact`) is the single source of truth for the admin dropdown, `FaqRequest` validation and `FaqSeeder`
+- `Faq::publishedFor($placement)` returns published rows ordered by `sort_order` then `id`; `HomeController` and `ContactController@show` each call it, and both sections are hidden entirely when the collection is empty
+- Answers are plain text — rendered with `{{ }}`, never `{!! !!}`
+- `FaqSeeder` carries the copy the two views used to hardcode, keyed on question + placement so re-seeding is idempotent
+- The admin view holds many forms on one page, so a `$oldFor()` closure scopes `old()` repopulation to the form that actually failed validation (via hidden `_form` / `_faq_id` fields)
+
 ### Asset Bundling
 
 Vite bundles `resources/css/app.css` (Tailwind) and `resources/js/app.js`. These are loaded with `@vite()` in the layouts. The custom CSS files in `public/css/` are loaded directly with `<link>` tags — they are not processed by Vite.

@@ -49,9 +49,6 @@
   line-height: 1.12;
   margin-bottom: 20px;
 }
-.contact-hero h1 span {
-  color: var(--pink);
-}
 .contact-hero p {
   font-size: 17px;
   color: rgba(255,255,255,0.72);

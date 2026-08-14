@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EventController as AdminEventController;
+use App\Http\Controllers\Admin\FaqController as AdminFaqController;
 use App\Http\Controllers\Admin\GuestController as AdminGuestController;
 use App\Http\Controllers\Admin\InvitationTemplateController as AdminInvitationTemplateController;
 use App\Http\Controllers\Admin\NotificationLogController;
@@ -100,6 +101,16 @@ Route::prefix('admin')
         Route::middleware(['permission:templates.manage,admin', 'throttle:admin-mutations'])->group(function (): void {
             Route::patch('/templates/{invitation_template}', [AdminInvitationTemplateController::class, 'update'])->name('templates.update');
             Route::delete('/templates/{invitation_template}/image', [AdminInvitationTemplateController::class, 'destroyImage'])->name('templates.image.destroy');
+        });
+
+        Route::middleware('permission:faqs.manage,admin')->group(function (): void {
+            Route::get('/faqs', [AdminFaqController::class, 'index'])->name('faqs.index');
+        });
+
+        Route::middleware(['permission:faqs.manage,admin', 'throttle:admin-mutations'])->group(function (): void {
+            Route::post('/faqs', [AdminFaqController::class, 'store'])->name('faqs.store');
+            Route::patch('/faqs/{faq}', [AdminFaqController::class, 'update'])->name('faqs.update');
+            Route::delete('/faqs/{faq}', [AdminFaqController::class, 'destroy'])->name('faqs.destroy');
         });
 
         Route::middleware('permission:settings.manage,admin')->group(function (): void {

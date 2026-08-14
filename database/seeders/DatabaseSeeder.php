@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(InvitationTemplateSeeder::class);
         $this->call(RolePermissionSeeder::class);
+        $this->call(FaqSeeder::class);
 
         $adminEmail = env('ADMIN_EMAIL', 'test@example.com');
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
+use App\Models\Faq;
 use App\Models\InvitationTemplate;
 use Illuminate\View\View;
 
@@ -32,6 +33,10 @@ class HomeController extends Controller
             ->limit(InvitationTemplate::HOMEPAGE_FEATURED_LIMIT)
             ->get();
 
-        return view('home', compact('upcomingEvents', 'featuredTemplates'));
+        // Managed in the admin panel. The section is hidden when nothing is
+        // published — see home.blade.php.
+        $homepageFaqs = Faq::query()->publishedFor('homepage')->get();
+
+        return view('home', compact('upcomingEvents', 'featuredTemplates', 'homepageFaqs'));
     }
 }

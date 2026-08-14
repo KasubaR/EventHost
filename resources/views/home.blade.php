@@ -328,7 +328,8 @@
   </div>
 </div>
 
-<!-- FAQ -->
+<!-- FAQ — curated in the admin panel; hidden entirely when nothing is published -->
+@if ($homepageFaqs->isNotEmpty())
 <div id="faq">
   <div class="section">
     <div class="section-header" style="text-align:center">
@@ -336,50 +337,18 @@
       <p style="margin:0 auto">Got questions? We've got answers.</p>
     </div>
     <div class="faq-grid">
+      @foreach ($homepageFaqs as $faq)
       <div class="faq-item">
         <button type="button" class="faq-q">
-          Is Event Host really free to use?
+          {{ $faq->question }}
           <span class="faq-icon">+</span>
         </button>
-        <div class="faq-a"><p>Creating an account is free. Each event requires a paid credit — Base from K450, Pro from K750, or Pro+ from K1500. Pay with MTN, Airtel, or bank transfer after you sign up.</p></div>
+        <div class="faq-a"><p>{{ $faq->answer }}</p></div>
       </div>
-      <div class="faq-item">
-        <button type="button" class="faq-q">
-          Can I manage RSVPs from my guests?
-          <span class="faq-icon">+</span>
-        </button>
-        <div class="faq-a"><p>Absolutely. Your dashboard updates in real time as guests respond. You can see confirmed, declined, and awaiting responses, send reminders, and export the full list.</p></div>
-      </div>
-      <div class="faq-item">
-        <button type="button" class="faq-q">
-          Do guests need to create an account to RSVP?
-          <span class="faq-icon">+</span>
-        </button>
-        <div class="faq-a"><p>No account needed. Guests simply tap the link in their WhatsApp or email, view the invitation, and confirm their attendance in one tap. It's designed to be frictionless.</p></div>
-      </div>
-      <div class="faq-item">
-        <button type="button" class="faq-q">
-          Does it work well on mobile phones?
-          <span class="faq-icon">+</span>
-        </button>
-        <div class="faq-a"><p>Every invitation and the RSVP experience is fully mobile-optimized. Whether your guests are on an old Android or the latest iPhone, everything looks and works beautifully.</p></div>
-      </div>
-      <div class="faq-item">
-        <button type="button" class="faq-q">
-          Can I send invitations via WhatsApp?
-          <span class="faq-icon">+</span>
-        </button>
-        <div class="faq-a"><p>Yes — WhatsApp sharing is built in. You get a shareable link you can forward in any WhatsApp chat or group. Guests can RSVP directly from the link without leaving WhatsApp.</p></div>
-      </div>
-      <div class="faq-item">
-        <button type="button" class="faq-q">
-          What payment methods are supported?
-          <span class="faq-icon">+</span>
-        </button>
-        <div class="faq-a"><p>We support MTN Mobile Money, Airtel Money, Zamtel Kwacha, Visa &amp; Mastercard, and bank deposits where available. Pro+ plans add invoicing and expanded settlement options across Zambia.</p></div>
-      </div>
+      @endforeach
     </div>
   </div>
 </div>
+@endif
 
 @endsection

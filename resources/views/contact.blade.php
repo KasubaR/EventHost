@@ -11,7 +11,7 @@
 <!-- HERO -->
 <section class="contact-hero">
     <div class="contact-hero-inner">
-        <h1>We'd love to <span>hear from you</span></h1>
+        <h1>We'd love to hear from you</h1>
         <p>Have a question, a feature request, or just want to say hello? Our team is here and happy to help.</p>
     </div>
 </section>
@@ -153,7 +153,8 @@
     </div>
 </section>
 
-<!-- FAQ STRIP -->
+<!-- FAQ STRIP — curated in the admin panel; hidden when nothing is published -->
+@if ($contactFaqs->isNotEmpty())
 <section class="contact-faq">
     <div class="contact-faq-inner">
         <div class="contact-faq-header">
@@ -161,24 +162,15 @@
             <h2>Frequently asked questions</h2>
         </div>
         <div class="contact-faq-grid">
+            @foreach ($contactFaqs as $faq)
             <div class="contact-faq-item">
-                <h3>Is Event Host free to use?</h3>
-                <p>You get one free event credit on sign-up. Additional credits can be purchased to create more events.</p>
+                <h3>{{ $faq->question }}</h3>
+                <p>{{ $faq->answer }}</p>
             </div>
-            <div class="contact-faq-item">
-                <h3>How do guests RSVP?</h3>
-                <p>Guests click a personalised link — no account required. RSVPs work seamlessly via WhatsApp, SMS, or any browser.</p>
-            </div>
-            <div class="contact-faq-item">
-                <h3>Can I use Event Host for large events?</h3>
-                <p>Absolutely. Event Host handles intimate dinners and 1,000-person weddings with the same ease.</p>
-            </div>
-            <div class="contact-faq-item">
-                <h3>What payment methods are supported?</h3>
-                <p>We support MTN MoMo, Airtel Money, and card payments so guests can pay in the way they prefer.</p>
-            </div>
+            @endforeach
         </div>
     </div>
 </section>
+@endif
 
 @endsection

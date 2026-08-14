@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Faq;
 use App\Notifications\ContactMessageNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -28,7 +29,11 @@ class ContactController extends Controller
 
     public function show(): View
     {
-        return view('contact');
+        // Managed in the admin panel. The strip is hidden when nothing is
+        // published — see contact.blade.php.
+        return view('contact', [
+            'contactFaqs' => Faq::query()->publishedFor('contact')->get(),
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
