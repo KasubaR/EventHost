@@ -1,0 +1,180 @@
+/**
+ * Host review portal (/reviews).
+ * Pairs with events-admin.css for the .evt-section shell — this file only adds
+ * the star picker, status pills and the small layout bits around them.
+ */
+
+.rev-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Star rating input ---------- */
+
+/*
+ * Rendered 5→1 in the markup and flipped here, so `input:checked ~ label`
+ * reaches the lower-value stars — they follow the checked input in the DOM.
+ */
+.rev-stars-input {
+  display: inline-flex;
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+  gap: 6px;
+  margin: 4px 0 10px;
+}
+
+.rev-stars-input input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.rev-stars-input label {
+  font-size: 24px;
+  line-height: 1;
+  color: var(--line);
+  cursor: pointer;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.rev-stars-input input:checked + label,
+.rev-stars-input input:checked ~ label {
+  color: var(--orange);
+}
+
+.rev-stars-input:hover label {
+  color: var(--line);
+}
+
+.rev-stars-input label:hover,
+.rev-stars-input label:hover ~ label {
+  color: var(--orange);
+  transform: scale(1.06);
+}
+
+/* Keyboard users get the same affordance as the mouse hover state. */
+.rev-stars-input input:focus-visible + label {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+/* ---------- Status pills ---------- */
+
+.rev-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.rev-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.rev-pill-pending {
+  background: color-mix(in srgb, var(--orange) 12%, transparent);
+  color: #a86608;
+  border-color: color-mix(in srgb, var(--orange) 28%, transparent);
+}
+
+.rev-pill-approved {
+  background: color-mix(in srgb, var(--green) 12%, transparent);
+  color: #1c7a45;
+  border-color: color-mix(in srgb, var(--green) 28%, transparent);
+}
+
+.rev-pill-rejected {
+  background: color-mix(in srgb, var(--pink) 10%, transparent);
+  color: var(--pink);
+  border-color: color-mix(in srgb, var(--pink) 26%, transparent);
+}
+
+.rev-pill-featured {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 24%, transparent);
+}
+
+/* ---------- Forms ---------- */
+
+.rev-moderation-note {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 13px;
+  color: var(--text-dark);
+  background: var(--gray-light);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-bottom: 14px;
+}
+
+.rev-moderation-note i { color: var(--gray-mid); margin-top: 2px; }
+
+.rev-textarea {
+  resize: vertical;
+  min-height: 96px;
+  font-family: inherit;
+}
+
+.rev-hint {
+  font-size: 12px;
+  margin-top: -4px;
+}
+
+.rev-actions { margin-top: 4px; }
+
+.rev-delete-form {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.rev-flash-error {
+  background: color-mix(in srgb, var(--pink) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--pink) 24%, transparent);
+  color: var(--pink);
+}
+
+.rev-error-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+}
+
+/* ---------- Empty state ---------- */
+
+.rev-empty {
+  text-align: center;
+  padding: 44px 24px;
+}
+
+.rev-empty-icon {
+  font-size: 30px;
+  color: var(--orange);
+  margin-bottom: 12px;
+}
+
+.rev-empty h2 {
+  font-size: 18px;
+  margin-bottom: 6px;
+}
+
+.rev-empty p { margin-bottom: 18px; }

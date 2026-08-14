@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\InvitationTemplateController as AdminInvitationTe
 use App\Http\Controllers\Admin\NotificationLogController;
 use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Admin\ReportController as AdminReportController;
+use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\Admin\RsvpController as AdminRsvpController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
@@ -111,6 +112,15 @@ Route::prefix('admin')
             Route::post('/faqs', [AdminFaqController::class, 'store'])->name('faqs.store');
             Route::patch('/faqs/{faq}', [AdminFaqController::class, 'update'])->name('faqs.update');
             Route::delete('/faqs/{faq}', [AdminFaqController::class, 'destroy'])->name('faqs.destroy');
+        });
+
+        Route::middleware('permission:reviews.manage,admin')->group(function (): void {
+            Route::get('/reviews', [AdminReviewController::class, 'index'])->name('reviews.index');
+        });
+
+        Route::middleware(['permission:reviews.manage,admin', 'throttle:admin-mutations'])->group(function (): void {
+            Route::patch('/reviews/{review}', [AdminReviewController::class, 'update'])->name('reviews.update');
+            Route::delete('/reviews/{review}', [AdminReviewController::class, 'destroy'])->name('reviews.destroy');
         });
 
         Route::middleware('permission:settings.manage,admin')->group(function (): void {

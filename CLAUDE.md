@@ -55,6 +55,7 @@ Laravel 12 application. Auth via Laravel Breeze (Blade stack). No Alpine.js — 
 | `public/css/events-admin.css` | Event CRUD views (`events/*` except public) via `@push('styles')` |
 | `public/css/events-public.css` | `events/public.blade.php` — public invitation page |
 | `public/css/event-cards.css` | Public event cards (`.event-card-*`) + `/discover` page — pushed by `home.blade.php` and `events/discover.blade.php` |
+| `public/css/reviews.css` | Host review portal (`.rev-*`) — star picker and status pills; pair with `events-admin.css` |
 | `public/css/datetime-picker.css` | Custom date/time picker (`.dtp-*`) — pair with `js/datetime-picker.js` |
 | `public/css/custom-select.css` | Custom dropdown (`.cs-*`) — pair with `js/custom-select.js` |
 
@@ -164,6 +165,20 @@ Both FAQ blocks are database-driven, not hardcoded:
 - Answers are plain text — rendered with `{{ }}`, never `{!! !!}`
 - `FaqSeeder` carries the copy the two views used to hardcode, keyed on question + placement so re-seeding is idempotent
 - The admin view holds many forms on one page, so a `$oldFor()` closure scopes `old()` repopulation to the form that actually failed validation (via hidden `_form` / `_faq_id` fields)
+
+### Reviews (homepage testimonials)
+
+The homepage testimonial strip is database-driven and admin-curated. One `reviews` table holds two kinds of review, told apart by `source` (`user` | `admin`) and `media_type` (`text` | `video`):
+
+- **Hosts** submit from `/reviews` (`ReviewController`, sidebar → Account → My Reviews) — one review per event they hosted, enforced by a `unique(user_id, event_id)` index. `Event::isReviewable()` gates it: published, `event_date` in the past, not already reviewed. The purchase gate is implicit — creating an event costs an event credit, so a reviewable event is a paid one; don't add a `payments` check, it would exclude users an admin granted credits by hand
+- **Admins** moderate at `/admin/reviews` (`Admin\ReviewController`, permission `reviews.manage`) — approve/reject with a note, correct attribution, feature and order. `support` does not have this permission
+- Admin-authored **video reviews** (phase 2, columns `video_ref` / `video_poster` already migrated) are the only video path — users never upload video. `video_ref` stores `youtube:<id>` normalized by `App\Support\InvitationVideoBackground`
+- `Review::featuredForHomepage()` returns approved + featured rows in `featured_sort_order`; `HomeController` limits to `HOMEPAGE_FEATURED_LIMIT` (6) and the section is hidden entirely when the collection is empty. A video review with no `video_ref` cannot be featured — enforced in the scope and again in `Admin\UpdateReviewRequest`
+- `author_name` / `author_context` / `author_photo` are **snapshotted at submit time**, so the homepage renders without joining `users`/`events` and a profile rename never rewrites a published testimonial
+- A host editing an approved review resets it to `pending` and clears `is_featured` — otherwise a mild review could be approved, featured, then rewritten on a live homepage
+- Review bodies are plain text — rendered with `{{ }}`, never `{!! !!}`
+- There is deliberately **no seeder**: the three fictional testimonials this section used to hardcode were not real customers, so they were dropped rather than seeded into a table meant for genuine reviews
+- The admin view holds many forms on one page, so a `$oldFor()` closure scopes `old()` repopulation to the form that failed (hidden `_form` / `_review_id` fields), same as the FAQ page
 
 ### Asset Bundling
 

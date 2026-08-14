@@ -69,6 +69,9 @@
                 <a href="{{ route('profile.edit') }}" class="dash-nav-link {{ request()->routeIs('profile.*') ? 'is-active' : '' }}">
                     <i class="fa-solid fa-circle-user"></i> Profile
                 </a>
+                <a href="{{ route('reviews.index') }}" class="dash-nav-link {{ request()->routeIs('reviews.*') ? 'is-active' : '' }}">
+                    <i class="fa-solid fa-star"></i> My Reviews
+                </a>
                 <a href="#" class="dash-nav-link">
                     <i class="fa-solid fa-gear"></i> Settings
                     <span class="dash-nav-soon">Soon</span>

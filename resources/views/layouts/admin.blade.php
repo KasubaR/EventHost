@@ -101,6 +101,11 @@
                         <i class="fa-solid fa-circle-question"></i> FAQs
                     </a>
                 @endif
+                @if(auth('admin')->user()?->can('reviews.manage'))
+                    <a href="{{ route('admin.reviews.index') }}" class="dash-nav-link {{ request()->routeIs('admin.reviews.*') ? 'is-active' : '' }}">
+                        <i class="fa-solid fa-star"></i> Reviews
+                    </a>
+                @endif
                 @if(auth('admin')->user()?->can('settings.manage'))
                     <a href="{{ route('admin.settings.edit') }}" class="dash-nav-link {{ request()->routeIs('admin.settings.*') ? 'is-active' : '' }}">
                         <i class="fa-solid fa-sliders"></i> Settings

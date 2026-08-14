@@ -357,8 +357,15 @@
   border-left: 3px solid var(--gray-mid);
 }
 
+/*
+ * .admin-field-wide / .admin-row-fields are the neutral names for these form
+ * helpers; the .admin-faq-* selectors are kept alongside because the FAQ view
+ * already uses them. New admin pages should use the neutral names.
+ */
 .admin-faq-field-wide input[type="text"],
-.admin-faq-field-wide textarea {
+.admin-faq-field-wide textarea,
+.admin-field-wide input[type="text"],
+.admin-field-wide textarea {
   width: 100%;
   padding: 8px 10px;
   border-radius: var(--radius-sm);
@@ -368,23 +375,27 @@
   color: var(--text-dark);
 }
 
-.admin-faq-field-wide textarea {
+.admin-faq-field-wide textarea,
+.admin-field-wide textarea {
   resize: vertical;
   line-height: 1.5;
 }
 
-.admin-faq-row-fields {
+.admin-faq-row-fields,
+.admin-row-fields {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
   gap: 16px;
 }
 
-.admin-faq-row-fields .admin-tpl-field {
+.admin-faq-row-fields .admin-tpl-field,
+.admin-row-fields .admin-tpl-field {
   margin-top: 10px;
 }
 
-.admin-faq-row-fields select {
+.admin-faq-row-fields select,
+.admin-row-fields select {
   min-width: 160px;
   padding: 8px 10px;
   border-radius: var(--radius-sm);
@@ -401,4 +412,48 @@
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid var(--line);
+}
+
+/* ---------- Reviews moderation ---------- */
+
+.admin-review-card {
+  margin-top: 12px;
+}
+
+.admin-review-card.is-featured {
+  border-left: 3px solid var(--accent);
+}
+
+.admin-review-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--gray-mid);
+  margin-bottom: 10px;
+}
+
+.admin-review-meta strong {
+  color: var(--text-dark);
+  font-size: 13px;
+}
+
+.admin-review-stars {
+  color: var(--orange);
+  letter-spacing: 1px;
+}
+
+.admin-review-stars .is-empty {
+  color: var(--line);
+}
+
+.admin-review-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--gray-light);
+  font-weight: 700;
 }

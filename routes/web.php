@@ -19,6 +19,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicCheckInController;
 use App\Http\Controllers\PublicEventController;
+use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\RsvpController;
 use App\Http\Controllers\TableUploadController;
 use App\Http\Controllers\TemplateLibraryController;
@@ -163,6 +164,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/payment/verify-ref/{reference}', [PaymentController::class, 'verifyByReference'])
         ->where('reference', '[A-Za-z0-9_\-]{1,128}')
         ->name('payment.verify.ref');
+
+    Route::get('/reviews', [ReviewController::class, 'index'])->name('reviews.index');
+    Route::post('/reviews', [ReviewController::class, 'store'])
+        ->name('reviews.store')
+        ->middleware('throttle:10,1');
+    Route::patch('/reviews/{review}', [ReviewController::class, 'update'])->name('reviews.update');
+    Route::delete('/reviews/{review}', [ReviewController::class, 'destroy'])->name('reviews.destroy');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

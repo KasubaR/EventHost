@@ -229,7 +229,8 @@
   </div>
 </div>
 
-<!-- TESTIMONIALS -->
+{{-- TESTIMONIALS — approved host reviews, featured from the admin panel. --}}
+@if ($featuredReviews->isNotEmpty())
 <div id="testimonials">
   <div class="section">
     <div class="section-header">
@@ -237,39 +238,31 @@
       <p>Don't just take our word for it — hear from people who've used Event Host for their special moments.</p>
     </div>
     <div class="testi-grid">
+      @foreach ($featuredReviews as $review)
       <div class="testi-card">
-        <div class="stars" aria-label="5 out of 5 stars">
-          <i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i>
+        @if ($review->rating)
+        <div class="stars" aria-label="{{ $review->rating }} out of 5 stars">
+          @for ($star = 1; $star <= 5; $star++)
+            <i class="fa-solid fa-star {{ $star <= $review->rating ? '' : 'is-empty' }}" aria-hidden="true"></i>
+          @endfor
         </div>
-        <blockquote>"I used Event Host for my wedding and was completely blown away. 200 guests RSVPed with zero confusion. My mother-in-law even figured it out on WhatsApp!"</blockquote>
+        @endif
+        <blockquote>&ldquo;{{ $review->body }}&rdquo;</blockquote>
         <div class="testi-author">
-          <div class="testi-av"><img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=88&h=88&q=80" alt="Portrait of Namwali Musonda" width="44" height="44" loading="lazy" decoding="async"></div>
-          <div class="testi-info"><h4>Namwali Musonda</h4><span>Wedding · Lusaka</span></div>
+          <div class="testi-av"><img src="{{ $review->author_photo_url }}" alt="" width="44" height="44" loading="lazy" decoding="async"></div>
+          <div class="testi-info">
+            <h4>{{ $review->author_name }}</h4>
+            @if ($review->author_context)
+              <span>{{ $review->author_context }}</span>
+            @endif
+          </div>
         </div>
       </div>
-      <div class="testi-card">
-        <div class="stars" aria-label="5 out of 5 stars">
-          <i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i>
-        </div>
-        <blockquote>"The dashboard is incredible. I could see live responses coming in, send reminders, and export everything for our caterer. Saved me hours of WhatsApp chasing."</blockquote>
-        <div class="testi-author">
-          <div class="testi-av"><img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=88&h=88&q=80" alt="Portrait of Chanda Bwalya" width="44" height="44" loading="lazy" decoding="async"></div>
-          <div class="testi-info"><h4>Chanda Bwalya</h4><span>Corporate Event · Ndola</span></div>
-        </div>
-      </div>
-      <div class="testi-card">
-        <div class="stars" aria-label="5 out of 5 stars">
-          <i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i><i class="fa-solid fa-star" aria-hidden="true"></i>
-        </div>
-        <blockquote>"My daughter's graduation ceremony looked so professional. The template was gorgeous and guests kept asking who designed the invitation. Worth every penny."</blockquote>
-        <div class="testi-author">
-          <div class="testi-av"><img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=88&h=88&q=80" alt="Portrait of Mutinta Phiri" width="44" height="44" loading="lazy" decoding="async"></div>
-          <div class="testi-info"><h4>Mutinta Phiri</h4><span>Graduation · Livingstone</span></div>
-        </div>
-      </div>
+      @endforeach
     </div>
   </div>
 </div>
+@endif
 
 <!-- PRICING -->
 <div id="pricing">

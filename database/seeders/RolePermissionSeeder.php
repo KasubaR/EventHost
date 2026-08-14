@@ -24,6 +24,7 @@ class RolePermissionSeeder extends Seeder
         'reports.manage',
         'templates.manage',
         'faqs.manage',
+        'reviews.manage',
         'settings.manage',
         'analytics.view',
         'payments.view',

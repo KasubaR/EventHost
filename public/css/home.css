@@ -712,6 +712,7 @@
   gap: 4px;
 }
 .stars i { color: var(--orange); }
+.stars i.is-empty { color: var(--line); }
 .testi-card blockquote {
   font-size: 14px;
   color: var(--text-dark);

@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Event extends Model
 {
@@ -144,6 +145,40 @@ class Event extends Model
     public function staffLinks(): HasMany
     {
         return $this->hasMany(EventStaffLink::class)->orderByDesc('created_at');
+    }
+
+    /**
+     * @return HasOne<Review, $this>
+     */
+    public function review(): HasOne
+    {
+        return $this->hasOne(Review::class);
+    }
+
+    /**
+     * Whether the host may still leave a review for this event.
+     *
+     * The purchase gate is implicit: creating an event costs an event credit
+     * (see User::canCreateEvent()), so anyone with a reviewable event has
+     * necessarily paid for it. Checking `payments` as well would wrongly exclude
+     * users an admin granted credits to by hand.
+     */
+    public function isReviewable(): bool
+    {
+        return $this->is_published
+            && $this->event_date !== null
+            && $this->event_date->isBefore(today())
+            && $this->review === null;
+    }
+
+    /**
+     * Author line for a review of this event, e.g. "Wedding · Lusaka".
+     */
+    public function reviewAuthorContext(): string
+    {
+        return collect([$this->event_type_label, $this->location_name])
+            ->filter(fn (?string $part): bool => is_string($part) && trim($part) !== '')
+            ->join(' · ');
     }
 
     /**
