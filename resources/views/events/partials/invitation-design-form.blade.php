@@ -819,7 +819,7 @@
                 </div>
             </fieldset>
 
-            <div class="evt-design-actions evt-actions-bar">
+            <div class="evt-design-actions evt-actions-bar evt-per-form-actions">
                 @error('customization_token')
                     <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                 @enderror

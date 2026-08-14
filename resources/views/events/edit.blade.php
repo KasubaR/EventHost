@@ -10,6 +10,7 @@
         <script src="{{ asset('js/custom-select.js') }}" defer></script>
         <script src="{{ asset('js/vendor/sortable.min.js') }}" defer></script>
         <script src="{{ asset('js/invitation-customize.js') }}" defer></script>
+        <script src="{{ asset('js/event-edit-save.js') }}" defer></script>
     @endpush
 
     <x-slot name="title">Edit event</x-slot>
@@ -46,12 +47,12 @@
     @endif
 
     <div class="evt-stack">
-        <form method="post" action="{{ route('events.update', $event) }}" enctype="multipart/form-data" class="profile-form">
+        <form id="event-update-form" method="post" action="{{ route('events.update', $event) }}" enctype="multipart/form-data" class="profile-form">
             @csrf
             @method('patch')
             @include('events.partials.form-fields', ['event' => $event])
 
-            <div class="evt-section-body evt-actions-bar">
+            <div class="evt-section-body evt-actions-bar evt-per-form-actions">
                 <button type="submit" class="btn-primary">
                     <i class="fa-solid fa-floppy-disk"></i> Save changes
                 </button>
@@ -81,21 +82,38 @@
             </p>
         @endif
 
+        {{-- Single action bar. Without JS these fall back to the per-form buttons above,
+             which stay visible because evt-save-all.js is what hides them. --}}
+        <div class="evt-section evt-save-all" id="evt-save-all-bar"
+             data-publish-url="{{ route('events.publish', $event) }}"
+             data-public-url="{{ route('events.public', $event->slug) }}">
+            <div class="evt-section-body evt-actions-bar">
+                <button type="button" class="btn-primary" data-save-all>
+                    <i class="fa-solid fa-floppy-disk"></i> Save all changes
+                </button>
+                @if (! $event->is_published)
+                    <button type="button" class="btn-primary" data-save-all data-publish>
+                        <i class="fa-solid fa-bullhorn"></i> Save &amp; publish
+                    </button>
+                    <span class="evt-muted">Publishing saves everything first, then makes the invitation public.</span>
+                @else
+                    <span class="evt-muted">Saves your event details and invitation design together.</span>
+                @endif
+            </div>
+        </div>
+
         @if (! $event->is_published)
-            <div class="evt-section">
+            <div class="evt-section evt-per-form-actions">
                 <div class="evt-section-head">
                     <h2>Publish</h2>
                     <p>Make this invitation visible at its public link.</p>
                 </div>
                 <div class="evt-section-body evt-actions-bar">
-                    <form method="post" action="{{ route('events.publish', $event) }}" class="evt-inline-form">
-                        @csrf
-                        @method('patch')
-                        <button type="submit" class="btn-primary">
-                            <i class="fa-solid fa-bullhorn"></i> Publish event
-                        </button>
-                    </form>
-                    <span class="evt-muted">Public URL will be available after publishing.</span>
+                    {{-- Submits the event form above so pending edits are saved and published together --}}
+                    <button type="submit" form="event-update-form" name="publish" value="1" class="btn-primary">
+                        <i class="fa-solid fa-bullhorn"></i> Publish event
+                    </button>
+                    <span class="evt-muted">Saves your event details, then makes the invitation public.</span>
                 </div>
             </div>
         @else

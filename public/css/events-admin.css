@@ -87,6 +87,13 @@
     justify-content: flex-start;
 }
 
+/* event-edit-save.js hides the per-form save buttons once the single save-all
+   bar is live. Needs !important because .evt-actions-bar's display: flex is a
+   class selector and would otherwise beat the [hidden] attribute. */
+.evt-per-form-actions[hidden] {
+    display: none !important;
+}
+
 .evt-muted {
     font-size: 13px;
     color: var(--gray-mid, #64748b);

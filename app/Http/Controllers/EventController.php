@@ -135,17 +135,25 @@ class EventController extends Controller
         $newCoverPath = null;
         $previousCover = null;
 
+        // "Publish event" submits this same form, so the pending edits are saved
+        // in the same request rather than being discarded by a separate publish post.
+        $shouldPublish = $request->boolean('publish');
+
         try {
             if ($request->hasFile('cover_image')) {
                 $previousCover = $event->cover_image;
                 $newCoverPath = $this->storeCoverImage($request->file('cover_image'));
             }
 
-            DB::transaction(function () use ($request, $event, $newCoverPath, &$previousCover): void {
+            DB::transaction(function () use ($request, $event, $newCoverPath, $shouldPublish, &$previousCover): void {
                 $data = $request->validated();
 
                 if ($newCoverPath !== null) {
                     $data['cover_image'] = $newCoverPath;
+                }
+
+                if ($shouldPublish) {
+                    $data['is_published'] = true;
                 }
 
                 $event->fill($data);
@@ -163,6 +171,10 @@ class EventController extends Controller
             }
 
             throw $e;
+        }
+
+        if ($shouldPublish) {
+            return redirect()->route('events.public', $event->slug)->with('status', 'published');
         }
 
         return back()->with('status', 'event-updated');
