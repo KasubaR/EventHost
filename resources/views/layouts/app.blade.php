@@ -22,10 +22,15 @@
 </head>
 <body class="dash-body">
 
-{{-- Top Nav --}}
-<x-site-header />
-
+{{-- No site header in the portal — the sidebar is the only chrome --}}
 <div class="dash-shell">
+
+    {{-- Mobile sidebar toggle --}}
+    <button type="button" class="dash-sidebar-toggle" id="sidebarToggle" aria-controls="dashSidebar" aria-expanded="false">
+        <i class="fa-solid fa-bars"></i>
+        <span>Menu</span>
+    </button>
+    <div class="dash-sidebar-backdrop" id="dashSidebarBackdrop" hidden></div>
 
     {{-- Sidebar --}}
     <aside class="dash-sidebar" id="dashSidebar">
@@ -69,6 +74,13 @@
                     <span class="dash-nav-soon">Soon</span>
                 </a>
             </div>
+
+            <div class="dash-nav-section">
+                <span class="dash-nav-label">Exit</span>
+                <a href="{{ url('/') }}" class="dash-nav-link">
+                    <i class="fa-solid fa-arrow-left"></i> Back to site
+                </a>
+            </div>
         </nav>
 
         <form method="POST" action="{{ route('logout') }}" class="dash-sidebar-logout">
@@ -105,9 +117,23 @@
     document.addEventListener('DOMContentLoaded', () => {
         const toggle = document.getElementById('sidebarToggle');
         const sidebar = document.getElementById('dashSidebar');
-        if (toggle && sidebar) {
-            toggle.addEventListener('click', () => sidebar.classList.toggle('is-open'));
-        }
+        const backdrop = document.getElementById('dashSidebarBackdrop');
+        if (!toggle || !sidebar) return;
+
+        const setOpen = (open) => {
+            sidebar.classList.toggle('is-open', open);
+            toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+            if (backdrop) backdrop.hidden = !open;
+        };
+
+        toggle.addEventListener('click', () => setOpen(!sidebar.classList.contains('is-open')));
+        if (backdrop) backdrop.addEventListener('click', () => setOpen(false));
+
+        // Close after picking a destination, and on Escape
+        sidebar.querySelectorAll('a').forEach(link => link.addEventListener('click', () => setOpen(false)));
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && sidebar.classList.contains('is-open')) setOpen(false);
+        });
     });
 </script>
 

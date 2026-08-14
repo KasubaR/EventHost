@@ -24,6 +24,7 @@ class RegistrationTest extends TestCase
         Notification::fake();
 
         $response = $this->post('/register', [
+            'account_type' => 'individual',
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => 'Password123!',
@@ -46,6 +47,7 @@ class RegistrationTest extends TestCase
         User::factory()->create(['email' => 'taken@example.com']);
 
         $this->post('/register', [
+            'account_type' => 'individual',
             'name' => 'Other User',
             'email' => 'taken@example.com',
             'password' => 'Password123!',

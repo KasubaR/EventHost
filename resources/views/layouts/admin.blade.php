@@ -18,18 +18,17 @@
     <link rel="stylesheet" href="{{ asset('css/dashboard-shell.css') }}">
     <link rel="stylesheet" href="{{ asset('css/forms-app.css') }}">
     <link rel="stylesheet" href="{{ asset('css/admin-shell.css') }}">
-    <style>
-        .dash-shell   { min-height: 100vh; }
-        .dash-sidebar { top: 0; height: 100vh; position: sticky; }
-        @media (max-width: 900px) {
-            .dash-sidebar { top: 0; height: 100vh; }
-        }
-    </style>
     @stack('styles')
 </head>
 <body class="dash-body admin-shell">
 
 <div class="dash-shell">
+
+    <button type="button" class="dash-sidebar-toggle" id="sidebarToggle" aria-controls="dashSidebar" aria-expanded="false">
+        <i class="fa-solid fa-bars"></i>
+        <span>Menu</span>
+    </button>
+    <div class="dash-sidebar-backdrop" id="dashSidebarBackdrop" hidden></div>
 
     <aside class="dash-sidebar" id="dashSidebar">
 
@@ -139,9 +138,22 @@
     document.addEventListener('DOMContentLoaded', () => {
         const toggle = document.getElementById('sidebarToggle');
         const sidebar = document.getElementById('dashSidebar');
-        if (toggle && sidebar) {
-            toggle.addEventListener('click', () => sidebar.classList.toggle('is-open'));
-        }
+        const backdrop = document.getElementById('dashSidebarBackdrop');
+        if (!toggle || !sidebar) return;
+
+        const setOpen = (open) => {
+            sidebar.classList.toggle('is-open', open);
+            toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+            if (backdrop) backdrop.hidden = !open;
+        };
+
+        toggle.addEventListener('click', () => setOpen(!sidebar.classList.contains('is-open')));
+        if (backdrop) backdrop.addEventListener('click', () => setOpen(false));
+
+        sidebar.querySelectorAll('a').forEach(link => link.addEventListener('click', () => setOpen(false)));
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && sidebar.classList.contains('is-open')) setOpen(false);
+        });
     });
 </script>
 

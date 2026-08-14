@@ -8,6 +8,7 @@ use App\Models\Event;
 use App\Services\InvitationCustomizationService;
 use App\Support\InvitationCustomizationPersistenceValidator;
 use App\Support\InvitationLayoutVariant;
+use App\Support\InvitationPalettes;
 use App\Support\InvitationVideoBackground;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
@@ -240,12 +241,28 @@ class EventInvitationDesignController extends Controller
                 $videoPath = $videoPath ?: null;
                 $audioPath = $audioPath ?: null;
 
+                // Colours come from the curated catalogue rather than free-form hex, so an
+                // unreadable combination cannot reach a public invitation. Layouts that
+                // ignore the theme variables submit no palette and keep what they have.
+                $storedTheme = $fresh->invitation_customization['theme'] ?? [];
+                $palette = InvitationPalettes::get((string) ($validated['theme_palette'] ?? ''));
+                $themeColours = $palette !== null
+                    ? [
+                        'palette_key' => (string) $validated['theme_palette'],
+                        'primary' => $palette['primary'],
+                        'accent' => $palette['accent'],
+                        'background' => $palette['background'],
+                    ]
+                    : [
+                        'palette_key' => $storedTheme['palette_key'] ?? null,
+                        'primary' => $storedTheme['primary'] ?? ($template->default_theme['primary'] ?? '#1a2a4a'),
+                        'accent' => $storedTheme['accent'] ?? ($template->default_theme['accent'] ?? '#1e47bb'),
+                        'background' => $storedTheme['background'] ?? ($template->default_theme['background'] ?? '#fafafa'),
+                    ];
+
                 $newCustomization = [
                     'schema_version' => InvitationCustomizationService::CURRENT_SCHEMA_VERSION,
-                    'theme' => [
-                        'primary' => $validated['theme_primary'],
-                        'accent' => $validated['theme_accent'],
-                        'background' => $validated['theme_background'],
+                    'theme' => $themeColours + [
                         'font_heading_key' => $validated['font_heading_key'],
                         'font_body_key' => $validated['font_body_key'],
                     ],

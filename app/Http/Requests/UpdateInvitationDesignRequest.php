@@ -7,6 +7,7 @@ use App\Models\InvitationTemplate;
 use App\Services\InvitationCustomizationService;
 use App\Support\InvitationFonts;
 use App\Support\InvitationLayoutVariant;
+use App\Support\InvitationPalettes;
 use App\Support\InvitationSections;
 use App\Support\InvitationVideoBackground;
 use Illuminate\Foundation\Http\FormRequest;
@@ -35,14 +36,6 @@ class UpdateInvitationDesignRequest extends FormRequest
                 // Use explicit in_array check so "1"/"true"/true all map consistently
                 $boolVisibility[(string) $key] = in_array($value, [true, 1, '1', 'true', 'yes', 'on'], true)
                     || (is_string($value) && strtolower($value) === 'true');
-            }
-        }
-
-        // Normalize hex colors to lowercase so downstream JS comparisons are consistent
-        foreach (['theme_primary', 'theme_accent', 'theme_background'] as $field) {
-            $val = $this->input($field);
-            if (is_string($val)) {
-                $this->merge([$field => strtolower($val)]);
             }
         }
 
@@ -151,9 +144,10 @@ class UpdateInvitationDesignRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'theme_primary' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
-            'theme_accent' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
-            'theme_background' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            // Nullable here, then required in withValidator() for every layout that
+            // actually consumes the theme variables — Beauty for Ashes does not, so
+            // its form omits the picker entirely.
+            'theme_palette' => ['nullable', Rule::in(InvitationPalettes::keys())],
             'font_heading_key' => ['required', Rule::in(InvitationFonts::keys())],
             'font_body_key' => ['required', Rule::in(InvitationFonts::keys())],
 
@@ -240,6 +234,42 @@ class UpdateInvitationDesignRequest extends FormRequest
         ];
     }
 
+    /**
+     * A palette is only safe on a template whose stylesheet shares its light/dark
+     * polarity — layout CSS derives its local tokens by mixing toward `white` or
+     * toward the background, so crossing the two produces unreadable text.
+     */
+    protected function validatePalette(Validator $validator, InvitationTemplate $template): void
+    {
+        $variant = InvitationLayoutVariant::normalize($template->layout_variant ?? null);
+
+        // This layout hardcodes its colours and ignores the theme variables, so its
+        // form omits the picker and there is nothing to validate.
+        if ($variant === InvitationLayoutVariant::BEAUTY_FOR_ASHES) {
+            return;
+        }
+
+        $key = $this->input('theme_palette');
+        $palette = is_string($key) ? InvitationPalettes::get($key) : null;
+
+        if ($palette === null) {
+            $validator->errors()->add('theme_palette', 'Choose a colour palette for this invitation.');
+
+            return;
+        }
+
+        $templateMode = InvitationPalettes::modeForBackground(
+            (string) ($template->default_theme['background'] ?? '#ffffff')
+        );
+
+        if ($palette['mode'] !== $templateMode) {
+            $validator->errors()->add(
+                'theme_palette',
+                'That colour palette is not available for this template.'
+            );
+        }
+    }
+
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
@@ -263,6 +293,8 @@ class UpdateInvitationDesignRequest extends FormRequest
 
                 return;
             }
+
+            $this->validatePalette($validator, $template);
 
             $allowed = collect($template->default_sections ?? [])->pluck('type')->values()->all();
             $order = $this->input('section_order', []);

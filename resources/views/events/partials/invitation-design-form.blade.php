@@ -1,6 +1,7 @@
 @php
     use App\Support\InvitationFonts;
     use App\Support\InvitationLayoutVariant;
+    use App\Support\InvitationPalettes;
     use App\Support\InvitationVideoBackground;
 
     $sectionLabels = [
@@ -59,6 +60,20 @@
     $currentHeroPortrait = is_string($currentHeroPortrait) && $currentHeroPortrait !== '' ? $currentHeroPortrait : null;
     $coupleSlotsRemaining = max(0, $couplePhotoSlots - count($currentCouple));
 
+    // Beauty for Ashes hardcodes its colours and never reads the theme variables,
+    // so offering a palette there would silently do nothing.
+    $showPalettePicker = $layoutVariant !== InvitationLayoutVariant::BEAUTY_FOR_ASHES;
+    $paletteMode = InvitationPalettes::modeForBackground($invitationMerged['theme']['background'] ?? '#ffffff');
+    $paletteChoices = InvitationPalettes::forMode($paletteMode);
+    $selectedPalette = old('theme_palette')
+        ?? $invitationMerged['theme']['palette_key']
+        ?? InvitationPalettes::matchKey(
+            $invitationMerged['theme']['primary'] ?? '',
+            $invitationMerged['theme']['accent'] ?? '',
+            $invitationMerged['theme']['background'] ?? '',
+        )
+        ?? InvitationPalettes::defaultKeyForMode($paletteMode);
+
     $videoBackgroundStored = $invitationMerged['effects']['video_background'] ?? null;
     $videoBackgroundStored = is_string($videoBackgroundStored) && $videoBackgroundStored !== '' ? $videoBackgroundStored : null;
     $videoYoutubeFieldValue = old('video_background_youtube', InvitationVideoBackground::watchUrlFromStored($videoBackgroundStored) ?? '');
@@ -77,38 +92,33 @@
         </div>
         <div class="evt-section-body profile-fields evt-design-fields">
 
-            <fieldset class="evt-design-fieldset">
-                <legend class="profile-label">Colors</legend>
-                <div class="evt-design-colors">
-                    <div class="profile-field">
-                        <label for="theme_primary" class="profile-label">Primary</label>
-                        <input id="theme_primary" name="theme_primary" type="color" required
-                               class="evt-color-input {{ $errors->has('theme_primary') ? 'profile-input--error' : '' }}"
-                               value="{{ old('theme_primary', $invitationMerged['theme']['primary']) }}">
-                        @error('theme_primary')
-                            <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
-                        @enderror
+            @if ($showPalettePicker)
+                <fieldset class="evt-design-fieldset">
+                    <legend class="profile-label">Colour palette</legend>
+                    <p class="evt-muted evt-design-hint">Each palette is checked for readable contrast on this template.</p>
+                    <div class="evt-palette-grid">
+                        @foreach ($paletteChoices as $key => $palette)
+                            <label class="evt-palette-card" for="theme_palette_{{ $key }}">
+                                <input type="radio"
+                                       id="theme_palette_{{ $key }}"
+                                       name="theme_palette"
+                                       value="{{ $key }}"
+                                       class="evt-palette-radio"
+                                       @checked($selectedPalette === $key)>
+                                <span class="evt-palette-bands" aria-hidden="true">
+                                    <span class="evt-palette-band" style="background: {{ $palette['background'] }};"></span>
+                                    <span class="evt-palette-band" style="background: {{ $palette['primary'] }};"></span>
+                                    <span class="evt-palette-band" style="background: {{ $palette['accent'] }};"></span>
+                                </span>
+                                <span class="evt-palette-name">{{ $palette['label'] }}</span>
+                            </label>
+                        @endforeach
                     </div>
-                    <div class="profile-field">
-                        <label for="theme_accent" class="profile-label">Accent</label>
-                        <input id="theme_accent" name="theme_accent" type="color" required
-                               class="evt-color-input {{ $errors->has('theme_accent') ? 'profile-input--error' : '' }}"
-                               value="{{ old('theme_accent', $invitationMerged['theme']['accent']) }}">
-                        @error('theme_accent')
-                            <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
-                        @enderror
-                    </div>
-                    <div class="profile-field">
-                        <label for="theme_background" class="profile-label">Background</label>
-                        <input id="theme_background" name="theme_background" type="color" required
-                               class="evt-color-input {{ $errors->has('theme_background') ? 'profile-input--error' : '' }}"
-                               value="{{ old('theme_background', $invitationMerged['theme']['background']) }}">
-                        @error('theme_background')
-                            <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
-                        @enderror
-                    </div>
-                </div>
-            </fieldset>
+                    @error('theme_palette')
+                        <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
+                    @enderror
+                </fieldset>
+            @endif
 
             <fieldset class="evt-design-fieldset">
                 <legend class="profile-label">Typography &amp; motion</legend>

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Event;
 use App\Models\InvitationTemplate;
 use App\Models\User;
+use App\Support\InvitationPalettes;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -26,7 +27,10 @@ class InvitationTemplateFeaturesTest extends TestCase
     public function test_authenticated_user_can_preview_template(): void
     {
         $user = User::factory()->create();
-        $tpl = InvitationTemplate::query()->firstOrFail();
+        // Pinned to a template that uses the unmodified sample event — previewSampleEvent()
+        // renames the couple for five layout-specific slugs, so relying on whichever
+        // template happens to be first would break whenever the seeder is reordered.
+        $tpl = InvitationTemplate::query()->where('slug', 'slate-minimal')->firstOrFail();
 
         $response = $this->actingAs($user)->get(route('templates.preview', $tpl));
 
@@ -150,9 +154,7 @@ class InvitationTemplateFeaturesTest extends TestCase
         }
 
         $response = $this->actingAs($user)->patch(route('events.invitation-design.update', $event), [
-            'theme_primary' => '#101010',
-            'theme_accent' => '#0ea5e9',
-            'theme_background' => '#fefefe',
+            'theme_palette' => 'slate-sky',
             'font_heading_key' => 'inter',
             'font_body_key' => 'inter',
             'animation_subtle' => '0',
@@ -176,7 +178,11 @@ class InvitationTemplateFeaturesTest extends TestCase
 
         $event->refresh();
         $this->assertIsArray($event->invitation_customization);
-        $this->assertSame('#101010', $event->invitation_customization['theme']['primary']);
+        $this->assertSame('slate-sky', $event->invitation_customization['theme']['palette_key']);
+        $this->assertSame(
+            InvitationPalettes::get('slate-sky')['primary'],
+            $event->invitation_customization['theme']['primary']
+        );
         $this->assertSame($order, collect($event->invitation_customization['sections'])->pluck('type')->values()->all());
     }
 
@@ -193,9 +199,7 @@ class InvitationTemplateFeaturesTest extends TestCase
         $order = collect($tpl->default_sections)->pluck('type')->values()->all();
 
         $response = $this->actingAs($intruder)->patch(route('events.invitation-design.update', $event), [
-            'theme_primary' => '#101010',
-            'theme_accent' => '#0ea5e9',
-            'theme_background' => '#fefefe',
+            'theme_palette' => 'slate-sky',
             'font_heading_key' => 'inter',
             'font_body_key' => 'inter',
             'animation_subtle' => '0',

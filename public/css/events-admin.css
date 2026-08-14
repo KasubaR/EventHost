@@ -707,20 +707,73 @@
     }
 }
 
-.evt-design-colors {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
+.evt-palette-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+    margin-top: 10px;
 }
 
-.evt-color-input {
-    width: 52px;
-    height: 44px;
-    padding: 4px;
-    border-radius: 10px;
+.evt-palette-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+    border-radius: 12px;
     border: 1px solid var(--border-soft, rgba(26, 42, 74, 0.12));
     background: var(--surface, #fff);
     cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.evt-palette-card:hover {
+    border-color: rgba(26, 42, 74, 0.28);
+}
+
+/* The radio stays in the accessibility tree and keyboard order — only visually hidden. */
+.evt-palette-radio {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.evt-palette-card:has(.evt-palette-radio:checked) {
+    border-color: var(--brand, #1e47bb);
+    box-shadow: 0 0 0 2px rgba(30, 71, 187, 0.18);
+}
+
+.evt-palette-card:has(.evt-palette-radio:focus-visible) {
+    outline: 2px solid var(--brand, #1e47bb);
+    outline-offset: 2px;
+}
+
+.evt-palette-bands {
+    display: flex;
+    height: 42px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(26, 42, 74, 0.1);
+}
+
+.evt-palette-band {
+    flex: 1;
+}
+
+/* Background band reads as the dominant surface, so give it the most width. */
+.evt-palette-band:first-child {
+    flex: 2;
+}
+
+.evt-palette-name {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text-strong, #1a2a4a);
 }
 
 .evt-design-section-list {
@@ -1223,9 +1276,44 @@
     border-radius: 2px;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 560px) {
+    .evt-steps {
+        padding: 12px 14px;
+    }
+
+    /* Bare circles alone say nothing, so keep the current step named and
+       leave the others in the accessibility tree instead of display:none. */
     .evt-step-label {
-        display: none;
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+
+    .evt-step--active .evt-step-label {
+        position: static;
+        width: auto;
+        height: auto;
+        margin: 0;
+        overflow: visible;
+        clip: auto;
+        white-space: normal;
+        font-size: 12px;
+        line-height: 1.25;
+    }
+
+    .evt-step--active {
+        min-width: 0;
+    }
+
+    .evt-steps-connector {
+        margin: 0 6px;
+        min-width: 10px;
     }
 }
 

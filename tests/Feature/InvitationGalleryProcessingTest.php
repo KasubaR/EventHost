@@ -35,9 +35,7 @@ class InvitationGalleryProcessingTest extends TestCase
         $file = UploadedFile::fake()->image('upload.jpg', 120, 120);
 
         $this->actingAs($user)->patch(route('events.invitation-design.update', $event), [
-            'theme_primary' => '#101010',
-            'theme_accent' => '#0ea5e9',
-            'theme_background' => '#fefefe',
+            'theme_palette' => 'slate-sky',
             'font_heading_key' => 'inter',
             'font_body_key' => 'inter',
             'animation_subtle' => '0',
@@ -50,10 +48,10 @@ class InvitationGalleryProcessingTest extends TestCase
             'schedule_items' => [],
             'gallery_images' => [$file],
             'rsvp_form' => [
-                'message'             => ['visible' => '1', 'label' => 'Message to host'],
-                'meal_preference'     => ['visible' => '1', 'label' => 'Meal preference'],
+                'message' => ['visible' => '1', 'label' => 'Message to host'],
+                'meal_preference' => ['visible' => '1', 'label' => 'Meal preference'],
                 'transportation_note' => ['visible' => '1', 'label' => 'Transportation notes'],
-                'song_request'        => ['visible' => '1', 'label' => 'Song request'],
+                'song_request' => ['visible' => '1', 'label' => 'Song request'],
             ],
         ])->assertSessionHas('status', 'invitation-design-saved');
 
@@ -96,9 +94,7 @@ class InvitationGalleryProcessingTest extends TestCase
         $file = UploadedFile::fake()->image('hero.jpg', 400, 500);
 
         $this->actingAs($user)->patch(route('events.invitation-design.update', $event), [
-            'theme_primary' => '#101010',
-            'theme_accent' => '#0ea5e9',
-            'theme_background' => '#fefefe',
+            'theme_palette' => 'slate-sky',
             'font_heading_key' => 'inter',
             'font_body_key' => 'inter',
             'animation_subtle' => '0',
@@ -112,10 +108,10 @@ class InvitationGalleryProcessingTest extends TestCase
             'schedule_items' => [],
             'invitation_hero_portrait' => $file,
             'rsvp_form' => [
-                'message'             => ['visible' => '1', 'label' => 'Message to host'],
-                'meal_preference'     => ['visible' => '1', 'label' => 'Meal preference'],
+                'message' => ['visible' => '1', 'label' => 'Message to host'],
+                'meal_preference' => ['visible' => '1', 'label' => 'Meal preference'],
                 'transportation_note' => ['visible' => '1', 'label' => 'Transportation notes'],
-                'song_request'        => ['visible' => '1', 'label' => 'Song request'],
+                'song_request' => ['visible' => '1', 'label' => 'Song request'],
             ],
         ])->assertSessionHas('status', 'invitation-design-saved');
 
@@ -153,9 +149,7 @@ class InvitationGalleryProcessingTest extends TestCase
         $file = UploadedFile::fake()->image('hero.jpg', 80, 80);
 
         $this->actingAs($user)->patch(route('events.invitation-design.update', $event), [
-            'theme_primary' => '#101010',
-            'theme_accent' => '#0ea5e9',
-            'theme_background' => '#fefefe',
+            'theme_palette' => 'slate-sky',
             'font_heading_key' => 'inter',
             'font_body_key' => 'inter',
             'animation_subtle' => '0',
@@ -193,9 +187,7 @@ class InvitationGalleryProcessingTest extends TestCase
         $two = UploadedFile::fake()->image('b.jpg', 200, 260);
 
         $this->actingAs($user)->patch(route('events.invitation-design.update', $event), [
-            'theme_primary' => '#101010',
-            'theme_accent' => '#0ea5e9',
-            'theme_background' => '#fefefe',
+            'theme_palette' => 'slate-sky',
             'font_heading_key' => 'inter',
             'font_body_key' => 'inter',
             'animation_subtle' => '0',
@@ -209,10 +201,10 @@ class InvitationGalleryProcessingTest extends TestCase
             'schedule_items' => [],
             'couple_photos' => [$one, $two],
             'rsvp_form' => [
-                'message'             => ['visible' => '1', 'label' => 'Message to host'],
-                'meal_preference'     => ['visible' => '1', 'label' => 'Meal preference'],
+                'message' => ['visible' => '1', 'label' => 'Message to host'],
+                'meal_preference' => ['visible' => '1', 'label' => 'Meal preference'],
                 'transportation_note' => ['visible' => '1', 'label' => 'Transportation notes'],
-                'song_request'        => ['visible' => '1', 'label' => 'Song request'],
+                'song_request' => ['visible' => '1', 'label' => 'Song request'],
             ],
         ])->assertSessionHas('status', 'invitation-design-saved');
 

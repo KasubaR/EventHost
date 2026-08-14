@@ -24,9 +24,7 @@ class InvitationCustomizationInfrastructureTest extends TestCase
         }
 
         return [
-            'theme_primary' => '#101010',
-            'theme_accent' => '#0ea5e9',
-            'theme_background' => '#fefefe',
+            'theme_palette' => 'slate-sky',
             'font_heading_key' => 'inter',
             'font_body_key' => 'inter',
             'animation_subtle' => '0',
@@ -38,10 +36,10 @@ class InvitationCustomizationInfrastructureTest extends TestCase
             'content_story' => '',
             'schedule_items' => [],
             'rsvp_form' => [
-                'message'             => ['visible' => '1', 'label' => 'Message to host'],
-                'meal_preference'     => ['visible' => '1', 'label' => 'Meal preference'],
+                'message' => ['visible' => '1', 'label' => 'Message to host'],
+                'meal_preference' => ['visible' => '1', 'label' => 'Meal preference'],
                 'transportation_note' => ['visible' => '1', 'label' => 'Transportation notes'],
-                'song_request'        => ['visible' => '1', 'label' => 'Song request'],
+                'song_request' => ['visible' => '1', 'label' => 'Song request'],
             ],
         ];
     }
@@ -120,21 +118,21 @@ class InvitationCustomizationInfrastructureTest extends TestCase
         $payload = $this->designPayload($event, $tpl);
 
         $this->actingAs($user)->patch(route('events.invitation-design.update', $event), array_merge($payload, [
-            'theme_primary' => '#111111',
+            'theme_palette' => 'slate-sky',
         ]))->assertSessionDoesntHaveErrors();
 
         $event->refresh();
-        $this->assertSame('#111111', $event->invitation_customization['theme']['primary']);
+        $this->assertSame('slate-sky', $event->invitation_customization['theme']['palette_key']);
         $this->assertNull($event->invitation_customization_previous);
 
         $this->actingAs($user)->patch(route('events.invitation-design.update', $event), array_merge($payload, [
-            'theme_primary' => '#222222',
+            'theme_palette' => 'magazine-red',
         ]))->assertSessionDoesntHaveErrors();
 
         $event->refresh();
-        $this->assertSame('#222222', $event->invitation_customization['theme']['primary']);
+        $this->assertSame('magazine-red', $event->invitation_customization['theme']['palette_key']);
         $this->assertIsArray($event->invitation_customization_previous);
-        $this->assertSame('#111111', $event->invitation_customization_previous['theme']['primary']);
+        $this->assertSame('slate-sky', $event->invitation_customization_previous['theme']['palette_key']);
         $this->assertSame($user->id, $event->invitation_customization_previous_captured_by_user_id);
         $this->assertNotNull($event->invitation_customization_previous_captured_at);
     }

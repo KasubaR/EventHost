@@ -16,7 +16,7 @@
 .dash-shell {
   display: flex;
   flex: 1;
-  min-height: calc(100vh - 56px);
+  min-height: 100vh;
 }
 
 /* ── SIDEBAR ── */
@@ -28,8 +28,8 @@
   flex-direction: column;
   padding: 20px 0 16px;
   position: sticky;
-  top: 56px;
-  height: calc(100vh - 56px);
+  top: 0;
+  height: 100vh;
   overflow-y: auto;
 }
 
@@ -188,17 +188,61 @@
 .dash-breadcrumb span { font-size: 12px; font-weight: 700; color: var(--accent); }
 
 
+/* ── MOBILE SIDEBAR TOGGLE ── */
+.dash-sidebar-toggle { display: none; }
+.dash-sidebar-backdrop { display: none; }
+
 @media (max-width: 768px) {
+  .dash-shell { position: relative; }
+
   .dash-sidebar {
     position: fixed;
-    top: 56px;
+    top: 0;
     left: -240px;
     z-index: 900;
     transition: left 0.25s ease;
-    height: calc(100vh - 56px);
+    height: 100vh;
   }
   .dash-sidebar.is-open { left: 0; box-shadow: 4px 0 24px rgba(0,0,0,0.12); }
+
+  .dash-sidebar-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 901;
+    padding: 8px 14px;
+    border: 1px solid var(--line);
+    border-radius: 50px;
+    background: var(--white);
+    color: var(--text-dark);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+  }
+  .dash-sidebar-toggle i { font-size: 13px; }
+
+  /* When the drawer is open the button slides clear of it and becomes a close control */
+  .dash-sidebar-toggle[aria-expanded="true"] { left: 252px; padding: 8px 11px; }
+  .dash-sidebar-toggle[aria-expanded="true"] span { display: none; }
+  .dash-sidebar-toggle[aria-expanded="true"] i::before { content: "\f00d"; }
+
+  .dash-sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 899;
+    background: rgba(0,0,0,0.4);
+  }
+  .dash-sidebar-backdrop[hidden] { display: none; }
+
+  /* Leave room for the floating toggle */
+  .dash-page-header { padding: 60px 16px 20px; }
   .dash-content { padding: 20px 16px 40px; }
-  .dash-page-header { padding: 20px 16px; }
+  .dash-main > .dash-content:first-child { padding-top: 60px; }
 }
 

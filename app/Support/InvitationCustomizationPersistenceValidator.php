@@ -55,6 +55,7 @@ final class InvitationCustomizationPersistenceValidator
             'content.schedule.*.detail' => ['nullable', 'string', 'max:500'],
 
             'theme' => ['required', 'array'],
+            'theme.palette_key' => ['nullable', Rule::in(InvitationPalettes::keys())],
             'theme.primary' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'theme.accent' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'theme.background' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],

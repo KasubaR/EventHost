@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\InvitationTemplate;
 use App\Support\InvitationFonts;
 use App\Support\InvitationLayoutVariant;
+use App\Support\InvitationPalettes;
 use App\Support\InvitationSections;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -185,6 +186,7 @@ class InvitationCustomizationService
         // Extract only known keys from stored data to prevent unexpected fields leaking through.
         $storedTheme = is_array($stored['theme'] ?? null) ? $stored['theme'] : [];
         $theme = [
+            'palette_key' => $storedTheme['palette_key'] ?? $defaults['theme']['palette_key'] ?? null,
             'primary' => $storedTheme['primary'] ?? $defaults['theme']['primary'],
             'accent' => $storedTheme['accent'] ?? $defaults['theme']['accent'],
             'background' => $storedTheme['background'] ?? $defaults['theme']['background'],
@@ -456,12 +458,19 @@ class InvitationCustomizationService
     {
         $dt = $template->default_theme ?? [];
 
+        $primary = (string) ($dt['primary'] ?? '#1a2a4a');
+        $accent = (string) ($dt['accent'] ?? '#1e47bb');
+        $background = (string) ($dt['background'] ?? '#fafafa');
+
         return [
             'schema_version' => self::CURRENT_SCHEMA_VERSION,
             'theme' => [
-                'primary' => (string) ($dt['primary'] ?? '#1a2a4a'),
-                'accent' => (string) ($dt['accent'] ?? '#1e47bb'),
-                'background' => (string) ($dt['background'] ?? '#fafafa'),
+                // Null when the template's own trio predates the curated catalogue —
+                // the design form then falls back to the first palette of its mode.
+                'palette_key' => InvitationPalettes::matchKey($primary, $accent, $background),
+                'primary' => $primary,
+                'accent' => $accent,
+                'background' => $background,
                 'font_heading_key' => InvitationFonts::normalizeKey((string) ($dt['font_heading_key'] ?? 'system_ui')),
                 'font_body_key' => InvitationFonts::normalizeKey((string) ($dt['font_body_key'] ?? 'system_ui')),
             ],
