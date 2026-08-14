@@ -1,10 +1,3 @@
-document.querySelectorAll('.filter-tab').forEach((tab) => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('.filter-tab').forEach((t) => t.classList.remove('active'));
-    tab.classList.add('active');
-  });
-});
-
 document.querySelectorAll('.faq-q').forEach((btn) => {
   btn.addEventListener('click', () => {
     const item = btn.closest('.faq-item');

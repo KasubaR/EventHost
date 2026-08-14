@@ -43,6 +43,12 @@ Route::post('/contact', [ContactController::class, 'store'])->name('contact.stor
 // Public browse listing. Note /events is taken by the authenticated events.index.
 Route::get('/discover', [PublicEventController::class, 'index'])->name('events.discover');
 
+// Public so the homepage's featured templates can be viewed before signing up.
+// It renders an in-memory sample event only — no stored user or event data.
+// The library listing at /templates stays behind auth.
+Route::get('/templates/{invitation_template}/preview', [TemplateLibraryController::class, 'preview'])
+    ->name('templates.preview');
+
 Route::get('/e/{slug}', [PublicEventController::class, 'show'])->name('events.public');
 Route::get('/e/{slug}/calendar.ics', [PublicEventController::class, 'ics'])->name('events.public.ics');
 
@@ -74,7 +80,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/templates', [TemplateLibraryController::class, 'index'])->name('templates.index');
-    Route::get('/templates/{invitation_template}/preview', [TemplateLibraryController::class, 'preview'])->name('templates.preview');
 
     Route::get('/events/{event}/choose-template', [EventChooseTemplateController::class, 'show'])->name('events.choose-template');
     Route::patch('/events/{event}/choose-template', [EventChooseTemplateController::class, 'update'])->name('events.choose-template.update');

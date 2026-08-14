@@ -35,7 +35,8 @@
                 <span>Back to layouts</span>
             </a>
         @else
-            <a href="{{ route('templates.index') }}" class="tpl-preview-bar-back">
+            {{-- The library listing needs an account, so send guests back to the homepage strip. --}}
+            <a href="{{ auth()->check() ? route('templates.index') : route('home').'#templates' }}" class="tpl-preview-bar-back">
                 <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
                 <span>Templates</span>
             </a>
@@ -60,6 +61,11 @@
                         <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Use this template
                     </a>
                 @endisset
+            @elseif (! auth()->check())
+                {{-- Reached from the public homepage strip — sign up before picking a template. --}}
+                <a href="{{ route('register') }}" class="btn-primary tpl-btn-small">
+                    <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Use this template
+                </a>
             @else
                 <span class="tpl-preview-bar-lock">
                     <i class="fa-solid fa-lock" aria-hidden="true"></i> Requires {{ $invitation_template->requiredTier()->label() }}

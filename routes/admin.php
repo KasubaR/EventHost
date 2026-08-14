@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EventController as AdminEventController;
 use App\Http\Controllers\Admin\GuestController as AdminGuestController;
+use App\Http\Controllers\Admin\InvitationTemplateController as AdminInvitationTemplateController;
 use App\Http\Controllers\Admin\NotificationLogController;
 use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Admin\ReportController as AdminReportController;
@@ -90,6 +91,15 @@ Route::prefix('admin')
 
         Route::middleware(['permission:reports.manage,admin', 'throttle:admin-mutations'])->group(function (): void {
             Route::patch('/reports/{report}', [AdminReportController::class, 'update'])->name('reports.update');
+        });
+
+        Route::middleware('permission:templates.manage,admin')->group(function (): void {
+            Route::get('/templates', [AdminInvitationTemplateController::class, 'index'])->name('templates.index');
+        });
+
+        Route::middleware(['permission:templates.manage,admin', 'throttle:admin-mutations'])->group(function (): void {
+            Route::patch('/templates/{invitation_template}', [AdminInvitationTemplateController::class, 'update'])->name('templates.update');
+            Route::delete('/templates/{invitation_template}/image', [AdminInvitationTemplateController::class, 'destroyImage'])->name('templates.image.destroy');
         });
 
         Route::middleware('permission:settings.manage,admin')->group(function (): void {

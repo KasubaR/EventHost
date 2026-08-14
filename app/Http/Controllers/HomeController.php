@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
+use App\Models\InvitationTemplate;
 use Illuminate\View\View;
 
 class HomeController extends Controller
@@ -23,6 +24,14 @@ class HomeController extends Controller
             ->limit(self::HOMEPAGE_LIMIT)
             ->get();
 
-        return view('home', compact('upcomingEvents'));
+        // Curated in the admin panel. The section is hidden when nothing is
+        // featured — see home.blade.php.
+        $featuredTemplates = InvitationTemplate::query()
+            ->featuredForHomepage()
+            ->with('categories')
+            ->limit(InvitationTemplate::HOMEPAGE_FEATURED_LIMIT)
+            ->get();
+
+        return view('home', compact('upcomingEvents', 'featuredTemplates'));
     }
 }

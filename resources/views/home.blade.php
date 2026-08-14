@@ -150,76 +150,45 @@
 @endif
 
 <!-- TEMPLATES SHOWCASE -->
+@if ($featuredTemplates->isNotEmpty())
 <div id="templates">
   <div class="section">
     <div class="section-row">
       <h2>Invitation Templates</h2>
-      <a href="{{ route('templates.index') }}" class="see-all">See all templates →</a>
-    </div>
-    <div class="filter-tabs">
-      <button type="button" class="filter-tab active">All</button>
-      <button type="button" class="filter-tab"><i class="fa-solid fa-ring" aria-hidden="true"></i> Wedding</button>
-      <button type="button" class="filter-tab"><i class="fa-solid fa-cake-candles" aria-hidden="true"></i> Birthday</button>
-      <button type="button" class="filter-tab"><i class="fa-solid fa-building" aria-hidden="true"></i> Corporate</button>
-      <button type="button" class="filter-tab"><i class="fa-solid fa-graduation-cap" aria-hidden="true"></i> Graduation</button>
-      <button type="button" class="filter-tab"><i class="fa-solid fa-champagne-glasses" aria-hidden="true"></i> Party</button>
     </div>
     <div class="templates-grid">
-      <div class="template-card">
-        <div class="tmpl-img">
-          <img src="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=600&h=800&q=80" alt="Wedding rings and flowers invitation mood" width="600" height="800" loading="lazy" decoding="async">
+      @foreach ($featuredTemplates as $tpl)
+        @php
+          // Two categories is all the card has room for — several templates
+          // belong to five or more.
+          $subtitle = $tpl->categories->take(2)->pluck('name')->join(' · ');
+        @endphp
+        <div class="template-card">
+          <div class="tmpl-img">
+            <img src="{{ $tpl->preview_image_url }}" alt="{{ $tpl->name }} template preview" width="600" height="800" loading="lazy" decoding="async">
+          </div>
+          <div class="tmpl-info">
+            <h4>{{ $tpl->name }}</h4>
+            <p>{{ $subtitle !== '' ? $subtitle : $tpl->requiredTier()->label() }}</p>
+          </div>
+          <div class="tmpl-overlay">
+            <a href="{{ route('templates.preview', $tpl) }}" class="tmpl-btn tmpl-btn-primary">Preview</a>
+            @auth
+              @if (auth()->user()->canUseInvitationTemplate($tpl))
+                <a href="{{ route('events.create', ['template' => $tpl->slug]) }}" class="tmpl-btn tmpl-btn-ghost">Use Template</a>
+              @else
+                <a href="{{ \App\Support\BillingPlan::checkoutUrlForTier($tpl->requiredTier()) }}" class="tmpl-btn tmpl-btn-ghost">Upgrade to {{ $tpl->requiredTier()->label() }}</a>
+              @endif
+            @else
+              <a href="{{ route('register') }}" class="tmpl-btn tmpl-btn-ghost">Use Template</a>
+            @endauth
+          </div>
         </div>
-        <div class="tmpl-info">
-          <h4>Golden Garden Wedding</h4>
-          <p>Elegant · Classic</p>
-        </div>
-        <div class="tmpl-overlay">
-          <button style="background:var(--accent);color:#fff;border:none;">Preview</button>
-          <button style="background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.2);">Use Template</button>
-        </div>
-      </div>
-      <div class="template-card">
-        <div class="tmpl-img">
-          <img src="https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=600&h=800&q=80" alt="Colorful birthday balloons and celebration" width="600" height="800" loading="lazy" decoding="async">
-        </div>
-        <div class="tmpl-info">
-          <h4>Vibrant Birthday Bash</h4>
-          <p>Fun · Colorful</p>
-        </div>
-        <div class="tmpl-overlay">
-          <button style="background:var(--accent);color:#fff;border:none;">Preview</button>
-          <button style="background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.2);">Use Template</button>
-        </div>
-      </div>
-      <div class="template-card">
-        <div class="tmpl-img">
-          <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=600&h=800&q=80" alt="Modern corporate office building interior" width="600" height="800" loading="lazy" decoding="async">
-        </div>
-        <div class="tmpl-info">
-          <h4>Executive Corporate</h4>
-          <p>Professional · Clean</p>
-        </div>
-        <div class="tmpl-overlay">
-          <button style="background:var(--accent);color:#fff;border:none;">Preview</button>
-          <button style="background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.2);">Use Template</button>
-        </div>
-      </div>
-      <div class="template-card">
-        <div class="tmpl-img">
-          <img src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=600&h=800&q=80" alt="Graduates throwing caps in celebration" width="600" height="800" loading="lazy" decoding="async">
-        </div>
-        <div class="tmpl-info">
-          <h4>Graduation Gala</h4>
-          <p>Celebratory · Formal</p>
-        </div>
-        <div class="tmpl-overlay">
-          <button style="background:var(--accent);color:#fff;border:none;">Preview</button>
-          <button style="background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.2);">Use Template</button>
-        </div>
-      </div>
+      @endforeach
     </div>
   </div>
 </div>
+@endif
 
 <!-- HOW IT WORKS -->
 <div id="how">
@@ -412,19 +381,5 @@
     </div>
   </div>
 </div>
-
-<!-- FINAL CTA -->
-<section id="final-cta">
-  <h2>Start creating unforgettable<br>invitations today</h2>
-  <p>Join thousands of hosts who trust Event Host to make their events shine. Your first invitation is completely free.</p>
-  <div class="ctas">
-    <button type="button" class="btn-hero-primary" style="font-size:16px;padding:16px 36px">
-      <i class="fa-solid fa-gift" aria-hidden="true"></i> Create Free Invitation
-    </button>
-    <a href="{{ route('templates.index') }}" class="btn-hero-secondary" style="font-size:16px;padding:16px 36px">
-      Browse Templates →
-    </a>
-  </div>
-</section>
 
 @endsection

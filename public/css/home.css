@@ -98,8 +98,6 @@
   transform: translateY(-2px);
 }
 
-#final-cta .btn-hero-primary i { font-size: 15px; }
-
 .btn-hero-secondary {
   background: rgba(255, 255, 255, 0.12);
   color: #fff;
@@ -532,39 +530,13 @@
 /* Upcoming events cards live in event-cards.css (shared with /discover). */
 
 /* ── TEMPLATES ── */
-.filter-tabs {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 28px;
-}
-.filter-tab {
-  padding: 8px 16px;
-  border-radius: 50px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  border: 1px solid var(--line);
-  background: var(--white);
-  color: var(--gray-mid);
-  transition: all 0.2s;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-.filter-tab i { font-size: 13px; opacity: 0.95; }
-.filter-tab:hover,
-.filter-tab.active {
-  background: var(--pink);
-  border-color: var(--pink);
-  color: #fff;
-}
-.filter-tab.active i,
-.filter-tab:hover i { color: inherit; }
-
 .templates-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  /* auto-fill, not auto-fit: the admin may feature fewer than four templates,
+     and auto-fit would collapse the empty tracks and stretch two cards to half
+     the page. auto-fill keeps the card size and leaves the row short. 280px is
+     tuned so the 1200px content column still tops out at four across. */
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
 }
 .template-card {
@@ -620,15 +592,34 @@
   transition: opacity 0.25s;
 }
 .template-card:hover .tmpl-overlay { opacity: 1; }
-.tmpl-overlay button {
-  width: 140px;
+.tmpl-btn {
+  width: 160px;
   padding: 10px;
   border-radius: var(--radius-sm);
   font-family: 'DM Sans', sans-serif;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  text-decoration: none;
 }
+.tmpl-btn-primary {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+}
+.tmpl-btn-ghost {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+.tmpl-btn-ghost:hover { background: rgba(255, 255, 255, 0.2); }
+
+/* The overlay only appears on hover, so keyboard users need it on focus too. */
+.template-card:focus-within .tmpl-overlay { opacity: 1; }
 
 /* ── HOW ── */
 .steps {
@@ -914,46 +905,6 @@
   color: var(--gray-mid);
   line-height: 1.65;
   font-weight: 500;
-}
-
-/* ── FINAL CTA ── */
-#final-cta {
-  background: linear-gradient(135deg, var(--navy) 0%, var(--indigo) 40%, var(--purple) 80%, var(--purple-mid) 100%);
-  text-align: center;
-  padding: 72px 40px;
-  position: relative;
-  overflow: hidden;
-}
-.cta-glow { display: none; }
-
-#final-cta h2 {
-  font-family: 'Outfit', sans-serif;
-  font-size: clamp(30px, 4vw, 48px);
-  font-weight: 800;
-  line-height: 1.1;
-  margin-bottom: 12px;
-  position: relative;
-  z-index: 1;
-  color: var(--white);
-}
-#final-cta p {
-  color: rgba(255, 255, 255, 0.78);
-  font-size: 17px;
-  margin-bottom: 32px;
-  max-width: 480px;
-  margin-left: auto;
-  margin-right: auto;
-  position: relative;
-  z-index: 1;
-  font-weight: 500;
-}
-#final-cta .ctas {
-  display: flex;
-  gap: 14px;
-  justify-content: center;
-  flex-wrap: wrap;
-  position: relative;
-  z-index: 1;
 }
 
 /* ── RESPONSIVE (landing sections only; nav/footer in global.css) ── */

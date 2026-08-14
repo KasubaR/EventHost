@@ -91,6 +91,11 @@
                         <i class="fa-solid fa-flag"></i> Reports
                     </a>
                 @endif
+                @if(auth('admin')->user()?->can('templates.manage'))
+                    <a href="{{ route('admin.templates.index') }}" class="dash-nav-link {{ request()->routeIs('admin.templates.*') ? 'is-active' : '' }}">
+                        <i class="fa-solid fa-swatchbook"></i> Templates
+                    </a>
+                @endif
                 @if(auth('admin')->user()?->can('settings.manage'))
                     <a href="{{ route('admin.settings.edit') }}" class="dash-nav-link {{ request()->routeIs('admin.settings.*') ? 'is-active' : '' }}">
                         <i class="fa-solid fa-sliders"></i> Settings

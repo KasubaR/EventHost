@@ -96,6 +96,37 @@
   font-size: 13px;
 }
 
+/* Inline prose links inside admin cards — buttons use .evt-btn-outline instead. */
+.admin-link {
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.admin-link:hover {
+  text-decoration: underline;
+}
+
+/* The finance grid is followed by .admin-mt-lg, so drop .dash-stats' own margin. */
+.admin-finance .dash-stats {
+  margin-bottom: 0;
+}
+
+.admin-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.admin-section-title {
+  font-family: Outfit, sans-serif;
+  font-size: 18px;
+  color: var(--text-dark);
+}
+
 .admin-detail-grid {
   display: grid;
   gap: 20px;
@@ -140,4 +171,178 @@
   .admin-stat-grid.dash-stats--six {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+}
+
+/* ── Invitation templates admin ── */
+.admin-tpl-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+.admin-tpl-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--white);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+}
+
+.admin-tpl-card.is-featured {
+  border-color: var(--accent);
+}
+
+.admin-tpl-thumb {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  background: var(--gray-light);
+}
+
+.admin-tpl-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.admin-tpl-thumb-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--gray-mid);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.admin-tpl-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 4px 10px;
+  border-radius: 50px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-tpl-body {
+  padding: 14px 16px 16px;
+}
+
+.admin-tpl-name {
+  font-family: Outfit, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.admin-tpl-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0 4px;
+}
+
+.admin-tpl-tag {
+  padding: 3px 9px;
+  border-radius: 50px;
+  border: 1px solid var(--line);
+  background: var(--gray-light);
+  color: var(--gray-mid);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.admin-tpl-tag-tier {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: transparent;
+}
+
+.admin-tpl-tag-off {
+  border-color: var(--pink);
+  color: var(--pink);
+  background: transparent;
+}
+
+.admin-tpl-form {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.admin-tpl-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dark);
+  cursor: pointer;
+}
+
+.admin-tpl-field {
+  display: block;
+  margin-top: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-mid);
+}
+
+.admin-tpl-field span {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.admin-tpl-field input[type="number"] {
+  width: 100px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.admin-tpl-file input[type="file"] {
+  width: 100%;
+  font-size: 12px;
+}
+
+.admin-tpl-remove {
+  color: var(--pink);
+  border-color: var(--pink);
+}
+
+.admin-tpl-error {
+  border: 1px solid var(--pink);
+  color: var(--pink);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  display: flex;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.admin-tpl-error ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.admin-tpl-inline-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  background: var(--gray-light);
+  border-radius: 4px;
+  padding: 1px 5px;
 }

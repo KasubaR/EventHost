@@ -22,6 +22,7 @@ class RolePermissionSeeder extends Seeder
         'notifications.view',
         'reports.view',
         'reports.manage',
+        'templates.manage',
         'settings.manage',
         'analytics.view',
         'payments.view',

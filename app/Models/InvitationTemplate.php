@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\SubscriptionTier;
 use App\Services\InvitationCustomizationService;
 use Database\Factories\InvitationTemplateFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -14,6 +15,12 @@ class InvitationTemplate extends Model
 {
     /** @use HasFactory<InvitationTemplateFactory> */
     use HasFactory;
+
+    /**
+     * How many featured templates the homepage strip shows. The section is
+     * hidden entirely when nothing qualifies — see home.blade.php.
+     */
+    public const HOMEPAGE_FEATURED_LIMIT = 4;
 
     public function getRouteKeyName(): string
     {
@@ -32,10 +39,29 @@ class InvitationTemplate extends Model
         'default_theme',
         'default_sections',
         'is_active',
+        'is_featured',
+        'featured_sort_order',
         'sort_order',
         'min_subscription_tier',
         'layout_variant',
     ];
+
+    /**
+     * Templates eligible for the homepage strip. A featured row without an
+     * image is skipped rather than rendered as an empty card — the admin form
+     * already refuses to feature one, this is the second line of defence.
+     *
+     * @param  Builder<$this>  $query
+     */
+    public function scopeFeaturedForHomepage(Builder $query): void
+    {
+        $query->where('is_active', true)
+            ->where('is_featured', true)
+            ->whereNotNull('preview_image')
+            ->where('preview_image', '!=', '')
+            ->orderBy('featured_sort_order')
+            ->orderBy('name');
+    }
 
     /**
      * @return BelongsToMany<InvitationTemplateCategory, $this>
@@ -65,6 +91,8 @@ class InvitationTemplate extends Model
             'default_theme' => 'array',
             'default_sections' => 'array',
             'is_active' => 'boolean',
+            'is_featured' => 'boolean',
+            'featured_sort_order' => 'integer',
             'sort_order' => 'integer',
             'min_subscription_tier' => SubscriptionTier::class,
         ];

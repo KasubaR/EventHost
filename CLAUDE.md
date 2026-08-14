@@ -144,8 +144,18 @@ Users have an `event_credits` column. Each event creation costs 1 credit (`User:
 
 When payments are implemented, call `$user->increment('event_credits')` in the payment webhook and it will plug straight in.
 
+### Featured Templates (homepage)
+
+The homepage "Invitation Templates" strip is curated from the admin panel, not hardcoded:
+
+- `/admin/templates` (`Admin\InvitationTemplateController`, permission `templates.manage`) uploads each template's `preview_image` — cropped to 600×800 WebP under `storage/app/public/templates/` — and toggles `is_featured` / `featured_sort_order`
+- The same `preview_image` feeds `/templates` and the wizard's layout picker, so upload once
+- `HomeController` reads `InvitationTemplate::featuredForHomepage()` limited to `HOMEPAGE_FEATURED_LIMIT` (4); the whole section is hidden when nothing qualifies
+- A template cannot be featured without an image — enforced in `UpdateInvitationTemplateRequest` and again in the scope
+- `templates.preview` is **public** (sample data only) so visitors can preview before signing up; `templates.index` still requires auth
+
 ### Asset Bundling
 
 Vite bundles `resources/css/app.css` (Tailwind) and `resources/js/app.js`. These are loaded with `@vite()` in the layouts. The custom CSS files in `public/css/` are loaded directly with `<link>` tags — they are not processed by Vite.
 
-`public/js/homepage.js` is loaded with a plain `<script src>` tag (not Vite). It handles: filter tabs, FAQ accordion, chart bar animations, and password eye-toggle for auth pages (`.auth-eye` class).
+`public/js/homepage.js` is loaded with a plain `<script src>` tag (not Vite). It handles: FAQ accordion, chart bar animations, and password eye-toggle for auth pages (`.auth-eye` class).
