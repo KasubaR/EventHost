@@ -1,4 +1,4 @@
-@extends('layouts.site', ['hideSiteFooter' => true])
+@extends('layouts.site', ['hideSiteFooter' => true, 'hideSiteHeader' => true])
 
 @foreach ($invitation['theme']['google_font_families'] as $gf)
     @push('head')
@@ -29,23 +29,42 @@
 @section('content')
 
     <div class="tpl-preview-bar" role="navigation" aria-label="Template preview">
-        <a href="{{ route('templates.index') }}" class="tpl-preview-bar-back">
-            <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
-            <span>Templates</span>
-        </a>
+        @isset($fromEvent)
+            <a href="{{ route('events.choose-template', $fromEvent) }}" class="tpl-preview-bar-back">
+                <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+                <span>Back to layouts</span>
+            </a>
+        @else
+            <a href="{{ route('templates.index') }}" class="tpl-preview-bar-back">
+                <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+                <span>Templates</span>
+            </a>
+        @endisset
 
         <span class="tpl-preview-bar-name">{{ $invitation_template->name }}</span>
 
         <div class="tpl-preview-bar-actions">
             @if (auth()->user()?->canUseInvitationTemplate($invitation_template))
-                <a href="{{ route('events.create', ['template' => $invitation_template->slug]) }}" class="btn-primary tpl-btn-small">
-                    <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Use this template
-                </a>
+                @isset($fromEvent)
+                    {{-- Inside the wizard, apply to the event in hand rather than starting a new one --}}
+                    <form method="post" action="{{ route('events.choose-template.update', $fromEvent) }}">
+                        @csrf
+                        @method('patch')
+                        <input type="hidden" name="invitation_template_id" value="{{ $invitation_template->id }}">
+                        <button type="submit" class="btn-primary tpl-btn-small">
+                            <i class="fa-solid fa-check" aria-hidden="true"></i> Use this layout
+                        </button>
+                    </form>
+                @else
+                    <a href="{{ route('events.create', ['template' => $invitation_template->slug]) }}" class="btn-primary tpl-btn-small">
+                        <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Use this template
+                    </a>
+                @endisset
             @else
                 <span class="tpl-preview-bar-lock">
                     <i class="fa-solid fa-lock" aria-hidden="true"></i> Requires {{ $invitation_template->requiredTier()->label() }}
                 </span>
-                <a href="{{ url('/') }}#pricing" class="tpl-preview-bar-upgrade tpl-btn-small">View plans</a>
+                <a href="{{ \App\Support\BillingPlan::checkoutUrlForTier($invitation_template->requiredTier()) }}" class="tpl-preview-bar-upgrade tpl-btn-small">Upgrade to {{ $invitation_template->requiredTier()->label() }}</a>
             @endif
         </div>
     </div>

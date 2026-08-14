@@ -30,6 +30,15 @@ class BillingPlan
         return self::get($key) !== null;
     }
 
+    /**
+     * In-portal checkout link for an upgrade prompt, with the plan the user
+     * needs preselected when a plan matches the tier.
+     */
+    public static function checkoutUrlForTier(SubscriptionTier $tier): string
+    {
+        return route('billing.show', self::exists($tier->value) ? ['plan' => $tier->value] : []);
+    }
+
     public static function tierForPlan(string $key): SubscriptionTier
     {
         $plan = self::get($key);

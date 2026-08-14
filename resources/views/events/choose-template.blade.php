@@ -59,7 +59,7 @@
     <div class="tpl-grid evt-choose-template-grid">
         @forelse ($templates as $tpl)
             <article class="tpl-card @if ($preferredIdInt !== null && (int) $tpl->id === $preferredIdInt) tpl-card--suggested @endif" id="tpl-suggestion-{{ $tpl->id }}">
-                <a href="{{ route('templates.preview', $tpl) }}" class="tpl-card-visual" style="--tpl-primary: {{ $tpl->default_theme['primary'] ?? '#1e47bb' }}; --tpl-accent: {{ $tpl->default_theme['accent'] ?? '#e00e4f' }}; --tpl-bg: {{ $tpl->default_theme['background'] ?? '#fafafa' }};">
+                <a href="{{ route('templates.preview', ['invitation_template' => $tpl, 'from_event' => $event->id]) }}" class="tpl-card-visual" style="--tpl-primary: {{ $tpl->default_theme['primary'] ?? '#1e47bb' }}; --tpl-accent: {{ $tpl->default_theme['accent'] ?? '#e00e4f' }}; --tpl-bg: {{ $tpl->default_theme['background'] ?? '#fafafa' }};">
                     @if ($tpl->preview_image_url)
                         <img src="{{ $tpl->preview_image_url }}" alt="" width="640" height="800" loading="lazy" decoding="async">
                     @else
@@ -99,7 +99,7 @@
                             <p class="tpl-tier-lock-msg">Requires an active subscription. Preview anytime — subscribe to apply.</p>
                         @endif
                         <div class="tpl-tier-actions">
-                            <a href="{{ url('/') }}#pricing" class="btn-outline tpl-btn-small">View plans</a>
+                            <a href="{{ \App\Support\BillingPlan::checkoutUrlForTier($tpl->requiredTier()) }}" class="btn-outline tpl-btn-small">Upgrade to {{ $tpl->requiredTier()->label() }}</a>
                         </div>
                     @endif
                 </div>

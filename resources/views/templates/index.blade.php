@@ -85,7 +85,7 @@
                         @else
                             <span class="tpl-gallery-lock-hint">Requires {{ $tpl->requiredTier()->label() }} to apply.</span>
                             <div class="tpl-tier-actions tpl-gallery-tier-actions">
-                                <a href="{{ url('/') }}#pricing" class="btn-outline tpl-btn-small">View plans</a>
+                                <a href="{{ \App\Support\BillingPlan::checkoutUrlForTier($tpl->requiredTier()) }}" class="btn-outline tpl-btn-small">Upgrade to {{ $tpl->requiredTier()->label() }}</a>
                                 @guest
                                     <a href="{{ route('register') }}" class="btn-primary tpl-btn-small">Get started</a>
                                 @endguest

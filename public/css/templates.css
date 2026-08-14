@@ -392,7 +392,7 @@
 /* ── Preview page bar ── */
 .tpl-preview-bar {
     position: sticky;
-    top: 56px; /* sits flush below the 56px site nav */
+    top: 0; /* the preview page hides the site nav, so this is the top bar */
     z-index: 100;
     display: flex;
     align-items: center;

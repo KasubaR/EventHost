@@ -52,6 +52,7 @@ class TemplateLibraryController extends Controller
     }
 
     public function preview(
+        Request $request,
         InvitationTemplate $invitation_template,
         InvitationCustomizationService $customizationService
     ): View {
@@ -65,6 +66,29 @@ class TemplateLibraryController extends Controller
         $rsvpPublicAvailable = $event->is_public && $rsvpOpen;
         $invitation = $customizationService->merge($event);
 
-        return view('templates.preview', compact('event', 'rsvpOpen', 'rsvpPublicAvailable', 'invitation', 'invitation_template'));
+        // Set when the preview is opened from step 2 of the event wizard, so the
+        // page can offer a way back to that event instead of the shared library.
+        $fromEvent = $this->resolveFromEvent($request);
+
+        return view('templates.preview', compact('event', 'rsvpOpen', 'rsvpPublicAvailable', 'invitation', 'invitation_template', 'fromEvent'));
+    }
+
+    private function resolveFromEvent(Request $request): ?Event
+    {
+        $id = $request->query('from_event');
+
+        if (! is_numeric($id)) {
+            return null;
+        }
+
+        $event = Event::find((int) $id);
+
+        // Silently ignore an event the viewer may not edit — the preview itself
+        // is public to any signed-in user, only the return path is restricted.
+        if (! $event instanceof Event || $request->user()?->cannot('update', $event)) {
+            return null;
+        }
+
+        return $event;
     }
 }
