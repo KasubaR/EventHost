@@ -142,7 +142,8 @@ a.contact-info-value:hover { color: var(--accent); }
   padding: 40px;
   border: 1px solid var(--line);
 }
-.contact-success {
+.contact-success,
+.contact-error {
   display: flex;
   align-items: flex-start;
   gap: 14px;
@@ -153,9 +154,17 @@ a.contact-info-value:hover { color: var(--accent); }
   margin-bottom: 28px;
   color: var(--green);
 }
-.contact-success i { font-size: 22px; margin-top: 1px; flex-shrink: 0; }
-.contact-success strong { display: block; font-weight: 700; font-size: 15px; margin-bottom: 2px; }
-.contact-success p { font-size: 13px; color: #4a4a6a; margin: 0; }
+.contact-error {
+  background: rgba(224,14,79,0.08);
+  border-color: rgba(224,14,79,0.28);
+  color: var(--pink);
+}
+.contact-success i,
+.contact-error i { font-size: 22px; margin-top: 1px; flex-shrink: 0; }
+.contact-success strong,
+.contact-error strong { display: block; font-weight: 700; font-size: 15px; margin-bottom: 2px; }
+.contact-success p,
+.contact-error p { font-size: 13px; color: #4a4a6a; margin: 0; }
 
 .contact-form {
   display: flex;

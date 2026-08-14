@@ -87,6 +87,16 @@
                 </div>
             @endif
 
+            @if(session('contact_error'))
+                <div class="contact-error">
+                    <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
+                    <div>
+                        <strong>We couldn't send your message</strong>
+                        <p>Something went wrong on our side. Please email us directly at <a href="mailto:hello@eventhost.co.zm">hello@eventhost.co.zm</a> and we'll pick it up from there.</p>
+                    </div>
+                </div>
+            @endif
+
             <form action="{{ route('contact.store') }}" method="POST" class="contact-form" novalidate>
                 @csrf
                 <div class="contact-form-row">
