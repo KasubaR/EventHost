@@ -1,9 +1,13 @@
 <x-app-layout>
     @push('styles')
         <link rel="stylesheet" href="{{ asset('css/events-admin.css') }}">
+        <link rel="stylesheet" href="{{ asset('css/datetime-picker.css') }}">
+        <link rel="stylesheet" href="{{ asset('css/custom-select.css') }}">
     @endpush
     @push('scripts')
         <script src="{{ asset('js/events-form.js') }}" defer></script>
+        <script src="{{ asset('js/datetime-picker.js') }}" defer></script>
+        <script src="{{ asset('js/custom-select.js') }}" defer></script>
         <script src="{{ asset('js/vendor/sortable.min.js') }}" defer></script>
         <script src="{{ asset('js/invitation-customize.js') }}" defer></script>
     @endpush

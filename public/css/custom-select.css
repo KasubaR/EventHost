@@ -1,0 +1,443 @@
+/**
+ * Custom dropdown (select enhancement).
+ * Progressive enhancement over a native <select>; panel is portalled to <body>.
+ * Requires global.css (design tokens).
+ */
+
+.cs {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+
+/* Native select stays in the DOM for submit + validation. Never display:none —
+   browser validation bubbles need a focusable anchor. */
+.cs-native {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  pointer-events: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  appearance: none;
+}
+
+.cs-trigger {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  text-align: left;
+  color: var(--text-dark);
+  background: var(--white);
+  border: 1.5px solid rgba(26, 26, 110, 0.18);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+
+.cs-trigger:hover:not(:disabled) {
+  border-color: rgba(26, 26, 110, 0.34);
+}
+
+.cs-trigger:focus-visible,
+.cs.is-open .cs-trigger {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(30, 71, 187, 0.18);
+}
+
+.cs-trigger:disabled {
+  cursor: not-allowed;
+  background: var(--gray-light);
+  color: var(--gray-mid);
+}
+
+.cs.is-invalid .cs-trigger {
+  border-color: var(--pink);
+  box-shadow: 0 0 0 3px rgba(224, 14, 79, 0.12);
+}
+
+.cs-trigger-icon {
+  flex: none;
+  font-size: 13px;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.cs-trigger-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cs-trigger-text.is-placeholder {
+  color: var(--gray-mid);
+}
+
+.cs-trigger-caret {
+  flex: none;
+  font-size: 11px;
+  color: var(--gray-mid);
+  transition: transform 0.18s ease;
+}
+
+.cs.is-open .cs-trigger-caret {
+  transform: rotate(180deg);
+}
+
+.cs-count {
+  flex: none;
+  min-width: 20px;
+  padding: 1px 7px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--white);
+  background: var(--accent);
+  border-radius: 999px;
+}
+
+/* Compact variant for toolbars / filter rows */
+.cs-sm .cs-trigger {
+  padding: 7px 10px;
+  font-size: 13px;
+}
+
+/* ── PANEL ── */
+
+.cs-panel {
+  position: fixed;
+  z-index: 1210;
+  display: none;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--text-dark);
+  background: var(--white);
+  border: 1px solid rgba(26, 42, 74, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 18px 48px rgba(13, 13, 43, 0.18), 0 2px 8px rgba(13, 13, 43, 0.08);
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 0.16s ease, transform 0.16s ease;
+  overflow: hidden;
+}
+
+.cs-panel.is-open {
+  display: block;
+}
+
+.cs-panel.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.cs-panel.is-above {
+  transform: translateY(6px);
+}
+
+.cs-panel.is-above.is-visible {
+  transform: translateY(0);
+}
+
+.cs-search-wrap {
+  position: relative;
+  padding: 10px 10px 6px;
+  border-bottom: 1px solid rgba(26, 42, 74, 0.08);
+}
+
+.cs-search-icon {
+  position: absolute;
+  top: 50%;
+  left: 21px;
+  transform: translateY(-30%);
+  font-size: 12px;
+  color: var(--gray-mid);
+  pointer-events: none;
+}
+
+.cs-search {
+  width: 100%;
+  padding: 8px 10px 8px 30px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: var(--text-dark);
+  background: var(--gray-light);
+  border: 1.5px solid transparent;
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.cs-search:focus {
+  background: var(--white);
+  border-color: var(--accent);
+}
+
+.cs-list {
+  max-height: 264px;
+  overflow-y: auto;
+  padding: 6px;
+  overscroll-behavior: contain;
+}
+
+.cs-group-label {
+  padding: 8px 10px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gray-mid);
+}
+
+.cs-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13.5px;
+  text-align: left;
+  color: var(--text-dark);
+  background: none;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.cs-option:hover:not(:disabled),
+.cs-option.is-active:not(:disabled) {
+  background: var(--gray-light);
+}
+
+.cs-option.is-selected {
+  color: var(--accent);
+  font-weight: 600;
+  background: rgba(30, 71, 187, 0.08);
+}
+
+.cs-option.is-active.is-selected {
+  background: rgba(30, 71, 187, 0.14);
+}
+
+.cs-option:disabled {
+  color: rgba(142, 142, 168, 0.6);
+  cursor: not-allowed;
+}
+
+.cs-option-icon {
+  flex: none;
+  width: 16px;
+  font-size: 13px;
+  text-align: center;
+  color: var(--gray-mid);
+}
+
+.cs-option.is-selected .cs-option-icon {
+  color: var(--accent);
+}
+
+.cs-option-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.cs-option-label {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cs-option-hint {
+  display: block;
+  margin-top: 1px;
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--gray-mid);
+}
+
+.cs-option-mark {
+  flex: none;
+  font-size: 12px;
+  color: var(--accent);
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.cs-option.is-selected .cs-option-mark {
+  opacity: 1;
+}
+
+/* Multi-select uses a box instead of a trailing tick */
+.cs-option-box {
+  flex: none;
+  width: 17px;
+  height: 17px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  color: transparent;
+  background: var(--white);
+  border: 1.5px solid rgba(26, 42, 74, 0.24);
+  border-radius: 5px;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.cs-option.is-selected .cs-option-box {
+  color: var(--white);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.cs-empty {
+  padding: 22px 12px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--gray-mid);
+}
+
+.cs-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-top: 1px solid rgba(26, 42, 74, 0.08);
+  background: rgba(244, 245, 249, 0.6);
+}
+
+.cs-foot-spacer {
+  flex: 1 1 auto;
+}
+
+.cs-btn {
+  padding: 6px 12px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.14s, color 0.14s, border-color 0.14s;
+}
+
+.cs-btn-ghost {
+  color: var(--gray-mid);
+  background: none;
+}
+
+.cs-btn-ghost:hover {
+  color: var(--pink);
+  background: rgba(224, 14, 79, 0.08);
+}
+
+.cs-btn-primary {
+  color: var(--white);
+  background: var(--accent);
+}
+
+.cs-btn-primary:hover {
+  background: var(--indigo);
+}
+
+/* ── BACKDROP (mobile sheet) ── */
+
+.cs-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(13, 13, 43, 0.45);
+  opacity: 0;
+  transition: opacity 0.18s ease;
+  display: none;
+}
+
+.cs-backdrop.is-visible {
+  opacity: 1;
+}
+
+.cs-sheet-head {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 6px;
+}
+
+.cs-sheet-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.cs-sheet-close {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: var(--gray-mid);
+  background: var(--gray-light);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .cs-backdrop.is-open {
+    display: block;
+  }
+
+  .cs-panel.cs-sheet {
+    top: auto !important;
+    left: 0 !important;
+    right: 0;
+    bottom: 0;
+    width: 100% !important;
+    max-width: 100%;
+    border-radius: 18px 18px 0 0;
+    transform: translateY(100%);
+    transition: transform 0.24s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.2s ease;
+  }
+
+  .cs-panel.cs-sheet.is-visible {
+    transform: translateY(0);
+  }
+
+  .cs-panel.cs-sheet .cs-sheet-head {
+    display: flex;
+  }
+
+  .cs-panel.cs-sheet .cs-list {
+    max-height: 52vh;
+  }
+
+  .cs-panel.cs-sheet .cs-option {
+    padding: 12px 10px;
+    font-size: 14.5px;
+  }
+
+  .cs-panel.cs-sheet .cs-foot {
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cs-panel,
+  .cs-backdrop,
+  .cs-trigger-caret {
+    transition: none;
+  }
+}

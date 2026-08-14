@@ -47,7 +47,7 @@
 
             <div class="profile-field">
                 <label for="event_type" class="profile-label">Event type</label>
-                <select id="event_type" name="event_type" required
+                <select id="event_type" name="event_type" required data-cs data-cs-icon="fa-solid fa-tag"
                         class="profile-input {{ $errors->has('event_type') ? 'profile-input--error' : '' }}">
                     @foreach(\App\Models\Event::EVENT_TYPES as $type)
                         <option value="{{ $type }}" @selected(old('event_type', $event?->event_type ?? 'wedding') === $type)>
@@ -81,7 +81,8 @@
             <div class="evt-grid-2 profile-fields">
                 <div class="profile-field">
                     <label for="event_date" class="profile-label">Date</label>
-                    <input id="event_date" name="event_date" type="date" required
+                    <input id="event_date" name="event_date" type="date" required data-dtp
+                           data-placeholder="Pick the event date"
                            class="profile-input {{ $errors->has('event_date') ? 'profile-input--error' : '' }}"
                            value="{{ old('event_date', isset($event) ? $event->event_date->format('Y-m-d') : '') }}">
                     @error('event_date')
@@ -91,7 +92,8 @@
 
                 <div class="profile-field">
                     <label for="event_time" class="profile-label">Time</label>
-                    <input id="event_time" name="event_time" type="time" required step="60"
+                    <input id="event_time" name="event_time" type="time" required step="60" data-dtp
+                           data-minute-step="5" data-placeholder="Pick a start time"
                            class="profile-input {{ $errors->has('event_time') ? 'profile-input--error' : '' }}"
                            value="{{ $timeForInput }}">
                     @error('event_time')
@@ -197,7 +199,8 @@
 
             <div class="profile-field">
                 <label for="rsvp_deadline" class="profile-label">RSVP deadline <span class="profile-optional">optional</span></label>
-                <input id="rsvp_deadline" name="rsvp_deadline" type="datetime-local"
+                <input id="rsvp_deadline" name="rsvp_deadline" type="datetime-local" data-dtp
+                       data-minute-step="15" data-placeholder="No deadline set"
                        class="profile-input {{ $errors->has('rsvp_deadline') ? 'profile-input--error' : '' }}"
                        value="{{ $rsvpValue }}">
                 @error('rsvp_deadline')

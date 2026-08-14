@@ -54,8 +54,26 @@ Laravel 12 application. Auth via Laravel Breeze (Blade stack). No Alpine.js — 
 | `public/css/dashboard-home.css` | `dashboard.blade.php` via `@push('styles')` — overview stats / empty state |
 | `public/css/events-admin.css` | Event CRUD views (`events/*` except public) via `@push('styles')` |
 | `public/css/events-public.css` | `events/public.blade.php` — public invitation page |
+| `public/css/datetime-picker.css` | Custom date/time picker (`.dtp-*`) — pair with `js/datetime-picker.js` |
+| `public/css/custom-select.css` | Custom dropdown (`.cs-*`) — pair with `js/custom-select.js` |
 
 Layouts: `layouts/site.blade.php` loads `global.css` + `account-components.css` + Vite; `layouts/app.blade.php` adds `dashboard-shell.css` + `forms-app.css`. Tailwind ships via Vite (`resources/css/app.css`) alongside these files.
+
+### Custom Form Controls
+
+Two reusable, dependency-free controls that progressively enhance native inputs. The native `<input>` / `<select>` stays in the DOM with its `name`, `value` and `required` intact, so controllers, validation and `old()` repopulation are unchanged — only the UI is replaced.
+
+| Control | Opt in | Notable options |
+|---|---|---|
+| `js/datetime-picker.js` | `data-dtp` on `type="date"`, `time` or `datetime-local` | `data-minute-step` (default 5), `data-hour-format="24"`, `data-week-start="1"`, `data-placeholder`; native `min`/`max` are honoured and also accept `today` / `now` |
+| `js/custom-select.js` | `data-cs` on any `<select>` (incl. `multiple`) | `data-cs-search="auto\|always\|never"`, `data-cs-placeholder`, `data-cs-icon`, `data-cs-size="sm"`; per-option `data-icon` / `data-hint`; `<optgroup>` supported |
+
+Both auto-initialise on `DOMContentLoaded`; call `DateTimePicker.refresh(root)` / `CustomSelect.refresh(root)` after injecting markup dynamically.
+
+**Two gotchas worth keeping:**
+
+1. Panels are portalled to `<body>` with `position: fixed` because `.evt-section` sets `overflow: hidden` — an absolutely-positioned panel inside the section would be clipped.
+2. The native control is hidden with `opacity: 0` over the trigger's own box, never `display: none`. A `display: none` control makes Chrome throw "An invalid form control is not focusable" and silently block submission; keeping it sized means validation bubbles still point at the visible trigger.
 
 **Critical gotcha:** `global.css` has a bare `nav {}` rule that targets every `<nav>` element, including the sidebar's `<nav class="dash-nav">`. Overrides live in `dashboard-shell.css` (`.dash-nav`). Keep that pattern when adding new `<nav>` elements inside the app shell.
 
