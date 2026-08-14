@@ -377,6 +377,13 @@
         align-items: stretch;
     }
 
+    /* The row layout's `flex: 1 1 240px` sizes the main axis, which is the
+       height once this stack turns into a column — reset it to content height. */
+    .tpl-search {
+        flex: 0 0 auto;
+        min-width: 0;
+    }
+
     .tpl-category-label select {
         width: 100%;
     }
