@@ -15,24 +15,6 @@ document.querySelectorAll('.faq-q').forEach((btn) => {
   });
 });
 
-const observer = new IntersectionObserver(
-  (entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        entry.target.querySelectorAll('.bar').forEach((bar, i) => {
-          setTimeout(() => {
-            bar.style.opacity = '1';
-          }, i * 80);
-        });
-      }
-    });
-  },
-  { threshold: 0.3 }
-);
-
-const dashMockup = document.querySelector('.dash-mockup');
-if (dashMockup) observer.observe(dashMockup);
-
 // Hamburger menu
 const navHamburger = document.querySelector('.nav-hamburger');
 const navMobileMenu = document.getElementById('nav-mobile-menu');
@@ -94,5 +76,39 @@ document.querySelectorAll('.auth-eye').forEach((btn) => {
     const isHidden = input.type === 'password';
     input.type = isHidden ? 'text' : 'password';
     btn.querySelector('i').className = isHidden ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+  });
+});
+
+// Block double submission of the auth forms.
+// Logging in regenerates the session (and with it the CSRF token), so a second
+// send of the same rendered form arrives with a stale token and fails as a 419
+// even though the first send already signed the user in.
+const authForms = document.querySelectorAll('.auth-form-card form');
+
+authForms.forEach((form) => {
+  form.addEventListener('submit', (e) => {
+    // Let other handlers cancel first (e.g. a confirm dialog).
+    if (e.defaultPrevented) return;
+
+    if (form.dataset.submitting === '1') {
+      e.preventDefault();
+      return;
+    }
+    form.dataset.submitting = '1';
+
+    const btn = form.querySelector('[type="submit"]');
+    // Disable on the next tick so the button is still enabled while the browser
+    // serializes the form.
+    if (btn) window.setTimeout(() => { btn.disabled = true; }, 0);
+  });
+});
+
+// Restore the button when the page is reopened from the back/forward cache.
+window.addEventListener('pageshow', (e) => {
+  if (!e.persisted) return;
+  authForms.forEach((form) => {
+    form.dataset.submitting = '';
+    const btn = form.querySelector('[type="submit"]');
+    if (btn) btn.disabled = false;
   });
 });
