@@ -299,6 +299,26 @@
     margin: 4px 0 0;
 }
 
+.rsvp-pass-download {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    padding: 8px 14px;
+    border: 1px solid rgba(30, 71, 187, 0.2);
+    border-radius: 10px;
+    background: var(--white, #fff);
+    color: var(--navy, #0d0d2b);
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.rsvp-pass-download:hover {
+    border-color: var(--accent, #1e47bb);
+    color: var(--accent, #1e47bb);
+}
+
 /* ── Closed / thanks states ── */
 .rsvp-closed-banner {
     margin-top: 12px;

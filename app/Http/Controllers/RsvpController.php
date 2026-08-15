@@ -14,8 +14,10 @@ use App\Services\QrCodeService;
 use App\Services\RsvpSubmissionService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class RsvpController extends Controller
@@ -69,7 +71,7 @@ class RsvpController extends Controller
      * no login. Gated on the same guestHasEntryPass() check the page panel uses,
      * so the <img> this route backs can never 404 for a guest who was just shown it.
      */
-    public function entryPassQr(string $token, QrCodeService $qrCodeService): Response
+    public function entryPassQr(string $token, Request $request, QrCodeService $qrCodeService): Response
     {
         $guest = Guest::query()
             ->where('invitation_token', $token)
@@ -91,7 +93,14 @@ class RsvpController extends Controller
             fn () => $qrCodeService->svg($url)
         );
 
-        return response($svg, 200, ['Content-Type' => 'image/svg+xml']);
+        $headers = ['Content-Type' => 'image/svg+xml'];
+
+        if ($request->boolean('download')) {
+            $filename = Str::slug($guest->name).'-entry-qr.svg';
+            $headers['Content-Disposition'] = 'attachment; filename="'.$filename.'"';
+        }
+
+        return response($svg, 200, $headers);
     }
 
     /**

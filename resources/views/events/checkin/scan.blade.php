@@ -46,6 +46,8 @@
                     'checkinBase' => url('/events/'.$event->id.'/checkin'),
                     'guestQrBase' => url('/events/'.$event->id.'/checkin'),
                     'lookupUrl' => route('events.checkin.lookup', $event),
+                    'checkInOpen' => $event->isCheckInOpen(),
+                    'checkInDateLabel' => $event->event_date?->timezone(config('app.timezone'))->format('j M Y'),
                 ])
             </div>
         </div>
@@ -76,7 +78,7 @@
                 <p>Share a link with staff who don't have a dashboard login — no account needed, just this link.</p>
             </div>
             <div class="evt-section-body">
-                <form method="post" action="{{ route('events.checkin.links.store', $event) }}" class="tbl-add-form">
+                <form method="post" action="{{ route('events.checkin.links.store', $event) }}" class="ckin-link-form">
                     @csrf
                     <label class="evt-sr-only" for="staff_link_label">Label</label>
                     <input id="staff_link_label" type="text" name="label" class="profile-input" placeholder="e.g. Front door (optional)" maxlength="100">
@@ -84,7 +86,7 @@
                 </form>
 
                 @if ($staffLinks->isEmpty())
-                    <p class="evt-muted" style="margin-top:14px;">No scanner links yet.</p>
+                    <p class="evt-muted ckin-links-empty">No scanner links yet.</p>
                 @else
                     <ul class="ckin-links-list">
                         @foreach ($staffLinks as $link)

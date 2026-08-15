@@ -16,14 +16,18 @@
         var video = document.getElementById('ckinVideo');
         var canvas = document.getElementById('ckinCanvas');
         var hint = document.getElementById('ckinCameraHint');
+        var cameraPane = root.querySelector('[data-ckin-camera]');
+        var resultPane = root.querySelector('[data-ckin-result-pane]');
         var resultBox = document.getElementById('ckinResult');
         var resultDetails = document.getElementById('ckinResultDetails');
+        var scanAgainBtn = document.getElementById('ckinScanAgain');
         var lookupInput = document.getElementById('ckinLookupInput');
         var lookupResults = document.getElementById('ckinLookupResults');
         var arrivedStat = document.querySelector('[data-checkin-arrived]');
+        var checkInOpen = root.getAttribute('data-checkin-open') === '1';
 
-        var ctx = canvas.getContext('2d', { willReadFrequently: true });
-        var scanning = true;
+        var ctx = canvas ? canvas.getContext('2d', { willReadFrequently: true }) : null;
+        var scanning = false;
         var lastToken = null;
         var lastAt = 0;
         var rafId = null;
@@ -35,14 +39,46 @@
         }
 
         function showResult(kind, message) {
+            if (!resultBox) {
+                return;
+            }
             resultBox.className = 'ckin-result ckin-result--' + kind;
             resultBox.textContent = message;
+        }
+
+        function showResultPane() {
+            if (cameraPane) {
+                cameraPane.hidden = true;
+            }
+            if (resultPane) {
+                resultPane.hidden = false;
+            }
+            if (scanAgainBtn) {
+                scanAgainBtn.hidden = false;
+            }
+        }
+
+        function hideResultPane() {
+            if (resultPane) {
+                resultPane.hidden = true;
+            }
+            if (scanAgainBtn) {
+                scanAgainBtn.hidden = true;
+            }
+            if (cameraPane) {
+                cameraPane.hidden = false;
+            }
+            showResult('idle', '');
+            showResultDetails(null);
         }
 
         // Built with createElement/textContent, not innerHTML — guest-entered fields
         // (name, notes, meal preference…) are untrusted strings and must never be
         // parsed as markup.
         function showResultDetails(guest) {
+            if (!resultDetails) {
+                return;
+            }
             resultDetails.innerHTML = '';
             if (!guest) {
                 return;
@@ -87,8 +123,10 @@
         }
 
         function confirm(url) {
-            scanning = false;
+            stopCamera();
+            showResultPane();
             showResult('busy', 'Checking…');
+            showResultDetails(null);
 
             fetch(url, { method: 'POST', headers: csrfHeaders() })
                 .then(function (response) {
@@ -113,13 +151,6 @@
                 })
                 .catch(function () {
                     showResult('error', 'Network error — try again.');
-                })
-                .finally(function () {
-                    window.setTimeout(function () {
-                        scanning = true;
-                        showResult('idle', '');
-                        showResultDetails(null);
-                    }, 2200);
                 });
         }
 
@@ -195,9 +226,34 @@
             }
         }
 
+        function stopCamera() {
+            scanning = false;
+            if (rafId) {
+                window.cancelAnimationFrame(rafId);
+                rafId = null;
+            }
+            if (video && video.srcObject) {
+                video.srcObject.getTracks().forEach(function (track) {
+                    track.stop();
+                });
+                video.srcObject = null;
+            }
+        }
+
         function startCamera() {
+            if (!video || !canvas || !ctx) {
+                return;
+            }
+
+            lastToken = null;
+            lastAt = 0;
+            scanning = true;
+            hideResultPane();
+
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                hint.textContent = 'Camera access is not supported in this browser — use search below instead.';
+                if (hint) {
+                    hint.textContent = 'Camera access is not supported in this browser — use search below instead.';
+                }
                 return;
             }
 
@@ -205,11 +261,15 @@
                 .then(function (stream) {
                     video.srcObject = stream;
                     video.play();
-                    hint.textContent = "Point the camera at a guest's invitation QR code.";
+                    if (hint) {
+                        hint.textContent = "Point the camera at a guest's invitation QR code.";
+                    }
                     rafId = window.requestAnimationFrame(tick);
                 })
                 .catch(function () {
-                    hint.textContent = 'Camera access was blocked — use search below instead.';
+                    if (hint) {
+                        hint.textContent = 'Camera access was blocked — use search below instead.';
+                    }
                 });
         }
 
@@ -272,17 +332,18 @@
             });
         }
 
+        if (scanAgainBtn) {
+            scanAgainBtn.addEventListener('click', function () {
+                startCamera();
+            });
+        }
+
         window.addEventListener('beforeunload', function () {
-            if (rafId) {
-                window.cancelAnimationFrame(rafId);
-            }
-            if (video.srcObject) {
-                video.srcObject.getTracks().forEach(function (track) {
-                    track.stop();
-                });
-            }
+            stopCamera();
         });
 
-        startCamera();
+        if (checkInOpen) {
+            startCamera();
+        }
     });
 })();

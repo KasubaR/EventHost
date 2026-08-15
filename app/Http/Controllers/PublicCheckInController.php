@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\CheckInClosedException;
 use App\Models\EventStaffLink;
 use App\Models\Guest;
 use App\Services\CheckInService;
@@ -38,9 +39,7 @@ class PublicCheckInController extends Controller
 
         abort_if($guest === null, 404, 'No matching invitation for this event.');
 
-        $link->markUsed();
-
-        return response()->json($checkInService->confirm($guest, null));
+        return $this->confirmResponse($checkInService, $guest, $link);
     }
 
     public function confirmGuest(string $staffToken, Guest $guest, CheckInService $checkInService): JsonResponse
@@ -48,9 +47,7 @@ class PublicCheckInController extends Controller
         $link = $this->resolveActiveLink($staffToken);
         abort_unless($guest->event_id === $link->event_id, 404);
 
-        $link->markUsed();
-
-        return response()->json($checkInService->confirm($guest, null));
+        return $this->confirmResponse($checkInService, $guest, $link);
     }
 
     public function lookup(Request $request, string $staffToken): JsonResponse
@@ -83,5 +80,18 @@ class PublicCheckInController extends Controller
         abort_unless($link->event->ownerHasPremiumEventTools(), 403, 'This event is not on a premium plan.');
 
         return $link;
+    }
+
+    private function confirmResponse(CheckInService $checkInService, Guest $guest, EventStaffLink $link): JsonResponse
+    {
+        try {
+            $payload = $checkInService->confirm($guest, null);
+        } catch (CheckInClosedException $e) {
+            return response()->json(['message' => $e->getMessage()], 403);
+        }
+
+        $link->markUsed();
+
+        return response()->json($payload);
     }
 }

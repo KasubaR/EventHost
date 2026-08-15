@@ -176,12 +176,22 @@ class Event extends Model
      * credit, otherwise one credit would buy unlimited events. Only
      * published events are chargeable; unpaid past drafts stay free.
      *
-     * Guest, table, check-in and photo-wall routes deliberately stay open: they
-     * are used during and after the event and cannot be used to recycle it.
+     * Guest, table and photo-wall routes deliberately stay open after the date:
+     * they cannot be used to recycle the event. Door check-in is the exception
+     * — see isCheckInOpen().
      */
     public function isLocked(): bool
     {
         return $this->event_date !== null && $this->event_date->isBefore(today());
+    }
+
+    /**
+     * Staff may scan badges only on the event's calendar day, not at a
+     * rehearsal beforehand or after everyone has gone home.
+     */
+    public function isCheckInOpen(): bool
+    {
+        return $this->event_date !== null && $this->event_date->isSameDay(today());
     }
 
     /**

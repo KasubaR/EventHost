@@ -15,6 +15,13 @@ class CheckInTest extends TestCase
 {
     use RefreshDatabase;
 
+    private function eventOnToday(User $owner, array $overrides = []): Event
+    {
+        return Event::factory()->for($owner)->create(array_merge([
+            'event_date' => now()->toDateString(),
+        ], $overrides));
+    }
+
     public function test_base_tier_owner_is_redirected_to_billing_from_scanner(): void
     {
         $owner = User::factory()->create();
@@ -28,7 +35,7 @@ class CheckInTest extends TestCase
     public function test_owner_can_confirm_check_in_by_token(): void
     {
         $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->create();
+        $event = $this->eventOnToday($owner);
         $guest = Guest::factory()->for($event)->create();
 
         $response = $this->actingAs($owner)
@@ -46,7 +53,7 @@ class CheckInTest extends TestCase
     public function test_confirm_response_includes_contact_table_and_rsvp_details(): void
     {
         $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->create();
+        $event = $this->eventOnToday($owner);
         $table = EventTable::factory()->for($event)->create(['label' => 'Table 7']);
         $guest = Guest::factory()->for($event)->create([
             'email' => 'guest@example.test',
@@ -73,7 +80,7 @@ class CheckInTest extends TestCase
     public function test_confirm_response_omits_details_the_guest_does_not_have(): void
     {
         $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->create();
+        $event = $this->eventOnToday($owner);
         $guest = Guest::factory()->for($event)->create(['email' => null, 'phone' => null, 'event_table_id' => null]);
 
         $response = $this->actingAs($owner)
@@ -90,7 +97,7 @@ class CheckInTest extends TestCase
     public function test_confirming_an_already_checked_in_guest_is_idempotent(): void
     {
         $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->create();
+        $event = $this->eventOnToday($owner);
         $guest = Guest::factory()->for($event)->create(['checked_in_at' => now()->subMinutes(5)]);
 
         $response = $this->actingAs($owner)
@@ -103,8 +110,8 @@ class CheckInTest extends TestCase
     public function test_token_from_a_different_event_is_rejected(): void
     {
         $owner = User::factory()->pro()->create();
-        $eventA = Event::factory()->for($owner)->create();
-        $eventB = Event::factory()->for($owner)->create();
+        $eventA = $this->eventOnToday($owner);
+        $eventB = $this->eventOnToday($owner);
         $guest = Guest::factory()->for($eventB)->create();
 
         $this->actingAs($owner)
@@ -112,10 +119,33 @@ class CheckInTest extends TestCase
             ->assertNotFound();
     }
 
+    public function test_opening_a_check_in_qr_in_the_browser_goes_to_the_homepage(): void
+    {
+        $owner = User::factory()->pro()->create();
+        $event = $this->eventOnToday($owner);
+        $guest = Guest::factory()->for($event)->create();
+
+        $qrUrl = $guest->checkInQrUrl();
+
+        $this->assertSame(
+            $qrUrl,
+            route('events.checkin.qr-open', ['event' => $event, 'token' => $guest->invitation_token])
+        );
+
+        $this->actingAs($owner)
+            ->get($qrUrl)
+            ->assertRedirect(route('home'));
+
+        $this->get($qrUrl)
+            ->assertRedirect(route('home'));
+
+        $this->assertNull($guest->fresh()->checked_in_at);
+    }
+
     public function test_guest_cannot_self_check_in_without_being_authenticated(): void
     {
         $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->create();
+        $event = $this->eventOnToday($owner);
         $guest = Guest::factory()->for($event)->create();
 
         $this->post(route('events.checkin.confirm-token', ['event' => $event, 'token' => $guest->invitation_token]))
@@ -137,5 +167,58 @@ class CheckInTest extends TestCase
         $response->assertOk();
         $response->assertJsonCount(1, 'guests');
         $response->assertJsonPath('guests.0.name', 'Alice Wonder');
+    }
+
+    public function test_check_in_is_refused_before_the_event_date(): void
+    {
+        $owner = User::factory()->pro()->create();
+        $event = $this->eventOnToday($owner, ['event_date' => now()->addDay()->toDateString()]);
+        $guest = Guest::factory()->for($event)->create();
+
+        $this->actingAs($owner)
+            ->postJson(route('events.checkin.confirm-token', ['event' => $event, 'token' => $guest->invitation_token]))
+            ->assertForbidden()
+            ->assertJsonPath('message', 'Check-in is only available on the event date.');
+
+        $this->assertNull($guest->fresh()->checked_in_at);
+    }
+
+    public function test_check_in_is_refused_after_the_event_date(): void
+    {
+        $owner = User::factory()->pro()->create();
+        $event = $this->eventOnToday($owner, ['event_date' => now()->subDay()->toDateString()]);
+        $guest = Guest::factory()->for($event)->create();
+
+        $this->actingAs($owner)
+            ->postJson(route('events.checkin.confirm-token', ['event' => $event, 'token' => $guest->invitation_token]))
+            ->assertForbidden();
+
+        $this->assertNull($guest->fresh()->checked_in_at);
+    }
+
+    public function test_scanner_page_hides_the_camera_when_it_is_not_the_event_date(): void
+    {
+        $owner = User::factory()->pro()->create();
+        $event = Event::factory()->for($owner)->create([
+            'event_date' => now()->addWeek()->toDateString(),
+        ]);
+
+        $this->actingAs($owner)
+            ->get(route('events.checkin.scan', $event))
+            ->assertOk()
+            ->assertSee('Check-in is only available on the event date', escape: false)
+            ->assertDontSee('ckinVideo', escape: false);
+    }
+
+    public function test_scanner_page_shows_the_camera_on_the_event_date(): void
+    {
+        $owner = User::factory()->pro()->create();
+        $event = $this->eventOnToday($owner);
+
+        $this->actingAs($owner)
+            ->get(route('events.checkin.scan', $event))
+            ->assertOk()
+            ->assertSee('ckinVideo', escape: false)
+            ->assertSee('Scan again', escape: false);
     }
 }

@@ -9,5 +9,11 @@
         @if ($guest->tableLabel())
             <p class="rsvp-pass-table"><i class="fa-solid fa-chair" aria-hidden="true"></i> {{ $guest->tableLabel() }}</p>
         @endif
+        <a href="{{ route('rsvp.token.entry-pass', ['token' => $guest->invitation_token, 'download' => 1]) }}"
+           class="rsvp-pass-download"
+           download="{{ \Illuminate\Support\Str::slug($guest->name) }}-entry-qr.svg">
+            <i class="fa-solid fa-download" aria-hidden="true"></i>
+            Download QR code
+        </a>
     </div>
 @endif

@@ -50,6 +50,45 @@
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 
+.ckin-camera-pane[hidden],
+.ckin-result-pane[hidden] {
+  display: none !important;
+}
+
+.ckin-result-pane {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 24px 20px;
+  border: 1px solid var(--line, #e0e0e8);
+  border-radius: var(--radius, 8px);
+  background: var(--surface, #fff);
+}
+
+.ckin-result-pane .ckin-result,
+.ckin-result-pane .ckin-result-details {
+  width: 100%;
+}
+
+.ckin-closed {
+  margin: 0;
+  padding: 28px 20px;
+  text-align: center;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--navy, #1a2a4a);
+  background: var(--gray-light, #f4f5f9);
+  border-radius: var(--radius, 8px);
+}
+
+.ckin-closed i {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 22px;
+  color: var(--accent, #1e47bb);
+}
+
 .ckin-result {
   min-height: 28px;
   text-align: center;
@@ -189,6 +228,22 @@
 }
 
 /* ── Staff scanner links ── */
+
+.ckin-link-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.ckin-link-form .profile-input {
+  flex: 1;
+  min-width: 200px;
+}
+
+.ckin-links-empty {
+  margin-top: 14px;
+}
 
 .ckin-links-list {
   list-style: none;

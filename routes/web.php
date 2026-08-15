@@ -73,6 +73,11 @@ Route::get('/e/{slug}/gallery', [EventGalleryController::class, 'show'])->name('
 Route::get('/e/{slug}/gallery/feed', [EventGalleryController::class, 'feed'])->name('event.gallery.feed');
 
 Route::get('/checkin/{staffToken}', [PublicCheckInController::class, 'scan'])->name('checkin.public.scan');
+// Guest badges encode this path (see Guest::checkInQrUrl()). Phone cameras GET
+// it; the scanner page POSTs it. GET must not check anyone in.
+Route::get('/events/{event}/checkin/{token}', [CheckInController::class, 'openFromCamera'])
+    ->where('token', '[A-Za-z0-9_\-]{16,128}')
+    ->name('events.checkin.qr-open');
 Route::middleware('throttle:staff-checkin')->group(function () {
     Route::get('/checkin/{staffToken}/lookup', [PublicCheckInController::class, 'lookup'])->name('checkin.public.lookup');
     Route::post('/checkin/{staffToken}/guest/{guest}', [PublicCheckInController::class, 'confirmGuest'])->name('checkin.public.confirm-guest');

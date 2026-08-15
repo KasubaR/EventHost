@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\CheckInClosedException;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Services\CheckInAnalyticsService;
@@ -33,6 +34,17 @@ class CheckInController extends Controller
     }
 
     /**
+     * Phone cameras GET the URL printed on a guest badge. That must never
+     * check anyone in — only the scanner page's POST does. Send the visitor
+     * to the homepage so a host who scanned with their camera lands somewhere
+     * real instead of a 404.
+     */
+    public function openFromCamera(Event $event, string $token): RedirectResponse
+    {
+        return redirect()->route('home');
+    }
+
+    /**
      * Fired by the staff scanner page after it decodes a guest's invitation QR.
      * Guests can never hit this route on their own — it's auth-protected and only
      * ever called via fetch() from the logged-in scanner page.
@@ -54,7 +66,7 @@ class CheckInController extends Controller
             return response()->json(['message' => 'No matching invitation for this event.'], 404);
         }
 
-        return response()->json($checkInService->confirm($guest, auth()->id()));
+        return $this->confirmResponse($checkInService, $guest, auth()->id());
     }
 
     public function confirmGuest(Event $event, Guest $guest, CheckInService $checkInService): JsonResponse
@@ -67,7 +79,7 @@ class CheckInController extends Controller
             return response()->json(['message' => 'This event is not on a premium plan.'], 403);
         }
 
-        return response()->json($checkInService->confirm($guest, auth()->id()));
+        return $this->confirmResponse($checkInService, $guest, auth()->id());
     }
 
     public function lookup(Request $request, Event $event): JsonResponse
@@ -93,5 +105,14 @@ class CheckInController extends Controller
                 'checked_in_at' => $guest->checked_in_at?->toIso8601String(),
             ]),
         ]);
+    }
+
+    private function confirmResponse(CheckInService $checkInService, Guest $guest, ?int $staffUserId): JsonResponse
+    {
+        try {
+            return response()->json($checkInService->confirm($guest, $staffUserId));
+        } catch (CheckInClosedException $e) {
+            return response()->json(['message' => $e->getMessage()], 403);
+        }
     }
 }

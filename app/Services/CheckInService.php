@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\CheckInClosedException;
 use App\Models\Guest;
 
 /**
@@ -23,6 +24,12 @@ class CheckInService
      */
     public function confirm(Guest $guest, ?int $staffUserId): array
     {
+        $guest->loadMissing('event');
+
+        if ($guest->event === null || ! $guest->event->isCheckInOpen()) {
+            throw new CheckInClosedException;
+        }
+
         $alreadyIn = $guest->isCheckedIn();
 
         if (! $alreadyIn) {

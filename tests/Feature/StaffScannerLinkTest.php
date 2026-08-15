@@ -98,7 +98,7 @@ class StaffScannerLinkTest extends TestCase
     public function test_staff_link_confirms_check_in_by_token_without_authentication(): void
     {
         $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->create();
+        $event = Event::factory()->for($owner)->create(['event_date' => now()->toDateString()]);
         $link = EventStaffLink::factory()->for($event)->create();
         $guest = Guest::factory()->for($event)->create();
 
@@ -119,7 +119,7 @@ class StaffScannerLinkTest extends TestCase
     public function test_staff_link_confirms_check_in_by_guest_id(): void
     {
         $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->create();
+        $event = Event::factory()->for($owner)->create(['event_date' => now()->toDateString()]);
         $link = EventStaffLink::factory()->for($event)->create();
         $guest = Guest::factory()->for($event)->create();
 

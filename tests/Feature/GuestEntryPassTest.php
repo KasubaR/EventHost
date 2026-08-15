@@ -39,6 +39,7 @@ class GuestEntryPassTest extends TestCase
 
         $response->assertOk();
         $response->assertSee(route('rsvp.token.entry-pass', $guest->invitation_token), false);
+        $response->assertSee('Download QR code', escape: false);
     }
 
     public function test_rsvp_page_hides_the_pass_when_the_host_is_not_premium(): void
@@ -89,6 +90,23 @@ class GuestEntryPassTest extends TestCase
         $response->assertOk();
         $response->assertHeader('Content-Type', 'image/svg+xml');
         $response->assertSee('<svg', false);
+    }
+
+    public function test_entry_pass_svg_can_be_downloaded(): void
+    {
+        $owner = User::factory()->pro()->create();
+        $event = Event::factory()->for($owner)->create();
+        $guest = $this->attendingGuest($owner, $event);
+        $guest->forceFill(['name' => 'Kasuba Mulenga'])->save();
+
+        $response = $this->get(route('rsvp.token.entry-pass', [
+            'token' => $guest->invitation_token,
+            'download' => 1,
+        ]));
+
+        $response->assertOk();
+        $response->assertHeader('Content-Type', 'image/svg+xml');
+        $response->assertHeader('Content-Disposition', 'attachment; filename="kasuba-mulenga-entry-qr.svg"');
     }
 
     public function test_entry_pass_svg_404s_for_an_unknown_token(): void
@@ -181,7 +199,7 @@ class GuestEntryPassTest extends TestCase
         // QR to — checkin.public.confirm-token — accepts exactly the token shape
         // Guest::checkInQrUrl() extracts it from, end to end.
         $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->create();
+        $event = Event::factory()->for($owner)->create(['event_date' => now()->toDateString()]);
         $link = EventStaffLink::factory()->for($event)->create();
         $guest = Guest::factory()->for($event)->create(['invitation_token' => 'staff-scan-token']);
 
