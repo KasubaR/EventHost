@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Admin;
+use App\Models\CreditTransaction;
 use App\Models\Event;
 use App\Models\Payment;
 use App\Models\PlatformSetting;
@@ -144,6 +145,44 @@ class AdminPanelTest extends TestCase
             ->assertRedirect();
 
         $this->assertFalse($event->fresh()->is_published);
+    }
+
+    public function test_admin_first_publish_of_an_unpaid_draft_spends_the_owner_credit(): void
+    {
+        $operator = Admin::factory()->create();
+        $operator->assignRole('admin');
+
+        $owner = User::factory()->withCredits(1)->create();
+        $event = Event::factory()->for($owner)->create(['is_published' => false]);
+
+        $this->actingAs($operator, 'admin')
+            ->patch(route('admin.events.publish', $event), ['is_published' => true])
+            ->assertRedirect()
+            ->assertSessionHas('status', 'event-publish-updated');
+
+        $this->assertTrue((bool) $event->fresh()->is_published);
+        $this->assertSame(0, $owner->fresh()->event_credits);
+        $this->assertSame(
+            CreditTransaction::REASON_EVENT_PUBLISHED,
+            CreditTransaction::query()->where('event_id', $event->id)->value('reason')
+        );
+    }
+
+    public function test_admin_cannot_publish_an_unpaid_draft_when_the_owner_has_no_credits(): void
+    {
+        $operator = Admin::factory()->create();
+        $operator->assignRole('admin');
+
+        $owner = User::factory()->withoutCredits()->create();
+        $event = Event::factory()->for($owner)->create(['is_published' => false]);
+
+        $this->actingAs($operator, 'admin')
+            ->patch(route('admin.events.publish', $event), ['is_published' => true])
+            ->assertRedirect()
+            ->assertSessionHasErrors('is_published');
+
+        $this->assertFalse((bool) $event->fresh()->is_published);
+        $this->assertSame(0, $owner->fresh()->event_credits);
     }
 
     public function test_support_user_can_resolve_reports_but_not_manage_settings(): void

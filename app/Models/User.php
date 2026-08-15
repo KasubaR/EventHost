@@ -37,11 +37,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'company_name',
         'profile_photo',
         'notification_preferences',
-        'status',
         'last_login_at',
         'last_login_ip',
-        'subscription_tier',
-        'event_credits',
     ];
 
     /**
@@ -65,6 +62,12 @@ class User extends Authenticatable implements MustVerifyEmail
         static::creating(function (User $user): void {
             if ($user->notification_preferences === null) {
                 $user->notification_preferences = self::DEFAULT_NOTIFICATION_PREFERENCES;
+            }
+        });
+
+        static::updating(function (User $user): void {
+            if ($user->isDirty('event_credits')) {
+                throw new \RuntimeException('event_credits must be changed via EventCreditService.');
             }
         });
     }

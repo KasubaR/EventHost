@@ -14,6 +14,16 @@ class PaymentCompletionService
 {
     public function __construct(private readonly EventCreditService $credits) {}
 
+    /**
+     * @var list<string>
+     */
+    public const REVERSAL_STATUSES = ['failed', 'cancelled', 'refunded'];
+
+    public static function isReversalStatus(string $status): bool
+    {
+        return in_array($status, self::REVERSAL_STATUSES, true);
+    }
+
     public function complete(Payment $payment): void
     {
         $userId = DB::transaction(function () use ($payment): ?int {
@@ -24,7 +34,7 @@ class PaymentCompletionService
                 return null;
             }
 
-            if ($locked->notified_at !== null) {
+            if ($locked->credits_fulfilled_at !== null && $locked->notified_at !== null) {
                 PaymentLog::forPayment($locked, 'complete.skipped_already_fulfilled');
 
                 return null;
@@ -33,26 +43,32 @@ class PaymentCompletionService
             /** @var User $user */
             $user = User::query()->whereKey($locked->user_id)->lockForUpdate()->firstOrFail();
 
-            $this->credits->grant(
-                $user,
-                (int) $locked->credits_granted,
-                CreditTransaction::REASON_PURCHASE,
-                $locked
-            );
+            if ($locked->credits_fulfilled_at === null) {
+                $this->credits->grant(
+                    $user,
+                    (int) $locked->credits_granted,
+                    CreditTransaction::REASON_PURCHASE,
+                    $locked
+                );
 
-            $purchasedTier = BillingPlan::tierForPlan($locked->plan_key);
-            if ($purchasedTier->rank() > $user->subscriptionTierRank()) {
-                $user->update(['subscription_tier' => $purchasedTier]);
+                $user->refresh();
+
+                $purchasedTier = BillingPlan::tierForPlan($locked->plan_key);
+                if ($purchasedTier->rank() > $user->subscriptionTierRank()) {
+                    $user->subscription_tier = $purchasedTier;
+                    $user->save();
+                }
+
+                $locked->credits_fulfilled_at = now();
+                $locked->save();
+
+                PaymentLog::forPayment($locked, 'complete.fulfilled', [
+                    'credits_granted' => $locked->credits_granted,
+                    'tier' => $purchasedTier->value,
+                ]);
             }
 
-            $locked->update(['notified_at' => now()]);
-
-            PaymentLog::forPayment($locked, 'complete.fulfilled', [
-                'credits_granted' => $locked->credits_granted,
-                'tier' => $purchasedTier->value,
-            ]);
-
-            return (int) $user->id;
+            return $locked->notified_at === null ? (int) $user->id : null;
         });
 
         if ($userId === null) {
@@ -69,6 +85,43 @@ class PaymentCompletionService
         if ((bool) ($freshUser->notification_preferences['email_payment_receipts'] ?? true)) {
             $freshUser->notify(new PaymentReceiptNotification($freshPayment));
         }
+
+        $freshPayment->notified_at = now();
+        $freshPayment->save();
+    }
+
+    public function reverse(Payment $payment, string $incomingStatus): Payment
+    {
+        return DB::transaction(function () use ($payment, $incomingStatus): Payment {
+            /** @var Payment $locked */
+            $locked = Payment::query()->whereKey($payment->id)->lockForUpdate()->firstOrFail();
+
+            if ($locked->status !== 'completed' || $locked->credits_reversed_at !== null) {
+                return $locked;
+            }
+
+            /** @var User $user */
+            $user = User::query()->whereKey($locked->user_id)->lockForUpdate()->firstOrFail();
+
+            if ($locked->credits_fulfilled_at !== null) {
+                $this->credits->reversePurchase(
+                    $user,
+                    $locked,
+                    'Provider reported '.$incomingStatus
+                );
+            }
+
+            $locked->status = 'refunded';
+            $locked->credits_reversed_at = now();
+            $locked->failure_reason = 'Provider reported '.$incomingStatus;
+            $locked->save();
+
+            PaymentLog::forPayment($locked, 'complete.reversed', [
+                'incoming_status' => $incomingStatus,
+            ]);
+
+            return $locked->fresh();
+        });
     }
 
     public function markCompleted(Payment $payment, ?string $lencoStatus = null): Payment

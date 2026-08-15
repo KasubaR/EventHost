@@ -10,7 +10,6 @@ use App\Models\CreditTransaction;
 use App\Models\Event;
 use App\Models\InvitationTemplate;
 use App\Models\StagedMedia;
-use App\Models\User;
 use App\Services\DashboardAnalyticsService;
 use App\Services\EventCreditService;
 use App\Services\InvitationCustomizationService;
@@ -51,8 +50,12 @@ class EventController extends Controller
         return view('events.index', compact('published', 'drafts'));
     }
 
-    public function create(Request $request): View
+    public function create(Request $request): View|RedirectResponse
     {
+        if (Event::openDraftCountFor((int) $request->user()->id) >= Event::MAX_OPEN_DRAFTS) {
+            return redirect()->route('events.index')->with('status', 'draft-limit');
+        }
+
         $prefTemplateId = null;
         $slug = $request->query('template');
         if (is_string($slug) && $slug !== '') {
@@ -67,6 +70,10 @@ class EventController extends Controller
 
     public function store(StoreEventRequest $request): RedirectResponse
     {
+        if (Event::openDraftCountFor((int) $request->user()->id) >= Event::MAX_OPEN_DRAFTS) {
+            return redirect()->route('events.index')->with('status', 'draft-limit');
+        }
+
         $data = $request->validated();
         $preferredTemplateId = $data['preferred_invitation_template_id'] ?? null;
         unset($data['preferred_invitation_template_id']);
@@ -165,12 +172,8 @@ class EventController extends Controller
         // "Publish event" submits this same form, so the pending edits are saved
         // in the same request rather than being discarded by a separate publish post.
         $shouldPublish = $request->boolean('publish');
-
-        // The credit bought one occurrence. Rewriting what the event *is* after
-        // it has happened is a second occurrence, so it costs another credit.
-        // Everything else — and every edit before the date — stays free.
-        $chargeable = $event->isLocked() && $event->identityChangedBy($request->validated());
-        $needsPublishCredit = $shouldPublish && ! $event->is_published && ! $event->hasConsumedPublishCredit();
+        $needsPublishCredit = false;
+        $chargeable = false;
 
         try {
             if ($stagedCover !== null) {
@@ -182,7 +185,7 @@ class EventController extends Controller
                 $coverIsRollbackable = true;
             }
 
-            DB::transaction(function () use ($request, &$event, $newCoverPath, $stagedCover, $shouldPublish, $chargeable, $credits, &$previousCover): void {
+            DB::transaction(function () use ($request, &$event, $newCoverPath, $stagedCover, $shouldPublish, $credits, &$previousCover, &$needsPublishCredit, &$chargeable): void {
                 $event = Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
                 $data = $request->validated();
 
@@ -193,8 +196,16 @@ class EventController extends Controller
                     $data['cover_image'] = $newCoverPath;
                 }
 
+                // Recompute after the lock so a concurrent save that already
+                // applied the same identity change cannot spend twice, and so
+                // an unpaid past draft is not charged as a redefine.
+                $needsPublishCredit = $shouldPublish && ! $event->is_published && ! $event->hasConsumedPublishCredit();
+                $chargeable = $event->is_published
+                    && $event->isLocked()
+                    && $event->identityChangedBy($data);
+
                 if ($shouldPublish) {
-                    $this->spendPublishCreditIfNeeded($request->user(), $event, $credits);
+                    $credits->chargeFirstPublish($request->user(), $event);
                     $data['is_published'] = true;
                 }
 
@@ -303,7 +314,7 @@ class EventController extends Controller
             DB::transaction(function () use ($request, $event, $credits): void {
                 $locked = Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
 
-                $this->spendPublishCreditIfNeeded($request->user(), $locked, $credits);
+                $credits->chargeFirstPublish($request->user(), $locked);
 
                 $locked->is_published = true;
                 $locked->save();
@@ -313,22 +324,6 @@ class EventController extends Controller
         }
 
         return redirect()->route('events.public', $event->fresh()->slug)->with('status', 'published');
-    }
-
-    /**
-     * First publish spends one credit. A draft that already consumed a credit
-     * at creation (the old rule) publishes without a second spend. Already
-     * published events are a no-op.
-     *
-     * Must run inside a transaction with the event row locked.
-     */
-    private function spendPublishCreditIfNeeded(User $user, Event $event, EventCreditService $credits): void
-    {
-        if ($event->is_published || $event->hasConsumedPublishCredit()) {
-            return;
-        }
-
-        $credits->spend($user, CreditTransaction::REASON_EVENT_PUBLISHED, $event);
     }
 
     /**

@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exceptions\InsufficientCreditsException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateAdminEventPublishRequest;
 use App\Models\Event;
+use App\Models\User;
+use App\Services\EventCreditService;
 use App\Support\AdminActivity;
 use App\Support\InvitationVideoBackground;
 use Illuminate\Http\RedirectResponse;
@@ -51,11 +54,30 @@ class EventController extends Controller
         ]);
     }
 
-    public function updatePublish(UpdateAdminEventPublishRequest $request, Event $event): RedirectResponse
-    {
+    public function updatePublish(
+        UpdateAdminEventPublishRequest $request,
+        Event $event,
+        EventCreditService $credits
+    ): RedirectResponse {
         $published = (bool) $request->validated()['is_published'];
-        $event->is_published = $published;
-        $event->save();
+
+        try {
+            DB::transaction(function () use ($event, $published, $credits): void {
+                $locked = Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
+
+                if ($published && ! $locked->is_published) {
+                    $owner = User::query()->whereKey($locked->user_id)->firstOrFail();
+                    $credits->chargeFirstPublish($owner, $locked);
+                }
+
+                $locked->is_published = $published;
+                $locked->save();
+            });
+        } catch (InsufficientCreditsException) {
+            return redirect()->back()->withErrors([
+                'is_published' => 'The host has no event credits. Grant them a credit before publishing this event.',
+            ]);
+        }
 
         AdminActivity::log('Admin changed event publish state', [
             'event_id' => $event->id,

@@ -39,6 +39,8 @@ class Payment extends Model
         'failed_at',
         'completed_at',
         'notified_at',
+        'credits_fulfilled_at',
+        'credits_reversed_at',
         'cancelled_at',
         'webhook_received',
         'webhook_payload',
@@ -60,6 +62,8 @@ class Payment extends Model
             'failed_at' => 'datetime',
             'completed_at' => 'datetime',
             'notified_at' => 'datetime',
+            'credits_fulfilled_at' => 'datetime',
+            'credits_reversed_at' => 'datetime',
             'cancelled_at' => 'datetime',
             'webhook_received' => 'boolean',
             'webhook_payload' => 'array',
@@ -156,15 +160,15 @@ class Payment extends Model
         ?string $chargedCurrency,
         Payment $payment
     ): bool {
-        $expected = round((float) $payment->amount, 2);
-
-        if ($chargedCurrency !== null && strtoupper(trim($chargedCurrency)) !== strtoupper($payment->currency)) {
+        if ($chargedAmountMajor === null || $chargedCurrency === null || trim($chargedCurrency) === '') {
             return false;
         }
 
-        if ($chargedAmountMajor === null) {
-            return true;
+        if (strtoupper(trim($chargedCurrency)) !== strtoupper($payment->currency)) {
+            return false;
         }
+
+        $expected = round((float) $payment->amount, 2);
 
         return abs(round((float) $chargedAmountMajor, 2) - $expected) < 0.021;
     }

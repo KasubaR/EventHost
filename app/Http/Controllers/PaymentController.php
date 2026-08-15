@@ -318,7 +318,12 @@ class PaymentController extends Controller
             return response()->json(['success' => true, 'message' => 'acknowledged']);
         }
 
-        if ($payment->isTerminal()) {
+        $mappedStatus = LencoService::mapStatus((string) ($webhook['lencoStatus'] ?? 'pending'));
+        $isReversal = $payment->status === 'completed'
+            && PaymentCompletionService::isReversalStatus($mappedStatus)
+            && $payment->credits_reversed_at === null;
+
+        if ($payment->isTerminal() && ! $isReversal) {
             PaymentLog::forPayment($payment, 'webhook.already_processed');
 
             return response()->json(['success' => true, 'message' => 'already processed']);

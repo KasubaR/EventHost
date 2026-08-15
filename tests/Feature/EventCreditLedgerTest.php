@@ -200,4 +200,49 @@ class EventCreditLedgerTest extends TestCase
             ->assertSee('Credit history', escape: false)
             ->assertSee('Admin grant', escape: false);
     }
+
+    public function test_an_unknown_reason_is_refused(): void
+    {
+        $user = User::factory()->withoutCredits()->create();
+
+        $this->expectException(\InvalidArgumentException::class);
+
+        $this->credits()->grant($user, 1, 'not-a-real-reason');
+    }
+
+    public function test_reversing_a_purchase_writes_a_refund_row(): void
+    {
+        $user = User::factory()->withoutCredits()->create();
+        $payment = Payment::factory()->for($user)->completed()->create([
+            'credits_granted' => 1,
+            'credits_fulfilled_at' => now(),
+        ]);
+
+        $this->credits()->grant($user, 1, CreditTransaction::REASON_PURCHASE, $payment);
+        $entry = $this->credits()->reversePurchase($user, $payment);
+
+        $this->assertSame(CreditTransaction::REASON_REFUND, $entry->reason);
+        $this->assertSame(-1, $entry->delta);
+        $this->assertSame($payment->id, $entry->payment_id);
+        $this->assertSame(0, $user->fresh()->event_credits);
+    }
+
+    public function test_saving_event_credits_on_the_user_is_refused(): void
+    {
+        $user = User::factory()->withoutCredits()->create();
+
+        $this->expectException(\RuntimeException::class);
+
+        $user->event_credits = 9;
+        $user->save();
+    }
+
+    public function test_credits_audit_reports_a_mismatched_balance(): void
+    {
+        $user = User::factory()->withoutCredits()->create();
+        $this->credits()->grant($user, 2, CreditTransaction::REASON_ADMIN_GRANT);
+        User::query()->whereKey($user->id)->update(['event_credits' => 9]);
+
+        $this->artisan('credits:audit')->assertFailed();
+    }
 }

@@ -53,6 +53,28 @@ class PaymentInitiationTest extends TestCase
         $response->assertStatus(409);
     }
 
+    public function test_initiate_is_throttled_per_user(): void
+    {
+        $user = User::factory()->withoutCredits()->create();
+        Payment::factory()->for($user)->create(['status' => 'pending']);
+
+        for ($i = 0; $i < 5; $i++) {
+            $this->actingAs($user)->postJson(route('payment.initiate'), [
+                'plan_key' => 'base',
+                'payment_method' => 'mobile_money',
+                'provider' => 'mtn',
+                'phone' => '0961234567',
+            ])->assertStatus(409);
+        }
+
+        $this->actingAs($user)->postJson(route('payment.initiate'), [
+            'plan_key' => 'base',
+            'payment_method' => 'mobile_money',
+            'provider' => 'mtn',
+            'phone' => '0961234567',
+        ])->assertStatus(429);
+    }
+
     public function test_initiate_creates_payment_and_returns_transaction_id(): void
     {
         $user = User::factory()->withoutCredits()->create(['phone' => '0971234567']);

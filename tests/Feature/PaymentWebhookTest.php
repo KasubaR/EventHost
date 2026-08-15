@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Enums\SubscriptionTier;
+use App\Models\CreditTransaction;
+use App\Models\Event;
 use App\Models\Payment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -156,6 +158,136 @@ class PaymentWebhookTest extends TestCase
 
         $this->assertSame('completed', $payment->status);
         $this->assertSame(1, $user->event_credits);
+    }
+
+    public function test_webhook_fails_completed_payment_when_amount_is_missing(): void
+    {
+        $user = User::factory()->withoutCredits()->create();
+        $payment = Payment::factory()->for($user)->withTransactionId('col_no_amount')->create([
+            'amount' => 450.00,
+            'currency' => 'ZMW',
+            'status' => 'pending',
+        ]);
+
+        $payload = json_encode([
+            'data' => [
+                'id' => 'col_no_amount',
+                'reference' => $payment->payment_reference,
+                'status' => 'successful',
+                'currency' => 'ZMW',
+            ],
+        ]);
+
+        $this->call(
+            'POST',
+            route('lenco.webhook'),
+            [],
+            [],
+            [],
+            ['HTTP_X-Lenco-Signature' => $this->signPayload($payload)],
+            $payload,
+        )->assertOk();
+
+        $this->assertSame('failed', $payment->fresh()->status);
+        $this->assertSame(0, $user->fresh()->event_credits);
+    }
+
+    public function test_a_later_failed_webhook_claws_back_unused_credits(): void
+    {
+        $user = User::factory()->withoutCredits()->create();
+        $payment = Payment::factory()->for($user)->withTransactionId('col_then_fail')->create([
+            'amount' => 450.00,
+            'currency' => 'ZMW',
+            'plan_key' => 'base',
+            'status' => 'pending',
+        ]);
+
+        $this->postSignedWebhook([
+            'id' => 'col_then_fail',
+            'reference' => $payment->payment_reference,
+            'status' => 'successful',
+            'amount' => 450.00,
+            'currency' => 'ZMW',
+        ]);
+
+        $this->assertSame(1, $user->fresh()->event_credits);
+
+        $this->postSignedWebhook([
+            'id' => 'col_then_fail',
+            'reference' => $payment->payment_reference,
+            'status' => 'failed',
+            'amount' => 450.00,
+            'currency' => 'ZMW',
+        ]);
+
+        $payment->refresh();
+        $user->refresh();
+
+        $this->assertSame('refunded', $payment->status);
+        $this->assertNotNull($payment->credits_reversed_at);
+        $this->assertSame(0, $user->event_credits);
+        $this->assertSame(1, CreditTransaction::query()
+            ->where('payment_id', $payment->id)
+            ->where('reason', CreditTransaction::REASON_REFUND)
+            ->count());
+    }
+
+    public function test_a_later_failed_webhook_does_not_unpublish_a_spent_credit(): void
+    {
+        $user = User::factory()->withoutCredits()->create();
+        $payment = Payment::factory()->for($user)->withTransactionId('col_spent')->create([
+            'amount' => 450.00,
+            'currency' => 'ZMW',
+            'plan_key' => 'base',
+            'status' => 'pending',
+        ]);
+
+        $this->postSignedWebhook([
+            'id' => 'col_spent',
+            'reference' => $payment->payment_reference,
+            'status' => 'successful',
+            'amount' => 450.00,
+            'currency' => 'ZMW',
+        ]);
+
+        $event = Event::factory()->for($user)->create(['is_published' => false]);
+        $this->actingAs($user->fresh())->patch(route('events.publish', $event));
+        $this->assertSame(0, $user->fresh()->event_credits);
+
+        $this->postSignedWebhook([
+            'id' => 'col_spent',
+            'reference' => $payment->payment_reference,
+            'status' => 'failed',
+        ]);
+
+        $this->assertTrue((bool) $event->fresh()->is_published);
+        $this->assertSame(0, $user->fresh()->event_credits);
+        $this->assertSame('refunded', $payment->fresh()->status);
+        $this->assertSame(0, CreditTransaction::query()
+            ->where('payment_id', $payment->id)
+            ->where('reason', CreditTransaction::REASON_REFUND)
+            ->value('delta'));
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function postSignedWebhook(array $data): void
+    {
+        $payload = json_encode(['data' => $data]);
+
+        $this->call(
+            'POST',
+            route('lenco.webhook'),
+            [],
+            [],
+            [],
+            [
+                'HTTP_X-Lenco-Signature' => $this->signPayload($payload),
+                'CONTENT_TYPE' => 'application/json',
+            ],
+            $payload,
+        )->assertOk();
     }
 
     private function signPayload(string $payload): string

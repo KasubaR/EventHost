@@ -165,9 +165,16 @@ class Event extends Model
     }
 
     /**
+     * Unpublished drafts a host may keep without paying. Creating more than
+     * this is refused so free drafts cannot become unbounded storage.
+     */
+    public const MAX_OPEN_DRAFTS = 10;
+
+    /**
      * An event whose date has passed is spent — the credit bought that
      * occurrence. Changing what the event *is* from here on costs another
-     * credit, otherwise one credit would buy unlimited events.
+     * credit, otherwise one credit would buy unlimited events. Only
+     * published events are chargeable; unpaid past drafts stay free.
      *
      * Guest, table, check-in and photo-wall routes deliberately stay open: they
      * are used during and after the event and cannot be used to recycle it.
@@ -236,6 +243,14 @@ class Event extends Model
                 CreditTransaction::REASON_EVENT_PUBLISHED,
             ])
             ->exists();
+    }
+
+    public static function openDraftCountFor(int $userId): int
+    {
+        return static::query()
+            ->where('user_id', $userId)
+            ->where('is_published', false)
+            ->count();
     }
 
     /**

@@ -301,4 +301,95 @@ class EventCreditTest extends TestCase
 
         $this->assertFalse($event->isLocked());
     }
+
+    public function test_redefining_an_unpublished_past_draft_is_free(): void
+    {
+        $user = User::factory()->withCredits(1)->create();
+        $event = Event::factory()->create([
+            'user_id' => $user->id,
+            'name' => 'Original Event',
+            'event_date' => now()->subWeek()->format('Y-m-d'),
+            'is_published' => false,
+        ]);
+
+        $this->actingAs($user)
+            ->patch(route('events.update', $event), $this->payload([
+                'name' => 'Recycled Event',
+                'event_date' => now()->addMonth()->format('Y-m-d'),
+            ]))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('Recycled Event', $event->fresh()->name);
+        $this->assertSame(1, $user->fresh()->event_credits);
+        $this->assertSame(0, CreditTransaction::query()->where('event_id', $event->id)->count());
+    }
+
+    public function test_saving_the_same_new_identity_again_does_not_spend_twice(): void
+    {
+        $user = User::factory()->withCredits(2)->create();
+        $event = Event::factory()->published()->create([
+            'user_id' => $user->id,
+            'name' => 'Original Event',
+            'event_date' => now()->subWeek()->format('Y-m-d'),
+        ]);
+
+        $payload = $this->payload([
+            'name' => 'Recycled Event',
+            'event_date' => now()->addMonth()->format('Y-m-d'),
+        ]);
+
+        $this->actingAs($user)->patch(route('events.update', $event), $payload);
+        $this->actingAs($user)->patch(route('events.update', $event), $payload);
+
+        $this->assertSame(1, $user->fresh()->event_credits);
+        $this->assertSame(1, CreditTransaction::query()
+            ->where('event_id', $event->id)
+            ->where('reason', CreditTransaction::REASON_EVENT_REDEFINED)
+            ->count());
+    }
+
+    public function test_publishing_a_past_draft_with_an_identity_change_spends_only_one_credit(): void
+    {
+        $user = User::factory()->withCredits(1)->create();
+        $event = Event::factory()->create([
+            'user_id' => $user->id,
+            'name' => 'Original Event',
+            'event_date' => now()->subWeek()->format('Y-m-d'),
+            'is_published' => false,
+        ]);
+
+        $this->actingAs($user)
+            ->patch(route('events.update', $event), $this->payload([
+                'name' => 'Recycled Event',
+                'event_date' => now()->addMonth()->format('Y-m-d'),
+                'publish' => '1',
+            ]))
+            ->assertRedirect(route('events.public', $event->fresh()->slug));
+
+        $this->assertTrue((bool) $event->fresh()->is_published);
+        $this->assertSame(0, $user->fresh()->event_credits);
+        $this->assertSame(1, CreditTransaction::query()->where('event_id', $event->id)->count());
+        $this->assertSame(
+            CreditTransaction::REASON_EVENT_PUBLISHED,
+            CreditTransaction::query()->where('event_id', $event->id)->value('reason')
+        );
+    }
+
+    public function test_open_drafts_are_capped(): void
+    {
+        $user = User::factory()->withoutCredits()->create();
+        Event::factory()->count(Event::MAX_OPEN_DRAFTS)->for($user)->create(['is_published' => false]);
+
+        $this->actingAs($user)
+            ->get(route('events.create'))
+            ->assertRedirect(route('events.index'))
+            ->assertSessionHas('status', 'draft-limit');
+
+        $this->actingAs($user)
+            ->post(route('events.store'), $this->payload())
+            ->assertRedirect(route('events.index'))
+            ->assertSessionHas('status', 'draft-limit');
+
+        $this->assertSame(Event::MAX_OPEN_DRAFTS, Event::query()->where('user_id', $user->id)->count());
+    }
 }

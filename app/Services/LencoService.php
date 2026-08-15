@@ -32,6 +32,7 @@ class LencoService
             'processing' => 'processing',
             'failed' => 'failed',
             'cancelled', 'canceled', 'expired' => 'cancelled',
+            'refunded', 'refund' => 'refunded',
             default => 'pending',
         };
     }

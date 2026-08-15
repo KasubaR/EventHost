@@ -15,3 +15,4 @@ Schedule::command('payments:poll-pending')
     ->everyFiveMinutes()
     ->withoutOverlapping()
     ->runInBackground();
+Schedule::command('credits:audit')->daily();

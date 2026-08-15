@@ -18,16 +18,16 @@ class PaymentStatusService
      */
     public function applyVerificationResult(Payment $payment, array $verification): Payment
     {
-        if ($payment->isTerminal()) {
-            return $payment;
-        }
-
         $mappedStatus = (string) ($verification['status'] ?? 'pending');
         $lencoStatus = (string) ($verification['lencoStatus'] ?? $mappedStatus);
 
         return DB::transaction(function () use ($payment, $verification, $mappedStatus, $lencoStatus): Payment {
             /** @var Payment $locked */
             $locked = Payment::query()->whereKey($payment->id)->lockForUpdate()->firstOrFail();
+
+            if ($locked->status === 'completed' && PaymentCompletionService::isReversalStatus($mappedStatus)) {
+                return $this->completion->reverse($locked, $mappedStatus);
+            }
 
             if ($locked->isTerminal()) {
                 return $locked;

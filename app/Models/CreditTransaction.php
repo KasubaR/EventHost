@@ -45,17 +45,11 @@ class CreditTransaction extends Model
     ];
 
     /**
+     * Rows are written only by EventCreditService via forceFill().
+     *
      * @var list<string>
      */
-    protected $fillable = [
-        'user_id',
-        'delta',
-        'reason',
-        'payment_id',
-        'event_id',
-        'balance_after',
-        'note',
-    ];
+    protected $guarded = ['*'];
 
     public function user(): BelongsTo
     {

@@ -189,7 +189,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/events', [EventController::class, 'store'])->name('events.store')->middleware('throttle:10,1');
 
     Route::get('/billing', [PaymentController::class, 'show'])->name('billing.show');
-    Route::post('/payment/initiate', [PaymentController::class, 'initiate'])->name('payment.initiate');
+    Route::post('/payment/initiate', [PaymentController::class, 'initiate'])
+        ->middleware('throttle:payment-initiate')
+        ->name('payment.initiate');
     Route::get('/payment/verify/{transactionId}', [PaymentController::class, 'verify'])
         ->where('transactionId', '[A-Za-z0-9_\-]{1,64}')
         ->name('payment.verify');

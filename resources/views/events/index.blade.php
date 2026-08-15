@@ -22,6 +22,8 @@
         <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Event deleted.</div>
     @elseif (session('status') === 'no-event-credits')
         <div class="evt-flash evt-flash--warn"><i class="fa-solid fa-triangle-exclamation"></i> You have no event credits. <a href="{{ route('billing.show') }}">Buy an event credit</a> to publish.</div>
+    @elseif (session('status') === 'draft-limit')
+        <div class="evt-flash evt-flash--warn"><i class="fa-solid fa-triangle-exclamation"></i> You already have {{ \App\Models\Event::MAX_OPEN_DRAFTS }} unpublished drafts. Publish or delete one before creating another.</div>
     @endif
 
     {{-- Guests & RSVPs are managed per event — there's no single list across events, so the
