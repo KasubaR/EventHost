@@ -1793,3 +1793,95 @@ body > .evt-more-menu .evt-more-item--danger:hover {
     color: var(--accent, #1e47bb);
     white-space: nowrap;
 }
+
+.evt-qr-lightbox[hidden] {
+    display: none !important;
+}
+
+.evt-qr-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.evt-qr-lightbox-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(13, 13, 43, 0.6);
+}
+
+.evt-qr-lightbox-dialog {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 360px;
+    padding: 28px 24px 24px;
+    background: var(--surface, #fff);
+    border-radius: 16px;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.2);
+    text-align: center;
+}
+
+.evt-qr-lightbox-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--navy, #1a2a4a);
+    cursor: pointer;
+}
+
+.evt-qr-lightbox-close:hover {
+    background: rgba(30, 71, 187, 0.08);
+}
+
+.evt-qr-lightbox-title {
+    margin: 0 28px 6px;
+    font-family: var(--font-display, 'Outfit', sans-serif);
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--navy, #1a2a4a);
+}
+
+.evt-qr-lightbox-sub {
+    margin: 0 0 18px;
+    font-size: 13px;
+    color: var(--gray-mid, #64748b);
+}
+
+.evt-qr-lightbox-frame {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    padding: 16px;
+    background: #fff;
+    border: 1px solid var(--border-soft, rgba(26, 42, 74, 0.12));
+    border-radius: 12px;
+}
+
+.evt-qr-lightbox-frame img {
+    display: block;
+    width: 240px;
+    height: 240px;
+}
+
+.evt-qr-lightbox-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+}
+
+body.evt-qr-lightbox-open {
+    overflow: hidden;
+}

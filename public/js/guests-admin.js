@@ -206,6 +206,173 @@
 
         window.addEventListener('resize', close);
         document.addEventListener('scroll', close, true);
+
+        return { close: close };
+    }
+
+    function qrPngBlob(img, done) {
+        var canvas = document.createElement('canvas');
+        var size = 512;
+        canvas.width = size;
+        canvas.height = size;
+        var ctx = canvas.getContext('2d');
+        if (!ctx) {
+            done(null);
+            return;
+        }
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, size, size);
+        ctx.drawImage(img, 0, 0, size, size);
+        canvas.toBlob(done, 'image/png');
+    }
+
+    function initQrLightbox(root, moreMenu) {
+        var lightbox = root.querySelector('[data-evt-qr-lightbox]');
+        if (!lightbox) {
+            return;
+        }
+
+        var titleEl = lightbox.querySelector('[data-evt-qr-title]');
+        var imgEl = lightbox.querySelector('[data-evt-qr-img]');
+        var downloadEl = lightbox.querySelector('[data-evt-qr-download]');
+        var shareEl = lightbox.querySelector('[data-evt-qr-share]');
+        var closeEls = lightbox.querySelectorAll('[data-evt-qr-close]');
+        var lastFocus = null;
+        var objectUrl = null;
+
+        function canShareFiles() {
+            return !!(navigator.share && navigator.canShare);
+        }
+
+        if (shareEl && typeof navigator.share === 'function') {
+            shareEl.hidden = false;
+        }
+
+        function revokeObjectUrl() {
+            if (objectUrl) {
+                URL.revokeObjectURL(objectUrl);
+                objectUrl = null;
+            }
+        }
+
+        function closeLightbox() {
+            if (lightbox.hidden) {
+                return;
+            }
+            lightbox.hidden = true;
+            document.body.classList.remove('evt-qr-lightbox-open');
+            if (imgEl) {
+                imgEl.removeAttribute('src');
+                imgEl.alt = '';
+            }
+            revokeObjectUrl();
+            if (lastFocus && typeof lastFocus.focus === 'function') {
+                lastFocus.focus();
+            }
+            lastFocus = null;
+        }
+
+        function openLightbox(trigger) {
+            var src = trigger.getAttribute('href');
+            var name = trigger.getAttribute('data-qr-name') || 'Guest';
+            var filename = trigger.getAttribute('data-qr-filename') || 'guest-qr.png';
+            if (!src || !imgEl || !titleEl) {
+                return;
+            }
+
+            lastFocus = document.activeElement;
+            titleEl.textContent = name;
+            imgEl.alt = 'Check-in QR for ' + name;
+            imgEl.src = src;
+            if (downloadEl) {
+                downloadEl.setAttribute('href', src);
+                downloadEl.setAttribute('download', filename);
+            }
+            lightbox.hidden = false;
+            document.body.classList.add('evt-qr-lightbox-open');
+            var closeBtn = lightbox.querySelector('.evt-qr-lightbox-close');
+            if (closeBtn) {
+                closeBtn.focus();
+            }
+        }
+
+        root.querySelectorAll('[data-evt-qr-open]').forEach(function (trigger) {
+            trigger.addEventListener('click', function (event) {
+                event.preventDefault();
+                if (moreMenu && typeof moreMenu.close === 'function') {
+                    moreMenu.close();
+                }
+                openLightbox(trigger);
+            });
+        });
+
+        closeEls.forEach(function (el) {
+            el.addEventListener('click', closeLightbox);
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && !lightbox.hidden) {
+                event.stopPropagation();
+                closeLightbox();
+            }
+        });
+
+        if (downloadEl) {
+            downloadEl.addEventListener('click', function (event) {
+                if (!imgEl || !imgEl.src || !imgEl.complete) {
+                    return;
+                }
+                event.preventDefault();
+                qrPngBlob(imgEl, function (blob) {
+                    if (!blob) {
+                        window.location.href = downloadEl.getAttribute('href');
+                        return;
+                    }
+                    revokeObjectUrl();
+                    objectUrl = URL.createObjectURL(blob);
+                    var link = document.createElement('a');
+                    link.href = objectUrl;
+                    link.download = downloadEl.getAttribute('download') || 'guest-qr.png';
+                    link.click();
+                });
+            });
+        }
+
+        if (shareEl) {
+            shareEl.addEventListener('click', function () {
+                if (!imgEl || !imgEl.src || typeof navigator.share !== 'function') {
+                    return;
+                }
+
+                var name = titleEl ? titleEl.textContent : 'Guest';
+                var filename = (downloadEl && downloadEl.getAttribute('download')) || 'guest-qr.png';
+                var payload = {
+                    title: 'Check-in QR for ' + name,
+                    text: 'Check-in QR for ' + name,
+                };
+
+                function share(data) {
+                    navigator.share(data).catch(function () {});
+                }
+
+                if (!imgEl.complete) {
+                    share(payload);
+                    return;
+                }
+
+                qrPngBlob(imgEl, function (blob) {
+                    if (!blob) {
+                        share(payload);
+                        return;
+                    }
+                    var file = new File([blob], filename, { type: 'image/png' });
+                    if (canShareFiles() && navigator.canShare({ files: [file] })) {
+                        payload.files = [file];
+                    }
+                    share(payload);
+                });
+            });
+        }
     }
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -213,6 +380,7 @@
         initCopyButtons(document);
         initBulkSelect(document);
         initBulkActionInputs(document);
-        initMoreMenus(document);
+        var moreMenu = initMoreMenus(document);
+        initQrLightbox(document, moreMenu);
     });
 })();

@@ -296,7 +296,7 @@
                                                         </span>
                                                     @endif
                                                     @if ($event->ownerHasPremiumEventTools())
-                                                        <a href="{{ route('events.guests.qr', ['event' => $event, 'guest' => $guestRow->id]) }}" class="evt-more-item" role="menuitem" target="_blank" rel="noopener noreferrer">
+                                                        <a href="{{ route('events.guests.qr', ['event' => $event, 'guest' => $guestRow->id]) }}" class="evt-more-item" role="menuitem" data-evt-qr-open data-qr-name="{{ $guestRow->name }}" data-qr-filename="guest-{{ \Illuminate\Support\Str::slug($guestRow->name) }}-qr.png">
                                                             <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
                                                             <span>QR check-in</span>
                                                         </a>
@@ -334,6 +334,30 @@
 
                     {{ $guests->links() }}
                 @endif
+            </div>
+        </div>
+    </div>
+
+    <div class="evt-qr-lightbox" data-evt-qr-lightbox hidden>
+        <div class="evt-qr-lightbox-backdrop" data-evt-qr-close tabindex="-1"></div>
+        <div class="evt-qr-lightbox-dialog" role="dialog" aria-modal="true" aria-labelledby="evt-qr-lightbox-title">
+            <button type="button" class="evt-qr-lightbox-close" data-evt-qr-close aria-label="Close">
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+            </button>
+            <h2 id="evt-qr-lightbox-title" class="evt-qr-lightbox-title" data-evt-qr-title>Check-in QR</h2>
+            <p class="evt-qr-lightbox-sub">Staff scan this at the door to check the guest in.</p>
+            <div class="evt-qr-lightbox-frame">
+                <img data-evt-qr-img alt="" width="240" height="240">
+            </div>
+            <div class="evt-qr-lightbox-actions">
+                <a href="#" class="evt-btn-outline" data-evt-qr-download download>
+                    <i class="fa-solid fa-download" aria-hidden="true"></i>
+                    Download
+                </a>
+                <button type="button" class="btn-primary" data-evt-qr-share hidden>
+                    <i class="fa-solid fa-share-nodes" aria-hidden="true"></i>
+                    Share
+                </button>
             </div>
         </div>
     </div>

@@ -108,6 +108,8 @@ class GuestManagementTest extends TestCase
             ->assertSee('Copy link', escape: false)
             ->assertSee('WhatsApp', escape: false)
             ->assertSee('QR check-in', escape: false)
+            ->assertSee('data-evt-qr-open', escape: false)
+            ->assertSee('data-evt-qr-lightbox', escape: false)
             ->assertSee(route('events.guests.qr', ['event' => $event, 'guest' => $guest->id]), escape: false)
             ->assertSee('Mark sent', escape: false)
             ->assertSee(route('events.guests.edit', ['event' => $event, 'guest' => $guest->id]), escape: false)
