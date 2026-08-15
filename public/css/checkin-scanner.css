@@ -83,6 +83,44 @@
   color: var(--gray-mid, #8e8ea8);
 }
 
+/* Populated by checkin-scanner.js alongside .ckin-result — email, phone, table,
+   meal preference, RSVP note. Only the rows a guest actually has are added, so
+   :empty collapses this to nothing between scans, same as .ckin-result:empty. */
+.ckin-result-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm, 6px);
+  background: var(--gray-light, #f4f5f9);
+}
+
+.ckin-result-details:empty {
+  padding: 0;
+  margin: 0;
+}
+
+.ckin-detail-row {
+  display: flex;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.ckin-detail-row dt {
+  flex-shrink: 0;
+  width: 110px;
+  font-weight: 700;
+  color: var(--gray-mid, #64748b);
+}
+
+.ckin-detail-row dd {
+  margin: 0;
+  color: var(--navy, #1a2a4a);
+  word-break: break-word;
+}
+
 .ckin-manual {
   border-top: 1px solid var(--line, #e0e0e8);
   padding-top: 16px;

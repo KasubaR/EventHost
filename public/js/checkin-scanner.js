@@ -17,6 +17,7 @@
         var canvas = document.getElementById('ckinCanvas');
         var hint = document.getElementById('ckinCameraHint');
         var resultBox = document.getElementById('ckinResult');
+        var resultDetails = document.getElementById('ckinResultDetails');
         var lookupInput = document.getElementById('ckinLookupInput');
         var lookupResults = document.getElementById('ckinLookupResults');
         var arrivedStat = document.querySelector('[data-checkin-arrived]');
@@ -36,6 +37,45 @@
         function showResult(kind, message) {
             resultBox.className = 'ckin-result ckin-result--' + kind;
             resultBox.textContent = message;
+        }
+
+        // Built with createElement/textContent, not innerHTML — guest-entered fields
+        // (name, notes, meal preference…) are untrusted strings and must never be
+        // parsed as markup.
+        function showResultDetails(guest) {
+            resultDetails.innerHTML = '';
+            if (!guest) {
+                return;
+            }
+
+            var rows = [
+                ['Email', guest.email],
+                ['Phone', guest.phone],
+                ['Table', guest.table],
+                ['Meal preference', guest.meal_preference],
+                ['RSVP note', guest.rsvp_note],
+            ];
+
+            rows.forEach(function (row) {
+                var label = row[0];
+                var value = row[1];
+                if (!value) {
+                    return;
+                }
+
+                var wrap = document.createElement('div');
+                wrap.className = 'ckin-detail-row';
+
+                var dt = document.createElement('dt');
+                dt.textContent = label;
+                wrap.appendChild(dt);
+
+                var dd = document.createElement('dd');
+                dd.textContent = value;
+                wrap.appendChild(dd);
+
+                resultDetails.appendChild(wrap);
+            });
         }
 
         function csrfHeaders() {
@@ -69,6 +109,7 @@
                         showResult('success', guest.name + ' checked in ✓');
                         bumpArrivedCount();
                     }
+                    showResultDetails(guest);
                 })
                 .catch(function () {
                     showResult('error', 'Network error — try again.');
@@ -77,6 +118,7 @@
                     window.setTimeout(function () {
                         scanning = true;
                         showResult('idle', '');
+                        showResultDetails(null);
                     }, 2200);
                 });
         }

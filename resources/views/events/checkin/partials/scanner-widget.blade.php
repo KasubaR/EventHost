@@ -24,6 +24,10 @@
     </div>
 
     <div class="ckin-result" id="ckinResult" aria-live="polite"></div>
+    {{-- Filled by checkin-scanner.js from the same confirm() response — email, phone,
+         table, meal preference, RSVP note. Rows are added only for fields the guest
+         actually has, and :empty collapses this to nothing between scans. --}}
+    <dl class="ckin-result-details" id="ckinResultDetails" aria-live="polite"></dl>
 
     <div class="ckin-manual">
         <label class="evt-sr-only" for="ckinLookupInput">Search guest by name</label>

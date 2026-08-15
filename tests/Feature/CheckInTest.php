@@ -2,8 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Enums\RsvpStatus;
 use App\Models\Event;
+use App\Models\EventTable;
 use App\Models\Guest;
+use App\Models\Rsvp;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -38,6 +41,50 @@ class CheckInTest extends TestCase
         $guest->refresh();
         $this->assertNotNull($guest->checked_in_at);
         $this->assertSame($owner->id, $guest->checked_in_by);
+    }
+
+    public function test_confirm_response_includes_contact_table_and_rsvp_details(): void
+    {
+        $owner = User::factory()->pro()->create();
+        $event = Event::factory()->for($owner)->create();
+        $table = EventTable::factory()->for($event)->create(['label' => 'Table 7']);
+        $guest = Guest::factory()->for($event)->create([
+            'email' => 'guest@example.test',
+            'phone' => '+260971234567',
+            'event_table_id' => $table->id,
+        ]);
+        Rsvp::factory()->for($guest)->create([
+            'status' => RsvpStatus::Accepted,
+            'meal_preference' => 'Vegetarian',
+            'message' => 'Arriving with a wheelchair, please have a ramp ready.',
+        ]);
+
+        $response = $this->actingAs($owner)
+            ->postJson(route('events.checkin.confirm-token', ['event' => $event, 'token' => $guest->invitation_token]));
+
+        $response->assertOk();
+        $response->assertJsonPath('guest.email', 'guest@example.test');
+        $response->assertJsonPath('guest.phone', '+260971234567');
+        $response->assertJsonPath('guest.table', 'Table 7');
+        $response->assertJsonPath('guest.meal_preference', 'Vegetarian');
+        $response->assertJsonPath('guest.rsvp_note', 'Arriving with a wheelchair, please have a ramp ready.');
+    }
+
+    public function test_confirm_response_omits_details_the_guest_does_not_have(): void
+    {
+        $owner = User::factory()->pro()->create();
+        $event = Event::factory()->for($owner)->create();
+        $guest = Guest::factory()->for($event)->create(['email' => null, 'phone' => null, 'event_table_id' => null]);
+
+        $response = $this->actingAs($owner)
+            ->postJson(route('events.checkin.confirm-token', ['event' => $event, 'token' => $guest->invitation_token]));
+
+        $response->assertOk();
+        $response->assertJsonPath('guest.email', null);
+        $response->assertJsonPath('guest.phone', null);
+        $response->assertJsonPath('guest.table', null);
+        $response->assertJsonPath('guest.meal_preference', null);
+        $response->assertJsonPath('guest.rsvp_note', null);
     }
 
     public function test_confirming_an_already_checked_in_guest_is_idempotent(): void
