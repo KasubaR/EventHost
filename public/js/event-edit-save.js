@@ -28,6 +28,48 @@
 
     const buttons = Array.from(bar.querySelectorAll('[data-save-all]'));
 
+    /**
+     * Force-preview gate: a host must open the real invitation preview at
+     * least once before "Save & publish" is clickable. Any edit made after
+     * that re-locks it — the preview they looked at is stale otherwise.
+     * Client-side only (same trust level as the confirm() dialogs below);
+     * there is no server-side enforcement of this.
+     */
+    const previewLink = document.getElementById('evt-preview-link');
+    const publishButtons = Array.from(bar.querySelectorAll('[data-requires-preview]'));
+    const previewHint = bar.querySelector('[data-preview-required-hint]');
+    let previewed = false;
+
+    function updatePublishGate() {
+        publishButtons.forEach((b) => {
+            b.disabled = !previewed;
+            b.title = previewed ? '' : 'Preview your invitation above before publishing.';
+        });
+        if (previewHint) previewHint.hidden = previewed;
+    }
+
+    if (previewLink && publishButtons.length > 0) {
+        updatePublishGate();
+
+        previewLink.addEventListener('click', () => {
+            previewed = true;
+            updatePublishGate();
+        });
+
+        forms.forEach((form) => {
+            form.addEventListener('change', () => {
+                if (!previewed) return;
+                previewed = false;
+                updatePublishGate();
+            });
+            form.addEventListener('input', () => {
+                if (!previewed) return;
+                previewed = false;
+                updatePublishGate();
+            });
+        });
+    }
+
     function clearErrors() {
         const existing = document.getElementById('evt-save-all-errors');
         if (existing) existing.remove();
@@ -77,6 +119,10 @@
                 delete b.dataset.originalHtml;
             }
         });
+
+        // The loop above just force-enabled every button, including any
+        // publish button the preview gate has locked — reassert the gate.
+        if (!busy) updatePublishGate();
     }
 
     async function postForm(form) {

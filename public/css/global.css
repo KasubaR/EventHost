@@ -151,6 +151,16 @@ nav {
   filter: brightness(1.08);
   transform: translateY(-1px);
 }
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+.btn-primary:disabled:hover {
+  filter: none;
+  transform: none;
+}
 
 .btn-outline {
   display: inline-flex;

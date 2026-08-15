@@ -94,6 +94,17 @@
             </p>
         @endif
 
+        @if ($event->invitation_template_id !== null)
+            <div class="evt-section" id="evt-preview-cta">
+                <div class="evt-section-body evt-actions-bar">
+                    <a href="{{ route('events.preview', $event) }}" target="_blank" rel="noopener" class="evt-btn-outline" id="evt-preview-link" data-preview-link>
+                        <i class="fa-solid fa-eye"></i> Preview invitation
+                    </a>
+                    <span class="evt-muted">Opens in a new tab — see exactly what guests will see before you publish.</span>
+                </div>
+            </div>
+        @endif
+
         {{-- Single action bar. Without JS these fall back to the per-form buttons above,
              which stay visible because evt-save-all.js is what hides them. --}}
         <div class="evt-section evt-save-all" id="evt-save-all-bar"
@@ -107,12 +118,15 @@
              @endif>
             <div class="evt-section-body evt-actions-bar">
                 <button type="button" class="btn-primary" data-save-all>
-                    <i class="fa-solid fa-floppy-disk"></i> Save all changes
+                    <i class="fa-solid fa-floppy-disk"></i> Save Draft
                 </button>
                 @if (! $event->is_published)
-                    <button type="button" class="btn-primary" data-save-all data-publish>
+                    <button type="button" class="btn-primary" data-save-all data-publish data-requires-preview>
                         <i class="fa-solid fa-bullhorn"></i> Save &amp; publish
                     </button>
+                    <span class="evt-muted evt-flash--warn" data-preview-required-hint hidden>
+                        <i class="fa-solid fa-eye"></i> Preview your invitation above first.
+                    </span>
                     @if ($publishCostsCredit)
                         <span class="evt-muted">Publishing uses 1 event credit — you have {{ auth()->user()->event_credits }}.</span>
                     @else

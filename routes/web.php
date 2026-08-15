@@ -9,6 +9,7 @@ use App\Http\Controllers\EventGalleryController;
 use App\Http\Controllers\EventInvitationDesignController;
 use App\Http\Controllers\EventInvitationMediaController;
 use App\Http\Controllers\EventPhotoController;
+use App\Http\Controllers\EventPreviewController;
 use App\Http\Controllers\EventStaffLinkController;
 use App\Http\Controllers\EventTableController;
 use App\Http\Controllers\GuestBulkActionController;
@@ -103,6 +104,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/events/{event}/choose-template', [EventChooseTemplateController::class, 'show'])->name('events.choose-template');
     Route::patch('/events/{event}/choose-template', [EventChooseTemplateController::class, 'update'])->name('events.choose-template.update');
+
+    // Host-only view of the real invitation, gated on ownership rather than
+    // is_published/is_public — lets a host preview a draft or a private event
+    // that the public /e/{slug} route would otherwise 403 on.
+    Route::get('/events/{event}/preview', [EventPreviewController::class, 'show'])->name('events.preview');
 
     Route::get('/events/{event}/guests/import/template', [GuestImportController::class, 'downloadTemplate'])
         ->name('events.guests.import.template');

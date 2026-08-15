@@ -58,6 +58,83 @@
     .evt-host-bar { justify-content: space-between; }
 }
 
+/* Host preview bar (/events/{event}/preview) — chrome around the real
+   invitation while the host is reviewing it, never shown to guests. */
+.evt-preview-bar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 20px;
+    height: 52px;
+    background: rgba(15, 23, 42, 0.94);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    font-family: 'DM Sans', sans-serif;
+}
+.evt-preview-bar-back {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: color 0.18s;
+    flex-shrink: 0;
+}
+.evt-preview-bar-back:hover {
+    color: #fff;
+}
+.evt-preview-bar-name {
+    flex: 1;
+    text-align: center;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 0 8px;
+}
+.evt-preview-bar-note {
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.55);
+    white-space: nowrap;
+}
+.evt-preview-bar-publish {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    flex-shrink: 0;
+    padding: 7px 16px;
+    background: #fff;
+    color: #0f0f0f;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 999px;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s;
+}
+.evt-preview-bar-publish:hover {
+    background: #e8e8e8;
+}
+@media (max-width: 540px) {
+    .evt-preview-bar-name,
+    .evt-preview-bar-note {
+        display: none;
+    }
+}
+
 .evt-public-hero {
     position: relative;
     margin-bottom: 28px;
@@ -94,6 +171,10 @@
     font-weight: 600;
     background: rgba(39, 174, 96, 0.1);
     color: var(--green, #27ae60);
+}
+.evt-session-banner--info {
+    background: rgba(30, 71, 187, 0.08);
+    color: var(--accent, #1e47bb);
 }
 
 .evt-public-title {

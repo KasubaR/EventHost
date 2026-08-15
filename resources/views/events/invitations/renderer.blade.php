@@ -7,7 +7,7 @@
 @if (! empty($isPreview))
     <div class="evt-preview-banner" role="status">
         <i class="fa-solid fa-eye" aria-hidden="true"></i>
-        Template preview — sample event only.
+        {{ $previewLabel ?? 'Template preview — sample event only.' }}
     </div>
 @endif
 

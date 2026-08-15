@@ -219,6 +219,26 @@ Users have an `event_credits` column. Publishing an event costs 1 credit (`User:
 
 When payments are implemented, call `$user->increment('event_credits')` in the payment webhook and it will plug straight in.
 
+### Event Preview
+
+`GET /events/{event}/preview` (`EventPreviewController`) renders the event's real, current invitation —
+the same `events.invitations.renderer` partial and `InvitationCustomizationService::merge()` output the
+public page uses — but gated on `EventPolicy::view` (owner-only) instead of `is_published`/`is_public`.
+
+- This is the only way a host can ever see a **private** (`is_public = false`) event's invitation, published
+  or not — `/e/{slug}` (`PublicEventController::show`) 403s on `is_public = false` regardless of who is
+  asking, by design. It's also the only way to see a **draft** invitation before spending a credit to publish
+- Does not increment `invitation_views_count` — that column is real guest traffic
+- Redirects to `events.choose-template` if `invitation_template_id` is still null; there is nothing to
+  render yet
+- Reuses the `isPreview` flag the renderer already supported for `templates/preview.blade.php` (template
+  preview with sample data). A `previewLabel` override on the include distinguishes "this is your real
+  event" copy from the sample-data wording
+- On the edit page, "Save & publish" starts `disabled` and only unlocks once the host has clicked the
+  **Preview invitation** link at least once (`event-edit-save.js`); editing any field afterward re-locks it.
+  This is a client-side nudge only, same trust level as the credit-spend `confirm()` dialogs already on that
+  page — there is no server-side check that a preview actually happened before `EventController::publish()`
+
 ### Featured Templates (homepage)
 
 The homepage "Invitation Templates" strip is curated from the admin panel, not hardcoded:

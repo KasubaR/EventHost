@@ -21,7 +21,7 @@ class EventEditSaveAllTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('id="evt-save-all-bar"', escape: false);
-        $response->assertSee('Save all changes', escape: false);
+        $response->assertSee('Save Draft', escape: false);
         $response->assertSee('Save &amp; publish', escape: false);
         $response->assertSee('js/event-edit-save.js', escape: false);
     }
@@ -48,8 +48,39 @@ class EventEditSaveAllTest extends TestCase
         $response = $this->actingAs($user)->get(route('events.edit', $event));
 
         $response->assertOk();
-        $response->assertSee('Save all changes', escape: false);
+        $response->assertSee('Save Draft', escape: false);
         $response->assertDontSee('Save &amp; publish', escape: false);
+    }
+
+    public function test_edit_page_shows_a_preview_link_and_gates_publish_on_it_once_a_layout_is_chosen(): void
+    {
+        $user = User::factory()->create();
+        $tpl = InvitationTemplate::query()->where('is_active', true)->firstOrFail();
+        $event = Event::factory()->for($user)->create([
+            'is_published' => false,
+            'invitation_template_id' => $tpl->id,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('events.edit', $event));
+
+        $response->assertOk();
+        $response->assertSee('id="evt-preview-link"', escape: false);
+        $response->assertSee(route('events.preview', $event), escape: false);
+        $response->assertSee('data-requires-preview', escape: false);
+    }
+
+    public function test_edit_page_hides_the_preview_link_before_a_layout_is_chosen(): void
+    {
+        $user = User::factory()->create();
+        $event = Event::factory()->for($user)->create([
+            'is_published' => false,
+            'invitation_template_id' => null,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('events.edit', $event));
+
+        $response->assertOk();
+        $response->assertDontSee('id="evt-preview-link"', escape: false);
     }
 
     public function test_details_endpoint_returns_json_errors_for_the_save_all_script(): void
