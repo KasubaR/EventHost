@@ -1,8 +1,13 @@
 @php
     use App\Support\InvitationFonts;
     use App\Support\InvitationLayoutVariant;
+    use App\Support\InvitationMediaRules;
     use App\Support\InvitationPalettes;
     use App\Support\InvitationVideoBackground;
+
+    // Every file input below stages on pick via js/media-uploader.js. The inputs keep
+    // their name and their binary path, so without JS the form still posts files.
+    $stageUrl = route('events.media.stage', $event);
 
     $sectionLabels = [
         'hero' => 'Cover & hero',
@@ -597,7 +602,10 @@
                                                    name="speaker_photo[{{ $idx }}]"
                                                    type="file"
                                                    accept="image/jpeg,image/png,image/webp,image/gif"
-                                                   class="profile-input evt-bfa-speaker-file">
+                                                   class="profile-input evt-bfa-speaker-file"
+                                                   data-upload-slot="speaker:{{ $idx }}"
+                                                   data-upload-url="{{ $stageUrl }}"
+                                                   data-upload-max-bytes="{{ InvitationMediaRules::IMAGE_MAX_KB * 1024 }}">
                                             @error("speaker_photo.$idx")
                                                 <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                                             @enderror
@@ -650,7 +658,10 @@
                         @endif
                         <div class="profile-field">
                             <label for="invitation_hero_portrait" class="profile-label">{{ $currentHeroPortrait ? 'Replace hero portrait' : 'Upload hero portrait' }}</label>
-                            <input id="invitation_hero_portrait" name="invitation_hero_portrait" type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="profile-input">
+                            <input id="invitation_hero_portrait" name="invitation_hero_portrait" type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="profile-input"
+                                   data-upload-slot="hero_portrait"
+                                   data-upload-url="{{ $stageUrl }}"
+                                   data-upload-max-bytes="{{ InvitationMediaRules::IMAGE_MAX_KB * 1024 }}">
                             @error('invitation_hero_portrait')
                                 <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                             @enderror
@@ -680,7 +691,11 @@
                                     Couple / dual portraits
                                 @endif
                             </label>
-                            <input id="couple_photos" name="couple_photos[]" type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="profile-input" multiple @if ($coupleSlotsRemaining === 0) disabled @endif>
+                            <input id="couple_photos" name="couple_photos[]" type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="profile-input" multiple
+                                   data-upload-slot="couple"
+                                   data-upload-url="{{ $stageUrl }}"
+                                   data-upload-max-bytes="{{ InvitationMediaRules::IMAGE_MAX_KB * 1024 }}"
+                                   @if ($coupleSlotsRemaining === 0) disabled @endif>
                             <p class="evt-muted evt-design-hint">
                                 @if ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION)
                                     Select up to 3 different images — they fill the left, centre, and right columns of the portrait grid. You can select all three at once or upload in batches.
@@ -733,7 +748,10 @@
                         <div class="evt-design-inset-body">
                             <div class="profile-field evt-design-inset-field">
                                 <label for="gallery_images" class="profile-label evt-design-upload-micro">Image files</label>
-                                <input id="gallery_images" name="gallery_images[]" type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="profile-input evt-design-media-file" multiple>
+                                <input id="gallery_images" name="gallery_images[]" type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="profile-input evt-design-media-file" multiple
+                                       data-upload-slot="gallery"
+                                       data-upload-url="{{ $stageUrl }}"
+                                       data-upload-max-bytes="{{ InvitationMediaRules::IMAGE_MAX_KB * 1024 }}">
                                 @error('gallery_images')
                                     <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                                 @enderror
@@ -809,7 +827,10 @@
                             </label>
                             <div class="profile-field evt-design-inset-field">
                                 <label for="audio_track" class="profile-label evt-design-upload-micro">Upload MP3 or OGG</label>
-                                <input id="audio_track" name="audio_track" type="file" accept="audio/mpeg,audio/mp3,audio/ogg,audio/wav" class="profile-input evt-design-media-file">
+                                <input id="audio_track" name="audio_track" type="file" accept="audio/mpeg,audio/mp3,audio/ogg,audio/wav" class="profile-input evt-design-media-file"
+                                       data-upload-slot="audio"
+                                       data-upload-url="{{ $stageUrl }}"
+                                       data-upload-max-bytes="{{ InvitationMediaRules::AUDIO_MAX_KB * 1024 }}">
                                 @error('audio_track')
                                     <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                                 @enderror

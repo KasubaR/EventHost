@@ -9,9 +9,11 @@ use App\Http\Requests\UpdateEventRequest;
 use App\Models\CreditTransaction;
 use App\Models\Event;
 use App\Models\InvitationTemplate;
+use App\Models\StagedMedia;
 use App\Services\DashboardAnalyticsService;
 use App\Services\EventCreditService;
 use App\Services\InvitationCustomizationService;
+use App\Support\InvitationMediaStager;
 use App\Support\InvitationVideoBackground;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -20,7 +22,6 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
-use Intervention\Image\ImageManager;
 
 class EventController extends Controller
 {
@@ -167,6 +168,17 @@ class EventController extends Controller
     ): RedirectResponse|JsonResponse {
         $newCoverPath = null;
         $previousCover = null;
+        // Only a cover written *during this request* may be rolled back on failure.
+        // A staged cover was uploaded minutes ago and its form is about to be
+        // redisplayed showing it, so deleting it here would break that page.
+        $coverIsRollbackable = false;
+
+        $stagedCover = StagedMedia::query()
+            ->ownedBy($event->id, $request->user()->id)
+            ->where('slot', StagedMedia::SLOT_COVER)
+            ->whereIn('id', array_map('intval', (array) $request->input('staged_media', [])))
+            ->latest('id')
+            ->first();
 
         // "Publish event" submits this same form, so the pending edits are saved
         // in the same request rather than being discarded by a separate publish post.
@@ -178,13 +190,20 @@ class EventController extends Controller
         $chargeable = $event->isLocked() && $event->identityChangedBy($request->validated());
 
         try {
-            if ($request->hasFile('cover_image')) {
+            if ($stagedCover !== null) {
+                $previousCover = $event->cover_image;
+                $newCoverPath = $stagedCover->path;
+            } elseif ($request->hasFile('cover_image')) {
                 $previousCover = $event->cover_image;
                 $newCoverPath = $this->storeCoverImage($request->file('cover_image'));
+                $coverIsRollbackable = true;
             }
 
-            DB::transaction(function () use ($request, $event, $newCoverPath, $shouldPublish, $chargeable, $credits, &$previousCover): void {
+            DB::transaction(function () use ($request, $event, $newCoverPath, $stagedCover, $shouldPublish, $chargeable, $credits, &$previousCover): void {
                 $data = $request->validated();
+
+                // Never a column — it is the receipt for an upload that already happened.
+                unset($data['staged_media']);
 
                 if ($newCoverPath !== null) {
                     $data['cover_image'] = $newCoverPath;
@@ -205,6 +224,10 @@ class EventController extends Controller
                 $event->fill($data);
                 $event->save();
 
+                // Inside the transaction: a rollback must leave the row in place so
+                // the redisplayed form still knows about the uploaded cover.
+                $stagedCover?->delete();
+
                 if ($previousCover) {
                     DB::afterCommit(function () use ($previousCover): void {
                         Storage::disk('public')->delete($previousCover);
@@ -212,7 +235,7 @@ class EventController extends Controller
                 }
             });
         } catch (\Throwable $e) {
-            if ($newCoverPath !== null) {
+            if ($newCoverPath !== null && $coverIsRollbackable) {
                 Storage::disk('public')->delete($newCoverPath);
             }
 
@@ -293,18 +316,12 @@ class EventController extends Controller
         return redirect()->route('events.public', $event->slug)->with('status', 'published');
     }
 
+    /**
+     * Shared with the staging endpoint so a cover uploaded on pick and a cover
+     * uploaded with the form land in the same shape and the same directory.
+     */
     private function storeCoverImage(UploadedFile $file): string
     {
-        $manager = extension_loaded('imagick')
-            ? ImageManager::imagick()
-            : ImageManager::gd();
-        $image = $manager->read($file->getRealPath());
-        $image->cover(1200, 630);
-        $webp = $image->toWebp(85);
-
-        $path = 'events/'.uniqid('event_', true).'.webp';
-        Storage::disk('public')->put($path, $webp->toString());
-
-        return $path;
+        return InvitationMediaStager::storeCover($file);
     }
 }

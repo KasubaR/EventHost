@@ -4,14 +4,17 @@ namespace App\Http\Requests;
 
 use App\Models\Event;
 use App\Models\InvitationTemplate;
+use App\Models\StagedMedia;
 use App\Services\InvitationCustomizationService;
 use App\Support\InvitationFonts;
 use App\Support\InvitationLayoutVariant;
+use App\Support\InvitationMediaRules;
 use App\Support\InvitationPalettes;
 use App\Support\InvitationSections;
 use App\Support\InvitationVideoBackground;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -19,6 +22,9 @@ use Illuminate\Validation\Validator;
 
 class UpdateInvitationDesignRequest extends FormRequest
 {
+    /** Resolved once — withValidator reads it for four separate cap checks. */
+    private ?Collection $stagedRows = null;
+
     public function authorize(): bool
     {
         $event = $this->route('event');
@@ -231,7 +237,49 @@ class UpdateInvitationDesignRequest extends FormRequest
             'speaker_photo.*' => ['nullable', 'file', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:5120'],
             'speaker_photo_clear' => ['nullable', 'array', 'max:4'],
             'speaker_photo_clear.*' => ['boolean'],
+
+            // Ids from EventInvitationMediaController. The rows themselves are
+            // re-checked against event and user when they are consumed; anything
+            // that does not resolve is silently ignored rather than fatal, because
+            // a stale id usually means a save already claimed it.
+            'staged_media' => ['nullable', 'array', 'max:24'],
+            'staged_media.*' => ['integer', 'min:1'],
         ];
+    }
+
+    /**
+     * Staged rows named by this submission, scoped to the event and the user.
+     *
+     * @return Collection<int, StagedMedia>
+     */
+    private function stagedRows(): Collection
+    {
+        if ($this->stagedRows !== null) {
+            return $this->stagedRows;
+        }
+
+        $event = $this->route('event');
+        $ids = array_values(array_unique(array_filter(array_map(
+            'intval',
+            (array) $this->input('staged_media', [])
+        ))));
+
+        if ($ids === [] || ! $event instanceof Event || $this->user() === null) {
+            return $this->stagedRows = collect();
+        }
+
+        return $this->stagedRows = StagedMedia::query()
+            ->ownedBy($event->id, $this->user()->id)
+            ->whereIn('id', $ids)
+            ->get();
+    }
+
+    /**
+     * @return Collection<int, StagedMedia>
+     */
+    private function stagedForSlot(string $slot): Collection
+    {
+        return $this->stagedRows()->where('slot', $slot)->values();
     }
 
     /**
@@ -335,9 +383,14 @@ class UpdateInvitationDesignRequest extends FormRequest
                 }
             }
 
+            $stagedGallery = $this->stagedForSlot(StagedMedia::SLOT_GALLERY);
+
             $keepCount = count($galleryKeep);
-            $newCount = count($this->file('gallery_images', []) ?: []);
-            if ($keepCount + $newCount > 6) {
+            // Staged files are already on disk but not yet referenced, so they count
+            // towards the cap here — this is the authoritative check, the one at
+            // staging time only sees files, never pending removals.
+            $newCount = count($this->file('gallery_images', []) ?: []) + $stagedGallery->count();
+            if ($keepCount + $newCount > InvitationMediaRules::GALLERY_MAX) {
                 $validator->errors()->add('gallery_images', 'You may keep at most six gallery images.');
             }
 
@@ -356,6 +409,8 @@ class UpdateInvitationDesignRequest extends FormRequest
                         $totalBytes += $file->getSize();
                     }
                 }
+                $totalBytes += (int) $stagedGallery->sum('bytes');
+
                 if ($totalBytes > $cap) {
                     $validator->errors()->add('gallery_images', 'Total gallery size exceeds the allowed limit.');
                 }
@@ -365,18 +420,23 @@ class UpdateInvitationDesignRequest extends FormRequest
             $maxPortrait = InvitationLayoutVariant::maxInvitationHeroPortraitSlots($variant);
             $maxCouple = InvitationLayoutVariant::maxCouplePhotoSlots($variant);
 
-            if ($maxPortrait === 0 && $this->hasFile('invitation_hero_portrait')) {
+            if ($maxPortrait === 0
+                && ($this->hasFile('invitation_hero_portrait')
+                    || $this->stagedForSlot(StagedMedia::SLOT_HERO_PORTRAIT)->isNotEmpty())) {
                 $validator->errors()->add('invitation_hero_portrait', 'This invitation layout does not support a separate hero portrait upload.');
             }
 
             if ($maxCouple === 0) {
                 $coupleFiles = $this->file('couple_photos', []) ?: [];
-                $hasCoupleUpload = false;
+                $hasCoupleUpload = $this->stagedForSlot(StagedMedia::SLOT_COUPLE)->isNotEmpty();
                 foreach ($coupleFiles as $file) {
                     if ($file instanceof UploadedFile) {
                         $hasCoupleUpload = true;
                         break;
                     }
+                }
+                for ($i = 0; $i < 4 && ! $hasCoupleUpload; $i++) {
+                    $hasCoupleUpload = $this->stagedForSlot(StagedMedia::speakerSlot($i))->isNotEmpty();
                 }
                 if ($hasCoupleUpload) {
                     $validator->errors()->add('couple_photos', 'This invitation layout does not support couple photo uploads.');
@@ -397,7 +457,12 @@ class UpdateInvitationDesignRequest extends FormRequest
                 }
 
                 $coupleKeep = array_values(array_diff($existingCouple, $removeCouple));
-                $newCoupleCount = 0;
+
+                // Only the batch slot is counted. Beauty for Ashes addresses its four
+                // portraits positionally (speaker:0…3), where a staged file replaces
+                // one slot rather than adding to the total — counting those here would
+                // reject replacing a portrait on a layout whose slots are all full.
+                $newCoupleCount = $this->stagedForSlot(StagedMedia::SLOT_COUPLE)->count();
                 foreach ($this->file('couple_photos', []) ?: [] as $file) {
                     if ($file instanceof UploadedFile) {
                         $newCoupleCount++;

@@ -3,6 +3,7 @@
         <link rel="stylesheet" href="{{ asset('css/events-admin.css') }}">
         <link rel="stylesheet" href="{{ asset('css/datetime-picker.css') }}">
         <link rel="stylesheet" href="{{ asset('css/custom-select.css') }}">
+        <link rel="stylesheet" href="{{ asset('css/media-uploader.css') }}">
     @endpush
     @push('scripts')
         <script src="{{ asset('js/events-form.js') }}" defer></script>
@@ -10,6 +11,8 @@
         <script src="{{ asset('js/custom-select.js') }}" defer></script>
         <script src="{{ asset('js/vendor/sortable.min.js') }}" defer></script>
         <script src="{{ asset('js/invitation-customize.js') }}" defer></script>
+        {{-- Before event-edit-save.js: saving waits on window.MediaUploader. --}}
+        <script src="{{ asset('js/media-uploader.js') }}" defer></script>
         <script src="{{ asset('js/event-edit-save.js') }}" defer></script>
     @endpush
 

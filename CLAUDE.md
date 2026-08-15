@@ -60,6 +60,7 @@ Laravel 12 application. Auth via Laravel Breeze (Blade stack). No Alpine.js — 
 | `public/css/legal.css` | Policy pages (`.legal-*`) — sticky contents rail + prose, pushed by `legal/*.blade.php` |
 | `public/css/datetime-picker.css` | Custom date/time picker (`.dtp-*`) — pair with `js/datetime-picker.js` |
 | `public/css/custom-select.css` | Custom dropdown (`.cs-*`) — pair with `js/custom-select.js` |
+| `public/css/media-uploader.css` | Upload-on-pick tiles (`.mup-*`) — pair with `js/media-uploader.js`; pushed by `events/edit.blade.php` |
 
 Layouts: `layouts/site.blade.php` loads `global.css` + `account-components.css` + Vite; `layouts/app.blade.php` adds `dashboard-shell.css` + `forms-app.css`. Tailwind ships via Vite (`resources/css/app.css`) alongside these files.
 
@@ -73,6 +74,41 @@ Two reusable, dependency-free controls that progressively enhance native inputs.
 | `js/custom-select.js` | `data-cs` on any `<select>` (incl. `multiple`) | `data-cs-search="auto\|always\|never"`, `data-cs-placeholder`, `data-cs-icon`, `data-cs-size="sm"`; per-option `data-icon` / `data-hint`; `<optgroup>` supported |
 
 Both auto-initialise on `DOMContentLoaded`; call `DateTimePicker.refresh(root)` / `CustomSelect.refresh(root)` after injecting markup dynamically.
+
+### Upload on pick (staged media)
+
+Images on the event edit page upload the moment they are chosen, not when the form is saved. Plan and
+rationale: `plans/upload-progress.md`.
+
+- Opt in with `data-upload-slot`, `data-upload-url` and `data-upload-max-bytes` on any `<input type="file">`.
+  `js/media-uploader.js` renders a tile per file with a real progress bar and appends
+  `<input type="hidden" name="staged_media[]">` to that input's own form
+- **`XMLHttpRequest`, not `fetch`** — `fetch` reports no upload progress, and the percentage is the point
+- The native input keeps its `name` and stays in the DOM, so **without JS the form still posts binaries** and
+  every controller still accepts them. Both branches are live; do not delete the file branches
+- The uploader clears `input.value` in a `setTimeout` after reading the files. Clearing is mandatory (else the
+  binary posts alongside the staged id and stores twice); the timeout is so other `change` listeners on the
+  same input — the cover preview in `events-form.js` — still see the files whatever order they registered in
+- `POST /events/{event}/media` (`EventInvitationMediaController`, `throttle:invitation-media`) validates one
+  file against `InvitationMediaRules` and writes it to its **final** directory, so consuming a row later costs
+  one string assignment and no filesystem work inside the save transaction
+- Slots: `gallery`, `hero_portrait`, `couple`, `speaker:0`…`speaker:3`, `cover`, `audio`. Single-value slots
+  (hero, cover, audio, each speaker) replace on re-upload; `gallery` and `couple` append
+- Every staged lookup is scoped to **event *and* user** (`StagedMedia::scopeOwnedBy`). event_id alone would let
+  a co-host consume rows staged in someone else's open form
+- **Staged paths never join `$uploadedPaths`** in `EventInvitationDesignController`. That list is rolled back on
+  failure, and these files must survive a rejected save so the redisplayed form still shows its tiles
+- Staging caps count *staged rows only*, not saved images — otherwise "remove three, add three" is rejected,
+  because staging cannot see removals the open form has not submitted. The authoritative
+  saved + staged − removed check lives in `UpdateInvitationDesignRequest::withValidator()`
+- `invitation:prune-orphaned-files` treats a live `staged_media` row as a **reference**, and separately expires
+  rows older than `invitations.staged_media_ttl_minutes` (24 h). Without the first half it would delete photos
+  the user can still see on screen, one hour after they picked them
+- WebP conversion is unchanged: still `ProcessInvitationDesignImageJob`, still dispatched after the save
+  commits. A staged tile reads `Ready`, never `Optimising…`. The **event cover** is the exception — converted
+  synchronously in `InvitationMediaStager::storeCover()`, as it always was
+- The **create** page stages nothing: there is no event id to scope an upload to, so its cover posts with the
+  form. Only `/events/{event}/edit` stages
 
 **Two gotchas worth keeping:**
 
@@ -237,8 +273,9 @@ to them.
   business day. Keep these in step with the contact page and with `EventCreditService`
 - One placeholder is left — `[REMEMBER-ME DURATION]` in `cookies.blade.php`, still wrapped in
   `<span class="legal-token">` and rendering to visitors as-is. Grep `legal-token` to find it
-- The liability cap and the governing-law/dispute clause are written as prose, not tokens, and have
-  **not** been filled in with real values
+- The **liability cap is now stated**: total fees paid in the twelve months before the claim, falling back
+  to the price of one event credit when nothing was paid. Still unreviewed by a lawyer
+- The governing-law/dispute clause is written as prose, not a token, and has **not** been filled in
 - The three pages cross-link via `legal/partials/siblings.blade.php` and share
   `legal/partials/contact-card.blade.php`
 - The contents rail is a bare `<nav>`, so `global.css`'s `nav {}` rule applies — `legal.css` overrides it
@@ -263,5 +300,8 @@ to them.
 ### Asset Bundling
 
 Vite bundles `resources/css/app.css` (Tailwind) and `resources/js/app.js`. These are loaded with `@vite()` in the layouts. The custom CSS files in `public/css/` are loaded directly with `<link>` tags — they are not processed by Vite.
+
+`public/js/media-uploader.js` must load **before** `event-edit-save.js` — saving waits on
+`window.MediaUploader.pending()` so a click mid-upload does not post ids for files still in transit.
 
 `public/js/homepage.js` is loaded with a plain `<script src>` tag (not Vite). It handles: FAQ accordion, chart bar animations, password eye-toggle for auth pages (`.auth-eye` class), and click-to-play for homepage video reviews (`[data-testi-video]`).

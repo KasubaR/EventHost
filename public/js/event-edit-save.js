@@ -63,9 +63,13 @@
     function setBusy(busy, label) {
         buttons.forEach((b) => {
             b.disabled = busy;
-            if (busy && label && b.dataset.busyLabel === undefined) {
-                b.dataset.originalHtml = b.innerHTML;
-                b.dataset.busyLabel = '1';
+            if (busy && label) {
+                // Only capture the original once — a save can pass through more
+                // than one label ("Finishing uploads…" then "Saving…").
+                if (b.dataset.busyLabel === undefined) {
+                    b.dataset.originalHtml = b.innerHTML;
+                    b.dataset.busyLabel = '1';
+                }
                 b.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ' + label;
             } else if (!busy && b.dataset.busyLabel !== undefined) {
                 b.innerHTML = b.dataset.originalHtml;
@@ -98,6 +102,26 @@
         return { ok: true };
     }
 
+    /**
+     * Images upload as they are picked (js/media-uploader.js), so a save fired
+     * mid-upload would post ids for files the server has not finished receiving.
+     * Wait them out rather than racing them.
+     */
+    function waitForUploads() {
+        if (!window.MediaUploader || window.MediaUploader.pending() === 0) {
+            return Promise.resolve();
+        }
+
+        return new Promise((resolve) => {
+            const poll = setInterval(() => {
+                if (window.MediaUploader.pending() === 0) {
+                    clearInterval(poll);
+                    resolve();
+                }
+            }, 150);
+        });
+    }
+
     async function saveAll(publish) {
         // Saves go through fetch(), so a data-confirm on the form would never
         // fire — the confirm for a chargeable edit has to live here.
@@ -106,7 +130,23 @@
             return;
         }
 
+        if (window.MediaUploader && window.MediaUploader.failed() > 0) {
+            const count = window.MediaUploader.failed();
+            const message = count === 1
+                ? 'One image failed to upload and will not be saved. Save anyway?'
+                : count + ' images failed to upload and will not be saved. Save anyway?';
+            if (!window.confirm(message)) {
+                return;
+            }
+        }
+
         clearErrors();
+
+        if (window.MediaUploader && window.MediaUploader.pending() > 0) {
+            setBusy(true, 'Finishing uploads…');
+            await waitForUploads();
+        }
+
         setBusy(true, publish ? 'Publishing…' : 'Saving…');
 
         try {

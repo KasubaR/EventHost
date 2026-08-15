@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Http\Requests\UpdateInvitationDesignRequest;
 use App\Jobs\ProcessInvitationDesignImageJob;
 use App\Models\Event;
+use App\Models\StagedMedia;
 use App\Services\InvitationCustomizationService;
 use App\Support\InvitationCustomizationPersistenceValidator;
 use App\Support\InvitationLayoutVariant;
+use App\Support\InvitationMediaStager;
 use App\Support\InvitationPalettes;
 use App\Support\InvitationVideoBackground;
 use Illuminate\Http\RedirectResponse;
@@ -60,6 +62,39 @@ class EventInvitationDesignController extends Controller
 
                 $template = $customizationService->resolvedTemplate($fresh);
 
+                // Files the browser already uploaded while the user was still editing.
+                // Scoped to event *and* user, so an id lifted from another session
+                // resolves to nothing rather than to someone else's photo.
+                $stagedIds = array_values(array_unique(array_map('intval', $validated['staged_media'] ?? [])));
+                $stagedBySlot = ($stagedIds === []
+                    ? collect()
+                    : StagedMedia::query()
+                        ->ownedBy($fresh->id, $request->user()->id)
+                        ->whereIn('id', $stagedIds)
+                        ->lockForUpdate()
+                        ->get())
+                    ->groupBy('slot');
+
+                $consumedStagedIds = [];
+
+                /**
+                 * Claim every staged file for a slot and return its paths. The row is
+                 * marked consumed whether or not the branch below ends up using the
+                 * path — a caller that discards one must add it to $pathsToDelete,
+                 * or the file is orphaned the moment its row goes away.
+                 *
+                 * @return list<string>
+                 */
+                $takeStaged = function (string $slot) use ($stagedBySlot, &$consumedStagedIds): array {
+                    $paths = [];
+                    foreach ($stagedBySlot->get($slot, collect()) as $row) {
+                        $consumedStagedIds[] = $row->id;
+                        $paths[] = $row->path;
+                    }
+
+                    return $paths;
+                };
+
                 $candidateSections = [];
                 foreach ($validated['section_order'] as $type) {
                     $candidateSections[] = [
@@ -91,20 +126,41 @@ class EventInvitationDesignController extends Controller
                     $videoToKeep = null;
                 }
 
+                $stagedAudio = $takeStaged(StagedMedia::SLOT_AUDIO);
+
                 $audioToKeep = $prevEffects['audio_track'] ?? null;
-                if ($request->boolean('clear_audio') && $audioToKeep !== null) {
-                    $pathsToDelete[] = $audioToKeep;
-                    $audioToKeep = null;
-                } elseif ($request->hasFile('audio_track') && $audioToKeep !== null) {
+                if ($request->boolean('clear_audio')) {
+                    // An explicit Remove beats a staged replacement, matching how the
+                    // checkbox has always beaten a file input. The staged file is
+                    // dropped here rather than left behind without its row.
+                    foreach ($stagedAudio as $discarded) {
+                        $pathsToDelete[] = $discarded;
+                    }
+                    $stagedAudio = [];
+
+                    if ($audioToKeep !== null) {
+                        $pathsToDelete[] = $audioToKeep;
+                        $audioToKeep = null;
+                    }
+                } elseif (($stagedAudio !== [] || $request->hasFile('audio_track')) && $audioToKeep !== null) {
                     $pathsToDelete[] = $audioToKeep;
                     $audioToKeep = null;
                 }
 
                 $newGallery = [];
                 $galleryOriginalPathsForJobs = [];
+
+                // Staged paths never join $uploadedPaths: that list is rolled back on
+                // failure, and these files must survive a rejected save so the form
+                // can be redisplayed with its tiles intact.
+                foreach ($takeStaged(StagedMedia::SLOT_GALLERY) as $path) {
+                    $newGallery[] = $path;
+                    $galleryOriginalPathsForJobs[] = $path;
+                }
+
                 foreach ($request->file('gallery_images', []) ?: [] as $file) {
                     if ($file instanceof UploadedFile) {
-                        $path = $this->storeInvitationRasterOriginal($file, $fresh->id, 'invitation-gallery', 'gal_src_');
+                        $path = InvitationMediaStager::store($file, StagedMedia::SLOT_GALLERY, $fresh->id);
                         $newGallery[] = $path;
                         $uploadedPaths[] = $path;
                         $galleryOriginalPathsForJobs[] = $path;
@@ -149,18 +205,46 @@ class EventInvitationDesignController extends Controller
 
                 $heroPortraitKeep = null;
                 $heroOriginalPathsForJobs = [];
+                $stagedHero = $takeStaged(StagedMedia::SLOT_HERO_PORTRAIT);
+
+                if ($maxPortrait === 0) {
+                    // The layout lost its hero slot between staging and saving.
+                    foreach ($stagedHero as $discarded) {
+                        $pathsToDelete[] = $discarded;
+                    }
+                    $stagedHero = [];
+                }
+
                 if ($maxPortrait > 0) {
                     $heroPortraitKeep = $priorHero;
-                    if ($request->boolean('clear_hero_portrait') && $heroPortraitKeep !== null) {
-                        $pathsToDelete[] = $heroPortraitKeep;
-                        $heroPortraitKeep = null;
+                    if ($request->boolean('clear_hero_portrait')) {
+                        foreach ($stagedHero as $discarded) {
+                            $pathsToDelete[] = $discarded;
+                        }
+                        $stagedHero = [];
+
+                        if ($heroPortraitKeep !== null) {
+                            $pathsToDelete[] = $heroPortraitKeep;
+                            $heroPortraitKeep = null;
+                        }
+                    } elseif ($stagedHero !== []) {
+                        if ($heroPortraitKeep !== null) {
+                            $pathsToDelete[] = $heroPortraitKeep;
+                        }
+                        // Single-value slot — staging replaces rather than appends, so
+                        // anything past the first is a leftover from a race.
+                        $heroPortraitKeep = array_shift($stagedHero);
+                        $heroOriginalPathsForJobs[] = $heroPortraitKeep;
+                        foreach ($stagedHero as $extra) {
+                            $pathsToDelete[] = $extra;
+                        }
                     } elseif ($request->hasFile('invitation_hero_portrait')) {
                         $file = $request->file('invitation_hero_portrait');
                         if ($file instanceof UploadedFile) {
                             if ($heroPortraitKeep !== null) {
                                 $pathsToDelete[] = $heroPortraitKeep;
                             }
-                            $path = $this->storeInvitationRasterOriginal($file, $fresh->id, 'invitation-hero', 'hero_src_');
+                            $path = InvitationMediaStager::store($file, StagedMedia::SLOT_HERO_PORTRAIT, $fresh->id);
                             $heroPortraitKeep = $path;
                             $uploadedPaths[] = $path;
                             $heroOriginalPathsForJobs[] = $path;
@@ -170,23 +254,51 @@ class EventInvitationDesignController extends Controller
 
                 $coupleKeep = [];
                 $coupleOriginalPathsForJobs = [];
+
+                if ($maxCouple === 0) {
+                    // Layout has no portrait slots — claim and drop anything staged for them.
+                    $orphanedPortraitSlots = [StagedMedia::SLOT_COUPLE];
+                    for ($i = 0; $i < 4; $i++) {
+                        $orphanedPortraitSlots[] = StagedMedia::speakerSlot($i);
+                    }
+                    foreach ($orphanedPortraitSlots as $slot) {
+                        foreach ($takeStaged($slot) as $discarded) {
+                            $pathsToDelete[] = $discarded;
+                        }
+                    }
+                }
+
                 if ($maxCouple > 0) {
                     if ($layoutVariant === InvitationLayoutVariant::BEAUTY_FOR_ASHES) {
                         // Per-slot: speaker_photo[i] uploads, speaker_photo_clear[i] clears.
                         for ($i = 0; $i < 4; $i++) {
                             $currentSlot = $priorCouple[$i] ?? '';
                             $clearSlot = (bool) ($validated['speaker_photo_clear'][$i] ?? false);
+                            $stagedSlot = $takeStaged(StagedMedia::speakerSlot($i));
 
                             if ($clearSlot && $currentSlot !== '') {
                                 $pathsToDelete[] = $currentSlot;
+                                foreach ($stagedSlot as $discarded) {
+                                    $pathsToDelete[] = $discarded;
+                                }
                                 $coupleKeep[] = '';
+                            } elseif ($stagedSlot !== []) {
+                                if ($currentSlot !== '') {
+                                    $pathsToDelete[] = $currentSlot;
+                                }
+                                $path = array_shift($stagedSlot);
+                                foreach ($stagedSlot as $extra) {
+                                    $pathsToDelete[] = $extra;
+                                }
+                                $coupleKeep[] = $path;
+                                $coupleOriginalPathsForJobs[] = $path;
                             } elseif ($request->hasFile("speaker_photo.$i")) {
                                 $file = $request->file("speaker_photo.$i");
                                 if ($file instanceof UploadedFile) {
                                     if ($currentSlot !== '') {
                                         $pathsToDelete[] = $currentSlot;
                                     }
-                                    $path = $this->storeInvitationRasterOriginal($file, $fresh->id, 'invitation-couple', 'couple_src_');
+                                    $path = InvitationMediaStager::store($file, StagedMedia::SLOT_COUPLE, $fresh->id);
                                     $coupleKeep[] = $path;
                                     $uploadedPaths[] = $path;
                                     $coupleOriginalPathsForJobs[] = $path;
@@ -197,6 +309,11 @@ class EventInvitationDesignController extends Controller
                                 $coupleKeep[] = $currentSlot;
                             }
                         }
+
+                        // Nothing addresses the batch slot on this layout; drop any stray.
+                        foreach ($takeStaged(StagedMedia::SLOT_COUPLE) as $discarded) {
+                            $pathsToDelete[] = $discarded;
+                        }
                     } else {
                         // Batch upload for other templates (e.g. botanical_graduation).
                         $coupleRemove = array_values(array_intersect($validated['couple_remove'] ?? [], $priorCouple));
@@ -204,12 +321,25 @@ class EventInvitationDesignController extends Controller
                             $pathsToDelete[] = $p;
                         }
                         $coupleKeep = array_values(array_diff($priorCouple, $coupleRemove));
+
+                        foreach ($takeStaged(StagedMedia::SLOT_COUPLE) as $path) {
+                            $coupleKeep[] = $path;
+                            $coupleOriginalPathsForJobs[] = $path;
+                        }
+
                         foreach ($request->file('couple_photos', []) ?: [] as $file) {
                             if ($file instanceof UploadedFile) {
-                                $path = $this->storeInvitationRasterOriginal($file, $fresh->id, 'invitation-couple', 'couple_src_');
+                                $path = InvitationMediaStager::store($file, StagedMedia::SLOT_COUPLE, $fresh->id);
                                 $coupleKeep[] = $path;
                                 $uploadedPaths[] = $path;
                                 $coupleOriginalPathsForJobs[] = $path;
+                            }
+                        }
+
+                        // Numbered slots belong to Beauty for Ashes only.
+                        for ($i = 0; $i < 4; $i++) {
+                            foreach ($takeStaged(StagedMedia::speakerSlot($i)) as $discarded) {
+                                $pathsToDelete[] = $discarded;
                             }
                         }
                     }
@@ -230,8 +360,13 @@ class EventInvitationDesignController extends Controller
                 }
 
                 $audioPath = $audioToKeep;
-                if ($request->hasFile('audio_track')) {
-                    $audioPath = $this->storeMediaUpload($request->file('audio_track'), $fresh->id, 'audio');
+                if ($stagedAudio !== []) {
+                    $audioPath = array_shift($stagedAudio);
+                    foreach ($stagedAudio as $extra) {
+                        $pathsToDelete[] = $extra;
+                    }
+                } elseif ($request->hasFile('audio_track')) {
+                    $audioPath = InvitationMediaStager::store($request->file('audio_track'), StagedMedia::SLOT_AUDIO, $fresh->id);
                     $uploadedPaths[] = $audioPath;
                 }
 
@@ -321,6 +456,14 @@ class EventInvitationDesignController extends Controller
 
                 $fresh->save();
 
+                // Inside the transaction on purpose: if the save rolls back, the rows
+                // survive and the redisplayed form still knows about its uploads.
+                if ($consumedStagedIds !== []) {
+                    StagedMedia::query()
+                        ->whereIn('id', array_values(array_unique($consumedStagedIds)))
+                        ->delete();
+                }
+
                 $eventIdForRasterJobs = $fresh->id;
 
                 DB::afterCommit(function () use (
@@ -354,6 +497,7 @@ class EventInvitationDesignController extends Controller
                 'event_id' => $event->id,
                 'user_id' => $request->user()->id,
                 'gallery_uploads' => count($request->file('gallery_images') ?: []),
+                'staged_media_consumed' => count($validated['staged_media'] ?? []),
                 'gallery_removals' => count($validated['gallery_remove'] ?? []),
                 'hero_portrait_upload' => $request->hasFile('invitation_hero_portrait'),
                 'couple_uploads' => count($request->file('couple_photos') ?: []),
@@ -377,32 +521,5 @@ class EventInvitationDesignController extends Controller
         }
 
         return back()->with('status', 'invitation-design-saved');
-    }
-
-    /**
-     * Store the uploaded binary as-is; {@see ProcessInvitationDesignImageJob} converts to WebP asynchronously.
-     */
-    private function storeInvitationRasterOriginal(UploadedFile $file, int $eventId, string $directoryPrefix, string $namePrefix): string
-    {
-        $dir = $directoryPrefix.'/'.$eventId;
-        $ext = strtolower((string) ($file->guessExtension() ?: $file->getClientOriginalExtension() ?: 'jpg'));
-        if (! in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif'], true)) {
-            $ext = 'jpg';
-        }
-        $entropy = str_replace('.', '_', uniqid('', true));
-        $name = $namePrefix.$entropy.'.'.$ext;
-
-        return $file->storeAs($dir, $name, 'public');
-    }
-
-    private function storeMediaUpload(UploadedFile $file, int $eventId, string $prefix): string
-    {
-        $dir = 'invitation-media/'.$eventId;
-        $ext = $file->guessExtension() ?: $file->getClientOriginalExtension()
-            ?: throw new \RuntimeException('Could not determine extension for uploaded media file.');
-        $entropy = str_replace('.', '_', uniqid('', true));
-        $name = $prefix.'_'.$entropy.'.'.$ext;
-
-        return $file->storeAs($dir, $name, 'public');
     }
 }

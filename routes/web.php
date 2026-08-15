@@ -7,6 +7,7 @@ use App\Http\Controllers\EventChooseTemplateController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventGalleryController;
 use App\Http\Controllers\EventInvitationDesignController;
+use App\Http\Controllers\EventInvitationMediaController;
 use App\Http\Controllers\EventPhotoController;
 use App\Http\Controllers\EventStaffLinkController;
 use App\Http\Controllers\EventTableController;
@@ -162,6 +163,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/events/{event}/invitation-design', [EventInvitationDesignController::class, 'update'])
         ->middleware('throttle:invitation-design')
         ->name('events.invitation-design.update');
+
+    // Uploads land here on pick, one file per request, so the save above carries
+    // ids instead of binaries. Its own limiter: 'invitation-design' is sized for
+    // form saves and eleven images would exhaust it.
+    Route::post('/events/{event}/media', [EventInvitationMediaController::class, 'store'])
+        ->middleware('throttle:invitation-media')
+        ->name('events.media.stage');
+    Route::delete('/events/{event}/media/{staged}', [EventInvitationMediaController::class, 'destroy'])
+        ->whereNumber('staged')
+        ->name('events.media.unstage');
     Route::resource('events', EventController::class)->except('store');
     Route::post('/events', [EventController::class, 'store'])->name('events.store')->middleware('throttle:10,1');
 

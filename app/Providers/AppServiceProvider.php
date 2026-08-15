@@ -43,6 +43,14 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute($perMinute)->by((string) $request->user()->id);
         });
 
+        // One request per picked file, and a user can reasonably pick eleven at
+        // once, so this sits well above the design-save limit.
+        RateLimiter::for('invitation-media', function (Request $request): Limit {
+            $perMinute = max(1, (int) config('invitations.media_uploads_per_minute', 60));
+
+            return Limit::perMinute($perMinute)->by((string) $request->user()->id);
+        });
+
         RateLimiter::for('rsvp-submit', function (Request $request): Limit {
             $route = $request->route();
             $suffix = 'global';

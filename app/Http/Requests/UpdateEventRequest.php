@@ -42,6 +42,11 @@ class UpdateEventRequest extends FormRequest
             'latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_with:longitude'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180', 'required_with:latitude'],
             'cover_image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:4096'],
+
+            // Receipt for a cover already uploaded from the edit page — see
+            // EventInvitationMediaController. Stripped before fill(); it is not a column.
+            'staged_media' => ['nullable', 'array', 'max:4'],
+            'staged_media.*' => ['integer', 'min:1'],
             'is_public' => ['boolean'],
             'rsvp_deadline' => ['nullable', 'date', 'before_or_equal:event_date'],
             'guest_limit' => ['nullable', 'integer', 'min:1', 'max:100000'],

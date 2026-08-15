@@ -175,7 +175,15 @@
                     <label for="cover_image" class="profile-photo-btn">
                         <i class="fa-solid fa-image"></i> Upload cover
                     </label>
-                    <input id="cover_image" name="cover_image" type="file" accept="image/jpeg,image/png,image/webp" class="profile-photo-input">
+                    {{-- Staged on pick only when the event already exists; the create
+                         page has no id to scope an upload to, so it posts the file
+                         with the form as it always has. --}}
+                    <input id="cover_image" name="cover_image" type="file" accept="image/jpeg,image/png,image/webp" class="profile-photo-input"
+                           @isset($event)
+                               data-upload-slot="cover"
+                               data-upload-url="{{ route('events.media.stage', $event) }}"
+                               data-upload-max-bytes="{{ \App\Support\InvitationMediaRules::COVER_MAX_KB * 1024 }}"
+                           @endisset>
                     <p class="profile-photo-hint">JPG, PNG or WEBP · Max 4MB</p>
                     @error('cover_image')
                         <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>

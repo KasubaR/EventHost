@@ -1,0 +1,164 @@
+/**
+ * Upload-on-pick tiles (.mup-*) — pair with js/media-uploader.js.
+ *
+ * One tile per picked file: thumbnail, determinate progress bar, state label.
+ * The state vocabulary (busy / done / error) matches table-upload.css so the two
+ * upload surfaces read the same way.
+ */
+
+.mup-queue {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 0;
+}
+
+.mup-queue:empty {
+  margin: 0;
+}
+
+.mup-tile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--line, #e0e0e8);
+  border-radius: var(--radius-sm, 6px);
+  background: var(--white, #fff);
+}
+
+.mup-thumb {
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--gray-light, #f4f5f9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gray-mid, #8e8ea8);
+}
+
+.mup-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.mup-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mup-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dark, #1a1a2e);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mup-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--gray-light, #f4f5f9);
+  overflow: hidden;
+}
+
+.mup-bar {
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+  background: var(--accent, #1e47bb);
+  transition: width 120ms linear;
+}
+
+.mup-status {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gray-mid, #8e8ea8);
+}
+
+/* A finished upload has nothing left to report, so the bar gets out of the way. */
+.mup-tile--done .mup-track {
+  display: none;
+}
+
+.mup-tile--done .mup-status {
+  color: var(--green, #27ae60);
+}
+
+.mup-tile--done .mup-status::before {
+  content: '\2713\00a0';
+}
+
+.mup-tile--error {
+  border-color: color-mix(in srgb, var(--pink, #e00e4f) 40%, transparent);
+  background: color-mix(in srgb, var(--pink, #e00e4f) 5%, var(--white, #fff));
+}
+
+.mup-tile--error .mup-track {
+  display: none;
+}
+
+.mup-tile--error .mup-status {
+  color: var(--pink, #e00e4f);
+}
+
+.mup-actions {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 4px;
+}
+
+.mup-btn {
+  border: 1px solid var(--line, #e0e0e8);
+  background: var(--white, #fff);
+  color: var(--gray-mid, #8e8ea8);
+  border-radius: 4px;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mup-btn:hover {
+  color: var(--text-dark, #1a1a2e);
+  border-color: var(--gray-mid, #8e8ea8);
+}
+
+.mup-retry {
+  color: var(--accent, #1e47bb);
+  border-color: color-mix(in srgb, var(--accent, #1e47bb) 35%, transparent);
+}
+
+.mup-drop-active {
+  outline: 2px dashed var(--accent, #1e47bb);
+  outline-offset: 4px;
+  border-radius: var(--radius-sm, 6px);
+}
+
+/* Shown by event-edit-save.js when Save is waiting on uploads still in flight. */
+.mup-save-notice {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent, #1e47bb);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mup-bar {
+    transition: none;
+  }
+}

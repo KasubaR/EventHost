@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Event;
+use App\Models\StagedMedia;
 use App\Support\InvitationVideoBackground;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -22,11 +23,18 @@ use Illuminate\Support\Facades\Storage;
  *   invitation-hero/{event_id}/       — optional hero portrait overrides and hero_src_* originals
  *   invitation-couple/{event_id}/     — optional couple portrait uploads and couple_src_* originals
  *   invitation-media/{event_id}/       — video and audio uploads
+ *
+ * Staged uploads live in those same directories before the save that references
+ * them, so a live staged_media row counts as a reference — without that, a user
+ * who picks photos and then goes to lunch loses them an hour later. The opposite
+ * sweep runs here too: a staged row nobody saved is abandoned after its TTL, and
+ * both the row and its file go.
  */
 class PruneOrphanedInvitationFilesCommand extends Command
 {
     protected $signature = 'invitation:prune-orphaned-files
                             {--grace=60 : Minimum age in minutes before a file is considered orphaned}
+                            {--staged-ttl= : Minutes before an unsaved staged upload is abandoned (default: config)}
                             {--dry-run  : List orphans without deleting them}';
 
     protected $description = 'Delete orphaned invitation media files not referenced in any event customization';
@@ -38,6 +46,10 @@ class PruneOrphanedInvitationFilesCommand extends Command
         $cutoff = now()->subMinutes($grace);
 
         $this->line("Grace window: {$grace} min | Dry run: ".($dryRun ? 'yes' : 'no'));
+
+        // Expire abandoned staged rows first, so files they were protecting become
+        // eligible for the orphan sweep below in the same run.
+        $this->pruneAbandonedStagedMedia($dryRun);
 
         // Build the complete set of referenced paths from every event's
         // active and previous customization blobs.
@@ -89,11 +101,63 @@ class PruneOrphanedInvitationFilesCommand extends Command
     }
 
     /**
+     * A staged upload whose form was never saved. The TTL is generous because the
+     * cost of being wrong is a user losing photos they can see on screen.
+     */
+    private function pruneAbandonedStagedMedia(bool $dryRun): void
+    {
+        $ttl = $this->option('staged-ttl') !== null
+            ? max(1, (int) $this->option('staged-ttl'))
+            : max(1, (int) config('invitations.staged_media_ttl_minutes', 1440));
+
+        $expired = StagedMedia::query()
+            ->where('created_at', '<', now()->subMinutes($ttl))
+            ->get();
+
+        if ($expired->isEmpty()) {
+            $this->line("Abandoned staged uploads (TTL {$ttl} min): 0");
+
+            return;
+        }
+
+        foreach ($expired as $row) {
+            if ($dryRun) {
+                $this->line("[dry-run] would abandon staged #{$row->id}: {$row->path}");
+
+                continue;
+            }
+
+            // Row first: while it exists the path counts as referenced, so a failure
+            // between the two leaves a protected file rather than a broken reference.
+            $path = $row->path;
+            $row->delete();
+
+            if (! Storage::disk('public')->delete($path)) {
+                Log::warning('invitation.staged_prune_failed', ['path' => $path]);
+            }
+        }
+
+        Log::info('invitation.staged_pruned', ['count' => $expired->count(), 'ttl_minutes' => $ttl]);
+        $this->line("Abandoned staged uploads (TTL {$ttl} min): ".$expired->count());
+    }
+
+    /**
      * @return array<string, true>
      */
     private function buildReferencedPathSet(): array
     {
         $set = [];
+
+        // Live staged uploads are on disk but not yet in any customization blob.
+        StagedMedia::query()
+            ->select(['path'])
+            ->chunk(500, function ($rows) use (&$set): void {
+                foreach ($rows as $row) {
+                    if (is_string($row->path) && $row->path !== '') {
+                        $set[$row->path] = true;
+                    }
+                }
+            });
 
         Event::query()
             ->whereNotNull('invitation_customization')
