@@ -41,6 +41,10 @@
                         <span class="evt-credit-badge">Pro</span>
                     @endunless
                 </a>
+                @if ($event->invitation_template_id !== null)
+                    {{-- Host-only view (works for drafts and private events too), not the /e/{slug} public link. --}}
+                    <a href="{{ route('events.preview', $event) }}" target="_blank" rel="noopener" class="evt-btn-outline"><i class="fa-solid fa-eye"></i> Preview</a>
+                @endif
                 <a href="{{ route('events.edit', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-pen-to-square"></i> Edit</a>
                 <a href="{{ route('events.index') }}" class="evt-btn-outline"><i class="fa-solid fa-list"></i> All events</a>
             </div>

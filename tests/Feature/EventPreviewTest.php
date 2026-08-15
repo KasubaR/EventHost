@@ -96,4 +96,28 @@ class EventPreviewTest extends TestCase
 
         $this->assertSame(0, $event->fresh()->invitation_views_count);
     }
+
+    public function test_show_page_links_to_the_preview_once_a_layout_is_chosen(): void
+    {
+        $user = User::factory()->create();
+        $event = Event::factory()->for($user)->create([
+            'invitation_template_id' => $this->template()->id,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('events.show', $event));
+
+        $response->assertOk();
+        $response->assertSee(route('events.preview', $event), escape: false);
+    }
+
+    public function test_show_page_hides_the_preview_link_before_a_layout_is_chosen(): void
+    {
+        $user = User::factory()->create();
+        $event = Event::factory()->for($user)->create(['invitation_template_id' => null]);
+
+        $response = $this->actingAs($user)->get(route('events.show', $event));
+
+        $response->assertOk();
+        $response->assertDontSee(route('events.preview', $event), escape: false);
+    }
 }
