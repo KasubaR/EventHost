@@ -273,7 +273,7 @@
   left: 0;
   height: 3px;
   width: 0%;
-  background: var(--accent);
+  background: var(--pink, #e00e4f);
   z-index: 9999;
   opacity: 0;
   pointer-events: none;
