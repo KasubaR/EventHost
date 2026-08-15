@@ -17,7 +17,7 @@
             <p>This will permanently delete all your events, invitations, guests and data. Enter your password to confirm.</p>
         </div>
 
-        <form method="post" action="{{ route('profile.destroy') }}" class="profile-modal-form">
+        <form method="post" action="{{ route('settings.account.destroy') }}" class="profile-modal-form">
             @csrf
             @method('delete')
 
@@ -64,8 +64,8 @@
         open();
     @endif
 
-    // Password eye toggle inside modal
-    document.querySelectorAll('.profile-eye').forEach(btn => {
+    // Scoped to the modal — see the note in password-form.blade.php.
+    overlay.querySelectorAll('.profile-eye').forEach(btn => {
         btn.addEventListener('click', () => {
             const input = document.getElementById(btn.dataset.target);
             if (!input) return;

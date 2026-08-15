@@ -1,4 +1,5 @@
-<form method="post" action="{{ route('password.update') }}" class="profile-form">
+{{-- Posts to PUT /password (routes/auth.php). That controller returns back(), which lands on this tab. --}}
+<form method="post" action="{{ route('password.update') }}" class="profile-form" id="passwordForm">
     @csrf
     @method('put')
 
@@ -64,7 +65,9 @@
 </form>
 
 <script>
-document.querySelectorAll('.profile-eye').forEach(btn => {
+// Scoped to this form. A page-wide selector would double-bind any .profile-eye
+// that another partial also wires up, and two toggles cancel each other out.
+document.querySelectorAll('#passwordForm .profile-eye').forEach(btn => {
     btn.addEventListener('click', () => {
         const input = document.getElementById(btn.dataset.target);
         if (!input) return;

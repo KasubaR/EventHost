@@ -16,11 +16,14 @@ use App\Http\Controllers\GuestGroupController;
 use App\Http\Controllers\GuestImportController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PaymentController;
-use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicCheckInController;
 use App\Http\Controllers\PublicEventController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\RsvpController;
+use App\Http\Controllers\Settings\AccountController as SettingsAccountController;
+use App\Http\Controllers\Settings\NotificationController as SettingsNotificationController;
+use App\Http\Controllers\Settings\ProfileController as SettingsProfileController;
+use App\Http\Controllers\Settings\SecurityController as SettingsSecurityController;
 use App\Http\Controllers\TableUploadController;
 use App\Http\Controllers\TemplateLibraryController;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -172,9 +175,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/reviews/{review}', [ReviewController::class, 'update'])->name('reviews.update');
     Route::delete('/reviews/{review}', [ReviewController::class, 'destroy'])->name('reviews.destroy');
 
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::prefix('settings')->name('settings.')->group(function (): void {
+        Route::redirect('/', '/settings/profile')->name('index');
+
+        Route::get('/profile', [SettingsProfileController::class, 'edit'])->name('profile.edit');
+        Route::patch('/profile', [SettingsProfileController::class, 'update'])->name('profile.update');
+
+        Route::get('/security', [SettingsSecurityController::class, 'edit'])->name('security.edit');
+
+        Route::get('/notifications', [SettingsNotificationController::class, 'edit'])->name('notifications.edit');
+        Route::patch('/notifications', [SettingsNotificationController::class, 'update'])->name('notifications.update');
+
+        Route::get('/account', [SettingsAccountController::class, 'edit'])->name('account.edit');
+        Route::delete('/account', [SettingsAccountController::class, 'destroy'])->name('account.destroy');
+    });
+
+    // Kept for bookmarks and any older link that still points at /profile.
+    Route::redirect('/profile', '/settings/profile', 301)->name('profile.edit');
 });
 
 require __DIR__.'/auth.php';

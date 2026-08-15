@@ -1,5 +1,5 @@
 @php
-    $prefs = old('notification_preferences', auth()->user()->notification_preferences ?? []);
+    $prefs = old('notification_preferences', $user->notification_preferences ?? []);
     $prefLabels = [
         'email_rsvp_updates'    => ['label' => 'RSVP updates', 'desc' => 'Get notified when guests respond to your invitations', 'icon' => 'fa-envelope'],
         'email_event_reminders' => ['label' => 'Event reminders', 'desc' => 'Receive reminders before your events go live', 'icon' => 'fa-calendar-days'],
@@ -9,13 +9,13 @@
     ];
 @endphp
 
-<form method="post" action="{{ route('profile.update') }}" class="profile-form">
+<form method="post" action="{{ route('settings.notifications.update') }}" class="profile-form">
     @csrf
     @method('patch')
 
-    {{-- carry over other fields unchanged --}}
-    <input type="hidden" name="name" value="{{ auth()->user()->name }}">
-    <input type="hidden" name="email" value="{{ auth()->user()->email }}">
+    @if (session('status') === 'preferences-updated')
+        <div class="profile-success"><i class="fa-solid fa-circle-check"></i> Preferences saved.</div>
+    @endif
 
     <div class="pref-list">
         @foreach (\App\Models\User::defaultNotificationPreferences() as $key => $_default)

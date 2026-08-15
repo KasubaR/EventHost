@@ -19,19 +19,8 @@ class ProfileService
 
         try {
             return DB::transaction(function () use ($user, $request, &$newProfilePhotoPath) {
-                $data = $request->safe()->except(['profile_photo', 'notification_preferences']);
+                $data = $request->safe()->except(['profile_photo']);
                 $oldEmail = $user->email;
-
-                $prefs = $user->notification_preferences ?? User::defaultNotificationPreferences();
-                $inputPrefs = $request->input('notification_preferences');
-                if (is_array($inputPrefs)) {
-                    foreach (array_keys(User::defaultNotificationPreferences()) as $key) {
-                        if (array_key_exists($key, $inputPrefs)) {
-                            $prefs[$key] = (bool) $inputPrefs[$key];
-                        }
-                    }
-                }
-                $data['notification_preferences'] = $prefs;
 
                 $emailChanged = ($data['email'] ?? $oldEmail) !== $oldEmail;
 
@@ -70,6 +59,29 @@ class ProfileService
 
             throw $e;
         }
+    }
+
+    /**
+     * Merge submitted toggles over the stored set. Only keys actually present
+     * are overwritten, so a preference added to the defaults later keeps its
+     * default for existing users instead of silently becoming false.
+     *
+     * @param  array<string, bool>  $submitted
+     */
+    public function updateNotificationPreferences(User $user, array $submitted): User
+    {
+        $prefs = $user->notification_preferences ?? User::defaultNotificationPreferences();
+
+        foreach (array_keys(User::defaultNotificationPreferences()) as $key) {
+            if (array_key_exists($key, $submitted)) {
+                $prefs[$key] = (bool) $submitted[$key];
+            }
+        }
+
+        $user->notification_preferences = $prefs;
+        $user->save();
+
+        return $user;
     }
 
     private function storePhoto(UploadedFile $file, User $user): string

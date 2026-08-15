@@ -35,7 +35,7 @@
                 </button>
                 <div class="nav-account-dropdown" id="nav-account-dropdown" role="menu" hidden>
                     <a href="{{ route('dashboard') }}" role="menuitem" class="{{ request()->routeIs('dashboard') ? 'is-active' : '' }}">Dashboard</a>
-                    <a href="{{ route('profile.edit') }}" role="menuitem" class="{{ request()->routeIs('profile.edit') ? 'is-active' : '' }}">Profile</a>
+                    <a href="{{ route('settings.profile.edit') }}" role="menuitem" class="{{ request()->routeIs('settings.*') ? 'is-active' : '' }}">Settings</a>
                     <div class="nav-account-divider"></div>
                     <form method="POST" action="{{ route('logout') }}" class="nav-logout-form">
                         @csrf
@@ -67,7 +67,7 @@
                     <span class="nav-mobile-username">{{ auth()->user()->name }}</span>
                 </div>
                 <a href="{{ route('dashboard') }}" class="nav-user-link">Dashboard</a>
-                <a href="{{ route('profile.edit') }}" class="nav-user-link">Profile</a>
+                <a href="{{ route('settings.profile.edit') }}" class="nav-user-link">Settings</a>
                 <form method="POST" action="{{ route('logout') }}" class="nav-logout-form">
                     @csrf
                     <button type="submit" class="btn-ghost">{{ __('Log out') }}</button>

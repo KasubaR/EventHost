@@ -1,30 +1,21 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Settings;
 
-use App\Http\Requests\UpdateProfileRequest;
-use App\Services\ProfileService;
+use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
-class ProfileController extends Controller
+class AccountController extends Controller
 {
     public function edit(Request $request): View
     {
-        return view('profile.edit', [
+        return view('settings.account', [
             'user' => $request->user(),
         ]);
-    }
-
-    public function update(UpdateProfileRequest $request, ProfileService $profileService): RedirectResponse
-    {
-        $profileService->update($request->user(), $request);
-
-        return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
 
     public function destroy(Request $request): RedirectResponse
@@ -46,6 +37,6 @@ class ProfileController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return Redirect::to('/');
+        return redirect()->to('/');
     }
 }

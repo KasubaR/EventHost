@@ -56,6 +56,7 @@ Laravel 12 application. Auth via Laravel Breeze (Blade stack). No Alpine.js — 
 | `public/css/events-public.css` | `events/public.blade.php` — public invitation page |
 | `public/css/event-cards.css` | Public event cards (`.event-card-*`) + `/discover` page — pushed by `home.blade.php` and `events/discover.blade.php` |
 | `public/css/reviews.css` | Host review portal (`.rev-*`) — star picker and status pills; pair with `events-admin.css` |
+| `public/css/settings.css` | Account settings tab strip (`.set-*`) — pushed by `components/settings-layout.blade.php`; the cards inside each tab reuse `forms-app.css` |
 | `public/css/datetime-picker.css` | Custom date/time picker (`.dtp-*`) — pair with `js/datetime-picker.js` |
 | `public/css/custom-select.css` | Custom dropdown (`.cs-*`) — pair with `js/custom-select.js` |
 
@@ -89,7 +90,8 @@ Both auto-initialise on `DOMContentLoaded`; call `DateTimePicker.refresh(root)` 
 
 - `/` → `home` view (public)
 - `/dashboard` → `DashboardController@index` (auth + verified)
-- `/profile` → `ProfileController` PATCH/DELETE (auth + verified)
+- `/settings/*` → `App\Http\Controllers\Settings\*` (auth + verified) — see Account Settings below
+- `/profile` → **301 redirect** to `/settings/profile`, kept for old bookmarks
 - Auth routes in `routes/auth.php` — standard Breeze scaffold + `PUT /password` for password updates
 
 ### User Model
@@ -102,13 +104,47 @@ Both auto-initialise on `DOMContentLoaded`; call `DateTimePicker.refresh(root)` 
 - `last_login_at`, `last_login_ip`
 - `profile_photo_url` accessor returns `storage/` URL or `public/images/default-avatar.png` fallback
 
-### Profile Update Flow
+### Account Settings
 
-Single `PATCH /profile` handles both personal info and notification preferences:
+Everything that used to live on the single `/profile` page is now four tabs under `/settings`. Plan and
+remaining work: `plans/settings.md`.
 
-1. `UpdateProfileRequest` validates all fields including `notification_preferences.*` as booleans; uses `email:rfc`
+| Route | Controller | Renders |
+|---|---|---|
+| `GET /settings` | — | `Route::redirect` to `/settings/profile` |
+| `GET|PATCH /settings/profile` | `Settings\ProfileController` | photo, name, email, phone, company |
+| `GET /settings/security` | `Settings\SecurityController` | password form only |
+| `GET|PATCH /settings/notifications` | `Settings\NotificationController` | the five preference toggles |
+| `GET|DELETE /settings/account` | `Settings\AccountController` | danger zone + delete modal |
+
+- **`PUT /password` deliberately stays in `routes/auth.php`** with the rest of the Breeze scaffold.
+  `Auth\PasswordController` returns `back()`, which lands on `/settings/security`, so it needs no changes.
+  `Settings\SecurityController` only renders the form
+- `<x-settings-layout>` (`components/settings-layout.blade.php`) wraps `<x-app-layout>` and draws the
+  read-only identity card plus the tab strip. Each tab view supplies only its own card
+- The tab strip is a bare `<nav>`, so `global.css`'s `nav {}` rule applies — `settings.css` overrides it via
+  `nav.set-tabs`, the same pattern `.dash-nav` uses
+- Session flash keys: `profile-updated`, `password-updated`, `preferences-updated`, `verification-link-sent`
+- Each partial's password eye-toggle script is **scoped to its own form/modal**. A page-wide
+  `.profile-eye` selector double-binds buttons another partial already wired up, and two toggles per click
+  cancel out — that was live on the old combined page
+
+#### Profile update flow
+
+1. `UpdateProfileRequest` validates the profile fields only; uses `email:rfc`
 2. `ProfileService::update()` runs inside a DB transaction; converts photo to 400×400 WebP via `intervention/image` (uses Imagick if available, falls back to GD); deletes old photo after commit; sends `EmailChangedNotification` to old address when email changes
-3. The notification preferences toggle pattern uses a hidden input (value `0`) immediately before the checkbox (value `1`) — the last submitted value wins
+
+#### Notification preferences flow
+
+Preferences have their own endpoint, request and service method — **they never travel through the profile
+update path**. Keep it that way: when they shared `PATCH /profile`, the form had to carry hidden `name` and
+`email` inputs to satisfy that request's `required` rules, which meant a toggle save could rewrite the
+account email, null `email_verified_at` and fire `EmailChangedNotification`.
+
+1. `UpdateNotificationPreferencesRequest` validates `notification_preferences.*` as booleans and nothing else, so a `name` or `email` in the payload is ignored rather than saved
+2. Its `preferences()` helper narrows the array to known keys — an `array` rule validates the whole attribute, so unknown keys survive validation and are dropped here
+3. `ProfileService::updateNotificationPreferences()` merges the submitted toggles over the stored set. Only keys actually present are overwritten, so a preference added to `DEFAULT_NOTIFICATION_PREFERENCES` later keeps its default for existing users instead of silently becoming `false`
+4. The toggle markup uses a hidden input (value `0`) immediately before the checkbox (value `1`) — the last submitted value wins, which is the only way an unticked box submits anything
 
 ### Registration Flow
 

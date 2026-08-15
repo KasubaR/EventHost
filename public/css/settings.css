@@ -1,0 +1,87 @@
+/**
+ * Account settings shell — the tab strip between the identity card and the
+ * active section. Pair with resources/views/components/settings-layout.blade.php.
+ *
+ * The cards, forms, toggles and modal inside each tab are the shared
+ * .profile-* patterns from forms-app.css, which layouts/app.blade.php always
+ * loads. Nothing here restyles them.
+ */
+
+/* global.css styles every bare <nav>; undo it here, the same way
+   dashboard-shell.css does for .dash-nav. */
+nav.set-tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  position: static;
+  width: 100%;
+  max-width: none;
+  height: auto;
+  margin: 0;
+  padding: 4px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+nav.set-tabs::-webkit-scrollbar { display: none; }
+
+.set-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: 1 1 0;
+  min-width: max-content;
+  padding: 11px 16px;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-mid);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.set-tab i {
+  font-size: 13px;
+}
+
+.set-tab:hover {
+  background: var(--gray-light);
+  color: var(--text-dark);
+}
+
+.set-tab.is-active {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--accent);
+}
+
+.set-tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* The Account tab is the danger zone — flag it once it is the current page. */
+.set-tab.is-active[href$="/settings/account"] {
+  background: color-mix(in srgb, var(--pink) 10%, transparent);
+  color: var(--pink);
+}
+
+@media (max-width: 640px) {
+  nav.set-tabs {
+    gap: 2px;
+  }
+
+  .set-tab {
+    flex: 0 0 auto;
+    padding: 10px 13px;
+    font-size: 13px;
+  }
+}

@@ -18,7 +18,7 @@ class ProfileServiceTest extends TestCase
 
         $user = User::factory()->create(['email' => 'before@example.com']);
 
-        $this->actingAs($user)->patch(route('profile.update'), [
+        $this->actingAs($user)->patch(route('settings.profile.update'), [
             'name' => $user->name,
             'email' => 'after@example.com',
         ]);

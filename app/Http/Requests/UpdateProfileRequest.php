@@ -19,14 +19,7 @@ class UpdateProfileRequest extends FormRequest
      */
     public function rules(): array
     {
-        $prefKeys = array_keys(User::defaultNotificationPreferences());
-
-        $prefRules = [];
-        foreach ($prefKeys as $key) {
-            $prefRules['notification_preferences.'.$key] = ['sometimes', 'boolean'];
-        }
-
-        return array_merge([
+        return [
             'name' => ['required', 'string', 'max:255'],
             'email' => [
                 'required',
@@ -45,7 +38,7 @@ class UpdateProfileRequest extends FormRequest
                 'max:2048',
                 'dimensions:min_width=100,min_height=100,max_width=2000,max_height=2000',
             ],
-        ], $prefRules);
+        ];
     }
 
     /**
