@@ -3,7 +3,11 @@
 @endphp
 
 <div class="evt-bg-rsvp-wrap">
-    @if ($rsvpOpen)
+    @if (isset($guest))
+        {{-- Personal token link — this layout's own banner/CTA below only makes sense
+             for the public/open flow, so defer to the shared partial's guest form. --}}
+        @include('events.invitations.sections.rsvp')
+    @elseif ($rsvpOpen)
         @if (! empty($isPreview))
             <div class="evt-rsvp-banner evt-rsvp-banner--open evt-bg-rsvp-banner">
                 <i class="fa-solid fa-eye" aria-hidden="true"></i>

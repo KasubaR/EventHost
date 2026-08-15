@@ -158,6 +158,38 @@ class RsvpFlowTest extends TestCase
         $this->assertNotNull($guest->fresh()->rsvp);
     }
 
+    /**
+     * A guest's personal link is the only page they can reach for a private event
+     * (the public /e/{slug} page 403s), so it has to show the actual designed
+     * invitation — not just a bare form they can't judge without context.
+     */
+    public function test_token_rsvp_page_shows_the_designed_invitation_not_a_bare_form(): void
+    {
+        $user = User::factory()->create();
+        $event = Event::factory()->for($user)->published()->create([
+            'is_public' => false,
+            'rsvp_deadline' => null,
+            'description' => 'Join us as we celebrate this milestone together.',
+            'venue' => 'The Garden Hall',
+        ]);
+
+        $guest = Guest::factory()->for($event)->create([
+            'name' => 'Jane Guest',
+            'invitation_token' => 'tok_shows_invitation',
+        ]);
+
+        $response = $this->get(route('rsvp.token.show', ['token' => 'tok_shows_invitation']));
+
+        $response->assertOk();
+        $response->assertSee($event->name);
+        $response->assertSee('Join us as we celebrate this milestone together.');
+        $response->assertSee('The Garden Hall');
+        $response->assertSee('Jane Guest');
+        // The host-only reminder from events/invitations/sections/details.blade.php
+        // belongs on the host's own edit-page preview, not on a guest's own link.
+        $response->assertDontSee('This host marked this event as private in settings.');
+    }
+
     public function test_host_notification_skipped_when_disabled_in_preferences(): void
     {
         Notification::fake();

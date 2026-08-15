@@ -43,12 +43,19 @@ class RsvpController extends Controller
             ]);
         }
 
+        // Same designed invitation a public visitor sees at events.public — a guest
+        // opening their personal link needs to see what they're actually RSVPing to
+        // (hero, description, gallery…), not a bare form. merge() already folds in
+        // resolveRsvpFormConfig() as $invitation['rsvp_form'], so that no longer
+        // needs to be resolved separately here.
+        $invitation = $customizationService->merge($event);
+
         return view('rsvp.token-show', [
             'guest' => $guest,
             'event' => $event,
+            'invitation' => $invitation,
             'existingRsvp' => $guest->rsvp,
             'maxAttendees' => $event->maxAttendeeSlotsForGuest($guest),
-            'rsvpFormConfig' => $customizationService->resolveRsvpFormConfig($event),
             'showEntryPass' => $showEntryPass,
         ]);
     }

@@ -79,6 +79,9 @@
     </div>
 @endif
 
-@if (! $event->is_public)
+{{-- Host-facing reminder (edit-page preview) that this event has no public page.
+     A guest on their own personal token link already has everything they need —
+     showing them the host's privacy setting is just noise. --}}
+@if (! $event->is_public && ! isset($guest))
     <p class="evt-muted evt-inv-private-note"><i class="fa-solid fa-lock"></i> This host marked this event as private in settings.</p>
 @endif
