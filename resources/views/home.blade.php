@@ -20,7 +20,7 @@
       <div class="hero-ctas">
         <button class="btn-hero-primary">
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
-          Create Free Event
+          Create Your Event
         </button>
       </div>
     </div>
