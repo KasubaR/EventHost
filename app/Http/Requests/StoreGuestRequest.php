@@ -60,6 +60,11 @@ class StoreGuestRequest extends FormRequest
                 'integer',
                 Rule::exists('guest_groups', 'id')->where(fn ($q) => $q->where('event_id', $event->id)),
             ],
+            'event_table_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('event_tables', 'id')->where(fn ($q) => $q->where('event_id', $event->id)),
+            ],
             'plus_one_allowed' => ['sometimes', 'boolean'],
             'mark_invitation_sent' => ['sometimes', 'boolean'],
         ];

@@ -3,6 +3,7 @@
 namespace App\Imports;
 
 use App\Models\Event;
+use App\Models\EventTable;
 use App\Models\Guest;
 use App\Models\GuestGroup;
 use Illuminate\Support\Collection;
@@ -23,6 +24,15 @@ class EventGuestsImport implements ToCollection, WithHeadingRow
     public function collection(Collection $rows): void
     {
         $phonesSeenThisFile = [];
+
+        // Unlike Group, a table label is matched against tables the host already
+        // created (each backs a real, physically printed photo-wall QR sign) —
+        // never auto-created from a typo in the spreadsheet. Case-insensitive,
+        // built once rather than once per row.
+        $tablesByLabel = EventTable::query()
+            ->where('event_id', $this->event->id)
+            ->get(['id', 'label'])
+            ->keyBy(fn (EventTable $t) => mb_strtolower(trim($t->label)));
 
         foreach ($rows as $row) {
             $name = isset($row['name']) ? trim((string) $row['name']) : '';
@@ -47,6 +57,11 @@ class EventGuestsImport implements ToCollection, WithHeadingRow
                 ]);
                 $guestGroupId = $group->id;
             }
+
+            $tableLabel = isset($row['table']) ? trim((string) $row['table']) : '';
+            $eventTableId = $tableLabel !== ''
+                ? $tablesByLabel->get(mb_strtolower($tableLabel))?->id
+                : null;
 
             if ($email !== null && Guest::query()->where('event_id', $this->event->id)->where('email', $email)->exists()) {
                 $this->skippedCount++;
@@ -86,6 +101,7 @@ class EventGuestsImport implements ToCollection, WithHeadingRow
             Guest::query()->create([
                 'event_id' => $this->event->id,
                 'guest_group_id' => $guestGroupId,
+                'event_table_id' => $eventTableId,
                 'name' => $name,
                 'email' => $email,
                 'phone' => $phone,

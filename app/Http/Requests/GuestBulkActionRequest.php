@@ -15,6 +15,11 @@ class GuestBulkActionRequest extends FormRequest
         if ($gid === '' || $gid === null) {
             $this->merge(['guest_group_id' => null]);
         }
+
+        $tid = $this->input('event_table_id');
+        if ($tid === '' || $tid === null) {
+            $this->merge(['event_table_id' => null]);
+        }
     }
 
     public function authorize(): bool
@@ -36,6 +41,7 @@ class GuestBulkActionRequest extends FormRequest
         return [
             'action' => ['required', Rule::in([
                 'assign_group',
+                'assign_table',
                 'mark_sent',
                 'delete',
                 'send_reminder_email',
@@ -51,6 +57,11 @@ class GuestBulkActionRequest extends FormRequest
                 'nullable',
                 'integer',
                 Rule::exists('guest_groups', 'id')->where(fn ($q) => $q->where('event_id', $event->id)),
+            ],
+            'event_table_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('event_tables', 'id')->where(fn ($q) => $q->where('event_id', $event->id)),
             ],
             'days_until' => ['nullable', Rule::in([1, 3, 7])],
             'update_message' => ['nullable', 'string', 'max:1000'],

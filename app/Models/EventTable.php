@@ -54,6 +54,18 @@ class EventTable extends Model
     }
 
     /**
+     * Guests seated at this table. Distinct from photos(): this is seating
+     * assignment, the photo-wall QR upload is a different use of the same row —
+     * see plans/guest-entry-pass.md §0.
+     *
+     * @return HasMany<Guest, $this>
+     */
+    public function guests(): HasMany
+    {
+        return $this->hasMany(Guest::class, 'event_table_id');
+    }
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array

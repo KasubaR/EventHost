@@ -91,6 +91,39 @@ class GuestManagementTest extends TestCase
         $response->assertDontSee('Unmarked Guest');
     }
 
+    /**
+     * Regression: routes/web.php's guests resource previously called
+     * ->scoped(['guest' => 'guests']) — Route::resource::scoped() takes {param:
+     * COLUMN} pairs, not relation names, so that told Laravel to match a column
+     * literally named "guests" (which doesn't exist) instead of the default 'id'.
+     * Every edit/update/destroy 404'd for every guest, silently, since ownership
+     * is enforced separately by GuestPolicy and never surfaced the mismatch.
+     */
+    public function test_host_can_edit_update_and_delete_a_guest(): void
+    {
+        $owner = User::factory()->create();
+        $event = Event::factory()->for($owner)->create();
+        $guest = Guest::factory()->for($event)->create(['name' => 'Original Name']);
+
+        $this->actingAs($owner)
+            ->get(route('events.guests.edit', ['event' => $event, 'guest' => $guest->id]))
+            ->assertOk();
+
+        $this->actingAs($owner)
+            ->patch(route('events.guests.update', ['event' => $event, 'guest' => $guest->id]), [
+                'name' => 'Updated Name',
+            ])
+            ->assertRedirect(route('events.guests.index', $event));
+
+        $this->assertSame('Updated Name', $guest->fresh()->name);
+
+        $this->actingAs($owner)
+            ->delete(route('events.guests.destroy', ['event' => $event, 'guest' => $guest->id]))
+            ->assertRedirect(route('events.guests.index', $event));
+
+        $this->assertDatabaseMissing('guests', ['id' => $guest->id]);
+    }
+
     public function test_host_can_manage_guest_groups(): void
     {
         $owner = User::factory()->create();

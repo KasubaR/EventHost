@@ -37,6 +37,16 @@ class GuestBulkActionController extends Controller
                 return;
             }
 
+            if ($action === 'assign_table') {
+                $bulkCount = $builder->update([
+                    'event_table_id' => isset($validated['event_table_id']) && $validated['event_table_id'] !== null
+                        ? (int) $validated['event_table_id']
+                        : null,
+                ]);
+
+                return;
+            }
+
             if ($action === 'mark_sent') {
                 $bulkCount = $builder->update([
                     'invitation_sent' => true,
@@ -103,6 +113,7 @@ class GuestBulkActionController extends Controller
             'group' => $request->input('group'),
             'invitation_sent' => $request->input('invitation_sent'),
             'plus_one' => $request->input('plus_one'),
+            'checked_in' => $request->input('checked_in'),
         ], fn ($v) => $v !== null && $v !== '');
 
         return redirect()
@@ -110,6 +121,7 @@ class GuestBulkActionController extends Controller
             ->with('bulk_count', $bulkCount)
             ->with('status', match ($action) {
                 'assign_group' => 'guests-bulk-group',
+                'assign_table' => 'guests-bulk-table',
                 'mark_sent' => 'guests-bulk-sent',
                 'delete' => 'guests-bulk-deleted',
                 'send_reminder_email' => 'guests-bulk-reminder',

@@ -8,6 +8,7 @@
         }
 
         var base = root.getAttribute('data-checkin-base') || '';
+        var guestQrBase = root.getAttribute('data-guest-qr-base') || '';
         var lookupUrl = root.getAttribute('data-lookup-url') || '';
         var csrfMeta = document.querySelector('meta[name="csrf-token"]');
         var csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '';
@@ -80,18 +81,46 @@
                 });
         }
 
+        // Every guest's own QR always encodes the same dashboard-route shape
+        // (see Guest::checkInQrUrl()), regardless of which scanner page decodes
+        // it — a staff-link device has no reason to hold a login session, and
+        // printing a second, page-specific QR per guest was never on the table.
+        // Recognizing either shape here — this page's own base, or the shape
+        // guest QRs always carry — is what lets one unreprinted badge check in
+        // through either scanning path. The extracted token is never dialled at
+        // the URL it was found under; it is always resubmitted against THIS
+        // page's own base, which is the endpoint already authorized for it
+        // (a login session for the dashboard page, the staffToken bearer secret
+        // baked into `base` for the staff-link page).
+        function extractToken(text) {
+            if (typeof text !== 'string') {
+                return null;
+            }
+
+            var prefixes = [base, guestQrBase];
+            for (var i = 0; i < prefixes.length; i++) {
+                var prefix = prefixes[i];
+                if (!prefix || text.indexOf(prefix + '/') !== 0) {
+                    continue;
+                }
+
+                var token = text.slice(prefix.length + 1);
+                if (token && token.indexOf('/') === -1) {
+                    return token;
+                }
+            }
+
+            return null;
+        }
+
         function onDecoded(text) {
             var now = Date.now();
             if (text === lastToken && now - lastAt < 4000) {
                 return;
             }
 
-            if (typeof text !== 'string' || text.indexOf(base + '/') !== 0) {
-                return;
-            }
-
-            var token = text.slice(base.length + 1);
-            if (!token || token.indexOf('/') !== -1) {
+            var token = extractToken(text);
+            if (!token) {
                 return;
             }
 

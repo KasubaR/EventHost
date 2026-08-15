@@ -33,6 +33,7 @@
         <p>
             Exported {{ now()->format('F j, Y') }}
             @if ($filterLabel) &nbsp;·&nbsp; Filter: {{ $filterLabel }} @endif
+            @if ($checkedInLabel ?? null) &nbsp;·&nbsp; {{ $checkedInLabel }} @endif
             &nbsp;·&nbsp; {{ $guests->count() }} guest(s)
         </p>
     </div>
@@ -49,6 +50,7 @@
                 <th>Attendees</th>
                 <th>Message</th>
                 <th>Meal</th>
+                <th>Checked In</th>
             </tr>
         </thead>
         <tbody>
@@ -70,6 +72,13 @@
                     <td>{{ $rsvp && $rsvp->status->countsTowardGuestLimit() ? $rsvp->attendee_count : '—' }}</td>
                     <td>{{ $rsvp?->message ?? '' }}</td>
                     <td>{{ $rsvp?->meal_preference ?? '' }}</td>
+                    <td>
+                        @if ($guest->checked_in_at)
+                            <span class="pill pill-accepted">{{ $guest->checked_in_at->timezone(config('app.timezone'))->format('M j, g:i A') }}</span>
+                        @else
+                            <span class="pill pill-pending">Not yet</span>
+                        @endif
+                    </td>
                 </tr>
             @endforeach
         </tbody>

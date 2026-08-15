@@ -26,6 +26,7 @@ class Guest extends Model
     protected $fillable = [
         'event_id',
         'guest_group_id',
+        'event_table_id',
         'name',
         'email',
         'phone',
@@ -50,6 +51,25 @@ class Guest extends Model
     public function group(): BelongsTo
     {
         return $this->belongsTo(GuestGroup::class, 'guest_group_id');
+    }
+
+    /**
+     * Seating assignment. Reuses the QR photo-wall's EventTable rather than a
+     * second, unrelated "table number" field — see plans/guest-entry-pass.md §0.
+     *
+     * Deliberately not named table(): Eloquent's base Model class already
+     * declares a protected $table property (the DB table name). $this->table
+     * accessed from *inside* this class resolves straight to that string
+     * property rather than through __get()'s relation lookup — no error, no
+     * warning, just silently the wrong value. External access (`$guest->table`
+     * from a view) would actually still work, since protected properties trigger
+     * __get() outside the class, but relying on that split behaviour is a trap.
+     *
+     * @return BelongsTo<EventTable, $this>
+     */
+    public function eventTable(): BelongsTo
+    {
+        return $this->belongsTo(EventTable::class, 'event_table_id');
     }
 
     /**
@@ -84,6 +104,16 @@ class Guest extends Model
     public function isCheckedIn(): bool
     {
         return $this->checked_in_at !== null;
+    }
+
+    /**
+     * Seating label to display alongside the guest's entry pass and on the
+     * printed badge sheet — e.g. "Table 5". Null when unassigned; callers must
+     * not render a blank row, just omit it.
+     */
+    public function tableLabel(): ?string
+    {
+        return $this->eventTable?->label;
     }
 
     public function personalRsvpUrl(): ?string
@@ -172,6 +202,19 @@ class Guest extends Model
         return match ($filter) {
             'yes' => $query->where('plus_one_allowed', true),
             'no' => $query->where('plus_one_allowed', false),
+            default => $query,
+        };
+    }
+
+    /**
+     * @param  Builder<$this>  $query
+     * @return Builder<$this>
+     */
+    public function scopeForCheckedInFilter(Builder $query, ?string $filter): Builder
+    {
+        return match ($filter) {
+            'yes' => $query->whereNotNull('checked_in_at'),
+            'no' => $query->whereNull('checked_in_at'),
             default => $query,
         };
     }

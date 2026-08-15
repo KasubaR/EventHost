@@ -28,6 +28,8 @@
                 <p class="rsvp-greeting">Hi {{ $guest->name }}, please confirm your plans.</p>
             </header>
 
+            @include('rsvp.partials.entry-pass', ['guest' => $guest, 'showEntryPass' => $showEntryPass ?? false])
+
             <form method="post" action="{{ route('rsvp.token.store', ['token' => $guest->invitation_token]) }}" class="rsvp-form">
                 @csrf
                 @include('rsvp.partials.form-fields', [

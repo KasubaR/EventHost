@@ -18,6 +18,7 @@
         }
         .card .qr { width: 150px; height: 150px; }
         .card .label { font-size: 13px; font-weight: bold; margin: 8px 0 0; }
+        .card .table { font-size: 11px; color: #666; margin: 2px 0 0; }
     </style>
 </head>
 <body>
@@ -28,6 +29,9 @@
         <div class="card">
             <img class="qr" src="{{ $guest['qr_data_uri'] }}" alt="Check-in QR for {{ $guest['name'] }}">
             <div class="label">{{ $guest['name'] }}</div>
+            @if ($guest['table_label'])
+                <div class="table">{{ $guest['table_label'] }}</div>
+            @endif
         </div>
     @endforeach
 </body>

@@ -47,7 +47,7 @@ class GuestImportController extends Controller
             }
 
             fwrite($handle, "\xEF\xBB\xBF");
-            fputcsv($handle, ['name', 'email', 'phone', 'group']);
+            fputcsv($handle, ['name', 'email', 'phone', 'group', 'table']);
             fclose($handle);
         }, $filename, [
             'Content-Type' => 'text/csv; charset=UTF-8',

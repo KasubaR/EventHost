@@ -13,7 +13,7 @@
                 <p class="dph-sub">{{ $event->name }}</p>
             </div>
             <div class="evt-card-actions">
-                @php $exportParams = array_merge(['event' => $event], array_filter(['response' => request('response'), 'q' => request('q'), 'group' => request('group'), 'invitation_sent' => request('invitation_sent'), 'plus_one' => request('plus_one')], fn($v) => $v !== null && $v !== '')); @endphp
+                @php $exportParams = array_merge(['event' => $event], array_filter(['response' => request('response'), 'q' => request('q'), 'group' => request('group'), 'invitation_sent' => request('invitation_sent'), 'plus_one' => request('plus_one'), 'checked_in' => request('checked_in')], fn($v) => $v !== null && $v !== '')); @endphp
                 <a href="{{ route('events.guests.export', $exportParams) }}" class="evt-btn-outline"><i class="fa-solid fa-file-csv"></i> Export CSV</a>
                 <a href="{{ route('events.guests.export-pdf', $exportParams) }}" class="evt-btn-outline"><i class="fa-solid fa-file-pdf"></i> Export PDF</a>
                 <a href="{{ route('events.guests.import.create', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-file-import"></i> Import</a>
@@ -47,6 +47,8 @@
             Import finished. Added {{ session('import_created', 0) }}, skipped {{ session('import_skipped', 0) }}.
         </div>
     @elseif (session('status') === 'guests-bulk-group')
+        <div class="evt-admin-flash">Selected guests updated.</div>
+    @elseif (session('status') === 'guests-bulk-table')
         <div class="evt-admin-flash">Selected guests updated.</div>
     @elseif (session('status') === 'guests-bulk-sent')
         <div class="evt-admin-flash">Invitation marked sent for selected guests.</div>
@@ -109,6 +111,13 @@
                         <option value="no" @selected(request('plus_one') === 'no')>Plus-one not allowed</option>
                     </select>
 
+                    <label class="evt-sr-only" for="guest_filter_checked_in">Checked in</label>
+                    <select id="guest_filter_checked_in" name="checked_in" class="profile-input evt-guest-filter-select" aria-label="Checked in">
+                        <option value="" @selected(request('checked_in') === null || request('checked_in') === '')>Any check-in status</option>
+                        <option value="yes" @selected(request('checked_in') === 'yes')>Checked in</option>
+                        <option value="no" @selected(request('checked_in') === 'no')>Not checked in</option>
+                    </select>
+
                     @if (request()->filled('response'))
                         <input type="hidden" name="response" value="{{ request('response') }}">
                     @endif
@@ -133,6 +142,7 @@
                     'group' => request('group'),
                     'invitation_sent' => request('invitation_sent'),
                     'plus_one' => request('plus_one'),
+                    'checked_in' => request('checked_in'),
                 ], fn ($v) => $v !== null && $v !== '');
             @endphp
             @foreach ($filters as $key => $label)
@@ -147,7 +157,7 @@
 
         <form id="guest-bulk-form" method="post" action="{{ route('events.guests.bulk', $event) }}" class="evt-guest-bulk-bar evt-confirm-form" data-evt-confirm="Apply this action to all selected guests?">
             @csrf
-            @foreach (['q', 'response', 'group', 'invitation_sent', 'plus_one'] as $paramKey)
+            @foreach (['q', 'response', 'group', 'invitation_sent', 'plus_one', 'checked_in'] as $paramKey)
                 @php $pv = request($paramKey); @endphp
                 @if ($pv !== null && $pv !== '')
                     <input type="hidden" name="{{ $paramKey }}" value="{{ $pv }}">
@@ -158,6 +168,7 @@
             <select id="bulk_action_select" name="action" class="profile-input evt-guest-filter-select" required aria-label="Bulk action">
                 <option value="" disabled selected>Bulk action…</option>
                 <option value="assign_group">Assign group</option>
+                <option value="assign_table">Assign table</option>
                 <option value="mark_sent">Mark invitation sent</option>
                 <option value="send_reminder_email">Send reminder email</option>
                 <option value="send_update_email">Send event update email</option>
@@ -170,6 +181,14 @@
                 <option value="">Clear group</option>
                 @foreach ($groups as $g)
                     <option value="{{ $g->id }}">{{ $g->name }}</option>
+                @endforeach
+            </select>
+
+            <label class="evt-sr-only" for="bulk_table_select">Table for bulk assign</label>
+            <select id="bulk_table_select" name="event_table_id" class="profile-input evt-guest-filter-select" aria-label="Assign to table">
+                <option value="">Clear table</option>
+                @foreach ($tables as $t)
+                    <option value="{{ $t->id }}">{{ $t->label }}</option>
                 @endforeach
             </select>
 
@@ -200,6 +219,7 @@
                                 <th>Name</th>
                                 <th>Contact</th>
                                 <th>Group</th>
+                                <th>Table</th>
                                 <th>Response</th>
                                 <th>Attendees</th>
                                 <th>Invitation</th>
@@ -236,6 +256,7 @@
                                         @endif
                                     </td>
                                     <td>{{ $guestRow->group?->name ?? '—' }}</td>
+                                    <td>{{ $guestRow->tableLabel() ?? '—' }}</td>
                                     <td>
                                         @if ($rsvpRow)
                                             <span class="evt-pill evt-pill--{{ $rsvpRow->status->value }}">{{ ucfirst($rsvpRow->status->value) }}</span>

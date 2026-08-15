@@ -80,6 +80,9 @@ Route::middleware('throttle:staff-checkin')->group(function () {
 
 Route::get('/rsvp/thanks', [RsvpController::class, 'thanks'])->name('rsvp.thanks');
 Route::get('/rsvp/{token}', [RsvpController::class, 'showByToken'])->name('rsvp.token.show');
+// Same trust model as the line above: the token in the URL is the only guard, no
+// login, no throttle — a guest reopens this repeatedly to show their entry pass.
+Route::get('/rsvp/{token}/entry-pass.svg', [RsvpController::class, 'entryPassQr'])->name('rsvp.token.entry-pass');
 Route::get('/e/{slug}/rsvp', [RsvpController::class, 'showOpen'])->name('rsvp.open.show');
 
 Route::middleware('throttle:rsvp-submit')->group(function () {
@@ -125,11 +128,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/events/{event}/guests/qr-sheet.pdf', [GuestController::class, 'qrSheet'])
         ->name('events.guests.qr-sheet');
 
+    // scoped() with no fields: {guest} is looked up via Event::guests()->where('id', ...) —
+    // its default is the related model's own route key ('id'). Passing scoped(['guest' =>
+    // 'guests']) (as this line used to) tells Laravel to match a column literally named
+    // "guests" instead, which doesn't exist — every edit/update/destroy 404'd silently.
     Route::resource('events.guests', GuestController::class)
         ->only(['index', 'create', 'store', 'edit', 'update', 'destroy'])
-        ->scoped([
-            'guest' => 'guests',
-        ]);
+        ->scoped();
 
     Route::get('/events/{event}/tables/qr-sheet.pdf', [EventTableController::class, 'qrSheet'])
         ->name('events.tables.qr-sheet');

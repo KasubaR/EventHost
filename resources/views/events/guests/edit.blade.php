@@ -59,6 +59,19 @@
                         <p class="evt-muted"><a href="{{ route('events.guest-groups.index', $event) }}">Manage groups</a></p>
                     </div>
                     <div class="profile-field">
+                        <label for="event_table_id" class="profile-label">Table <span class="profile-optional">optional</span></label>
+                        <select id="event_table_id" name="event_table_id" class="profile-input {{ $errors->has('event_table_id') ? 'profile-input--error' : '' }}" aria-label="Seating table">
+                            <option value="">— Unassigned —</option>
+                            @foreach ($tables as $t)
+                                <option value="{{ $t->id }}" @selected(old('event_table_id', $guest->event_table_id) == $t->id)>{{ $t->label }}</option>
+                            @endforeach
+                        </select>
+                        @error('event_table_id')
+                            <p class="profile-error">{{ $message }}</p>
+                        @enderror
+                        <p class="evt-muted"><a href="{{ route('events.tables.index', $event) }}">Manage tables</a></p>
+                    </div>
+                    <div class="profile-field">
                         <input type="hidden" name="plus_one_allowed" value="0">
                         <label class="profile-label evt-check-label">
                             <input type="checkbox" name="plus_one_allowed" value="1" class="profile-input evt-check-input" @checked(old('plus_one_allowed', $guest->plus_one_allowed))>

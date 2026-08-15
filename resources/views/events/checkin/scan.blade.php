@@ -14,6 +14,9 @@
                 <p class="dph-sub">{{ $event->name }}</p>
             </div>
             <div class="evt-card-actions">
+                {{-- Pre-filtered to arrivals only, so the host doesn't have to leave
+                     the scanner mid-event to pull the list from the guest page. --}}
+                <a href="{{ route('events.guests.export', ['event' => $event, 'checked_in' => 'yes']) }}" class="evt-btn-outline"><i class="fa-solid fa-file-csv"></i> Download attendee list</a>
                 <a href="{{ route('events.tables.index', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-qrcode"></i> Tables</a>
                 <a href="{{ route('events.show', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-arrow-left"></i> Event</a>
             </div>
@@ -42,6 +45,7 @@
             <div class="evt-section-body">
                 @include('events.checkin.partials.scanner-widget', [
                     'checkinBase' => url('/events/'.$event->id.'/checkin'),
+                    'guestQrBase' => url('/events/'.$event->id.'/checkin'),
                     'lookupUrl' => route('events.checkin.lookup', $event),
                 ])
             </div>

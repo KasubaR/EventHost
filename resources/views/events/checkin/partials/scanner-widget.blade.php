@@ -1,12 +1,19 @@
 {{--
     Shared camera-scan + manual-lookup widget.
-    Expects: $checkinBase (string, no trailing slash), $lookupUrl (string).
+    Expects: $checkinBase (string, no trailing slash) — where THIS page's confirm
+    POST goes; $lookupUrl (string); $guestQrBase (string, no trailing slash) —
+    the fixed .../events/{id}/checkin prefix every guest's own printed QR encodes
+    (see Guest::checkInQrUrl()), regardless of which scanner page decodes it.
     Used by both the authenticated host scanner (scan.blade.php) and the
-    no-login staff scanner link (public-scan.blade.php).
+    no-login staff scanner link (public-scan.blade.php). On the host scanner
+    $guestQrBase and $checkinBase are the same value; on the staff-link scanner
+    they differ — the QR is only ever used to recognize a token, never dialled
+    directly, so the confirm POST always lands on this page's own endpoint.
 --}}
 <div id="checkinScanner"
      class="ckin-root"
      data-checkin-base="{{ $checkinBase }}"
+     data-guest-qr-base="{{ $guestQrBase }}"
      data-lookup-url="{{ $lookupUrl }}">
 
     <div class="ckin-camera-pane">

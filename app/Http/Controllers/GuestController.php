@@ -9,6 +9,8 @@ use App\Models\Event;
 use App\Models\Guest;
 use App\Services\QrCodeService;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -18,6 +20,33 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class GuestController extends Controller
 {
+    /**
+     * The three read paths below — index, export, exportPdf — all list the same
+     * guests under the same filters. One place for the WHERE chain so a new
+     * filter (like checked_in) can't land in two of the three and drift.
+     *
+     * @param  Builder<Guest>|Relation<Guest, Event, *>  $query  Already scoped to the event, e.g. $event->guests().
+     * @return Builder<Guest>|Relation<Guest, Event, *>
+     */
+    private function applyGuestFilters(Builder|Relation $query, Request $request): Builder|Relation
+    {
+        $query
+            ->search($request->query('q'))
+            ->forGuestGroupFilter($request->query('group'))
+            ->forInvitationSentFilter($request->query('invitation_sent'))
+            ->forPlusOneFilter($request->query('plus_one'))
+            ->forCheckedInFilter($request->query('checked_in'));
+
+        return match ((string) $request->query('response', 'all')) {
+            'pending' => $query->whereDoesntHave('rsvp'),
+            'responded' => $query->whereHas('rsvp'),
+            RsvpStatus::Accepted->value => $query->whereHas('rsvp', fn ($q) => $q->where('status', RsvpStatus::Accepted)),
+            RsvpStatus::Declined->value => $query->whereHas('rsvp', fn ($q) => $q->where('status', RsvpStatus::Declined)),
+            RsvpStatus::Maybe->value => $query->whereHas('rsvp', fn ($q) => $q->where('status', RsvpStatus::Maybe)),
+            default => $query,
+        };
+    }
+
     public function index(Request $request, Event $event): View
     {
         $this->authorize('update', $event);
@@ -26,27 +55,14 @@ class GuestController extends Controller
 
         $filter = (string) $request->query('response', 'all');
 
-        $guestsQuery = $event->guests()
-            ->with(['rsvp', 'group'])
-            ->search($request->query('q'))
-            ->forGuestGroupFilter($request->query('group'))
-            ->forInvitationSentFilter($request->query('invitation_sent'))
-            ->forPlusOneFilter($request->query('plus_one'))
-            ->orderBy('name');
-
-        if ($filter === 'pending') {
-            $guestsQuery->whereDoesntHave('rsvp');
-        } elseif ($filter === 'responded') {
-            $guestsQuery->whereHas('rsvp');
-        } elseif ($filter === RsvpStatus::Accepted->value) {
-            $guestsQuery->whereHas('rsvp', fn ($q) => $q->where('status', RsvpStatus::Accepted));
-        } elseif ($filter === RsvpStatus::Declined->value) {
-            $guestsQuery->whereHas('rsvp', fn ($q) => $q->where('status', RsvpStatus::Declined));
-        } elseif ($filter === RsvpStatus::Maybe->value) {
-            $guestsQuery->whereHas('rsvp', fn ($q) => $q->where('status', RsvpStatus::Maybe));
-        }
+        $guestsQuery = $this->applyGuestFilters(
+            $event->guests()->with(['rsvp', 'group', 'eventTable']),
+            $request
+        )->orderBy('name');
 
         $guests = $guestsQuery->paginate(30)->withQueryString();
+
+        $tables = $event->tables()->orderBy('sort_order')->orderBy('label')->get();
 
         $stats = [
             'total' => $event->guests()->count(),
@@ -55,34 +71,17 @@ class GuestController extends Controller
             'declined' => $event->guests()->whereHas('rsvp', fn ($q) => $q->where('status', RsvpStatus::Declined))->count(),
         ];
 
-        return view('events.guests.index', compact('event', 'guests', 'filter', 'groups', 'stats'));
+        return view('events.guests.index', compact('event', 'guests', 'filter', 'groups', 'tables', 'stats'));
     }
 
     public function export(Request $request, Event $event): StreamedResponse
     {
         $this->authorize('update', $event);
 
-        $filter = (string) $request->query('response', 'all');
-
-        $guestsQuery = $event->guests()
-            ->with(['rsvp', 'group'])
-            ->search($request->query('q'))
-            ->forGuestGroupFilter($request->query('group'))
-            ->forInvitationSentFilter($request->query('invitation_sent'))
-            ->forPlusOneFilter($request->query('plus_one'))
-            ->orderBy('name');
-
-        if ($filter === 'pending') {
-            $guestsQuery->whereDoesntHave('rsvp');
-        } elseif ($filter === 'responded') {
-            $guestsQuery->whereHas('rsvp');
-        } elseif ($filter === RsvpStatus::Accepted->value) {
-            $guestsQuery->whereHas('rsvp', fn ($q) => $q->where('status', RsvpStatus::Accepted));
-        } elseif ($filter === RsvpStatus::Declined->value) {
-            $guestsQuery->whereHas('rsvp', fn ($q) => $q->where('status', RsvpStatus::Declined));
-        } elseif ($filter === RsvpStatus::Maybe->value) {
-            $guestsQuery->whereHas('rsvp', fn ($q) => $q->where('status', RsvpStatus::Maybe));
-        }
+        $guestsQuery = $this->applyGuestFilters(
+            $event->guests()->with(['rsvp', 'group', 'checkedInBy']),
+            $request
+        )->orderBy('name');
 
         $filename = 'guests-'.str($event->name)->slug().'.csv';
 
@@ -94,6 +93,7 @@ class GuestController extends Controller
                 'RSVP Status', 'Attendee Count', 'Message',
                 'Meal Preference', 'Transportation Note', 'Song Request',
                 'Invitation Sent', 'Invitation Sent At',
+                'Checked In At', 'Checked In By',
             ]);
 
             $guestsQuery->chunk(200, function ($chunk) use ($handle) {
@@ -112,6 +112,12 @@ class GuestController extends Controller
                         $rsvp?->song_request ?? '',
                         $guest->invitation_sent ? 'Yes' : 'No',
                         $guest->invitation_sent_at?->format('Y-m-d H:i') ?? '',
+                        $guest->checked_in_at?->timezone(config('app.timezone'))->format('Y-m-d H:i') ?? '',
+                        // Blank rather than "—": a door-staff-link check-in has no
+                        // attributable user (CheckInService::confirm() takes a
+                        // nullable staff id), so blank here means "checked in,
+                        // scanned via a staff link" — not "data missing".
+                        $guest->checkedInBy?->name ?? '',
                     ]);
                 }
             });
@@ -126,25 +132,10 @@ class GuestController extends Controller
 
         $filter = (string) $request->query('response', 'all');
 
-        $guestsQuery = $event->guests()
-            ->with(['rsvp', 'group'])
-            ->search($request->query('q'))
-            ->forGuestGroupFilter($request->query('group'))
-            ->forInvitationSentFilter($request->query('invitation_sent'))
-            ->forPlusOneFilter($request->query('plus_one'))
-            ->orderBy('name');
-
-        if ($filter === 'pending') {
-            $guestsQuery->whereDoesntHave('rsvp');
-        } elseif ($filter === 'responded') {
-            $guestsQuery->whereHas('rsvp');
-        } elseif ($filter === RsvpStatus::Accepted->value) {
-            $guestsQuery->whereHas('rsvp', fn ($q) => $q->where('status', RsvpStatus::Accepted));
-        } elseif ($filter === RsvpStatus::Declined->value) {
-            $guestsQuery->whereHas('rsvp', fn ($q) => $q->where('status', RsvpStatus::Declined));
-        } elseif ($filter === RsvpStatus::Maybe->value) {
-            $guestsQuery->whereHas('rsvp', fn ($q) => $q->where('status', RsvpStatus::Maybe));
-        }
+        $guestsQuery = $this->applyGuestFilters(
+            $event->guests()->with(['rsvp', 'group', 'checkedInBy']),
+            $request
+        )->orderBy('name');
 
         $guests = $guestsQuery->get();
 
@@ -157,9 +148,16 @@ class GuestController extends Controller
         ];
         $filterLabel = $filter !== 'all' ? ($filterLabels[$filter] ?? null) : null;
 
+        $checkedInFilter = (string) $request->query('checked_in', '');
+        $checkedInLabel = match ($checkedInFilter) {
+            'yes' => 'Checked in',
+            'no' => 'Not checked in',
+            default => null,
+        };
+
         $filename = 'guests-'.str($event->name)->slug().'.pdf';
 
-        $pdf = Pdf::loadView('events.guests.export-pdf', compact('event', 'guests', 'filterLabel'))
+        $pdf = Pdf::loadView('events.guests.export-pdf', compact('event', 'guests', 'filterLabel', 'checkedInLabel'))
             ->setPaper('a4', 'landscape');
 
         return $pdf->download($filename);
@@ -170,8 +168,9 @@ class GuestController extends Controller
         $this->authorize('update', $event);
 
         $groups = $event->guestGroups()->get();
+        $tables = $event->tables()->orderBy('sort_order')->orderBy('label')->get();
 
-        return view('events.guests.create', compact('event', 'groups'));
+        return view('events.guests.create', compact('event', 'groups', 'tables'));
     }
 
     public function store(StoreGuestRequest $request, Event $event): RedirectResponse
@@ -183,6 +182,7 @@ class GuestController extends Controller
         Guest::query()->create([
             'event_id' => $event->id,
             'guest_group_id' => $validated['guest_group_id'] ?? null,
+            'event_table_id' => $validated['event_table_id'] ?? null,
             'name' => $validated['name'],
             'email' => $validated['email'] ?? null,
             'phone' => $validated['phone'] ?? null,
@@ -203,8 +203,9 @@ class GuestController extends Controller
         $this->authorize('update', $guest);
 
         $groups = $event->guestGroups()->get();
+        $tables = $event->tables()->orderBy('sort_order')->orderBy('label')->get();
 
-        return view('events.guests.edit', compact('event', 'guest', 'groups'));
+        return view('events.guests.edit', compact('event', 'guest', 'groups', 'tables'));
     }
 
     public function update(UpdateGuestRequest $request, Event $event, Guest $guest): RedirectResponse
@@ -214,6 +215,7 @@ class GuestController extends Controller
 
         $data = [
             'guest_group_id' => $validated['guest_group_id'] ?? null,
+            'event_table_id' => $validated['event_table_id'] ?? null,
             'name' => $validated['name'],
             'email' => $validated['email'] ?? null,
             'phone' => $validated['phone'] ?? null,
@@ -279,10 +281,12 @@ class GuestController extends Controller
 
         $guests = $event->guests()
             ->whereNotNull('invitation_token')
+            ->with('eventTable')
             ->orderBy('name')
             ->get()
             ->map(fn (Guest $guest) => [
                 'name' => $guest->name,
+                'table_label' => $guest->tableLabel(),
                 'qr_data_uri' => 'data:image/svg+xml;base64,'.base64_encode($qrCodeService->svg((string) $guest->checkInQrUrl(), 220)),
             ]);
 

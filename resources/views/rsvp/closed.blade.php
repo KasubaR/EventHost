@@ -33,5 +33,9 @@
                 <p class="rsvp-muted">Deadline was {{ $event->rsvp_deadline->timezone(config('app.timezone'))->format('l, F j, Y \a\t g:i A') }}.</p>
             @endif
         </header>
+
+        @if ($guest)
+            @include('rsvp.partials.entry-pass', ['guest' => $guest, 'showEntryPass' => $showEntryPass ?? false])
+        @endif
     </article>
 @endsection

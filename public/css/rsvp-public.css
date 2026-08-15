@@ -247,6 +247,58 @@
     letter-spacing: 0.01em;
 }
 
+/* ── Entry pass ── */
+.rsvp-pass {
+    text-align: center;
+    background: var(--gray-light, #f4f5f9);
+    border: 1px solid rgba(30, 71, 187, 0.15);
+    border-radius: 16px;
+    padding: 24px 20px;
+    margin: 20px 0;
+}
+
+.rsvp-pass-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--green, #27ae60);
+    font-weight: 700;
+    font-size: 13px;
+    margin: 0 0 2px;
+}
+
+.rsvp-pass-lead {
+    color: var(--gray-mid, #8e8ea8);
+    font-size: 13px;
+    margin: 0 0 16px;
+}
+
+.rsvp-pass-qr {
+    width: 200px;
+    height: 200px;
+    max-width: 100%;
+    background: var(--white, #fff);
+    border-radius: 12px;
+    padding: 12px;
+    box-shadow: 0 4px 16px rgba(13, 13, 43, 0.08);
+}
+
+.rsvp-pass-name {
+    font-weight: 700;
+    color: var(--navy, #0d0d2b);
+    margin: 16px 0 0;
+}
+
+.rsvp-pass-table {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--accent, #1e47bb);
+    font-weight: 600;
+    font-size: 13px;
+    margin: 4px 0 0;
+}
+
 /* ── Closed / thanks states ── */
 .rsvp-closed-banner {
     margin-top: 12px;
