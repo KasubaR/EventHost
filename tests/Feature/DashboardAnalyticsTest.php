@@ -59,6 +59,17 @@ class DashboardAnalyticsTest extends TestCase
             ->assertSee('2 seats');
     }
 
+    public function test_events_total_ignores_drafts(): void
+    {
+        $user = User::factory()->create();
+        Event::factory()->for($user)->published()->create();
+        Event::factory()->for($user)->count(3)->create(['is_published' => false]);
+
+        $totals = app(DashboardAnalyticsService::class)->forUser($user)['totals'];
+
+        $this->assertSame(1, $totals['events']);
+    }
+
     public function test_event_show_includes_analytics_payload_and_totals(): void
     {
         $user = User::factory()->create();

@@ -30,19 +30,7 @@
         <div class="evt-flash evt-flash--warn"><i class="fa-solid fa-triangle-exclamation"></i> You have no event credits. <a href="{{ route('billing.show') }}">Buy an event credit</a> to create a new event.</div>
     @endif
 
-    @php
-        $typeLabels = [
-            'wedding' => 'Wedding',
-            'birthday' => 'Birthday',
-            'graduation' => 'Graduation',
-            'corporate' => 'Corporate Event',
-            'baby_shower' => 'Baby Shower',
-            'funeral' => 'Memorial',
-            'church' => 'Church Event',
-        ];
-    @endphp
-
-    @if ($events->isEmpty())
+    @if ($published->total() === 0 && $drafts->total() === 0)
         @if (request('from') === 'guests')
             <div class="dash-empty">
                 <div class="dash-empty-icon"><i class="fa-solid fa-users"></i></div>
@@ -59,41 +47,42 @@
             </div>
         @endif
     @else
-        <div class="evt-list">
-            @foreach ($events as $event)
-                <article class="evt-card">
-                    <div class="evt-card-main">
-                        <img src="{{ $event->cover_image_url }}" alt="" class="evt-card-cover" width="96" height="54">
-                        <div class="evt-card-body">
-                            <h3>{{ $event->name }}</h3>
-                            <p class="evt-card-meta">
-                                <span class="evt-type-tag">{{ $typeLabels[$event->event_type] ?? $event->event_type }}</span>
-                                · {{ $event->event_date->format('M j, Y') }}
-                                @if ($event->event_time)
-                                    · {{ \Illuminate\Support\Str::substr($event->event_time, 0, 5) }}
-                                @endif
-                            </p>
-                            @if ($event->isLocked())
-                                <span class="evt-badge evt-badge--done"><i class="fa-solid fa-flag-checkered"></i> Completed</span>
-                            @elseif ($event->is_published)
-                                <span class="evt-badge evt-badge--live"><i class="fa-solid fa-circle-check"></i> Published</span>
-                            @else
-                                <span class="evt-badge evt-badge--draft"><i class="fa-solid fa-pen"></i> Draft</span>
-                            @endif
-                        </div>
-                    </div>
-                    <div class="evt-card-actions">
-                        <a href="{{ route('events.edit', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-pen-to-square"></i> Edit</a>
-                        <a href="{{ route('events.show', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-eye"></i> View</a>
-                        @if ($event->is_published)
-                            <a href="{{ route('events.public', $event->slug) }}" class="evt-btn-outline"><i class="fa-solid fa-link"></i> Public link</a>
-                        @endif
-                    </div>
-                </article>
-            @endforeach
-        </div>
-        @if ($events->hasPages())
-            <div class="evt-pagination">{{ $events->links() }}</div>
-        @endif
+        <section class="evt-group">
+            <div class="evt-group-head">
+                <h2 class="evt-group-title"><i class="fa-solid fa-circle-check"></i> Published</h2>
+                <span class="evt-group-count">{{ $published->total() }}</span>
+            </div>
+            @if ($published->total() === 0)
+                <p class="evt-group-empty">Nothing published yet. Finish a draft and publish it to share its invitation link.</p>
+            @else
+                <div class="evt-list">
+                    @foreach ($published as $event)
+                        @include('events.partials.my-event-card', ['event' => $event])
+                    @endforeach
+                </div>
+                @if ($published->hasPages())
+                    <div class="evt-pagination">{{ $published->links() }}</div>
+                @endif
+            @endif
+        </section>
+
+        <section class="evt-group">
+            <div class="evt-group-head">
+                <h2 class="evt-group-title"><i class="fa-solid fa-pen"></i> Drafts</h2>
+                <span class="evt-group-count">{{ $drafts->total() }}</span>
+            </div>
+            @if ($drafts->total() === 0)
+                <p class="evt-group-empty">No drafts. Every event you have created is published.</p>
+            @else
+                <div class="evt-list">
+                    @foreach ($drafts as $event)
+                        @include('events.partials.my-event-card', ['event' => $event])
+                    @endforeach
+                </div>
+                @if ($drafts->hasPages())
+                    <div class="evt-pagination">{{ $drafts->links() }}</div>
+                @endif
+            @endif
+        </section>
     @endif
 </x-app-layout>

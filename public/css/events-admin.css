@@ -105,6 +105,53 @@
     gap: 12px;
 }
 
+/* Published / Drafts sections on the My events list. */
+.evt-group + .evt-group {
+    margin-top: 32px;
+}
+
+.evt-group-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.evt-group-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--navy, #1a2a4a);
+}
+
+.evt-group-title i {
+    font-size: 13px;
+    color: var(--gray-mid, #64748b);
+}
+
+.evt-group-count {
+    min-width: 24px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(26, 42, 74, 0.07);
+    color: var(--gray-mid, #64748b);
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+}
+
+.evt-group-empty {
+    margin: 0;
+    padding: 18px;
+    border: 1px dashed var(--border-soft, rgba(26, 42, 74, 0.14));
+    border-radius: 12px;
+    font-size: 13px;
+    color: var(--gray-mid, #64748b);
+}
+
 .evt-card {
     display: flex;
     flex-wrap: wrap;
@@ -142,6 +189,15 @@
     margin: 0;
     font-size: 13px;
     color: var(--gray-mid, #64748b);
+}
+
+/* Sits under .evt-card-meta, which has no bottom margin — the gap here is what
+   keeps the status badges off the event type pill. */
+.evt-card-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
 }
 
 .evt-badge {

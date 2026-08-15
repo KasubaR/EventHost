@@ -31,13 +31,22 @@ class EventController extends Controller
 
     public function index(): View
     {
-        $events = Event::query()
+        // Two independent paginators so a long draft list never pushes published
+        // events off the page. Distinct page names keep their ?page params apart.
+        $mine = fn () => Event::query()
             ->where('user_id', auth()->id())
             ->orderByDesc('event_date')
-            ->orderByDesc('created_at')
-            ->paginate(20);
+            ->orderByDesc('created_at');
 
-        return view('events.index', compact('events'));
+        $published = $mine()->where('is_published', true)
+            ->paginate(10, ['*'], 'published_page')
+            ->withQueryString();
+
+        $drafts = $mine()->where('is_published', false)
+            ->paginate(10, ['*'], 'draft_page')
+            ->withQueryString();
+
+        return view('events.index', compact('published', 'drafts'));
     }
 
     public function create(Request $request): View|RedirectResponse

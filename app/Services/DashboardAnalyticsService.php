@@ -107,7 +107,12 @@ class DashboardAnalyticsService
      */
     private function payloadForEventIds(Collection $eventIds): array
     {
-        $eventsCount = (int) Event::query()->whereIn('id', $eventIds)->count();
+        // Drafts are not live invitations, so they do not count towards the
+        // "Events" stat on the overview.
+        $eventsCount = (int) Event::query()
+            ->whereIn('id', $eventIds)
+            ->where('is_published', true)
+            ->count();
         $invitationViews = (int) Event::query()->whereIn('id', $eventIds)->sum('invitation_views_count');
 
         $guestsTotal = (int) Guest::query()->whereIn('event_id', $eventIds)->count();

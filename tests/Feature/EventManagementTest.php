@@ -30,6 +30,18 @@ class EventManagementTest extends TestCase
         $response->assertOk();
     }
 
+    public function test_events_index_splits_published_and_draft_events(): void
+    {
+        $user = User::factory()->create();
+        Event::factory()->for($user)->create(['name' => 'Live Gala', 'is_published' => true]);
+        Event::factory()->for($user)->create(['name' => 'Sketch Party', 'is_published' => false]);
+
+        $response = $this->actingAs($user)->get(route('events.index'));
+
+        $response->assertOk()
+            ->assertSeeInOrder(['Published', 'Live Gala', 'Drafts', 'Sketch Party'], false);
+    }
+
     public function test_store_creates_draft_and_redirects_to_choose_template(): void
     {
         $user = User::factory()->create();
