@@ -17,9 +17,16 @@
                 <a href="{{ route('events.guests.export', $exportParams) }}" class="evt-btn-outline"><i class="fa-solid fa-file-csv"></i> Export CSV</a>
                 <a href="{{ route('events.guests.export-pdf', $exportParams) }}" class="evt-btn-outline"><i class="fa-solid fa-file-pdf"></i> Export PDF</a>
                 <a href="{{ route('events.guests.import.create', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-file-import"></i> Import</a>
-                @if ($event->ownerHasPremiumEventTools())
-                    <a href="{{ route('events.guests.qr-sheet', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-qrcode"></i> Print QR badges</a>
-                @endif
+                {{-- Shown either way: silently dropping it left hosts hunting for a
+                     feature they simply had not paid for. Matches the "QR check-in &
+                     photo wall" link on the event page. --}}
+                @php $hasPremiumTools = $event->ownerHasPremiumEventTools(); @endphp
+                <a href="{{ $hasPremiumTools ? route('events.guests.qr-sheet', $event) : \App\Support\BillingPlan::checkoutUrlForTier(\App\Enums\SubscriptionTier::Pro) }}" class="evt-btn-outline">
+                    <i class="fa-solid fa-qrcode"></i> Print QR badges
+                    @unless ($hasPremiumTools)
+                        <span class="evt-credit-badge">Pro</span>
+                    @endunless
+                </a>
                 <a href="{{ route('events.guests.create', $event) }}" class="btn-primary"><i class="fa-solid fa-user-plus"></i> Add guest</a>
                 <a href="{{ route('events.guest-groups.index', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-layer-group"></i> Groups</a>
                 <a href="{{ route('events.show', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-arrow-left"></i> Event</a>

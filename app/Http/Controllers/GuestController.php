@@ -266,10 +266,16 @@ class GuestController extends Controller
         return response($svg, 200, ['Content-Type' => 'image/svg+xml']);
     }
 
-    public function qrSheet(Event $event, QrCodeService $qrCodeService): Response
+    public function qrSheet(Event $event, QrCodeService $qrCodeService): Response|RedirectResponse
     {
         $this->authorize('update', $event);
-        abort_unless($event->ownerHasPremiumEventTools(), 403);
+
+        // Navigable link, so send the host to billing the way the tables page
+        // does rather than dead-ending on a 403. The per-guest qr() endpoint
+        // above stays a hard 403 — it serves an image, not a page.
+        if (! $event->ownerHasPremiumEventTools()) {
+            return redirect()->route('billing.show')->with('status', 'premium-required-qr-badges');
+        }
 
         $guests = $event->guests()
             ->whereNotNull('invitation_token')

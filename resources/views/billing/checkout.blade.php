@@ -25,7 +25,7 @@
          data-events-url="{{ route('events.create') }}"
          data-csrf="{{ csrf_token() }}">
 
-        @if (in_array(session('status'), ['premium-required-tables', 'premium-required-checkin', 'premium-required-photos'], true))
+        @if (in_array(session('status'), ['premium-required-tables', 'premium-required-checkin', 'premium-required-photos', 'premium-required-qr-badges'], true))
             <div class="evt-flash evt-flash--warn">
                 <i class="fa-solid fa-triangle-exclamation"></i>
                 QR check-in and the table photo wall are Pro features. Upgrade your plan to unlock them.
