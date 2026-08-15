@@ -58,4 +58,18 @@
         {{ $slot }}
 
     </div>
+
+    @push('scripts')
+        <script>
+            // On mobile the tab strip scrolls horizontally; a fresh page load always
+            // starts scrolled to the left, so the active tab (e.g. Account, the last
+            // one) can land off-screen until the user manually scrolls to find it.
+            document.addEventListener('DOMContentLoaded', function () {
+                var activeTab = document.querySelector('nav.set-tabs .set-tab.is-active');
+                if (activeTab) {
+                    activeTab.scrollIntoView({ block: 'nearest', inline: 'center' });
+                }
+            });
+        </script>
+    @endpush
 </x-app-layout>

@@ -3,6 +3,15 @@
  * Load before any page-specific CSS.
  */
 
+/* Every navigation here is a full page reload (no SPA layer), so the browser
+   normally cuts straight from the old document to the new one. Opting into
+   the native cross-document View Transition crossfades that cut instead.
+   Chromium renders it; browsers that don't support it just ignore the rule
+   and keep today's instant swap — pure progressive enhancement, no JS. */
+@view-transition {
+  navigation: auto;
+}
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {

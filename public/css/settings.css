@@ -14,6 +14,7 @@ nav.set-tabs {
   align-items: stretch;
   gap: 4px;
   position: static;
+  z-index: auto;
   width: 100%;
   max-width: none;
   height: auto;

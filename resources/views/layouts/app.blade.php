@@ -110,6 +110,7 @@
 </div>
 
 <script src="{{ asset('js/homepage.js') }}" defer></script>
+<script src="{{ asset('js/nav-progress.js') }}" defer></script>
 @stack('scripts')
 <script>
     // Mobile sidebar toggle
