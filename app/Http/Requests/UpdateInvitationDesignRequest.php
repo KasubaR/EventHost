@@ -298,6 +298,20 @@ class UpdateInvitationDesignRequest extends FormRequest
         }
 
         $key = $this->input('theme_palette');
+
+        // Palette selection is a Pro+ feature. The form disables the radios and
+        // submits nothing for everyone else, so a non-empty value here only
+        // happens by posting the form directly — reject it rather than silently
+        // applying it. Absence is fine: the controller keeps the template's
+        // default theme when theme_palette is missing.
+        if (! $this->user()->canChooseInvitationPalette()) {
+            if ($key !== null && $key !== '') {
+                $validator->errors()->add('theme_palette', 'Choosing a colour palette requires the Pro+ plan.');
+            }
+
+            return;
+        }
+
         $palette = is_string($key) ? InvitationPalettes::get($key) : null;
 
         if ($palette === null) {

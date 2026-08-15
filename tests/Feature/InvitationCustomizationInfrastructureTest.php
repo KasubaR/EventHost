@@ -107,7 +107,9 @@ class InvitationCustomizationInfrastructureTest extends TestCase
     {
         Storage::fake('public');
 
-        $user = User::factory()->create();
+        // Pro+ so the theme_palette changes below actually apply — palette here
+        // is just a convenient changing field, not what this test is about.
+        $user = User::factory()->proPlus()->create();
         $tpl = InvitationTemplate::query()->where('slug', 'slate-minimal')->firstOrFail();
 
         $event = Event::factory()->for($user)->create([

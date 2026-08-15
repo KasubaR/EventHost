@@ -16,6 +16,7 @@ use App\Http\Controllers\GuestController;
 use App\Http\Controllers\GuestGroupController;
 use App\Http\Controllers\GuestImportController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\MapLinkController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PublicCheckInController;
 use App\Http\Controllers\PublicEventController;
@@ -178,6 +179,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/events/{event}/media/{staged}', [EventInvitationMediaController::class, 'destroy'])
         ->whereNumber('staged')
         ->name('events.media.unstage');
+    // Resolves a pasted Google Maps short link to coordinates for the event location picker.
+    // Not scoped to {event} — the create page has no event id yet, and this carries no event data.
+    Route::post('/maps/resolve-link', [MapLinkController::class, 'resolve'])
+        ->middleware('throttle:map-link-resolve')
+        ->name('maps.resolve-link');
+
     Route::resource('events', EventController::class)->except('store');
     Route::post('/events', [EventController::class, 'store'])->name('events.store')->middleware('throttle:10,1');
 

@@ -6,7 +6,6 @@ use App\Models\Event;
 use App\Models\InvitationTemplate;
 use App\Models\StagedMedia;
 use App\Models\User;
-use App\Support\InvitationPalettes;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -66,12 +65,9 @@ class StagedMediaPerLayoutTest extends TestCase
             ],
         ];
 
-        // Beauty for Ashes hardcodes its colours and omits the picker entirely.
-        if ($tpl->layout_variant !== 'beauty_for_ashes') {
-            $base['theme_palette'] = collect(InvitationPalettes::forMode(
-                InvitationPalettes::modeForBackground($tpl->default_theme['background'] ?? '#ffffff')
-            ))->keys()->first();
-        }
+        // theme_palette is deliberately omitted: it's a Pro+ feature and these
+        // tests use base-tier users, so it's optional and the save keeps the
+        // template's default theme without it — same as a real base-tier submit.
 
         return array_merge($base, $overrides);
     }

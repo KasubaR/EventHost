@@ -211,10 +211,12 @@
                     <div class="evt-desc-body">{{ $event->description }}</div>
                 @endif
 
-                @if ($event->is_published)
+                @if (! $event->is_published)
+                    <p class="evt-muted">This event is still a draft. Edit and publish to share it.</p>
+                @elseif ($event->is_public)
                     <p class="evt-muted">Public page: <a href="{{ route('events.public', $event->slug) }}" class="evt-public-url">{{ url('/e/'.$event->slug) }}</a></p>
                 @else
-                    <p class="evt-muted">This event is still a draft. Edit and publish to share it.</p>
+                    <p class="evt-muted">This is a private event — it has no public page. Share each guest's personal invite link from <a href="{{ route('events.guests.index', $event) }}">Guests</a>.</p>
                 @endif
             </div>
         </div>

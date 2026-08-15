@@ -45,7 +45,9 @@ class StagedMediaUploadTest extends TestCase
         }
 
         return array_merge([
-            'theme_palette' => 'slate-sky',
+            // Omitted by default: theme_palette is a Pro+ feature and these tests
+            // use base-tier users. It's optional now — the save keeps the
+            // template's default theme without it, same as a real base-tier submit.
             'font_heading_key' => 'inter',
             'font_body_key' => 'inter',
             'animation_subtle' => '0',

@@ -157,6 +157,15 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Curated colour palette picker on the invitation design form — Pro+ only.
+     * Everyone else keeps the template's default theme.
+     */
+    public function canChooseInvitationPalette(): bool
+    {
+        return $this->isActive() && $this->subscriptionTierRank() >= SubscriptionTier::ProPlus->rank();
+    }
+
+    /**
      * @return array<string, bool>
      */
     public static function defaultNotificationPreferences(): array

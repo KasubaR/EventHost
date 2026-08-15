@@ -51,6 +51,12 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute($perMinute)->by((string) $request->user()->id);
         });
 
+        // Follows a short link's redirect server-side (see MapLinkController) — one outbound
+        // request per hop, so this stays modest rather than matching the per-file upload limit.
+        RateLimiter::for('map-link-resolve', function (Request $request): Limit {
+            return Limit::perMinute(20)->by((string) $request->user()->id);
+        });
+
         RateLimiter::for('rsvp-submit', function (Request $request): Limit {
             $route = $request->route();
             $suffix = 'global';

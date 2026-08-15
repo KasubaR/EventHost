@@ -57,6 +57,73 @@ document.addEventListener('DOMContentLoaded', () => {
     initMap();
 });
 
+/**
+ * Pull lat/lng straight out of a pasted Google Maps URL — or a raw "lat, lng" pair — with no
+ * network round-trip. Only matches URL shapes that carry coordinates in the text itself; short
+ * links (maps.app.goo.gl, goo.gl/maps/...) don't and are handled server-side, see isGoogleMapsShortLink.
+ *
+ * Order matters: `!3d{lat}!4d{lng}` is the actual pin on a Google "place" link and can legitimately
+ * disagree with `@{lat},{lng}`, which is just the map's viewport center at the time the link was
+ * copied — so it's checked first. Keep this in sync with GoogleMapsLinkParser::extractCoordinates()
+ * (app/Support/GoogleMapsLinkParser.php), which parses the same shapes server-side after resolving
+ * a short link's redirect.
+ */
+function parseGoogleMapsCoords(text) {
+    let m = text.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+    if (m) {
+        return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+    }
+
+    m = text.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+    if (m) {
+        return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+    }
+
+    m = text.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
+    if (m) {
+        return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+    }
+
+    m = text.match(/^(-?\d{1,3}(?:\.\d+)?),\s*(-?\d{1,3}(?:\.\d+)?)$/);
+    if (m) {
+        return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+    }
+
+    return null;
+}
+
+/** The `{name}` segment of a `/maps/place/{name}/@...` link, decoded back into a readable label. */
+function extractGoogleMapsPlaceName(text) {
+    const m = text.match(/\/maps\/place\/([^/@]+)\/@/);
+    if (!m) {
+        return null;
+    }
+    try {
+        return decodeURIComponent(m[1].replace(/\+/g, ' '));
+    } catch (_) {
+        return null;
+    }
+}
+
+/** Short links carry no coordinates in the text — they only appear after Google's redirect resolves. */
+function isGoogleMapsShortLink(text) {
+    let url;
+    try {
+        url = new URL(text);
+    } catch (_) {
+        return false;
+    }
+    if (url.hostname === 'maps.app.goo.gl') {
+        return true;
+    }
+    return url.hostname === 'goo.gl' && url.pathname.startsWith('/maps/');
+}
+
+function csrfToken() {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.content : '';
+}
+
 function initMap() {
     const mapEl = document.getElementById('evt-map');
     if (!mapEl || typeof window.L === 'undefined') {
@@ -117,6 +184,24 @@ function initMap() {
         return;
     }
 
+    function applyFoundCoords(lat, lng, placeName) {
+        map.flyTo([lat, lng], 15);
+        placeMarker(lat, lng);
+        syncCoords(lat, lng);
+
+        if (placeName) {
+            const locationInput = document.getElementById('location_name');
+            if (locationInput && !locationInput.value.trim()) {
+                locationInput.value = placeName;
+            }
+        }
+    }
+
+    function flashNoResult() {
+        searchInput.classList.add('evt-map-search--no-result');
+        setTimeout(() => searchInput.classList.remove('evt-map-search--no-result'), 2000);
+    }
+
     async function doSearch() {
         const q = searchInput.value.trim();
         if (!q) {
@@ -127,6 +212,37 @@ function initMap() {
         searchBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
 
         try {
+            // 1. A pasted Google Maps link that already carries coordinates in its text, or a raw
+            // "lat, lng" pair — parsed locally, no request at all.
+            const localCoords = parseGoogleMapsCoords(q);
+            if (localCoords) {
+                applyFoundCoords(localCoords.lat, localCoords.lng, extractGoogleMapsPlaceName(q));
+                return;
+            }
+
+            // 2. A short Google Maps link (maps.app.goo.gl, goo.gl/maps/...) — its coordinates only
+            // exist after the redirect resolves, which the browser can't do (Google sends no CORS
+            // headers), so a small backend endpoint follows it instead.
+            if (isGoogleMapsShortLink(q)) {
+                const res = await fetch('/maps/resolve-link', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken(),
+                    },
+                    body: JSON.stringify({ url: q }),
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    applyFoundCoords(data.latitude, data.longitude);
+                } else {
+                    flashNoResult();
+                }
+                return;
+            }
+
+            // 3. A plain address — the original behaviour.
             const res = await fetch(
                 'https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(q) + '&format=json&limit=1',
                 { headers: { 'Accept-Language': 'en' } }
@@ -134,19 +250,13 @@ function initMap() {
             const data = await res.json();
 
             if (data.length > 0) {
-                const lat = parseFloat(data[0].lat);
-                const lng = parseFloat(data[0].lon);
-                map.flyTo([lat, lng], 15);
-                placeMarker(lat, lng);
-                syncCoords(lat, lng);
-
-                const locationInput = document.getElementById('location_name');
-                if (locationInput && !locationInput.value.trim()) {
-                    locationInput.value = data[0].display_name.split(',').slice(0, 2).join(',').trim();
-                }
+                applyFoundCoords(
+                    parseFloat(data[0].lat),
+                    parseFloat(data[0].lon),
+                    data[0].display_name.split(',').slice(0, 2).join(',').trim()
+                );
             } else {
-                searchInput.classList.add('evt-map-search--no-result');
-                setTimeout(() => searchInput.classList.remove('evt-map-search--no-result'), 2000);
+                flashNoResult();
             }
         } catch (_) {
             // silent fail — user can retry
@@ -162,5 +272,69 @@ function initMap() {
             e.preventDefault();
             doSearch();
         }
+    });
+
+    // "Use my current location"
+    const locateBtn = document.getElementById('evt-map-locate-btn');
+    if (!locateBtn) {
+        return;
+    }
+
+    if (!navigator.geolocation) {
+        // No point offering a control that can only ever fail.
+        locateBtn.style.display = 'none';
+        return;
+    }
+
+    async function reverseGeocode(lat, lng) {
+        const locationInput = document.getElementById('location_name');
+        if (!locationInput || locationInput.value.trim()) {
+            return;
+        }
+        try {
+            const res = await fetch(
+                'https://nominatim.openstreetmap.org/reverse?lat=' + lat + '&lon=' + lng + '&format=json',
+                { headers: { 'Accept-Language': 'en' } }
+            );
+            const data = await res.json();
+            if (data && data.display_name) {
+                locationInput.value = data.display_name.split(',').slice(0, 2).join(',').trim();
+            }
+        } catch (_) {
+            // Best-effort only — the pin itself is already placed.
+        }
+    }
+
+    function flashLocateError() {
+        locateBtn.classList.add('evt-map-search--no-result');
+        setTimeout(() => locateBtn.classList.remove('evt-map-search--no-result'), 2000);
+    }
+
+    function setLocating(isLocating) {
+        locateBtn.disabled = isLocating;
+        locateBtn.innerHTML = isLocating
+            ? '<i class="fa-solid fa-spinner fa-spin"></i>'
+            : '<i class="fa-solid fa-location-crosshairs"></i>';
+    }
+
+    locateBtn.addEventListener('click', () => {
+        setLocating(true);
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const { latitude, longitude } = pos.coords;
+                map.flyTo([latitude, longitude], 15);
+                placeMarker(latitude, longitude);
+                syncCoords(latitude, longitude);
+                reverseGeocode(latitude, longitude);
+                setLocating(false);
+            },
+            () => {
+                // Permission denied, unavailable, or timed out — user can still
+                // search or click the map, so fail quietly with a visual nudge.
+                flashLocateError();
+                setLocating(false);
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
     });
 }

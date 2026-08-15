@@ -845,6 +845,32 @@
     color: var(--text-strong, #1a2a4a);
 }
 
+/* Pro+ gate: picker stays visible (reads as an upsell, same as locked
+   templates on the template library) but is inert and visually dimmed. */
+.evt-palette-grid--locked .evt-palette-card {
+    cursor: not-allowed;
+    opacity: 0.55;
+    filter: grayscale(0.35);
+}
+
+.evt-palette-grid--locked .evt-palette-card:hover {
+    border-color: var(--border-soft, rgba(26, 42, 74, 0.12));
+}
+
+.evt-palette-lock-hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.evt-palette-lock-hint i {
+    color: #a21caf;
+}
+
+.evt-palette-upgrade-link {
+    margin-top: 12px;
+}
+
 .evt-design-section-list {
     list-style: none;
     padding: 0;

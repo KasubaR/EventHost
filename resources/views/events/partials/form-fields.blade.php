@@ -131,11 +131,14 @@
                         <button type="button" id="evt-map-search-btn" class="evt-btn-outline">
                             <i class="fa-solid fa-magnifying-glass"></i>
                         </button>
+                        <button type="button" id="evt-map-locate-btn" class="evt-btn-outline" title="Use my current location">
+                            <i class="fa-solid fa-location-crosshairs"></i>
+                        </button>
                     </div>
                     <div class="evt-map-wrap">
                         <div id="evt-map" class="evt-map"></div>
                     </div>
-                    <p class="evt-map-hint">Click the map or drag the pin to set location. Search auto-fills the pin.</p>
+                    <p class="evt-map-hint">Click the map or drag the pin to set location. Search or "use my location" auto-fill the pin.</p>
                     <div class="evt-grid-2">
                         <div class="profile-field">
                             <label for="latitude" class="profile-label">Latitude</label>

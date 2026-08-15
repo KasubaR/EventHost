@@ -39,8 +39,10 @@
     <div class="evt-card-actions">
         <a href="{{ route('events.edit', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-pen-to-square"></i> Edit</a>
         <a href="{{ route('events.show', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-eye"></i> View</a>
-        @if ($event->is_published)
+        @if ($event->is_published && $event->is_public)
             <a href="{{ route('events.public', $event->slug) }}" class="evt-btn-outline"><i class="fa-solid fa-link"></i> Public link</a>
+        @elseif ($event->is_published)
+            <a href="{{ route('events.guests.index', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-user-group"></i> Guest invite links</a>
         @endif
     </div>
 </article>

@@ -139,7 +139,8 @@ class InvitationTemplateFeaturesTest extends TestCase
 
     public function test_owner_can_save_invitation_design(): void
     {
-        $user = User::factory()->create();
+        // Pro+ so the theme_palette assertions below actually apply.
+        $user = User::factory()->proPlus()->create();
         $tpl = InvitationTemplate::query()->where('slug', 'slate-minimal')->firstOrFail();
 
         $event = Event::factory()->for($user)->create([

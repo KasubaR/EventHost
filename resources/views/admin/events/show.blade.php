@@ -22,7 +22,7 @@
             </div>
             <div class="admin-actions">
                 <a href="{{ route('admin.events.index') }}" class="evt-btn-outline dash-header-cta">Back</a>
-                @if ($ev->is_published)
+                @if ($ev->is_published && $ev->is_public)
                     <a href="{{ route('events.public', $ev->slug) }}" class="btn-primary dash-header-cta" target="_blank" rel="noopener">Public page</a>
                 @endif
             </div>

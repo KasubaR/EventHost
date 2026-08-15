@@ -63,7 +63,7 @@ class InvitationPaletteTest extends TestCase
     {
         Storage::fake('public');
 
-        $user = User::factory()->create();
+        $user = User::factory()->proPlus()->create();
         [$event, $tpl] = $this->eventFor($user, 'slate-minimal');
 
         $this->actingAs($user)
@@ -100,7 +100,9 @@ class InvitationPaletteTest extends TestCase
     {
         Storage::fake('public');
 
-        $user = User::factory()->create();
+        // Pro+ so the missing theme_palette is rejected for being absent, not
+        // merely because this tier can't choose one at all.
+        $user = User::factory()->proPlus()->create();
         [$event, $tpl] = $this->eventFor($user, 'slate-minimal');
 
         $payload = $this->designPayload($tpl);
@@ -123,7 +125,7 @@ class InvitationPaletteTest extends TestCase
     {
         Storage::fake('public');
 
-        $user = User::factory()->pro()->create();
+        $user = User::factory()->proPlus()->create();
         [$event, $tpl] = $this->eventFor($user, 'slate-minimal');
 
         $this->actingAs($user)
@@ -137,7 +139,7 @@ class InvitationPaletteTest extends TestCase
     {
         Storage::fake('public');
 
-        $user = User::factory()->pro()->create();
+        $user = User::factory()->proPlus()->create();
         [$event, $tpl] = $this->eventFor($user, 'wedding-invitation-2');
 
         $this->actingAs($user)
@@ -151,7 +153,7 @@ class InvitationPaletteTest extends TestCase
     {
         Storage::fake('public');
 
-        $user = User::factory()->pro()->create();
+        $user = User::factory()->proPlus()->create();
         [$event, $tpl] = $this->eventFor($user, 'wedding-invitation-2');
 
         $this->actingAs($user)
@@ -212,6 +214,59 @@ class InvitationPaletteTest extends TestCase
             $tpl->default_theme['primary'],
             $event->invitation_customization['theme']['primary']
         );
+    }
+
+    public function test_palette_choice_is_rejected_for_a_user_below_pro_plus(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->pro()->create();
+        [$event, $tpl] = $this->eventFor($user, 'slate-minimal');
+
+        $this->actingAs($user)
+            ->patch(route('events.invitation-design.update', $event), $this->designPayload($tpl, [
+                'theme_palette' => 'sage-ivory',
+            ]))
+            ->assertSessionHasErrors('theme_palette');
+
+        // Nothing applied — the field is simply ignored, not partially saved.
+        $event->refresh();
+        $this->assertNull($event->invitation_customization);
+    }
+
+    public function test_palette_field_may_be_omitted_below_pro_plus_and_keeps_template_default(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->create();
+        [$event, $tpl] = $this->eventFor($user, 'slate-minimal');
+
+        $payload = $this->designPayload($tpl);
+        unset($payload['theme_palette']);
+
+        $this->actingAs($user)
+            ->patch(route('events.invitation-design.update', $event), $payload)
+            ->assertSessionDoesntHaveErrors();
+
+        $event->refresh();
+        $this->assertSame(
+            $tpl->default_theme['primary'],
+            $event->invitation_customization['theme']['primary']
+        );
+    }
+
+    public function test_design_form_locks_the_palette_picker_below_pro_plus(): void
+    {
+        $user = User::factory()->create();
+        [$event] = $this->eventFor($user, 'slate-minimal');
+
+        $response = $this->actingAs($user)->get(route('events.edit', $event));
+
+        $response->assertOk();
+        // Still shown (reads as an upsell) but disabled, plus an upgrade link.
+        $response->assertSee('theme_palette_slate-sky', escape: false);
+        $response->assertSee('evt-palette-grid--locked', escape: false);
+        $response->assertSee('Upgrade to Pro+', escape: false);
     }
 
     public function test_event_with_off_catalogue_colours_still_renders_the_form(): void

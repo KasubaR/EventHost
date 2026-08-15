@@ -133,13 +133,23 @@
             </div>
         @else
             <div class="evt-section">
-                <div class="evt-section-head">
-                    <h2>Share</h2>
-                    <p>Your live invitation link.</p>
-                </div>
-                <div class="evt-section-body">
-                    <a href="{{ route('events.public', $event->slug) }}" class="evt-public-url">{{ url('/e/'.$event->slug) }}</a>
-                </div>
+                @if ($event->is_public)
+                    <div class="evt-section-head">
+                        <h2>Share</h2>
+                        <p>Your live invitation link.</p>
+                    </div>
+                    <div class="evt-section-body">
+                        <a href="{{ route('events.public', $event->slug) }}" class="evt-public-url">{{ url('/e/'.$event->slug) }}</a>
+                    </div>
+                @else
+                    <div class="evt-section-head">
+                        <h2>Share</h2>
+                        <p>This is a private event, so it has no public link.</p>
+                    </div>
+                    <div class="evt-section-body">
+                        <span class="evt-muted">Send each guest their own invite from <a href="{{ route('events.guests.index', $event) }}">Guests</a> — that personal link is how they view and RSVP.</span>
+                    </div>
+                @endif
             </div>
         @endif
 

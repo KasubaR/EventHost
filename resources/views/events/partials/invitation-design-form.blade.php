@@ -1,4 +1,6 @@
 @php
+    use App\Enums\SubscriptionTier;
+    use App\Support\BillingPlan;
     use App\Support\InvitationFonts;
     use App\Support\InvitationLayoutVariant;
     use App\Support\InvitationMediaRules;
@@ -68,6 +70,10 @@
     // Beauty for Ashes hardcodes its colours and never reads the theme variables,
     // so offering a palette there would silently do nothing.
     $showPalettePicker = $layoutVariant !== InvitationLayoutVariant::BEAUTY_FOR_ASHES;
+    // Colour palette selection is a Pro+ feature — everyone else sees the picker
+    // (so it reads as an upsell, same as locked templates) but can't apply it;
+    // enforced again server-side in UpdateInvitationDesignRequest::validatePalette().
+    $canChoosePalette = auth()->user()->canChooseInvitationPalette();
     $paletteMode = InvitationPalettes::modeForBackground($invitationMerged['theme']['background'] ?? '#ffffff');
     $paletteChoices = InvitationPalettes::forMode($paletteMode);
     $selectedPalette = old('theme_palette')
@@ -100,8 +106,15 @@
             @if ($showPalettePicker)
                 <fieldset class="evt-design-fieldset">
                     <legend class="profile-label">Colour palette</legend>
-                    <p class="evt-muted evt-design-hint">Each palette is checked for readable contrast on this template.</p>
-                    <div class="evt-palette-grid">
+                    @if ($canChoosePalette)
+                        <p class="evt-muted evt-design-hint">Each palette is checked for readable contrast on this template.</p>
+                    @else
+                        <p class="evt-muted evt-design-hint evt-palette-lock-hint">
+                            <i class="fa-solid fa-lock" aria-hidden="true"></i>
+                            Requires the {{ SubscriptionTier::ProPlus->label() }} plan — this template's default colours are used until then.
+                        </p>
+                    @endif
+                    <div class="evt-palette-grid {{ $canChoosePalette ? '' : 'evt-palette-grid--locked' }}">
                         @foreach ($paletteChoices as $key => $palette)
                             <label class="evt-palette-card" for="theme_palette_{{ $key }}">
                                 <input type="radio"
@@ -109,7 +122,8 @@
                                        name="theme_palette"
                                        value="{{ $key }}"
                                        class="evt-palette-radio"
-                                       @checked($selectedPalette === $key)>
+                                       @checked($selectedPalette === $key)
+                                       @disabled(! $canChoosePalette)>
                                 <span class="evt-palette-bands" aria-hidden="true">
                                     <span class="evt-palette-band" style="background: {{ $palette['background'] }};"></span>
                                     <span class="evt-palette-band" style="background: {{ $palette['primary'] }};"></span>
@@ -119,6 +133,11 @@
                             </label>
                         @endforeach
                     </div>
+                    @unless ($canChoosePalette)
+                        <a href="{{ BillingPlan::checkoutUrlForTier(SubscriptionTier::ProPlus) }}" class="btn-outline evt-palette-upgrade-link">
+                            Upgrade to {{ SubscriptionTier::ProPlus->label() }}
+                        </a>
+                    @endunless
                     @error('theme_palette')
                         <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                     @enderror
