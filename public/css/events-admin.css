@@ -1292,6 +1292,12 @@
     background: rgba(224, 14, 79, 0.08);
 }
 
+.evt-more-item--disabled {
+    opacity: 0.45;
+    cursor: default;
+    pointer-events: none;
+}
+
 /* Portalled overlay — guests-admin.js moves the menu to body so .evt-section's
    overflow: hidden cannot clip it. */
 body > .evt-more-menu {

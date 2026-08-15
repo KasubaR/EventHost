@@ -93,15 +93,22 @@ class GuestManagementTest extends TestCase
 
     public function test_guest_row_actions_are_in_a_more_menu(): void
     {
-        $owner = User::factory()->create();
+        $owner = User::factory()->pro()->create();
         $event = Event::factory()->for($owner)->create();
-        $guest = Guest::factory()->for($event)->create(['name' => 'Menu Guest']);
+        $guest = Guest::factory()->for($event)->create([
+            'name' => 'Menu Guest',
+            'phone' => '+260971112233',
+        ]);
 
         $this->actingAs($owner)
             ->get(route('events.guests.index', $event))
             ->assertOk()
             ->assertSee('data-evt-more', escape: false)
             ->assertSee('More actions for Menu Guest', escape: false)
+            ->assertSee('Copy link', escape: false)
+            ->assertSee('WhatsApp', escape: false)
+            ->assertSee('QR check-in', escape: false)
+            ->assertSee(route('events.guests.qr', ['event' => $event, 'guest' => $guest->id]), escape: false)
             ->assertSee('Mark sent', escape: false)
             ->assertSee(route('events.guests.edit', ['event' => $event, 'guest' => $guest->id]), escape: false)
             ->assertSee('Remove', escape: false);

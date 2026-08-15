@@ -222,7 +222,6 @@
                                 <th>Response</th>
                                 <th>Attendees</th>
                                 <th>Invitation</th>
-                                <th>Share</th>
                                 <th></th>
                             </tr>
                         </thead>
@@ -274,29 +273,23 @@
                                             <span class="evt-pill evt-pill--pending">Not marked</span>
                                         @endif
                                     </td>
-                                    <td class="evt-guest-share-cell">
-                                        @if ($rsvpUrl)
-                                            <div class="evt-copy-row">
-                                                <button type="button" class="evt-icon-btn" data-copy-text="{{ $rsvpUrl }}" data-copy-label="Copy link" title="Copy RSVP link">Copy link</button>
-                                                @if ($waUrl)
-                                                    <a href="{{ $waUrl }}" class="evt-icon-btn evt-icon-btn--wa" target="_blank" rel="noopener noreferrer" title="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
-                                                @else
-                                                    <span class="evt-muted evt-icon-btn evt-icon-btn--disabled" title="Add a phone number for WhatsApp sharing"><i class="fa-brands fa-whatsapp"></i></span>
-                                                @endif
-                                                @if ($event->ownerHasPremiumEventTools())
-                                                    <a href="{{ route('events.guests.qr', ['event' => $event, 'guest' => $guestRow->id]) }}" class="evt-icon-btn" target="_blank" rel="noopener noreferrer" title="Check-in QR code"><i class="fa-solid fa-qrcode"></i></a>
-                                                @endif
-                                            </div>
-                                        @else
-                                            <span class="evt-muted">Open RSVP</span>
-                                        @endif
-                                    </td>
                                     <td class="evt-table-actions">
                                         <div class="evt-more" data-evt-more>
                                             <button type="button" class="evt-icon-btn evt-more-toggle" data-evt-more-toggle hidden aria-expanded="false" aria-haspopup="true" aria-label="More actions for {{ $guestRow->name }}">
                                                 <i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i>
                                             </button>
                                             <div class="evt-more-menu" data-evt-more-menu>
+                                                @if ($rsvpUrl)
+                                                    <button type="button" class="evt-more-item" role="menuitem" data-copy-text="{{ $rsvpUrl }}" data-copy-label="Copy link">Copy link</button>
+                                                    @if ($waUrl)
+                                                        <a href="{{ $waUrl }}" class="evt-more-item" role="menuitem" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+                                                    @else
+                                                        <span class="evt-more-item evt-more-item--disabled" role="menuitem" aria-disabled="true" title="Add a phone number for WhatsApp sharing">WhatsApp</span>
+                                                    @endif
+                                                    @if ($event->ownerHasPremiumEventTools())
+                                                        <a href="{{ route('events.guests.qr', ['event' => $event, 'guest' => $guestRow->id]) }}" class="evt-more-item" role="menuitem" target="_blank" rel="noopener noreferrer">QR check-in</a>
+                                                    @endif
+                                                @endif
                                                 @if (!$guestRow->invitation_sent && $guestRow->invitation_token)
                                                     <form method="post" action="{{ route('events.guests.mark-invitation-sent', ['event' => $event, 'guest' => $guestRow->id]) }}" class="evt-inline-form">
                                                         @csrf
