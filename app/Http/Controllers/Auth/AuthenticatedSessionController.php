@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\Review;
 use App\Support\SafeIntendedUrl;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,7 +21,13 @@ class AuthenticatedSessionController extends Controller
 
     public function create(): View
     {
-        return view('auth.login');
+        // Same featured set as the homepage strip; the sidebar only has room
+        // for one quote. Hidden when nothing qualifies — see login.blade.php.
+        $featuredReview = Review::query()
+            ->featuredForHomepage()
+            ->first();
+
+        return view('auth.login', compact('featuredReview'));
     }
 
     public function store(LoginRequest $request): RedirectResponse

@@ -32,7 +32,7 @@
             </div>
         @elseif (session('status') === 'no-event-credits')
             <div class="evt-flash evt-flash--warn">
-                <i class="fa-solid fa-triangle-exclamation"></i> You have no event credits. Buy one below to create a new event.
+                <i class="fa-solid fa-triangle-exclamation"></i> You have no event credits. Buy one below to publish an event.
             </div>
         @endif
 

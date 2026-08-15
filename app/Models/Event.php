@@ -157,6 +157,14 @@ class Event extends Model
     }
 
     /**
+     * @return HasMany<CreditTransaction, $this>
+     */
+    public function creditTransactions(): HasMany
+    {
+        return $this->hasMany(CreditTransaction::class);
+    }
+
+    /**
      * An event whose date has passed is spent — the credit bought that
      * occurrence. Changing what the event *is* from here on costs another
      * credit, otherwise one credit would buy unlimited events.
@@ -214,9 +222,26 @@ class Event extends Model
     }
 
     /**
+     * Whether this event has already used a credit for going live. Drafts
+     * created under the old "pay on create" rule stored `event_created`; new
+     * publishes store `event_published`. Either one means a second publish
+     * (or a first publish of a legacy draft) must not charge again.
+     */
+    public function hasConsumedPublishCredit(): bool
+    {
+        return $this->creditTransactions()
+            ->where('delta', '<', 0)
+            ->whereIn('reason', [
+                CreditTransaction::REASON_EVENT_CREATED,
+                CreditTransaction::REASON_EVENT_PUBLISHED,
+            ])
+            ->exists();
+    }
+
+    /**
      * Whether the host may still leave a review for this event.
      *
-     * The purchase gate is implicit: creating an event costs an event credit
+     * The purchase gate is implicit: publishing an event costs an event credit
      * (see User::canCreateEvent()), so anyone with a reviewable event has
      * necessarily paid for it. Checking `payments` as well would wrongly exclude
      * users an admin granted credits to by hand.

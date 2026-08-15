@@ -7,7 +7,7 @@ use RuntimeException;
 /**
  * Thrown when a credit spend is attempted with an empty balance. The balance is
  * re-read under a row lock at spend time, so this fires on the race that the
- * earlier `canCreateEvent()` pre-check cannot catch.
+ * earlier publish / redefine pre-check cannot catch.
  */
 class InsufficientCreditsException extends RuntimeException
 {

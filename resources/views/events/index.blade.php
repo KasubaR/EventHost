@@ -11,23 +11,24 @@
                 <h1 class="dph-title">My events</h1>
                 <p class="dph-sub">Drafts and published invitations.</p>
             </div>
-            @if (auth()->user()->canCreateEvent())
-                <a href="{{ route('events.create') }}" class="btn-primary">
-                    <i class="fa-solid fa-plus"></i> New event
-                    <span class="evt-credit-badge">{{ auth()->user()->event_credits }} credit{{ auth()->user()->event_credits === 1 ? '' : 's' }}</span>
-                </a>
-            @else
-                <a href="{{ route('billing.show') }}" class="btn-primary">
-                    <i class="fa-solid fa-credit-card"></i> Buy event credit
-                </a>
-            @endif
+            <a href="{{ route('events.create') }}" class="btn-primary">
+                <i class="fa-solid fa-plus"></i> New event
+                <span class="evt-credit-badge">{{ auth()->user()->event_credits }} credit{{ auth()->user()->event_credits === 1 ? '' : 's' }}</span>
+            </a>
         </div>
     </x-slot>
 
     @if (session('status') === 'event-deleted')
         <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Event deleted.</div>
     @elseif (session('status') === 'no-event-credits')
-        <div class="evt-flash evt-flash--warn"><i class="fa-solid fa-triangle-exclamation"></i> You have no event credits. <a href="{{ route('billing.show') }}">Buy an event credit</a> to create a new event.</div>
+        <div class="evt-flash evt-flash--warn"><i class="fa-solid fa-triangle-exclamation"></i> You have no event credits. <a href="{{ route('billing.show') }}">Buy an event credit</a> to publish.</div>
+    @endif
+
+    {{-- Guests & RSVPs are managed per event — there's no single list across events, so the
+         sidebar link lands here with a hint to pick one. Only shown when there's actually a
+         choice to make; the empty-state branch below covers the zero-events case instead. --}}
+    @if (request('from') === 'guests' && ($published->total() > 0 || $drafts->total() > 0))
+        <div class="evt-flash evt-flash--info"><i class="fa-solid fa-circle-info"></i> Guests and RSVPs are managed per event. Pick an event below, then choose "Guests &amp; RSVPs" on it.</div>
     @endif
 
     @if ($published->total() === 0 && $drafts->total() === 0)

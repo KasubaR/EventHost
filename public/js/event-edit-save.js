@@ -123,6 +123,13 @@
     }
 
     async function saveAll(publish) {
+        if (publish) {
+            const publishConfirm = bar.dataset.publishConfirm;
+            if (publishConfirm && !window.confirm(publishConfirm)) {
+                return;
+            }
+        }
+
         // Saves go through fetch(), so a data-confirm on the form would never
         // fire — the confirm for a chargeable edit has to live here.
         const redefineConfirm = bar.dataset.redefineConfirm;

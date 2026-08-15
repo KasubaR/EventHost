@@ -71,7 +71,8 @@ class Review extends Model
     }
 
     /**
-     * Reviews to render in the homepage strip, in admin-defined order.
+     * Reviews to render in the homepage strip (and the login sidebar quote),
+     * in admin-defined order.
      *
      * @param  Builder<$this>  $query
      */

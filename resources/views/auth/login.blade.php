@@ -173,19 +173,28 @@
         </li>
       </ul>
 
+      {{-- Approved host review the admin has chosen to feature. Same source as the homepage strip. --}}
+      @if ($featuredReview)
       <div class="auth-testi">
-        <div class="auth-testi-stars">
-          <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+        @if ($featuredReview->rating)
+        <div class="auth-testi-stars" aria-label="{{ $featuredReview->rating }} out of 5 stars">
+          @for ($star = 1; $star <= 5; $star++)
+            <i class="fa-solid fa-star {{ $star <= $featuredReview->rating ? '' : 'is-empty' }}" aria-hidden="true"></i>
+          @endfor
         </div>
-        <blockquote>"The dashboard is incredible. I could see live responses, send reminders, and export everything for our caterer. Saved me hours."</blockquote>
+        @endif
+        <blockquote>&ldquo;{{ $featuredReview->body }}&rdquo;</blockquote>
         <div class="auth-testi-author">
-          <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=88&h=88&q=80" alt="Chanda Bwalya" width="36" height="36" loading="lazy">
+          <img src="{{ $featuredReview->author_photo_url }}" alt="" width="36" height="36" loading="lazy">
           <div>
-            <strong>Chanda Bwalya</strong>
-            <span>Corporate Event · Ndola</span>
+            <strong>{{ $featuredReview->author_name }}</strong>
+            @if ($featuredReview->author_context)
+              <span>{{ $featuredReview->author_context }}</span>
+            @endif
           </div>
         </div>
       </div>
+      @endif
     </div>
 
   </div>

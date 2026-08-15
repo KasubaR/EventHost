@@ -91,6 +91,22 @@ class GuestManagementTest extends TestCase
         $response->assertDontSee('Unmarked Guest');
     }
 
+    public function test_guest_row_actions_are_in_a_more_menu(): void
+    {
+        $owner = User::factory()->create();
+        $event = Event::factory()->for($owner)->create();
+        $guest = Guest::factory()->for($event)->create(['name' => 'Menu Guest']);
+
+        $this->actingAs($owner)
+            ->get(route('events.guests.index', $event))
+            ->assertOk()
+            ->assertSee('data-evt-more', escape: false)
+            ->assertSee('More actions for Menu Guest', escape: false)
+            ->assertSee('Mark sent', escape: false)
+            ->assertSee(route('events.guests.edit', ['event' => $event, 'guest' => $guest->id]), escape: false)
+            ->assertSee('Remove', escape: false);
+    }
+
     /**
      * Regression: routes/web.php's guests resource previously called
      * ->scoped(['guest' => 'guests']) — Route::resource::scoped() takes {param:

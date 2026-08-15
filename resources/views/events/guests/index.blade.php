@@ -1,7 +1,6 @@
 <x-app-layout>
     @push('styles')
         <link rel="stylesheet" href="{{ asset('css/events-admin.css') }}">
-        <link rel="stylesheet" href="{{ asset('css/forms-app.css') }}">
     @endpush
 
     <x-slot name="title">Guests — {{ $event->name }}</x-slot>
@@ -293,19 +292,26 @@
                                         @endif
                                     </td>
                                     <td class="evt-table-actions">
-                                        @if (!$guestRow->invitation_sent && $guestRow->invitation_token)
-                                            <form method="post" action="{{ route('events.guests.mark-invitation-sent', ['event' => $event, 'guest' => $guestRow->id]) }}" class="evt-inline-form">
-                                                @csrf
-                                                @method('PATCH')
-                                                <button type="submit" class="evt-btn-outline evt-btn-tiny">Mark sent</button>
-                                            </form>
-                                        @endif
-                                        <a href="{{ route('events.guests.edit', ['event' => $event, 'guest' => $guestRow->id]) }}" class="evt-btn-outline evt-btn-tiny">Edit</a>
-                                        <form method="post" action="{{ route('events.guests.destroy', ['event' => $event, 'guest' => $guestRow->id]) }}" class="evt-inline-form evt-confirm-form" data-evt-confirm="Remove this guest? Their RSVP will be deleted too.">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="evt-btn-danger-outline evt-btn-tiny">Remove</button>
-                                        </form>
+                                        <div class="evt-more" data-evt-more>
+                                            <button type="button" class="evt-icon-btn evt-more-toggle" data-evt-more-toggle hidden aria-expanded="false" aria-haspopup="true" aria-label="More actions for {{ $guestRow->name }}">
+                                                <i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i>
+                                            </button>
+                                            <div class="evt-more-menu" data-evt-more-menu>
+                                                @if (!$guestRow->invitation_sent && $guestRow->invitation_token)
+                                                    <form method="post" action="{{ route('events.guests.mark-invitation-sent', ['event' => $event, 'guest' => $guestRow->id]) }}" class="evt-inline-form">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <button type="submit" class="evt-more-item" role="menuitem">Mark sent</button>
+                                                    </form>
+                                                @endif
+                                                <a href="{{ route('events.guests.edit', ['event' => $event, 'guest' => $guestRow->id]) }}" class="evt-more-item" role="menuitem">Edit</a>
+                                                <form method="post" action="{{ route('events.guests.destroy', ['event' => $event, 'guest' => $guestRow->id]) }}" class="evt-inline-form evt-confirm-form" data-evt-confirm="Remove this guest? Their RSVP will be deleted too.">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="evt-more-item evt-more-item--danger" role="menuitem">Remove</button>
+                                                </form>
+                                            </div>
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach

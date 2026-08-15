@@ -138,6 +138,10 @@ class User extends Authenticatable implements MustVerifyEmail
         return (bool) ($this->notification_preferences['email_rsvp_updates'] ?? true);
     }
 
+    /**
+     * Whether the user has a credit available to publish an event or to
+     * redefine a past one. Drafts are free and do not consult this.
+     */
     public function canCreateEvent(): bool
     {
         return $this->event_credits > 0;

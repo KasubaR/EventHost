@@ -72,8 +72,9 @@
             <section>
                 <h2 id="credits">3. Event credits</h2>
                 <p>
-                    Event Host is paid for with <strong>event credits</strong>. Creating an event costs one
-                    credit, which is deducted when the event is created. Credits are bought through our
+                    Event Host is paid for with <strong>event credits</strong>. Publishing an event costs one
+                    credit, which is deducted when the event is published. Saving a draft does not use a
+                    credit. Credits are bought through our
                     payment provider, Lenco, in the currency shown at checkout.
                 </p>
                 <ul>

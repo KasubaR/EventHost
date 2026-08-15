@@ -10,6 +10,7 @@ use App\Models\CreditTransaction;
 use App\Models\Event;
 use App\Models\InvitationTemplate;
 use App\Models\StagedMedia;
+use App\Models\User;
 use App\Services\DashboardAnalyticsService;
 use App\Services\EventCreditService;
 use App\Services\InvitationCustomizationService;
@@ -50,12 +51,8 @@ class EventController extends Controller
         return view('events.index', compact('published', 'drafts'));
     }
 
-    public function create(Request $request): View|RedirectResponse
+    public function create(Request $request): View
     {
-        if (! $request->user()->canCreateEvent()) {
-            return redirect()->route('billing.show')->with('status', 'no-event-credits');
-        }
-
         $prefTemplateId = null;
         $slug = $request->query('template');
         if (is_string($slug) && $slug !== '') {
@@ -68,12 +65,8 @@ class EventController extends Controller
         return view('events.create', compact('prefTemplateId'));
     }
 
-    public function store(StoreEventRequest $request, EventCreditService $credits): RedirectResponse
+    public function store(StoreEventRequest $request): RedirectResponse
     {
-        if (! $request->user()->canCreateEvent()) {
-            return redirect()->route('billing.show')->with('status', 'no-event-credits');
-        }
-
         $data = $request->validated();
         $preferredTemplateId = $data['preferred_invitation_template_id'] ?? null;
         unset($data['preferred_invitation_template_id']);
@@ -89,28 +82,10 @@ class EventController extends Controller
             $data['user_id'] = (int) $request->user()->id;
             $data['is_published'] = false;
 
-            // The check above is only a friendly redirect — it can be passed by two
-            // concurrent submits holding the same balance. The real gate is the row
-            // lock inside spend(), and the event is created in the same transaction
-            // so a refused spend cannot leave a free event behind.
-            $event = DB::transaction(function () use ($request, $data, $credits): Event {
-                $event = Event::create($data);
-
-                $credits->spend(
-                    $request->user(),
-                    CreditTransaction::REASON_EVENT_CREATED,
-                    $event
-                );
-
-                return $event;
-            });
+            $event = Event::create($data);
         } catch (\Throwable $e) {
             if ($newPath) {
                 Storage::disk('public')->delete($newPath);
-            }
-
-            if ($e instanceof InsufficientCreditsException) {
-                return redirect()->route('billing.show')->with('status', 'no-event-credits');
             }
 
             throw $e;
@@ -149,6 +124,7 @@ class EventController extends Controller
         $invitationMerged = null;
         $templateFingerprint = null;
         $customizationToken = null;
+        $publishCostsCredit = ! $event->is_published && ! $event->hasConsumedPublishCredit();
 
         if ($event->invitation_template_id !== null) {
             $invitationMerged = $customizationService->merge($event);
@@ -158,7 +134,13 @@ class EventController extends Controller
             $customizationToken = md5(json_encode($event->invitation_customization) ?: '');
         }
 
-        return view('events.edit', compact('event', 'invitationMerged', 'templateFingerprint', 'customizationToken'));
+        return view('events.edit', compact(
+            'event',
+            'invitationMerged',
+            'templateFingerprint',
+            'customizationToken',
+            'publishCostsCredit',
+        ));
     }
 
     public function update(
@@ -188,6 +170,7 @@ class EventController extends Controller
         // it has happened is a second occurrence, so it costs another credit.
         // Everything else — and every edit before the date — stays free.
         $chargeable = $event->isLocked() && $event->identityChangedBy($request->validated());
+        $needsPublishCredit = $shouldPublish && ! $event->is_published && ! $event->hasConsumedPublishCredit();
 
         try {
             if ($stagedCover !== null) {
@@ -199,7 +182,8 @@ class EventController extends Controller
                 $coverIsRollbackable = true;
             }
 
-            DB::transaction(function () use ($request, $event, $newCoverPath, $stagedCover, $shouldPublish, $chargeable, $credits, &$previousCover): void {
+            DB::transaction(function () use ($request, &$event, $newCoverPath, $stagedCover, $shouldPublish, $chargeable, $credits, &$previousCover): void {
+                $event = Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
                 $data = $request->validated();
 
                 // Never a column — it is the receipt for an upload that already happened.
@@ -210,6 +194,7 @@ class EventController extends Controller
                 }
 
                 if ($shouldPublish) {
+                    $this->spendPublishCreditIfNeeded($request->user(), $event, $credits);
                     $data['is_published'] = true;
                 }
 
@@ -240,8 +225,7 @@ class EventController extends Controller
             }
 
             if ($e instanceof InsufficientCreditsException) {
-                $message = 'Changing the name, type or date of an event that has already taken place '
-                    .'uses 1 event credit, and you have none left.';
+                [$message, $status] = $this->insufficientCreditFeedback($needsPublishCredit, $chargeable);
 
                 // The edit page saves over fetch(), which would follow a redirect
                 // and report it as success — it needs a 422 to show the message.
@@ -251,7 +235,7 @@ class EventController extends Controller
 
                 return redirect()
                     ->route('billing.show')
-                    ->with('status', 'no-credits-to-redefine');
+                    ->with('status', $status);
             }
 
             throw $e;
@@ -305,15 +289,72 @@ class EventController extends Controller
         return redirect()->route('events.index')->with('status', 'event-deleted');
     }
 
-    public function publish(Event $event): RedirectResponse
+    public function publish(Request $request, Event $event, EventCreditService $credits): RedirectResponse
     {
         $this->authorize('update', $event);
 
-        // Publishing does not change what the event is, so it stays free even
-        // for a past event — only identity changes are chargeable.
-        $event->update(['is_published' => true]);
+        $needsPublishCredit = ! $event->is_published && ! $event->hasConsumedPublishCredit();
 
-        return redirect()->route('events.public', $event->slug)->with('status', 'published');
+        if ($needsPublishCredit && ! $request->user()->canCreateEvent()) {
+            return redirect()->route('billing.show')->with('status', 'no-event-credits');
+        }
+
+        try {
+            DB::transaction(function () use ($request, $event, $credits): void {
+                $locked = Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
+
+                $this->spendPublishCreditIfNeeded($request->user(), $locked, $credits);
+
+                $locked->is_published = true;
+                $locked->save();
+            });
+        } catch (InsufficientCreditsException) {
+            return redirect()->route('billing.show')->with('status', 'no-event-credits');
+        }
+
+        return redirect()->route('events.public', $event->fresh()->slug)->with('status', 'published');
+    }
+
+    /**
+     * First publish spends one credit. A draft that already consumed a credit
+     * at creation (the old rule) publishes without a second spend. Already
+     * published events are a no-op.
+     *
+     * Must run inside a transaction with the event row locked.
+     */
+    private function spendPublishCreditIfNeeded(User $user, Event $event, EventCreditService $credits): void
+    {
+        if ($event->is_published || $event->hasConsumedPublishCredit()) {
+            return;
+        }
+
+        $credits->spend($user, CreditTransaction::REASON_EVENT_PUBLISHED, $event);
+    }
+
+    /**
+     * @return array{0: string, 1: string}
+     */
+    private function insufficientCreditFeedback(bool $needsPublishCredit, bool $chargeable): array
+    {
+        if ($needsPublishCredit && $chargeable) {
+            return [
+                'Publishing this event and changing its name, type or date uses 2 event credits, and you do not have enough.',
+                'no-event-credits',
+            ];
+        }
+
+        if ($needsPublishCredit) {
+            return [
+                'Publishing uses 1 event credit, and you have none left.',
+                'no-event-credits',
+            ];
+        }
+
+        return [
+            'Changing the name, type or date of an event that has already taken place '
+            .'uses 1 event credit, and you have none left.',
+            'no-credits-to-redefine',
+        ];
     }
 
     /**

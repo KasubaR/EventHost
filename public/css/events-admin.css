@@ -254,6 +254,13 @@
     color: var(--accent, #1e47bb);
 }
 
+/* .profile-field is a flex column with the default stretch cross-axis, which
+   would otherwise pull an inline-flex button (e.g. "Manage groups" under a
+   select) to the field's full width. */
+.evt-btn-outline.evt-btn-tiny {
+    align-self: flex-start;
+}
+
 .evt-btn-danger-outline {
     border-color: rgba(224, 14, 79, 0.35);
     color: var(--pink, #e00e4f);
@@ -335,6 +342,17 @@
     padding: 12px 16px;
     border-radius: 8px;
     font-size: 14px;
+}
+.evt-flash--info {
+    background: rgba(30, 71, 187, 0.06);
+    border: 1px solid rgba(30, 71, 187, 0.25);
+    color: var(--navy, #1a2a4a);
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+}
+.evt-flash--info i {
+    color: var(--accent, #1e47bb);
 }
 .btn-primary--disabled {
     opacity: 0.45;
@@ -1219,6 +1237,98 @@
 .evt-table-actions {
     white-space: nowrap;
     text-align: right;
+}
+
+.evt-more {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.evt-more-toggle {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.evt-more-toggle[hidden],
+.evt-more-menu[hidden] {
+    display: none !important;
+}
+
+.evt-more-menu {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-end;
+}
+
+.evt-more-item {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border-soft, rgba(26, 42, 74, 0.12));
+    background: transparent;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--navy, #1a2a4a);
+    cursor: pointer;
+    text-decoration: none;
+    font-family: inherit;
+}
+
+.evt-more-item:hover {
+    border-color: rgba(30, 71, 187, 0.35);
+    color: var(--accent, #1e47bb);
+}
+
+.evt-more-item--danger {
+    border-color: rgba(224, 14, 79, 0.45);
+    color: var(--pink, #e00e4f);
+}
+
+.evt-more-item--danger:hover {
+    background: rgba(224, 14, 79, 0.08);
+}
+
+/* Portalled overlay — guests-admin.js moves the menu to body so .evt-section's
+   overflow: hidden cannot clip it. */
+body > .evt-more-menu {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 0;
+    position: fixed;
+    min-width: 168px;
+    padding: 6px;
+    background: var(--surface, #fff);
+    border: 1px solid var(--border-soft, rgba(26, 42, 74, 0.12));
+    border-radius: 12px;
+    box-shadow: var(--card-shadow, 0 8px 24px rgba(26, 42, 74, 0.12));
+    z-index: 80;
+}
+
+body > .evt-more-menu .evt-inline-form {
+    display: block;
+}
+
+body > .evt-more-menu .evt-more-item {
+    display: flex;
+    width: 100%;
+    padding: 9px 12px;
+    border: 0;
+    border-radius: 8px;
+    font-size: 13px;
+    box-sizing: border-box;
+}
+
+body > .evt-more-menu .evt-more-item:hover {
+    background: rgba(30, 71, 187, 0.08);
+}
+
+body > .evt-more-menu .evt-more-item--danger:hover {
+    background: rgba(224, 14, 79, 0.08);
 }
 
 .evt-inline-form {

@@ -99,6 +99,9 @@
         <div class="evt-section evt-save-all" id="evt-save-all-bar"
              data-publish-url="{{ route('events.publish', $event) }}"
              data-public-url="{{ route('events.public', $event->slug) }}"
+             @if ($publishCostsCredit)
+                 data-publish-confirm="Publishing uses 1 event credit. Continue?"
+             @endif
              @if ($event->isLocked())
                  data-redefine-confirm="This event has already taken place. If you changed its name, type or date, saving will use 1 event credit. Continue?"
              @endif>
@@ -110,7 +113,11 @@
                     <button type="button" class="btn-primary" data-save-all data-publish>
                         <i class="fa-solid fa-bullhorn"></i> Save &amp; publish
                     </button>
-                    <span class="evt-muted">Publishing saves everything first, then makes the invitation public.</span>
+                    @if ($publishCostsCredit)
+                        <span class="evt-muted">Publishing uses 1 event credit — you have {{ auth()->user()->event_credits }}.</span>
+                    @else
+                        <span class="evt-muted">Publishing saves everything first, then makes the invitation public.</span>
+                    @endif
                 @else
                     <span class="evt-muted">Saves your event details and invitation design together.</span>
                 @endif
@@ -128,7 +135,11 @@
                     <button type="submit" form="event-update-form" name="publish" value="1" class="btn-primary">
                         <i class="fa-solid fa-bullhorn"></i> Publish event
                     </button>
-                    <span class="evt-muted">Saves your event details, then makes the invitation public.</span>
+                    @if ($publishCostsCredit)
+                        <span class="evt-muted">Uses 1 event credit, then makes the invitation public.</span>
+                    @else
+                        <span class="evt-muted">Saves your event details, then makes the invitation public.</span>
+                    @endif
                 </div>
             </div>
         @else

@@ -47,7 +47,7 @@ class FaqSeeder extends Seeder
         [
             'placement' => 'contact',
             'question' => 'Is Event Host free to use?',
-            'answer' => 'Creating an account is free. Each event you create requires a paid event credit, which you can buy from your dashboard.',
+            'answer' => 'Creating an account is free. Each event you publish requires a paid event credit, which you can buy from your dashboard. Drafts are free.',
         ],
         [
             'placement' => 'contact',

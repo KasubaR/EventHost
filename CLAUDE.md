@@ -215,7 +215,7 @@ This app requires the **GD** extension (or Imagick) for image processing (profil
 
 ### Event Credits (Payments)
 
-Users have an `event_credits` column. Each event creation costs 1 credit (`User::canCreateEvent()` checks `event_credits > 0`, controller decrements on success). Admins assign credits manually via the user show page in the admin panel.
+Users have an `event_credits` column. Publishing an event costs 1 credit (`User::canCreateEvent()` checks `event_credits > 0`; `EventController` spends inside the publish transaction). Drafts are free. Admins assign credits manually via the user show page in the admin panel.
 
 When payments are implemented, call `$user->increment('event_credits')` in the payment webhook and it will plug straight in.
 
@@ -244,7 +244,7 @@ Both FAQ blocks are database-driven, not hardcoded:
 
 The homepage testimonial strip is database-driven and admin-curated. One `reviews` table holds two kinds of review, told apart by `source` (`user` | `admin`) and `media_type` (`text` | `video`):
 
-- **Hosts** submit from `/reviews` (`ReviewController`, sidebar → Account → My Reviews) — one review per event they hosted, enforced by a `unique(user_id, event_id)` index. `Event::isReviewable()` gates it: published, `event_date` in the past, not already reviewed. The purchase gate is implicit — creating an event costs an event credit, so a reviewable event is a paid one; don't add a `payments` check, it would exclude users an admin granted credits by hand
+- **Hosts** submit from `/reviews` (`ReviewController`, sidebar → Account → My Reviews) — one review per event they hosted, enforced by a `unique(user_id, event_id)` index. `Event::isReviewable()` gates it: published, `event_date` in the past, not already reviewed. The purchase gate is implicit — publishing an event costs an event credit, so a reviewable event is a paid one; don't add a `payments` check, it would exclude users an admin granted credits by hand
 - **Admins** moderate at `/admin/reviews` (`Admin\ReviewController`, permission `reviews.manage`) — approve/reject with a note, correct attribution, feature and order. `support` does not have this permission
 - Admin-authored **video reviews** are the only video path — users never upload video, and there is no user-facing video field anywhere. The admin pastes a YouTube link into the "Add a video review" form; `video_ref` stores `youtube:<id>` normalized by `App\Support\InvitationVideoBackground`, and `video_poster` holds an optional 640×360 WebP still
 - Video cards are **click-to-play**: the blade renders a poster and a button with the embed URL in `data-testi-video`, and `homepage.js` builds the iframe only on click, so no third-party frame loads on first paint. `InvitationVideoBackground::playerEmbedUrl()` is the unmuted, controls-on embed — distinct from `embedUrl()`, which stays muted and chrome-less for invitation hero backgrounds

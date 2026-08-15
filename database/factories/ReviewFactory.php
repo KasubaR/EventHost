@@ -52,7 +52,8 @@ class ReviewFactory extends Factory
     }
 
     /**
-     * Approved *and* featured — the only combination the homepage renders.
+     * Approved *and* featured — the only combination the homepage and login
+     * quote render.
      */
     public function featured(int $sortOrder = 0): static
     {

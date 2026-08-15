@@ -1,7 +1,6 @@
 <x-app-layout>
     @push('styles')
         <link rel="stylesheet" href="{{ asset('css/events-admin.css') }}">
-        <link rel="stylesheet" href="{{ asset('css/forms-app.css') }}">
         <link rel="stylesheet" href="{{ asset('css/tables-admin.css') }}">
     @endpush
 

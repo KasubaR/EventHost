@@ -430,6 +430,9 @@
   gap: 3px;
   margin-bottom: 10px;
 }
+.auth-testi-stars i.is-empty {
+  color: var(--line);
+}
 .auth-testi blockquote {
   font-size: 14px;
   font-style: italic;

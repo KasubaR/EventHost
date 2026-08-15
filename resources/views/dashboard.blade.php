@@ -21,16 +21,10 @@
                 <h1 class="dph-title">Welcome back, {{ auth()->user()->name }}</h1>
                 <p class="dph-sub">Here's what's happening with your events.</p>
             </div>
-            @if (auth()->user()->canCreateEvent())
-                <a href="{{ route('events.create') }}" class="btn-primary dash-header-cta">
-                    <i class="fa-solid fa-plus" aria-hidden="true"></i> New Event
-                    <span class="billing-credit-pill">{{ auth()->user()->event_credits }} credit{{ auth()->user()->event_credits === 1 ? '' : 's' }}</span>
-                </a>
-            @else
-                <a href="{{ route('billing.show') }}" class="btn-primary dash-header-cta">
-                    <i class="fa-solid fa-credit-card" aria-hidden="true"></i> Buy event credit
-                </a>
-            @endif
+            <a href="{{ route('events.create') }}" class="btn-primary dash-header-cta">
+                <i class="fa-solid fa-plus" aria-hidden="true"></i> New Event
+                <span class="billing-credit-pill">{{ auth()->user()->event_credits }} credit{{ auth()->user()->event_credits === 1 ? '' : 's' }}</span>
+            </a>
         </div>
     </x-slot>
 

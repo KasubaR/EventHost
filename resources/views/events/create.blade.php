@@ -16,7 +16,7 @@
         <div class="dph-inner">
             <div>
                 <h1 class="dph-title">Create event</h1>
-                <p class="dph-sub">Add details and save as a draft. Next you will pick an invitation layout, then you can publish.</p>
+                <p class="dph-sub">Add details and save as a draft — drafts are free. Publishing uses 1 event credit.</p>
             </div>
             <a href="{{ route('events.index') }}" class="evt-btn-outline"><i class="fa-solid fa-arrow-left"></i> Back to events</a>
         </div>
@@ -35,7 +35,7 @@
             <button type="submit" class="btn-primary">
                 <i class="fa-solid fa-floppy-disk"></i> Save draft
             </button>
-            <span class="evt-muted">Publishing is available after save.</span>
+            <span class="evt-muted">Publishing is available after save and uses 1 event credit.</span>
         </div>
     </form>
 </x-app-layout>

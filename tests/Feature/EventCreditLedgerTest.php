@@ -116,7 +116,21 @@ class EventCreditLedgerTest extends TestCase
         $this->assertSame(1, $user->fresh()->event_credits);
     }
 
-    public function test_creating_an_event_records_event_created(): void
+    public function test_publishing_an_event_records_event_published(): void
+    {
+        $user = User::factory()->withCredits(1)->create();
+        $event = Event::factory()->for($user)->create(['is_published' => false]);
+
+        $this->actingAs($user)->patch(route('events.publish', $event));
+
+        $entry = CreditTransaction::query()->where('user_id', $user->id)->firstOrFail();
+
+        $this->assertSame(CreditTransaction::REASON_EVENT_PUBLISHED, $entry->reason);
+        $this->assertSame(-1, $entry->delta);
+        $this->assertSame($event->id, $entry->event_id);
+    }
+
+    public function test_creating_a_draft_writes_no_ledger_row(): void
     {
         $user = User::factory()->withCredits(1)->create();
 
@@ -127,11 +141,8 @@ class EventCreditLedgerTest extends TestCase
             'event_time' => '14:00',
         ]);
 
-        $entry = CreditTransaction::query()->where('user_id', $user->id)->firstOrFail();
-
-        $this->assertSame(CreditTransaction::REASON_EVENT_CREATED, $entry->reason);
-        $this->assertSame(-1, $entry->delta);
-        $this->assertNotNull($entry->event_id);
+        $this->assertSame(0, CreditTransaction::query()->where('user_id', $user->id)->count());
+        $this->assertSame(1, $user->fresh()->event_credits);
     }
 
     public function test_redefining_a_past_event_records_event_redefined(): void

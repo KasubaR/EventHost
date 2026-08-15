@@ -24,6 +24,8 @@ class CreditTransaction extends Model
 
     public const REASON_EVENT_CREATED = 'event_created';
 
+    public const REASON_EVENT_PUBLISHED = 'event_published';
+
     public const REASON_EVENT_REDEFINED = 'event_redefined';
 
     public const REASON_REFUND = 'refund';
@@ -37,6 +39,7 @@ class CreditTransaction extends Model
         self::REASON_PURCHASE => 'Purchase',
         self::REASON_ADMIN_GRANT => 'Admin grant',
         self::REASON_EVENT_CREATED => 'Event created',
+        self::REASON_EVENT_PUBLISHED => 'Event published',
         self::REASON_EVENT_REDEFINED => 'Event redefined',
         self::REASON_REFUND => 'Refund',
     ];
