@@ -57,46 +57,6 @@
   letter-spacing: 0.02em;
 }
 
-/* Draft banner — delete this block (and the partial) once the copy is reviewed */
-.legal-draft {
-  max-width: 1080px;
-  margin: -28px auto 0;
-  position: relative;
-  z-index: 2;
-  padding: 0 40px;
-}
-.legal-draft-inner {
-  display: flex;
-  gap: 14px;
-  align-items: flex-start;
-  background: #fff8e8;
-  border: 1px solid #f0d9a8;
-  border-left: 4px solid var(--orange);
-  border-radius: var(--radius);
-  padding: 18px 22px;
-  box-shadow: var(--card-shadow);
-}
-.legal-draft-inner i {
-  color: var(--orange);
-  font-size: 18px;
-  line-height: 1.4;
-  flex-shrink: 0;
-}
-.legal-draft-inner strong {
-  display: block;
-  font-family: 'Outfit', sans-serif;
-  font-size: 14px;
-  font-weight: 800;
-  color: var(--text-dark);
-  margin-bottom: 4px;
-}
-.legal-draft-inner p {
-  font-size: 13.5px;
-  color: #6b5a35;
-  line-height: 1.6;
-  font-weight: 500;
-}
-
 /* Layout: sticky contents rail + prose */
 .legal-main {
   max-width: 1080px;
@@ -295,6 +255,5 @@ nav.legal-toc {
 
 @media (max-width: 640px) {
   .legal-hero { padding: 64px 20px 56px; }
-  .legal-draft { padding: 0 20px; }
   .legal-main { padding: 44px 20px 64px; }
 }

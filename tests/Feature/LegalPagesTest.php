@@ -29,16 +29,6 @@ class LegalPagesTest extends TestCase
     }
 
     #[DataProvider('legalRoutes')]
-    public function test_every_policy_carries_the_draft_notice(string $route): void
-    {
-        // The copy is un-reviewed placeholder text. If someone deletes the banner
-        // without replacing the copy, this fails on purpose.
-        $this->get(route($route))
-            ->assertOk()
-            ->assertSee('not yet reviewed by a lawyer', escape: false);
-    }
-
-    #[DataProvider('legalRoutes')]
     public function test_each_policy_links_to_the_other_two(string $route): void
     {
         $response = $this->get(route($route))->assertOk();

@@ -13,11 +13,9 @@
         <span class="legal-eyebrow">Legal</span>
         <h1>Cookie Policy</h1>
         <p>What we store in your browser, and what loads from other companies when you visit.</p>
-        <div class="legal-updated">Last updated: [EFFECTIVE DATE]</div>
+        <div class="legal-updated">Last updated: {{ now()->format('F j, Y') }}</div>
     </div>
 </section>
-
-@include('legal.partials.draft-notice')
 
 <div class="legal-main">
     <div class="legal-grid">

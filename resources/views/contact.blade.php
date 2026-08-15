@@ -32,7 +32,7 @@
                     </div>
                     <div>
                         <div class="contact-info-label">Email</div>
-                        <a href="mailto:hello@eventhost.co.zm" class="contact-info-value">hello@eventhost.co.zm</a>
+                        <a href="mailto:info@eventhostzm.com" class="contact-info-value">info@eventhostzm.com</a>
                     </div>
                 </div>
                 <div class="contact-info-item">
@@ -49,8 +49,24 @@
                         <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
                     </div>
                     <div>
-                        <div class="contact-info-label">Location</div>
-                        <div class="contact-info-value">Lusaka, Zambia</div>
+                        <div class="contact-info-label">Head office</div>
+                        <address class="contact-info-value contact-info-address">
+                            <a href="https://kinpinarts.com/" target="_blank" rel="noopener noreferrer">Kinpin Arts Media</a><br>
+                            Unit C11, Chamba Valley Shopping Plaza<br>
+                            Maposa Road, Lusaka, Zambia
+                        </address>
+                    </div>
+                </div>
+                <div class="contact-info-item">
+                    <div class="contact-info-icon" style="background:rgba(224,14,79,0.12);color:var(--pink)">
+                        <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <div class="contact-info-label">Solwezi branch</div>
+                        <address class="contact-info-value contact-info-address">
+                            Unit 4, Plot 5049, Mushitala<br>
+                            Off Kansanshi Road, Solwezi, Zambia
+                        </address>
                     </div>
                 </div>
                 <div class="contact-info-item">
@@ -89,7 +105,7 @@
                     <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
                     <div>
                         <strong>We couldn't send your message</strong>
-                        <p>Something went wrong on our side. Please email us directly at <a href="mailto:hello@eventhost.co.zm">hello@eventhost.co.zm</a> and we'll pick it up from there.</p>
+                        <p>Something went wrong on our side. Please email us directly at <a href="mailto:info@eventhostzm.com">info@eventhostzm.com</a> and we'll pick it up from there.</p>
                     </div>
                 </div>
             @endif

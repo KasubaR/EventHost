@@ -226,12 +226,19 @@ The homepage testimonial strip is database-driven and admin-curated. One `review
 They are public and outside every middleware group, because the sign-in and sign-up consent lines link
 to them.
 
-- **The copy is an un-reviewed placeholder.** Every page includes `legal/partials/draft-notice.blade.php`,
-  an amber banner saying so, and unresolved values are marked inline as `[LIKE THIS]` in
-  `<span class="legal-token">`. `LegalPagesTest` asserts the banner is present on all three, so removing
-  it fails the suite — replace the copy and the test together, not one without the other
-- Grep for `legal-token` to find everything still needing a real value (company name, effective date,
-  refund policy, liability cap, retention periods)
+- **The copy has not been reviewed by a lawyer.** It was written to describe how the app actually
+  behaves, not to be a binding agreement. The draft banner that used to say so on-page was removed on
+  request — nothing warns visitors now, so treat the copy as unverified when editing it
+- The operating company is **Kinpin Arts Media** (linked to `kinpinarts.com`), registered office in
+  Lusaka. Support address comes from `config('mail.support_address')`, but the pages spell it out
+  literally — grep the address if it changes
+- Commercial terms now stated: credits **do not expire**, purchases are **non-refundable** (with a
+  carve-out for payment faults), minimum age **18**, support **08:00–20:00 CAT**, replies within one
+  business day. Keep these in step with the contact page and with `EventCreditService`
+- One placeholder is left — `[REMEMBER-ME DURATION]` in `cookies.blade.php`, still wrapped in
+  `<span class="legal-token">` and rendering to visitors as-is. Grep `legal-token` to find it
+- The liability cap and the governing-law/dispute clause are written as prose, not tokens, and have
+  **not** been filled in with real values
 - The three pages cross-link via `legal/partials/siblings.blade.php` and share
   `legal/partials/contact-card.blade.php`
 - The contents rail is a bare `<nav>`, so `global.css`'s `nav {}` rule applies — `legal.css` overrides it

@@ -122,6 +122,20 @@
   transition: color 0.2s;
 }
 a.contact-info-value:hover { color: var(--accent); }
+/* <address> is italic with a UA margin by default — office blocks are plain text. */
+.contact-info-address {
+  margin: 0;
+  font-style: normal;
+  line-height: 1.5;
+}
+/* Nested links miss a.contact-info-value, so they would fall back to UA blue.
+   Match the email/WhatsApp rows: card text colour, accent on hover. */
+.contact-info-address a {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.contact-info-address a:hover { color: var(--accent); }
 
 .contact-socials-label {
   font-size: 12px;

@@ -13,11 +13,9 @@
         <span class="legal-eyebrow">Legal</span>
         <h1>Terms of Service</h1>
         <p>The agreement between you and Event Host when you create an account and host an event.</p>
-        <div class="legal-updated">Last updated: [EFFECTIVE DATE]</div>
+        <div class="legal-updated">Last updated: {{ now()->format('F j, Y') }}</div>
     </div>
 </section>
-
-@include('legal.partials.draft-notice')
 
 <div class="legal-main">
     <div class="legal-grid">
@@ -47,7 +45,7 @@
                 <h2 id="agreement">1. The agreement</h2>
                 <p>
                     These terms are a contract between you and
-                    <span class="legal-token">[COMPANY LEGAL NAME]</span> ("Event Host", "we", "us"). By
+                    <strong><a href="https://kinpinarts.com/" target="_blank" rel="noopener noreferrer">Kinpin Arts Media</a></strong> ("Event Host", "we", "us"). By
                     creating an account or using the service you accept them. If you are agreeing on behalf
                     of a company, you confirm you are authorised to bind that company.
                 </p>
@@ -60,7 +58,7 @@
             <section>
                 <h2 id="accounts">2. Accounts</h2>
                 <p>
-                    You must be at least <span class="legal-token">[MINIMUM AGE]</span> to hold an account,
+                    You must be at least 18 to hold an account,
                     give accurate details, and verify your email address before you can use the dashboard.
                 </p>
                 <p>
@@ -81,7 +79,7 @@
                 <ul>
                     <li>Credits have no cash value and cannot be exchanged for money</li>
                     <li>Credits are tied to your account and cannot be transferred to another user</li>
-                    <li>Credits expire <span class="legal-token">[CREDIT EXPIRY, OR "do not expire"]</span></li>
+                    <li>Credits do not expire</li>
                     <li>Unused credits are forfeited if you delete your account</li>
                     <li>Prices may change; a change never affects credits you have already bought</li>
                 </ul>
@@ -94,8 +92,15 @@
             <section>
                 <h2 id="refunds">4. Refunds</h2>
                 <p>
-                    <span class="legal-token">[REFUND POLICY — set out the window, the conditions, and how
-                    to request one. This clause must be written before you take live payments.]</span>
+                    <strong>Event credit purchases are final and non-refundable.</strong> Once a payment
+                    has been completed, the credits are added to your account and we do not refund them —
+                    whether or not you go on to use them. Because credits do not expire, a credit you have
+                    not used remains available on your account for a future event.
+                </p>
+                <p>
+                    If you were charged in error, charged twice, or paid for credits that were never added
+                    to your account, that is not a refund request but a payment fault — email
+                    <a href="mailto:info@eventhostzm.com">info@eventhostzm.com</a> and we will put it right.
                 </p>
                 <p>
                     Nothing in this section limits any refund right you have under Zambian consumer law
@@ -173,8 +178,8 @@
                 </p>
                 <p>
                     Support is provided by email at
-                    <a href="mailto:hello@eventhost.co.zm">hello@eventhost.co.zm</a> during
-                    <span class="legal-token">[SUPPORT HOURS]</span>, and we aim to reply within one
+                    <a href="mailto:info@eventhostzm.com">info@eventhostzm.com</a> during
+                    08:00–20:00 CAT, and we aim to reply within one
                     business day. That is a target, not a contractual commitment.
                 </p>
             </section>

@@ -14,7 +14,7 @@
                 <ul class="footer-contact">
                     <li>
                         <i class="fa-solid fa-envelope" aria-hidden="true"></i>
-                        <a href="mailto:hello@eventhost.co.zm">hello@eventhost.co.zm</a>
+                        <a href="mailto:info@eventhostzm.com">info@eventhostzm.com</a>
                     </li>
                     <li>
                         <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
@@ -47,7 +47,7 @@
                 <h5>Support</h5>
                 <a href="{{ url('/#faq') }}">FAQ</a>
                 <a href="{{ route('contact') }}">Get in Touch</a>
-                <a href="mailto:hello@eventhost.co.zm">Email Support</a>
+                <a href="mailto:info@eventhostzm.com">Email Support</a>
             </nav>
 
             <nav class="footer-col" aria-label="Legal">

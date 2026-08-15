@@ -13,11 +13,9 @@
         <span class="legal-eyebrow">Legal</span>
         <h1>Privacy Policy</h1>
         <p>How Event Host collects, uses and protects the information you and your guests give us.</p>
-        <div class="legal-updated">Last updated: [EFFECTIVE DATE]</div>
+        <div class="legal-updated">Last updated: {{ now()->format('F j, Y') }}</div>
     </div>
 </section>
-
-@include('legal.partials.draft-notice')
 
 <div class="legal-main">
     <div class="legal-grid">
@@ -45,10 +43,9 @@
                 <h2 id="who-we-are">1. Who we are</h2>
                 <p>
                     Event Host is a digital invitation and RSVP platform operated by
-                    <span class="legal-token">[COMPANY LEGAL NAME]</span>, registered in Zambia under
-                    company number <span class="legal-token">[REGISTRATION NUMBER]</span>, with its
-                    registered office at <span class="legal-token">[REGISTERED OFFICE ADDRESS]</span>,
-                    Lusaka, Zambia.
+                    <strong><a href="https://kinpinarts.com/" target="_blank" rel="noopener noreferrer">Kinpin Arts Media</a></strong>,
+                    registered in Zambia, with its registered office at Unit C11, Chamba Valley
+                    Shopping Plaza, Maposa Road, Lusaka, Zambia.
                 </p>
                 <p>
                     In this policy, "we" and "us" mean that company. "You" means whoever is reading it —
@@ -113,8 +110,8 @@
                 <p>We do not sell personal information. We share it only with the service providers we need to run the platform:</p>
                 <ul>
                     <li><strong>Lenco</strong> — payment processing for event credits</li>
-                    <li><strong><span class="legal-token">[EMAIL PROVIDER]</span></strong> — delivery of invitation and account email</li>
-                    <li><strong><span class="legal-token">[HOSTING PROVIDER]</span></strong> — servers and database storage</li>
+                    <li><strong>Our email delivery provider</strong> — delivery of invitation and account email</li>
+                    <li><strong>Our hosting provider</strong> — servers and database storage</li>
                 </ul>
                 <p>
                     We may also disclose information where we are legally required to, or where it is
@@ -140,8 +137,7 @@
                 <ul>
                     <li><strong>Account data</strong> — until you delete your account</li>
                     <li><strong>Event and guest data</strong> — until you delete the event, or delete your account</li>
-                    <li><strong>Payment records</strong> — <span class="legal-token">[RETENTION PERIOD]</span>, as required for tax and accounting purposes, even after account deletion</li>
-                    <li><strong>Access logs</strong> — <span class="legal-token">[RETENTION PERIOD]</span></li>
+                    <li><strong>Payment records</strong> — kept as long as required for tax and accounting purposes, even after account deletion</li>
                 </ul>
                 <p>
                     Deleting your account from account settings removes your profile, your events and their
@@ -166,8 +162,8 @@
                 </p>
                 <p>
                     To exercise any of these rights, email
-                    <a href="mailto:hello@eventhost.co.zm">hello@eventhost.co.zm</a>. We aim to respond within
-                    <span class="legal-token">[RESPONSE PERIOD]</span>.
+                    <a href="mailto:info@eventhostzm.com">info@eventhostzm.com</a>. We aim to respond within
+                    one business day.
                 </p>
             </section>
 
@@ -187,7 +183,7 @@
             <section>
                 <h2 id="children">10. Children</h2>
                 <p>
-                    Event Host is not intended for children under <span class="legal-token">[MINIMUM AGE]</span>,
+                    Event Host is not intended for children under 18,
                     and we do not knowingly collect their information from them directly. A host may add a
                     child to a guest list; where that happens, the host is responsible for having the
                     permission of a parent or guardian.
