@@ -1266,6 +1266,7 @@
 .evt-more-item {
     display: inline-flex;
     align-items: center;
+    gap: 8px;
     padding: 5px 10px;
     border-radius: 8px;
     border: 1px solid var(--border-soft, rgba(26, 42, 74, 0.12));
@@ -1276,6 +1277,16 @@
     cursor: pointer;
     text-decoration: none;
     font-family: inherit;
+}
+
+.evt-more-item i {
+    width: 1.1em;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.evt-more-item .fa-whatsapp {
+    color: #25d366;
 }
 
 .evt-more-item:hover {
@@ -1321,6 +1332,8 @@ body > .evt-more-menu .evt-inline-form {
 
 body > .evt-more-menu .evt-more-item {
     display: flex;
+    align-items: center;
+    gap: 8px;
     width: 100%;
     padding: 9px 12px;
     border: 0;

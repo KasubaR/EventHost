@@ -280,28 +280,49 @@
                                             </button>
                                             <div class="evt-more-menu" data-evt-more-menu>
                                                 @if ($rsvpUrl)
-                                                    <button type="button" class="evt-more-item" role="menuitem" data-copy-text="{{ $rsvpUrl }}" data-copy-label="Copy link">Copy link</button>
+                                                    <button type="button" class="evt-more-item" role="menuitem" data-copy-text="{{ $rsvpUrl }}" data-copy-label="Copy link">
+                                                        <i class="fa-solid fa-link" aria-hidden="true"></i>
+                                                        <span data-copy-label-text>Copy link</span>
+                                                    </button>
                                                     @if ($waUrl)
-                                                        <a href="{{ $waUrl }}" class="evt-more-item" role="menuitem" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+                                                        <a href="{{ $waUrl }}" class="evt-more-item" role="menuitem" target="_blank" rel="noopener noreferrer">
+                                                            <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+                                                            <span>WhatsApp</span>
+                                                        </a>
                                                     @else
-                                                        <span class="evt-more-item evt-more-item--disabled" role="menuitem" aria-disabled="true" title="Add a phone number for WhatsApp sharing">WhatsApp</span>
+                                                        <span class="evt-more-item evt-more-item--disabled" role="menuitem" aria-disabled="true" title="Add a phone number for WhatsApp sharing">
+                                                            <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+                                                            <span>WhatsApp</span>
+                                                        </span>
                                                     @endif
                                                     @if ($event->ownerHasPremiumEventTools())
-                                                        <a href="{{ route('events.guests.qr', ['event' => $event, 'guest' => $guestRow->id]) }}" class="evt-more-item" role="menuitem" target="_blank" rel="noopener noreferrer">QR check-in</a>
+                                                        <a href="{{ route('events.guests.qr', ['event' => $event, 'guest' => $guestRow->id]) }}" class="evt-more-item" role="menuitem" target="_blank" rel="noopener noreferrer">
+                                                            <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
+                                                            <span>QR check-in</span>
+                                                        </a>
                                                     @endif
                                                 @endif
                                                 @if (!$guestRow->invitation_sent && $guestRow->invitation_token)
                                                     <form method="post" action="{{ route('events.guests.mark-invitation-sent', ['event' => $event, 'guest' => $guestRow->id]) }}" class="evt-inline-form">
                                                         @csrf
                                                         @method('PATCH')
-                                                        <button type="submit" class="evt-more-item" role="menuitem">Mark sent</button>
+                                                        <button type="submit" class="evt-more-item" role="menuitem">
+                                                            <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
+                                                            <span>Mark sent</span>
+                                                        </button>
                                                     </form>
                                                 @endif
-                                                <a href="{{ route('events.guests.edit', ['event' => $event, 'guest' => $guestRow->id]) }}" class="evt-more-item" role="menuitem">Edit</a>
+                                                <a href="{{ route('events.guests.edit', ['event' => $event, 'guest' => $guestRow->id]) }}" class="evt-more-item" role="menuitem">
+                                                    <i class="fa-solid fa-pen" aria-hidden="true"></i>
+                                                    <span>Edit</span>
+                                                </a>
                                                 <form method="post" action="{{ route('events.guests.destroy', ['event' => $event, 'guest' => $guestRow->id]) }}" class="evt-inline-form evt-confirm-form" data-evt-confirm="Remove this guest? Their RSVP will be deleted too.">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="evt-more-item evt-more-item--danger" role="menuitem">Remove</button>
+                                                    <button type="submit" class="evt-more-item evt-more-item--danger" role="menuitem">
+                                                        <i class="fa-solid fa-trash" aria-hidden="true"></i>
+                                                        <span>Remove</span>
+                                                    </button>
                                                 </form>
                                             </div>
                                         </div>

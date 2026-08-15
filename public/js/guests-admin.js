@@ -23,10 +23,11 @@
                 function done(ok) {
                     btn.setAttribute('aria-busy', 'false');
                     var prev = btn.getAttribute('data-copy-label') || 'Copy link';
+                    var label = btn.querySelector('[data-copy-label-text]') || btn;
                     if (ok) {
-                        btn.textContent = 'Copied';
+                        label.textContent = 'Copied';
                         window.setTimeout(function () {
-                            btn.textContent = prev;
+                            label.textContent = prev;
                         }, 1600);
                     }
                 }
