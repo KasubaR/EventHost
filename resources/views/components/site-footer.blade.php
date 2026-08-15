@@ -18,7 +18,11 @@
                     </li>
                     <li>
                         <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
-                        <a href="https://wa.me/260970000000" target="_blank" rel="noopener">+260 970 000 000</a>
+                        <a href="https://wa.me/260965023606" target="_blank" rel="noopener">+260 965 023 606</a>
+                    </li>
+                    <li>
+                        <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+                        <a href="https://wa.me/260971654278" target="_blank" rel="noopener">+260 971 654 278</a>
                     </li>
                     <li>
                         <i class="fa-solid fa-location-dot" aria-hidden="true"></i>

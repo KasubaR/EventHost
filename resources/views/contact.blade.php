@@ -41,7 +41,10 @@
                     </div>
                     <div>
                         <div class="contact-info-label">WhatsApp</div>
-                        <a href="https://wa.me/260970000000" class="contact-info-value" target="_blank" rel="noopener">+260 970 000 000</a>
+                        <div class="contact-info-stack">
+                            <a href="https://wa.me/260965023606" class="contact-info-value" target="_blank" rel="noopener">+260 965 023 606</a>
+                            <a href="https://wa.me/260971654278" class="contact-info-value" target="_blank" rel="noopener">+260 971 654 278</a>
+                        </div>
                     </div>
                 </div>
                 <div class="contact-info-item">

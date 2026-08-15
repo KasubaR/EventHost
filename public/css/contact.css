@@ -122,6 +122,15 @@
   transition: color 0.2s;
 }
 a.contact-info-value:hover { color: var(--accent); }
+/* Two contact values under one label — .contact-info-value is inline, so
+   without this the numbers would sit side by side on one line. */
+.contact-info-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
+}
+
 /* <address> is italic with a UA margin by default — office blocks are plain text. */
 .contact-info-address {
   margin: 0;

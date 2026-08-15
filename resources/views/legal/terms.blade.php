@@ -206,9 +206,10 @@
                     business, or loss of goodwill.
                 </p>
                 <p>
-                    Where we are liable, our total liability to you is limited to
-                    <span class="legal-token">[LIABILITY CAP — e.g. the amount you paid us in the 12 months
-                    before the claim]</span>.
+                    Where we are liable, our total liability to you is limited to the total amount you
+                    paid us in the twelve months before the event giving rise to the claim. If you have
+                    not paid us anything in that period, our liability is limited to the price of one
+                    event credit.
                 </p>
                 <p>
                     Nothing here limits liability that cannot lawfully be limited, including for death or
