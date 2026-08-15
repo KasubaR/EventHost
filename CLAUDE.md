@@ -160,7 +160,7 @@ The homepage "Invitation Templates" strip is curated from the admin panel, not h
 Both FAQ blocks are database-driven, not hardcoded:
 
 - `/admin/faqs` (`Admin\FaqController`, permission `faqs.manage`) is a single-page CRUD — add, edit, delete, reorder and publish/unpublish
-- `Faq::PLACEMENTS` (`homepage` | `contact`) is the single source of truth for the admin dropdown, `FaqRequest` validation and `FaqSeeder`
+- `Faq::PLACEMENTS` (`homepage` | `contact`) is the single source of truth for the admin dropdown and `FaqRequest` validation. `FaqSeeder` does **not** read it — placements are hardcoded in its `FAQS` constant, so adding a placement leaves the seeder untouched
 - `Faq::publishedFor($placement)` returns published rows ordered by `sort_order` then `id`; `HomeController` and `ContactController@show` each call it, and both sections are hidden entirely when the collection is empty
 - Answers are plain text — rendered with `{{ }}`, never `{!! !!}`
 - `FaqSeeder` carries the copy the two views used to hardcode, keyed on question + placement so re-seeding is idempotent

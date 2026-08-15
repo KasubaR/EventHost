@@ -42,7 +42,7 @@ class FaqSeeder extends Seeder
         [
             'placement' => 'homepage',
             'question' => 'What payment methods are supported?',
-            'answer' => 'We support MTN Mobile Money, Airtel Money, Zamtel Kwacha, Visa & Mastercard, and bank deposits where available. Pro+ plans add invoicing and expanded settlement options across Zambia.',
+            'answer' => 'You can pay with MTN Mobile Money, Airtel Money, or a bank transfer from any major Zambian bank. You pay only when you buy an event credit — your guests never pay anything to view an invitation or RSVP.',
         ],
         [
             'placement' => 'contact',
@@ -62,7 +62,7 @@ class FaqSeeder extends Seeder
         [
             'placement' => 'contact',
             'question' => 'What payment methods are supported?',
-            'answer' => 'We support MTN MoMo, Airtel Money, and card payments so guests can pay in the way they prefer.',
+            'answer' => 'You can pay with MTN Mobile Money, Airtel Money, or a bank transfer. Payment is only ever for your own event credits — guests never pay to RSVP.',
         ],
     ];
 
