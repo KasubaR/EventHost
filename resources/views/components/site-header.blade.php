@@ -19,9 +19,9 @@
     </a>
 
     <div class="nav-links">
-        <a href="{{ url('/#hero') }}">Home</a>
+        <a href="{{ url('/#hero') }}" class="{{ request()->routeIs('home') ? 'is-active' : '' }}">Home</a>
         <a href="{{ route('events.discover') }}" class="{{ request()->routeIs('events.discover') ? 'is-active' : '' }}">Discover Events</a>
-        <a href="{{ route('about') }}">About Us</a>
+        <a href="{{ route('about') }}" class="{{ request()->routeIs('about') ? 'is-active' : '' }}">About Us</a>
         <a href="{{ route('contact') }}" class="{{ request()->routeIs('contact') ? 'is-active' : '' }}">Contact Us</a>
     </div>
 
@@ -55,10 +55,10 @@
 
     <div class="nav-mobile-menu" id="nav-mobile-menu" hidden>
         <div class="nav-mobile-links">
-            <a href="{{ url('/#hero') }}">Home</a>
-            <a href="{{ route('events.discover') }}">Discover Events</a>
-            <a href="{{ route('about') }}">About Us</a>
-            <a href="{{ route('contact') }}">Contact Us</a>
+            <a href="{{ url('/#hero') }}" class="{{ request()->routeIs('home') ? 'is-active' : '' }}">Home</a>
+            <a href="{{ route('events.discover') }}" class="{{ request()->routeIs('events.discover') ? 'is-active' : '' }}">Discover Events</a>
+            <a href="{{ route('about') }}" class="{{ request()->routeIs('about') ? 'is-active' : '' }}">About Us</a>
+            <a href="{{ route('contact') }}" class="{{ request()->routeIs('contact') ? 'is-active' : '' }}">Contact Us</a>
         </div>
         <div class="nav-mobile-actions">
             @if(auth()->check())

@@ -90,10 +90,11 @@ nav {
   transition: color 0.2s;
 }
 .nav-links a:hover { color: var(--pink); }
+/* Active matches hover, the same pink .nav-account-dropdown a.is-active uses. */
 .nav-links a.is-active {
-  color: #fff;
+  color: var(--pink);
   font-weight: 700;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.85);
+  border-bottom: 2px solid var(--pink);
   padding-bottom: 2px;
 }
 
@@ -387,7 +388,18 @@ nav.footer-col {
   padding: 8px 4px;
 }
 
-.nav-mobile-links a:hover { color: #fff; }
+.nav-mobile-links a:hover { color: var(--pink); }
+
+/* The desktop underline reads as a stray rule in a stacked list, so the mobile
+   menu marks the current page with weight and a leading accent bar instead.
+   Same pink as hover and as the desktop links. */
+.nav-mobile-links a.is-active {
+  color: var(--pink);
+  font-weight: 700;
+  border-left: 2px solid var(--pink);
+  padding-left: 10px;
+  margin-left: -4px;
+}
 
 .nav-mobile-actions {
   display: flex;
