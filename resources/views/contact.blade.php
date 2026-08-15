@@ -64,15 +64,12 @@
                 </div>
             </div>
 
-            <div class="contact-socials">
-                <p class="contact-socials-label">Follow us</p>
-                <div class="social-links">
-                    <a href="#" class="social-link" aria-label="X"><i class="fa-brands fa-x-twitter" aria-hidden="true"></i></a>
-                    <a href="#" class="social-link" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in" aria-hidden="true"></i></a>
-                    <a href="#" class="social-link" aria-label="Facebook"><i class="fa-brands fa-facebook-f" aria-hidden="true"></i></a>
-                    <a href="#" class="social-link" aria-label="Instagram"><i class="fa-brands fa-instagram" aria-hidden="true"></i></a>
+            @if (collect(config('social'))->filter()->isNotEmpty())
+                <div class="contact-socials">
+                    <p class="contact-socials-label">Follow us</p>
+                    <x-social-links />
                 </div>
-            </div>
+            @endif
         </div>
 
         <!-- Contact Form -->

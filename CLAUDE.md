@@ -57,6 +57,7 @@ Laravel 12 application. Auth via Laravel Breeze (Blade stack). No Alpine.js — 
 | `public/css/event-cards.css` | Public event cards (`.event-card-*`) + `/discover` page — pushed by `home.blade.php` and `events/discover.blade.php` |
 | `public/css/reviews.css` | Host review portal (`.rev-*`) — star picker and status pills; pair with `events-admin.css` |
 | `public/css/settings.css` | Account settings tab strip (`.set-*`) — pushed by `components/settings-layout.blade.php`; the cards inside each tab reuse `forms-app.css` |
+| `public/css/legal.css` | Policy pages (`.legal-*`) — sticky contents rail + prose, pushed by `legal/*.blade.php` |
 | `public/css/datetime-picker.css` | Custom date/time picker (`.dtp-*`) — pair with `js/datetime-picker.js` |
 | `public/css/custom-select.css` | Custom dropdown (`.cs-*`) — pair with `js/custom-select.js` |
 
@@ -89,6 +90,7 @@ Both auto-initialise on `DOMContentLoaded`; call `DateTimePicker.refresh(root)` 
 ### Routing
 
 - `/` → `home` view (public)
+- `/privacy`, `/terms`, `/cookies` → `Route::view` to `legal/*` (public) — see Legal Pages below
 - `/dashboard` → `DashboardController@index` (auth + verified)
 - `/settings/*` → `App\Http\Controllers\Settings\*` (auth + verified) — see Account Settings below
 - `/profile` → **301 redirect** to `/settings/profile`, kept for old bookmarks
@@ -217,6 +219,39 @@ The homepage testimonial strip is database-driven and admin-curated. One `review
 - Review bodies are plain text — rendered with `{{ }}`, never `{!! !!}`
 - There is deliberately **no seeder**: the three fictional testimonials this section used to hardcode were not real customers, so they were dropped rather than seeded into a table meant for genuine reviews
 - The admin view holds many forms on one page, so a `$oldFor()` closure scopes `old()` repopulation to the form that failed (hidden `_form` / `_review_id` fields), same as the FAQ page
+
+### Legal Pages
+
+`/privacy`, `/terms` and `/cookies` are plain `Route::view` static pages (`resources/views/legal/`).
+They are public and outside every middleware group, because the sign-in and sign-up consent lines link
+to them.
+
+- **The copy is an un-reviewed placeholder.** Every page includes `legal/partials/draft-notice.blade.php`,
+  an amber banner saying so, and unresolved values are marked inline as `[LIKE THIS]` in
+  `<span class="legal-token">`. `LegalPagesTest` asserts the banner is present on all three, so removing
+  it fails the suite — replace the copy and the test together, not one without the other
+- Grep for `legal-token` to find everything still needing a real value (company name, effective date,
+  refund policy, liability cap, retention periods)
+- The three pages cross-link via `legal/partials/siblings.blade.php` and share
+  `legal/partials/contact-card.blade.php`
+- The contents rail is a bare `<nav>`, so `global.css`'s `nav {}` rule applies — `legal.css` overrides it
+  via `nav.legal-toc`, the same pattern `.dash-nav` and `nav.set-tabs` use
+
+### Site Footer
+
+`components/site-footer.blade.php`, rendered by `layouts/site` and `layouts/guest`.
+
+- Every link resolves — there are **no `href="#"` placeholders left**, and `LegalPagesTest` asserts it.
+  Do not add a footer link for a page that does not exist yet
+- The four link columns are `<nav>` elements for screen readers, so they need the same `nav {}` escape as
+  above — `nav.footer-col` in `global.css`
+- The brand name comes from the `site_name` platform setting (admin → settings), not a hardcoded string.
+  `PlatformSetting::getValue()` caches for an hour, so calling it per render is fine
+- Social icons render from `config/social.php`, driven by `SOCIAL_*_URL` env vars. **An unset profile
+  renders nothing** — `<x-social-links />` filters out blanks rather than emitting a dead `#`. The same
+  component is used on the contact page, so real handles only need adding once
+- Product/Support columns point at homepage anchors (`#how`, `#pricing`, `#faq`) that actually exist in
+  `home.blade.php`
 
 ### Asset Bundling
 

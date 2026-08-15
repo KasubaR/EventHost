@@ -41,6 +41,12 @@ Route::get('/about', function () {
     return view('about');
 })->name('about');
 
+// Static policy pages. Linked from the footer and from the sign-in / sign-up
+// consent lines, which is why they are public and outside every middleware group.
+Route::view('/privacy', 'legal.privacy')->name('legal.privacy');
+Route::view('/terms', 'legal.terms')->name('legal.terms');
+Route::view('/cookies', 'legal.cookies')->name('legal.cookies');
+
 Route::get('/contact', [ContactController::class, 'show'])->name('contact');
 Route::post('/contact', [ContactController::class, 'store'])->name('contact.store')->middleware('throttle:5,1');
 

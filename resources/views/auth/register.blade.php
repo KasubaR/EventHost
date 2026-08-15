@@ -210,7 +210,7 @@
           </div>
 
           <p class="auth-terms auth-terms--step">
-            By creating an account you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.
+            By creating an account you agree to our <a href="{{ route('legal.terms') }}" target="_blank" rel="noopener">Terms of Service</a> and <a href="{{ route('legal.privacy') }}" target="_blank" rel="noopener">Privacy Policy</a>.
           </p>
         </div>
 

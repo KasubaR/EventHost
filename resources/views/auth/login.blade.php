@@ -126,7 +126,7 @@
         </button>
 
         <p class="auth-terms">
-          By signing in you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.
+          By signing in you agree to our <a href="{{ route('legal.terms') }}" target="_blank" rel="noopener">Terms of Service</a> and <a href="{{ route('legal.privacy') }}" target="_blank" rel="noopener">Privacy Policy</a>.
         </p>
 
       </form>
