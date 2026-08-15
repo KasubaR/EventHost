@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\CreditTransaction;
 use App\Models\Payment;
 use App\Models\User;
 use App\Notifications\PaymentReceiptNotification;
@@ -11,6 +12,8 @@ use Illuminate\Support\Facades\DB;
 
 class PaymentCompletionService
 {
+    public function __construct(private readonly EventCreditService $credits) {}
+
     public function complete(Payment $payment): void
     {
         $userId = DB::transaction(function () use ($payment): ?int {
@@ -30,7 +33,12 @@ class PaymentCompletionService
             /** @var User $user */
             $user = User::query()->whereKey($locked->user_id)->lockForUpdate()->firstOrFail();
 
-            $user->increment('event_credits', $locked->credits_granted);
+            $this->credits->grant(
+                $user,
+                (int) $locked->credits_granted,
+                CreditTransaction::REASON_PURCHASE,
+                $locked
+            );
 
             $purchasedTier = BillingPlan::tierForPlan($locked->plan_key);
             if ($purchasedTier->rank() > $user->subscriptionTierRank()) {

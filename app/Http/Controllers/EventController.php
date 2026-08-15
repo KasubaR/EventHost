@@ -3,13 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Enums\RsvpStatus;
+use App\Exceptions\InsufficientCreditsException;
 use App\Http\Requests\StoreEventRequest;
 use App\Http\Requests\UpdateEventRequest;
+use App\Models\CreditTransaction;
 use App\Models\Event;
 use App\Models\InvitationTemplate;
 use App\Services\DashboardAnalyticsService;
+use App\Services\EventCreditService;
 use App\Services\InvitationCustomizationService;
 use App\Support\InvitationVideoBackground;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -54,7 +58,7 @@ class EventController extends Controller
         return view('events.create', compact('prefTemplateId'));
     }
 
-    public function store(StoreEventRequest $request): RedirectResponse
+    public function store(StoreEventRequest $request, EventCreditService $credits): RedirectResponse
     {
         if (! $request->user()->canCreateEvent()) {
             return redirect()->route('billing.show')->with('status', 'no-event-credits');
@@ -75,13 +79,30 @@ class EventController extends Controller
             $data['user_id'] = (int) $request->user()->id;
             $data['is_published'] = false;
 
-            $event = Event::create($data);
+            // The check above is only a friendly redirect — it can be passed by two
+            // concurrent submits holding the same balance. The real gate is the row
+            // lock inside spend(), and the event is created in the same transaction
+            // so a refused spend cannot leave a free event behind.
+            $event = DB::transaction(function () use ($request, $data, $credits): Event {
+                $event = Event::create($data);
 
-            $request->user()->decrement('event_credits');
+                $credits->spend(
+                    $request->user(),
+                    CreditTransaction::REASON_EVENT_CREATED,
+                    $event
+                );
+
+                return $event;
+            });
         } catch (\Throwable $e) {
             if ($newPath) {
                 Storage::disk('public')->delete($newPath);
             }
+
+            if ($e instanceof InsufficientCreditsException) {
+                return redirect()->route('billing.show')->with('status', 'no-event-credits');
+            }
+
             throw $e;
         }
 
@@ -130,8 +151,11 @@ class EventController extends Controller
         return view('events.edit', compact('event', 'invitationMerged', 'templateFingerprint', 'customizationToken'));
     }
 
-    public function update(UpdateEventRequest $request, Event $event): RedirectResponse
-    {
+    public function update(
+        UpdateEventRequest $request,
+        Event $event,
+        EventCreditService $credits
+    ): RedirectResponse|JsonResponse {
         $newCoverPath = null;
         $previousCover = null;
 
@@ -139,13 +163,18 @@ class EventController extends Controller
         // in the same request rather than being discarded by a separate publish post.
         $shouldPublish = $request->boolean('publish');
 
+        // The credit bought one occurrence. Rewriting what the event *is* after
+        // it has happened is a second occurrence, so it costs another credit.
+        // Everything else — and every edit before the date — stays free.
+        $chargeable = $event->isLocked() && $event->identityChangedBy($request->validated());
+
         try {
             if ($request->hasFile('cover_image')) {
                 $previousCover = $event->cover_image;
                 $newCoverPath = $this->storeCoverImage($request->file('cover_image'));
             }
 
-            DB::transaction(function () use ($request, $event, $newCoverPath, $shouldPublish, &$previousCover): void {
+            DB::transaction(function () use ($request, $event, $newCoverPath, $shouldPublish, $chargeable, $credits, &$previousCover): void {
                 $data = $request->validated();
 
                 if ($newCoverPath !== null) {
@@ -154,6 +183,14 @@ class EventController extends Controller
 
                 if ($shouldPublish) {
                     $data['is_published'] = true;
+                }
+
+                if ($chargeable) {
+                    $credits->spend(
+                        $request->user(),
+                        CreditTransaction::REASON_EVENT_REDEFINED,
+                        $event
+                    );
                 }
 
                 $event->fill($data);
@@ -168,6 +205,21 @@ class EventController extends Controller
         } catch (\Throwable $e) {
             if ($newCoverPath !== null) {
                 Storage::disk('public')->delete($newCoverPath);
+            }
+
+            if ($e instanceof InsufficientCreditsException) {
+                $message = 'Changing the name, type or date of an event that has already taken place '
+                    .'uses 1 event credit, and you have none left.';
+
+                // The edit page saves over fetch(), which would follow a redirect
+                // and report it as success — it needs a 422 to show the message.
+                if ($request->expectsJson()) {
+                    return response()->json(['message' => $message], 422);
+                }
+
+                return redirect()
+                    ->route('billing.show')
+                    ->with('status', 'no-credits-to-redefine');
             }
 
             throw $e;
@@ -225,6 +277,8 @@ class EventController extends Controller
     {
         $this->authorize('update', $event);
 
+        // Publishing does not change what the event is, so it stays free even
+        // for a past event — only identity changes are chargeable.
         $event->update(['is_published' => true]);
 
         return redirect()->route('events.public', $event->slug)->with('status', 'published');

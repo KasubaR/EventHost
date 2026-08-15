@@ -20,6 +20,11 @@
                 Your host will send you a personal RSVP link.
             </div>
         @endif
+    @elseif ($event->isLocked())
+        <div class="evt-rsvp-banner evt-rsvp-banner--closed evt-bg-rsvp-banner">
+            <i class="fa-solid fa-champagne-glasses" aria-hidden="true"></i>
+            This event has already taken place. Thank you to everyone who came.
+        </div>
     @else
         <div class="evt-rsvp-banner evt-rsvp-banner--closed evt-bg-rsvp-banner">
             <i class="fa-solid fa-clock" aria-hidden="true"></i> The RSVP deadline has passed.

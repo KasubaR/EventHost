@@ -99,6 +99,13 @@
     }
 
     async function saveAll(publish) {
+        // Saves go through fetch(), so a data-confirm on the form would never
+        // fire — the confirm for a chargeable edit has to live here.
+        const redefineConfirm = bar.dataset.redefineConfirm;
+        if (redefineConfirm && !window.confirm(redefineConfirm)) {
+            return;
+        }
+
         clearErrors();
         setBusy(true, publish ? 'Publishing…' : 'Saving…');
 

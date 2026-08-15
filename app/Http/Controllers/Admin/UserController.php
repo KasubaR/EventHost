@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateAdminUserStatusRequest;
 use App\Models\Admin;
+use App\Models\CreditTransaction;
 use App\Models\User;
+use App\Services\EventCreditService;
 use App\Support\AdminActivity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -44,8 +46,16 @@ class UserController extends Controller
             'events' => fn ($q) => $q->orderByDesc('created_at')->limit(10),
         ]);
 
+        $creditHistory = CreditTransaction::query()
+            ->where('user_id', $user->id)
+            ->with(['event:id,name', 'payment:id,plan_key'])
+            ->newestFirst()
+            ->limit(25)
+            ->get();
+
         return view('admin.users.show', [
             'adminUser' => $user,
+            'creditHistory' => $creditHistory,
         ]);
     }
 
@@ -94,13 +104,18 @@ class UserController extends Controller
         return redirect()->route('admin.users.index')->with('status', 'user-deleted');
     }
 
-    public function addCredits(Request $request, User $user): RedirectResponse
+    public function addCredits(Request $request, User $user, EventCreditService $credits): RedirectResponse
     {
         $validated = $request->validate([
             'credits' => ['required', 'integer', 'min:1', 'max:100'],
         ]);
 
-        $user->increment('event_credits', $validated['credits']);
+        $credits->grant(
+            $user,
+            (int) $validated['credits'],
+            CreditTransaction::REASON_ADMIN_GRANT,
+            note: 'Granted by '.(auth('admin')->user()?->email ?? 'an admin')
+        );
 
         AdminActivity::log('Admin added event credits', [
             'target_user_id' => $user->id,

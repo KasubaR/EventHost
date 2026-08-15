@@ -73,7 +73,9 @@
                                     · {{ \Illuminate\Support\Str::substr($event->event_time, 0, 5) }}
                                 @endif
                             </p>
-                            @if ($event->is_published)
+                            @if ($event->isLocked())
+                                <span class="evt-badge evt-badge--done"><i class="fa-solid fa-flag-checkered"></i> Completed</span>
+                            @elseif ($event->is_published)
                                 <span class="evt-badge evt-badge--live"><i class="fa-solid fa-circle-check"></i> Published</span>
                             @else
                                 <span class="evt-badge evt-badge--draft"><i class="fa-solid fa-pen"></i> Draft</span>

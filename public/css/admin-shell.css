@@ -347,6 +347,17 @@
   padding: 1px 5px;
 }
 
+/* Credit ledger */
+.admin-credit-grant {
+  color: var(--green, #27ae60);
+  font-weight: 700;
+}
+
+.admin-credit-spend {
+  color: var(--pink, #e00e4f);
+  font-weight: 700;
+}
+
 /* FAQs */
 .admin-faq-card {
   margin-top: 12px;

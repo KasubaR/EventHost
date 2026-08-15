@@ -166,6 +166,12 @@
     color: var(--green, #27ae60);
 }
 
+/* Event date has passed — details are frozen, see Event::isLocked(). */
+.evt-badge--done {
+    background: rgba(108, 122, 137, 0.14);
+    color: var(--gray-mid, #6c7a89);
+}
+
 .evt-card-actions {
     display: flex;
     flex-wrap: wrap;

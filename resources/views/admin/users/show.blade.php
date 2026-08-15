@@ -116,5 +116,43 @@
                 <p class="admin-mt-sm"><a href="{{ route('admin.events.index', ['q' => $u->email]) }}" class="admin-link">View events for this owner</a></p>
             @endif
         </div>
+
+        <div class="admin-panel-card">
+            <h2>Credit history</h2>
+            <p class="admin-muted admin-mt-sm">
+                Every movement of this user's event credits, newest first. Balance is
+                <strong>{{ $u->event_credits }}</strong>.
+            </p>
+            <div class="admin-table-wrap admin-mt-sm">
+                <table class="admin-table">
+                    <thead>
+                    <tr><th>When</th><th>Reason</th><th>Change</th><th>Balance</th><th>For</th></tr>
+                    </thead>
+                    <tbody>
+                    @forelse ($creditHistory as $entry)
+                        <tr>
+                            <td>{{ $entry->created_at?->format('M j, Y H:i') ?? '—' }}</td>
+                            <td>{{ $entry->reasonLabel() }}</td>
+                            <td class="{{ $entry->delta < 0 ? 'admin-credit-spend' : 'admin-credit-grant' }}">
+                                {{ $entry->delta > 0 ? '+' : '' }}{{ $entry->delta }}
+                            </td>
+                            <td>{{ $entry->balance_after }}</td>
+                            <td class="admin-muted">
+                                @if ($entry->event)
+                                    {{ $entry->event->name }}
+                                @elseif ($entry->payment)
+                                    {{ $entry->payment->plan_key }}
+                                @else
+                                    {{ $entry->note ?? '—' }}
+                                @endif
+                            </td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="5" class="admin-muted">No credit movements yet.</td></tr>
+                    @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </x-admin-layout>

@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Carbon;
 
 class Event extends Model
 {
@@ -156,6 +157,63 @@ class Event extends Model
     }
 
     /**
+     * An event whose date has passed is spent — the credit bought that
+     * occurrence. Changing what the event *is* from here on costs another
+     * credit, otherwise one credit would buy unlimited events.
+     *
+     * Guest, table, check-in and photo-wall routes deliberately stay open: they
+     * are used during and after the event and cannot be used to recycle it.
+     */
+    public function isLocked(): bool
+    {
+        return $this->event_date !== null && $this->event_date->isBefore(today());
+    }
+
+    /**
+     * Fields that define which event this is. Changing any of them after the
+     * event date has passed is a new event in all but name, so it costs a
+     * credit — see EventController::update().
+     *
+     * Everything else (time, venue, description, cover, settings) stays free to
+     * change forever: those are corrections, not a different event.
+     */
+    public const IDENTITY_FIELDS = [
+        'name',
+        'event_type',
+        'event_date',
+    ];
+
+    /**
+     * Whether the validated payload would change this event's identity.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function identityChangedBy(array $data): bool
+    {
+        foreach (self::IDENTITY_FIELDS as $field) {
+            if (! array_key_exists($field, $data)) {
+                continue;
+            }
+
+            $current = $this->getAttribute($field);
+            $incoming = $data[$field];
+
+            // event_date is cast to a Carbon date; compare on the date string so
+            // "2026-08-22" and a Carbon instance for the same day match.
+            if ($current instanceof Carbon) {
+                $current = $current->format('Y-m-d');
+                $incoming = $incoming === null ? null : Carbon::parse((string) $incoming)->format('Y-m-d');
+            }
+
+            if ((string) $current !== (string) $incoming) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Whether the host may still leave a review for this event.
      *
      * The purchase gate is implicit: creating an event costs an event credit
@@ -276,11 +334,20 @@ class Event extends Model
     /**
      * Whether the RSVP window is currently open.
      *
+     * The event date is an implicit deadline: an invitation link stays viewable
+     * forever as a keepsake, but nobody can pledge to attend something that has
+     * already happened. Most hosts never set an explicit rsvp_deadline, so
+     * without this a year-old link would still take fresh RSVPs.
+     *
      * Pure attribute check — no DB queries. Safe to call on unsaved model instances
      * (e.g. preview events). Do not add relationship lookups here.
      */
     public function isRsvpOpen(): bool
     {
+        if ($this->isLocked()) {
+            return false;
+        }
+
         if ($this->rsvp_deadline === null) {
             return true;
         }

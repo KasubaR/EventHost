@@ -46,6 +46,15 @@
         <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Invitation layout saved — customize below.</div>
     @endif
 
+    @if ($event->isLocked())
+        <div class="evt-flash evt-flash--warn">
+            <i class="fa-solid fa-circle-info"></i>
+            This event has already taken place. Changing its <strong>name, type or date</strong> makes it a
+            new event and uses 1 credit — you have {{ auth()->user()->event_credits }}. Everything else
+            (time, venue, description, cover image and settings) is still free to change.
+        </div>
+    @endif
+
     <div class="evt-stack">
         <form id="event-update-form" method="post" action="{{ route('events.update', $event) }}" enctype="multipart/form-data" class="profile-form">
             @csrf
@@ -86,7 +95,10 @@
              which stay visible because evt-save-all.js is what hides them. --}}
         <div class="evt-section evt-save-all" id="evt-save-all-bar"
              data-publish-url="{{ route('events.publish', $event) }}"
-             data-public-url="{{ route('events.public', $event->slug) }}">
+             data-public-url="{{ route('events.public', $event->slug) }}"
+             @if ($event->isLocked())
+                 data-redefine-confirm="This event has already taken place. If you changed its name, type or date, saving will use 1 event credit. Continue?"
+             @endif>
             <div class="evt-section-body evt-actions-bar">
                 <button type="button" class="btn-primary" data-save-all>
                     <i class="fa-solid fa-floppy-disk"></i> Save all changes
