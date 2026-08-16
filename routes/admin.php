@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\ReportController as AdminReportController;
 use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\Admin\RsvpController as AdminRsvpController;
 use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\TicketingController as AdminTicketingController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use Illuminate\Support\Facades\Route;
 
@@ -116,6 +117,16 @@ Route::prefix('admin')
 
         Route::middleware('permission:reviews.manage,admin')->group(function (): void {
             Route::get('/reviews', [AdminReviewController::class, 'index'])->name('reviews.index');
+        });
+
+        Route::middleware('permission:ticketing.view,admin')->group(function (): void {
+            Route::get('/ticketing', [AdminTicketingController::class, 'index'])->name('ticketing.index');
+            Route::get('/ticketing/{event}', [AdminTicketingController::class, 'show'])->name('ticketing.show');
+        });
+
+        Route::middleware(['permission:ticketing.approve,admin', 'throttle:admin-mutations'])->group(function (): void {
+            Route::post('/ticketing/{event}/approve', [AdminTicketingController::class, 'approve'])->name('ticketing.approve');
+            Route::post('/ticketing/{event}/reject', [AdminTicketingController::class, 'reject'])->name('ticketing.reject');
         });
 
         Route::middleware(['permission:reviews.manage,admin', 'throttle:admin-mutations'])->group(function (): void {

@@ -9,6 +9,7 @@ use App\Models\Payment;
 use App\Models\PlatformSetting;
 use App\Models\Report;
 use App\Models\User;
+use App\Support\TicketingSettings;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -212,10 +213,32 @@ class AdminPanelTest extends TestCase
             ->patch(route('admin.settings.update'), [
                 'site_name' => 'Ops branded title',
                 'whatsapp_default_message' => 'Hello world',
+                'ticketing_commission_percent' => '5.00',
+                'ticketing_cancellation_fee_percent' => '0.00',
             ])
             ->assertRedirect(route('admin.settings.edit'));
 
         $this->assertSame('Ops branded title', PlatformSetting::getValue('site_name'));
         $this->assertSame('Hello world', PlatformSetting::getValue('whatsapp_default_message'));
+        $this->assertSame('5.00', PlatformSetting::getValue('ticketing_commission_percent'));
+        $this->assertSame('0.00', PlatformSetting::getValue('ticketing_cancellation_fee_percent'));
+    }
+
+    public function test_admin_can_update_ticketing_commission(): void
+    {
+        $operator = Admin::factory()->create();
+        $operator->assignRole('admin');
+
+        $this->actingAs($operator, 'admin')
+            ->patch(route('admin.settings.update'), [
+                'site_name' => config('app.name'),
+                'whatsapp_default_message' => '',
+                'ticketing_commission_percent' => '7.5',
+                'ticketing_cancellation_fee_percent' => '10',
+            ])
+            ->assertRedirect(route('admin.settings.edit'));
+
+        $this->assertSame('7.50', TicketingSettings::commissionPercent());
+        $this->assertSame('10.00', TicketingSettings::cancellationFeePercent());
     }
 }

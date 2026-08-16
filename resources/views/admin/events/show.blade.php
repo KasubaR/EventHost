@@ -44,8 +44,16 @@
             <p class="admin-muted">Guests: {{ $ev->guests_count }} · RSVPs: {{ $ev->rsvps_count }}</p>
             <p class="admin-muted">Published: {{ $ev->is_published ? 'Yes' : 'No' }}</p>
             <p class="admin-muted">Public RSVP allowed: {{ $ev->is_public ? 'Yes' : 'No' }}</p>
+            @if ($ev->isTicketed())
+                <p class="admin-muted">Product: {{ $ev->product_kind->label() }} · {{ $ev->ticketing_status->label() }}</p>
+            @endif
 
-            @if(auth('admin')->user()?->can('events.publish_toggle'))
+            @if ($ev->isTicketed())
+                <p class="admin-muted admin-mt-md">Ticketed events go live from the Ticketing queue — they do not use event credits.</p>
+                @if(auth('admin')->user()?->can('ticketing.view'))
+                    <p class="admin-mt-sm"><a href="{{ route('admin.ticketing.show', $ev) }}">Open ticketing review</a></p>
+                @endif
+            @elseif(auth('admin')->user()?->can('events.publish_toggle'))
                 <form method="post" action="{{ route('admin.events.publish', $ev) }}" class="profile-form admin-mt-md">
                     @csrf
                     @method('PATCH')

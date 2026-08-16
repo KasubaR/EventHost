@@ -21,6 +21,13 @@
     $rsvpValue = $rsvpOld !== null
         ? $rsvpOld
         : (isset($event) && $event?->rsvp_deadline ? $event->rsvp_deadline->format('Y-m-d\TH:i') : '');
+
+    $productKind = old(
+        'product_kind',
+        $event?->product_kind?->value ?? \App\Enums\EventProductKind::Invitation->value
+    );
+    $isTicketed = $productKind === \App\Enums\EventProductKind::Ticketed->value;
+    $productKindLocked = $event !== null;
 @endphp
 
 <input type="hidden" name="is_public" value="0">
@@ -58,6 +65,40 @@
                 @error('event_type')
                     <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                 @enderror
+            </div>
+
+            <div class="profile-field">
+                <span class="profile-label">How people join</span>
+                @if ($productKindLocked)
+                    <p class="evt-readonly-note">
+                        {{ $event->product_kind->label() }}
+                        — this is set when the event is created and cannot be changed.
+                    </p>
+                @else
+                    <div class="evt-product-choice" data-product-kind>
+                        <label class="evt-product-choice-card">
+                            <input type="radio" name="product_kind" value="invitation"
+                                   class="evt-check-input"
+                                   @checked($productKind === 'invitation')>
+                            <span>
+                                <strong>Invitation / RSVP</strong>
+                                <span class="evt-product-choice-hint">Guests respond on a personal or public invite. Publishing uses 1 event credit.</span>
+                            </span>
+                        </label>
+                        <label class="evt-product-choice-card">
+                            <input type="radio" name="product_kind" value="ticketed"
+                                   class="evt-check-input"
+                                   @checked($productKind === 'ticketed')>
+                            <span>
+                                <strong>Ticketed event</strong>
+                                <span class="evt-product-choice-hint">Sell tickets through EventHost checkout (Lenco). EventHost reviews sales before they go live — no event credit.</span>
+                            </span>
+                        </label>
+                    </div>
+                    @error('product_kind')
+                        <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
+                    @enderror
+                @endif
             </div>
 
             <div class="profile-field">
@@ -196,7 +237,17 @@
         </div>
     </div>
 
-    <div class="evt-section">
+    <div class="evt-section" data-product-panel="ticketed" @unless ($isTicketed) hidden @endunless>
+        <div class="evt-section-head">
+            <h2>Ticket sales</h2>
+            <p>EventHost checkout is the only online payment path for this event.</p>
+        </div>
+        <div class="evt-section-body">
+            <p class="evt-muted">After you save this draft you can add ticket types, then submit them for EventHost to activate. Buyers will pay through Lenco — you cannot add an MTN number, bank details, or “pay me on WhatsApp” on the EventHost ticket page.</p>
+        </div>
+    </div>
+
+    <div class="evt-section" data-product-panel="invitation" @if ($isTicketed) hidden @endif>
         <div class="evt-section-head">
             <h2>Guest settings</h2>
             <p>RSVP rules and visibility (RSVP form comes later).</p>

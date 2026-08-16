@@ -12,6 +12,10 @@ use App\Http\Controllers\EventPhotoController;
 use App\Http\Controllers\EventPreviewController;
 use App\Http\Controllers\EventStaffLinkController;
 use App\Http\Controllers\EventTableController;
+use App\Http\Controllers\EventTicketCheckoutController;
+use App\Http\Controllers\EventTicketingController;
+use App\Http\Controllers\EventTicketPurchaseController;
+use App\Http\Controllers\EventTicketTypeController;
 use App\Http\Controllers\GuestBulkActionController;
 use App\Http\Controllers\GuestController;
 use App\Http\Controllers\GuestGroupController;
@@ -29,6 +33,7 @@ use App\Http\Controllers\Settings\ProfileController as SettingsProfileController
 use App\Http\Controllers\Settings\SecurityController as SettingsSecurityController;
 use App\Http\Controllers\TableUploadController;
 use App\Http\Controllers\TemplateLibraryController;
+use App\Http\Controllers\TicketController;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
 
@@ -64,6 +69,35 @@ Route::get('/templates/{invitation_template}/preview', [TemplateLibraryControlle
 
 Route::get('/e/{slug}', [PublicEventController::class, 'show'])->name('events.public');
 Route::get('/e/{slug}/calendar.ics', [PublicEventController::class, 'ics'])->name('events.public.ics');
+
+// Public ticket buy flow — no login, same posture as the RSVP flow below.
+// See plans/ticketing.md §5.
+Route::get('/e/{slug}/tickets', [EventTicketPurchaseController::class, 'show'])->name('events.public.tickets');
+Route::post('/e/{slug}/tickets/hold', [EventTicketPurchaseController::class, 'hold'])
+    ->middleware('throttle:ticket-hold')
+    ->name('events.public.tickets.hold');
+Route::get('/e/{slug}/tickets/checkout', [EventTicketCheckoutController::class, 'show'])
+    ->name('events.public.tickets.checkout');
+Route::post('/e/{slug}/tickets/checkout', [EventTicketCheckoutController::class, 'store'])
+    ->middleware('throttle:ticket-checkout')
+    ->name('events.public.tickets.checkout.store');
+
+Route::get('/tickets/orders/{orderReference}', [EventTicketCheckoutController::class, 'status'])
+    ->where('orderReference', '[A-Za-z0-9_\-]{1,128}')
+    ->name('ticket.orders.show');
+Route::get('/tickets/orders/{orderReference}/verify', [EventTicketCheckoutController::class, 'verify'])
+    ->middleware('throttle:ticket-verify')
+    ->where('orderReference', '[A-Za-z0-9_\-]{1,128}')
+    ->name('ticket.orders.verify');
+
+// Buyer's secure ticket page — token in the URL is the only guard, no login,
+// same trust model as rsvp.token.show.
+Route::get('/t/{token}', [TicketController::class, 'show'])
+    ->where('token', '[A-Za-z0-9]{16,64}')
+    ->name('tickets.show');
+Route::get('/t/{token}/qr.svg', [TicketController::class, 'qr'])
+    ->where('token', '[A-Za-z0-9]{16,64}')
+    ->name('tickets.qr');
 
 Route::get('/e/{slug}/table/{code}', [TableUploadController::class, 'show'])->name('table.upload.show');
 Route::post('/e/{slug}/table/{code}/photos', [TableUploadController::class, 'store'])
@@ -152,6 +186,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('events.guests', GuestController::class)
         ->only(['index', 'create', 'store', 'edit', 'update', 'destroy'])
         ->scoped();
+
+    Route::resource('events.ticket-types', EventTicketTypeController::class)
+        ->parameters(['ticket-types' => 'ticketType'])
+        ->only(['index', 'create', 'store', 'edit', 'update', 'destroy'])
+        ->scoped();
+    Route::patch('/events/{event}/ticketing', [EventTicketingController::class, 'update'])
+        ->name('events.ticketing.update');
+    Route::post('/events/{event}/ticketing/submit', [EventTicketingController::class, 'submit'])
+        ->name('events.ticketing.submit');
 
     Route::get('/events/{event}/tables/qr-sheet.pdf', [EventTableController::class, 'qrSheet'])
         ->name('events.tables.qr-sheet');

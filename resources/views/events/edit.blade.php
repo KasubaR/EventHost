@@ -120,7 +120,10 @@
                 <button type="button" class="btn-primary" data-save-all>
                     <i class="fa-solid fa-floppy-disk"></i> Save Draft
                 </button>
-                @if (! $event->is_published)
+                @if ($event->isTicketed())
+                    <a href="{{ route('events.ticket-types.index', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-ticket"></i> Tickets</a>
+                    <span class="evt-muted">Ticketed events go live after EventHost activates sales — they do not use event credits.</span>
+                @elseif (! $event->is_published)
                     <button type="button" class="btn-primary" data-save-all data-publish data-requires-preview>
                         <i class="fa-solid fa-bullhorn"></i> Save &amp; publish
                     </button>
@@ -138,7 +141,17 @@
             </div>
         </div>
 
-        @if (! $event->is_published)
+        @if ($event->isTicketed() && ! $event->is_published)
+            <div class="evt-section evt-per-form-actions">
+                <div class="evt-section-head">
+                    <h2>Ticket sales</h2>
+                    <p>This page stays a draft until EventHost activates ticket sales.</p>
+                </div>
+                <div class="evt-section-body evt-actions-bar">
+                    <a href="{{ route('events.ticket-types.index', $event) }}" class="btn-primary"><i class="fa-solid fa-ticket"></i> Set up tickets</a>
+                </div>
+            </div>
+        @elseif (! $event->is_published)
             <div class="evt-section evt-per-form-actions">
                 <div class="evt-section-head">
                     <h2>Publish</h2>

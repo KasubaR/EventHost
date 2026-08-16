@@ -31,10 +31,19 @@
         <div class="dph-inner">
             <div>
                 <h1 class="dph-title">{{ $event->name }}</h1>
-                <p class="dph-sub"><span class="evt-type-tag">{{ $typeLabels[$event->event_type] ?? $event->event_type }}</span></p>
+                <p class="dph-sub">
+                    <span class="evt-type-tag">{{ $typeLabels[$event->event_type] ?? $event->event_type }}</span>
+                    @if ($event->isTicketed())
+                        <span class="evt-type-tag">{{ $event->product_kind->label() }}</span>
+                    @endif
+                </p>
             </div>
             <div class="evt-card-actions">
-                <a href="{{ route('events.guests.index', $event) }}" class="btn-primary"><i class="fa-solid fa-users"></i> Guests & RSVPs</a>
+                @if ($event->isTicketed())
+                    <a href="{{ route('events.ticket-types.index', $event) }}" class="btn-primary"><i class="fa-solid fa-ticket"></i> Tickets</a>
+                @else
+                    <a href="{{ route('events.guests.index', $event) }}" class="btn-primary"><i class="fa-solid fa-users"></i> Guests & RSVPs</a>
+                @endif
                 <a href="{{ route('events.tables.index', $event) }}" class="evt-btn-outline">
                     <i class="fa-solid fa-qrcode"></i> QR check-in & photo wall
                     @unless ($event->ownerHasPremiumEventTools())
@@ -61,7 +70,27 @@
             </div>
         @endunless
 
-        <div class="evt-grid-2 evt-rsvp-summary-grid">
+        @if ($event->isTicketed())
+            <div class="evt-grid-2 evt-rsvp-summary-grid">
+                <div class="evt-stat-card">
+                    <div class="evt-stat-value">{{ $event->ticketTypes()->count() }}</div>
+                    <div class="evt-stat-label">Ticket types</div>
+                </div>
+                <div class="evt-stat-card">
+                    <div class="evt-stat-value">{{ $event->ticketing_status->label() }}</div>
+                    <div class="evt-stat-label">Ticket sales</div>
+                </div>
+                <div class="evt-stat-card">
+                    <div class="evt-stat-value">{{ $event->commission_mode?->label() ?? '—' }}</div>
+                    <div class="evt-stat-label">Commission</div>
+                </div>
+                <div class="evt-stat-card evt-stat-card--accent">
+                    <div class="evt-stat-value">{{ \App\Support\TicketingSettings::commissionPercent() }}%</div>
+                    <div class="evt-stat-label">EventHost commission</div>
+                </div>
+            </div>
+        @else
+            <div class="evt-grid-2 evt-rsvp-summary-grid">
             <div class="evt-stat-card">
                 <div class="evt-stat-value">{{ $rsvpSummary['invited'] }}</div>
                 <div class="evt-stat-label">Invited</div>
@@ -198,12 +227,19 @@
                 @endif
             </div>
         </section>
+        @endif
 
         {{-- Cover image, date, venue, guest limit, description etc. used to be listed here too, but
              that duplicated what "Preview" now shows in full, real context — keep this section to the
              status message the preview page doesn't cover. The private-event note has its own tip at
              the top of the page instead, so there is nothing left to show here for that case. --}}
-        @if (! $event->is_published)
+        @if ($event->isTicketed() && ! $event->ticketSalesAreApproved())
+            <div class="evt-section">
+                <div class="evt-section-body">
+                    <p class="evt-muted">{{ $event->ticketing_status->label() }}. <a href="{{ route('events.ticket-types.index', $event) }}">Manage tickets</a> — sales go live after EventHost activates them.</p>
+                </div>
+            </div>
+        @elseif (! $event->is_published)
             <div class="evt-section">
                 <div class="evt-section-body">
                     <p class="evt-muted">This event is still a draft. Edit and publish to share it.</p>

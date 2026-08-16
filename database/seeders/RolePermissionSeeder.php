@@ -25,6 +25,8 @@ class RolePermissionSeeder extends Seeder
         'templates.manage',
         'faqs.manage',
         'reviews.manage',
+        'ticketing.view',
+        'ticketing.approve',
         'settings.manage',
         'analytics.view',
         'payments.view',
@@ -59,6 +61,7 @@ class RolePermissionSeeder extends Seeder
             'reports.manage',
             'analytics.view',
             'payments.view',
+            'ticketing.view',
         ]);
 
         $adminPermissions = array_values(array_filter(

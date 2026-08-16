@@ -1,0 +1,481 @@
+/**
+ * Public ticket buy flow (/e/{slug}/tickets, checkout, order status, /t/{token}).
+ * Depends on global.css tokens. Mirrors rsvp-public.css's card shape (.tkc-* here
+ * vs .rsvp-*) rather than sharing a stylesheet — the two pages diverge enough
+ * (line items, payment tabs, QR) that a shared file would need as many
+ * exceptions as rules.
+ */
+
+.tkc-page {
+    min-height: calc(100vh - 56px);
+    background: var(--gray-light, #f4f5f9);
+    padding: 48px 20px 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.tkc-card {
+    background: var(--white, #fff);
+    border-radius: 20px;
+    box-shadow: 0 8px 40px rgba(13, 13, 43, 0.1), 0 1px 3px rgba(13, 13, 43, 0.06);
+    padding: 40px;
+    width: 100%;
+    max-width: 720px;
+}
+
+.tkc-card--narrow {
+    max-width: 480px;
+    text-align: center;
+}
+
+.tkc-event-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    background: rgba(30, 71, 187, 0.1);
+    color: var(--accent, #1e47bb);
+    border-radius: 50px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 14px;
+}
+
+.tkc-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: clamp(22px, 5vw, 28px);
+    font-weight: 800;
+    color: var(--navy, #0d0d2b);
+    margin: 0 0 16px;
+    line-height: 1.2;
+}
+
+.tkc-meta {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+
+.tkc-meta li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--text-dark, #1a1a2e);
+}
+
+.tkc-meta li i {
+    color: var(--accent, #1e47bb);
+    width: 16px;
+    flex-shrink: 0;
+    text-align: center;
+}
+
+.tkc-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gray-mid, #8e8ea8);
+    text-decoration: none;
+}
+
+.tkc-back-link:hover {
+    color: var(--accent, #1e47bb);
+}
+
+.tkc-muted {
+    color: var(--gray-mid, #8e8ea8);
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.tkc-alert {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: var(--radius-sm, 6px);
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+.tkc-alert--error {
+    background: rgba(224, 14, 79, 0.08);
+    color: var(--pink, #e00e4f);
+}
+
+/* ── Ticket type picker ── */
+.tkc-type-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--line, #e0e0e8);
+}
+
+.tkc-type-row.is-disabled {
+    opacity: 0.5;
+}
+
+.tkc-type-name {
+    font-weight: 700;
+    color: var(--navy, #0d0d2b);
+}
+
+.tkc-type-desc {
+    font-size: 13px;
+    color: var(--gray-mid, #8e8ea8);
+    margin: 4px 0 0;
+}
+
+.tkc-type-note {
+    font-size: 12px;
+    color: var(--orange, #f39c12);
+    font-weight: 700;
+    margin: 4px 0 0;
+}
+
+.tkc-type-price {
+    font-weight: 700;
+    color: var(--navy, #0d0d2b);
+    white-space: nowrap;
+}
+
+.tkc-type-qty input {
+    width: 64px;
+    padding: 8px 10px;
+    border: 1px solid var(--line, #e0e0e8);
+    border-radius: var(--radius-sm, 6px);
+    font-size: 14px;
+    text-align: center;
+}
+
+.tkc-submit-btn {
+    width: 100%;
+    margin-top: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+}
+
+.tkc-hold-note {
+    text-align: center;
+    font-size: 12px;
+    color: var(--gray-mid, #8e8ea8);
+    margin: 10px 0 0;
+}
+
+/* ── Hold countdown ── */
+.tkc-hold-timer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(30, 71, 187, 0.08);
+    color: var(--accent, #1e47bb);
+    border-radius: var(--radius-sm, 6px);
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 24px;
+}
+
+.tkc-hold-timer.is-urgent {
+    background: rgba(224, 14, 79, 0.08);
+    color: var(--pink, #e00e4f);
+}
+
+/* ── Checkout ── */
+.tkc-checkout-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 32px;
+}
+
+@media (max-width: 720px) {
+    .tkc-checkout-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.tkc-section-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--navy, #0d0d2b);
+    margin: 24px 0 12px;
+}
+
+.tkc-section-title:first-child {
+    margin-top: 0;
+}
+
+.tkc-field {
+    margin-bottom: 14px;
+}
+
+.tkc-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-dark, #1a1a2e);
+    margin-bottom: 6px;
+}
+
+.tkc-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--line, #e0e0e8);
+    border-radius: var(--radius-sm, 6px);
+    font-size: 14px;
+}
+
+.tkc-field-note {
+    font-size: 12px;
+    color: var(--gray-mid, #8e8ea8);
+    margin: 4px 0 0;
+}
+
+.tkc-method-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.tkc-method-tab {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border: 1px solid var(--line, #e0e0e8);
+    border-radius: var(--radius-sm, 6px);
+    background: var(--white, #fff);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--gray-mid, #8e8ea8);
+    cursor: pointer;
+}
+
+.tkc-method-tab.is-active {
+    border-color: var(--accent, #1e47bb);
+    color: var(--accent, #1e47bb);
+    background: rgba(30, 71, 187, 0.06);
+}
+
+.tkc-method-panel {
+    display: none;
+}
+
+.tkc-method-panel.is-active {
+    display: block;
+}
+
+.tkc-provider-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.tkc-provider-option input {
+    position: absolute;
+    opacity: 0;
+}
+
+.tkc-provider-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    border: 2px solid var(--line, #e0e0e8);
+    border-radius: var(--radius-sm, 6px);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-dark, #1a1a2e);
+}
+
+.tkc-provider-option input:checked + .tkc-provider-card {
+    border-color: var(--accent, #1e47bb);
+    color: var(--accent, #1e47bb);
+    background: rgba(30, 71, 187, 0.06);
+}
+
+/* ── Summary ── */
+.tkc-summary-card {
+    background: var(--gray-light, #f4f5f9);
+    border-radius: 16px;
+    padding: 24px;
+    align-self: start;
+}
+
+.tkc-summary-header {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--navy, #0d0d2b);
+    margin-bottom: 14px;
+}
+
+.tkc-summary-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--text-dark, #1a1a2e);
+    padding: 6px 0;
+}
+
+.tkc-summary-total {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 800;
+    color: var(--navy, #0d0d2b);
+    border-top: 1px solid var(--line, #e0e0e8);
+    margin-top: 10px;
+    padding-top: 10px;
+}
+
+.tkc-pay-btn {
+    width: 100%;
+    margin-top: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.tkc-summary-note {
+    text-align: center;
+    font-size: 11px;
+    color: var(--gray-mid, #8e8ea8);
+    margin: 10px 0 0;
+}
+
+.tkc-status {
+    margin-top: 20px;
+    padding: 12px 16px;
+    border-radius: var(--radius-sm, 6px);
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.tkc-status.is-hidden {
+    display: none;
+}
+
+.tkc-status--pending {
+    background: rgba(30, 71, 187, 0.08);
+    color: var(--accent, #1e47bb);
+}
+
+.tkc-status--success {
+    background: rgba(39, 174, 96, 0.1);
+    color: var(--green, #27ae60);
+}
+
+.tkc-status--error {
+    background: rgba(224, 14, 79, 0.08);
+    color: var(--pink, #e00e4f);
+}
+
+/* ── Order status / ticket page ── */
+.tkc-result {
+    text-align: center;
+    padding: 12px 0 24px;
+}
+
+.tkc-result i {
+    font-size: 40px;
+    margin-bottom: 12px;
+}
+
+.tkc-result--success i {
+    color: var(--green, #27ae60);
+}
+
+.tkc-result--error i {
+    color: var(--pink, #e00e4f);
+}
+
+.tkc-result--pending i {
+    color: var(--accent, #1e47bb);
+}
+
+.tkc-ticket-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.tkc-ticket-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    border: 1px solid var(--line, #e0e0e8);
+    border-radius: var(--radius-sm, 6px);
+    text-decoration: none;
+    color: var(--navy, #0d0d2b);
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.tkc-ticket-row:hover {
+    border-color: var(--accent, #1e47bb);
+}
+
+.tkc-ticket-row-cta {
+    color: var(--accent, #1e47bb);
+    font-size: 13px;
+}
+
+.tkc-qr-wrap {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+.tkc-qr-img {
+    width: 220px;
+    height: 220px;
+    padding: 12px;
+    border: 1px solid var(--line, #e0e0e8);
+    border-radius: 12px;
+}
+
+.tkc-ticket-details {
+    text-align: left;
+    display: grid;
+    gap: 10px;
+    margin: 0 0 20px;
+}
+
+.tkc-ticket-details div {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    border-bottom: 1px solid var(--line, #e0e0e8);
+    padding-bottom: 8px;
+}
+
+.tkc-ticket-details dt {
+    color: var(--gray-mid, #8e8ea8);
+    font-weight: 600;
+}
+
+.tkc-ticket-details dd {
+    margin: 0;
+    font-weight: 700;
+    color: var(--navy, #0d0d2b);
+}

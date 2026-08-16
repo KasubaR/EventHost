@@ -2,6 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Enums\CommissionMode;
+use App\Enums\EventProductKind;
+use App\Enums\TicketingStatus;
 use App\Models\Event;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -22,6 +25,9 @@ class EventFactory extends Factory
             'user_id' => User::factory(),
             'name' => fake()->words(3, true).' '.fake()->randomElement(['Celebration', 'Gathering', 'Party']),
             'event_type' => fake()->randomElement(Event::EVENT_TYPES),
+            'product_kind' => EventProductKind::Invitation,
+            'ticketing_status' => TicketingStatus::NotApplicable,
+            'commission_mode' => null,
             'description' => fake()->optional(0.7)->paragraph(),
             'event_date' => $startsAt->format('Y-m-d'),
             'event_time' => $startsAt->format('H:i:s'),
@@ -43,6 +49,16 @@ class EventFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'is_published' => true,
+        ]);
+    }
+
+    public function ticketed(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'product_kind' => EventProductKind::Ticketed,
+            'ticketing_status' => TicketingStatus::Draft,
+            'commission_mode' => CommissionMode::Absorb,
+            'is_public' => true,
         ]);
     }
 }

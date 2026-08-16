@@ -107,5 +107,21 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('payment-initiate', function (Request $request): Limit {
             return Limit::perMinute(5)->by((string) $request->user()?->id ?? $request->ip());
         });
+
+        RateLimiter::for('ticket-hold', function (Request $request): Limit {
+            $route = $request->route();
+            $slug = $route?->parameter('slug');
+            $suffix = is_string($slug) && $slug !== '' ? 'slug:'.$slug : 'global';
+
+            return Limit::perMinute(10)->by((string) $request->ip().'|'.$suffix);
+        });
+
+        RateLimiter::for('ticket-checkout', function (Request $request): Limit {
+            return Limit::perMinute(5)->by((string) $request->ip());
+        });
+
+        RateLimiter::for('ticket-verify', function (Request $request): Limit {
+            return Limit::perMinute(10)->by((string) $request->ip());
+        });
     }
 }

@@ -1836,3 +1836,101 @@ body > .evt-more-menu .evt-more-item--danger:hover {
 body.evt-qr-lightbox-open {
     overflow: hidden;
 }
+
+.evt-product-choice {
+    display: grid;
+    gap: 10px;
+}
+
+.evt-product-choice-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 1px solid var(--border-soft, rgba(26, 42, 74, 0.12));
+    border-radius: 12px;
+    cursor: pointer;
+}
+
+.evt-product-choice-card:has(input:checked) {
+    border-color: var(--blue, #1e47bb);
+    background: rgba(30, 71, 187, 0.05);
+}
+
+.evt-product-choice-hint {
+    display: block;
+    margin-top: 4px;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--gray-mid, #64748b);
+}
+
+.evt-readonly-note {
+    margin: 0;
+    font-size: 14px;
+    color: var(--navy, #1a2a4a);
+}
+
+.tkt-locked-facts {
+    display: grid;
+    gap: 12px;
+    margin: 0 0 12px;
+}
+
+.tkt-locked-facts div {
+    display: grid;
+    gap: 2px;
+}
+
+.tkt-locked-facts dt {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--gray-mid, #64748b);
+}
+
+.tkt-locked-facts dd {
+    margin: 0;
+    font-size: 15px;
+    color: var(--navy, #1a2a4a);
+}
+
+.tkt-locked-note,
+.tkt-commission-form {
+    margin-top: 16px;
+}
+
+.tkt-type-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.tkt-type-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-soft, rgba(26, 42, 74, 0.08));
+}
+
+.tkt-type-row:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+
+.admin-filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.admin-filter-row .is-active {
+    background: rgba(30, 71, 187, 0.08);
+    border-color: var(--blue, #1e47bb);
+}

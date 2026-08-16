@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\CommissionMode;
+use App\Enums\EventProductKind;
 use App\Enums\RsvpStatus;
+use App\Enums\TicketingStatus;
 use App\Exceptions\InsufficientCreditsException;
 use App\Http\Requests\StoreEventRequest;
 use App\Http\Requests\UpdateEventRequest;
@@ -21,6 +24,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class EventController extends Controller
@@ -89,6 +93,16 @@ class EventController extends Controller
             $data['user_id'] = (int) $request->user()->id;
             $data['is_published'] = false;
 
+            $productKind = EventProductKind::from((string) $data['product_kind']);
+            if ($productKind === EventProductKind::Ticketed) {
+                $data['ticketing_status'] = TicketingStatus::Draft;
+                $data['commission_mode'] = CommissionMode::Absorb;
+                $data['is_public'] = true;
+            } else {
+                $data['ticketing_status'] = TicketingStatus::NotApplicable;
+                $data['commission_mode'] = null;
+            }
+
             $event = Event::create($data);
         } catch (\Throwable $e) {
             if ($newPath) {
@@ -131,7 +145,7 @@ class EventController extends Controller
         $invitationMerged = null;
         $templateFingerprint = null;
         $customizationToken = null;
-        $publishCostsCredit = ! $event->is_published && ! $event->hasConsumedPublishCredit();
+        $publishCostsCredit = ! $event->isTicketed() && ! $event->is_published && ! $event->hasConsumedPublishCredit();
 
         if ($event->invitation_template_id !== null) {
             $invitationMerged = $customizationService->merge($event);
@@ -204,6 +218,12 @@ class EventController extends Controller
                     && $event->isLocked()
                     && $event->identityChangedBy($data);
 
+                if ($shouldPublish && $event->isTicketed()) {
+                    throw ValidationException::withMessages([
+                        'publish' => 'Ticketed events go live after EventHost activates ticket sales — they do not use event credits.',
+                    ]);
+                }
+
                 if ($shouldPublish) {
                     $credits->chargeFirstPublish($request->user(), $event);
                     $data['is_published'] = true;
@@ -261,6 +281,14 @@ class EventController extends Controller
 
     public function destroy(Event $event): RedirectResponse
     {
+        $this->authorize('delete', $event);
+
+        if ($event->hasBlockingTicketCommerce()) {
+            throw ValidationException::withMessages([
+                'event' => 'This event has ticket holds or orders in progress and cannot be deleted.',
+            ]);
+        }
+
         $cover = $event->cover_image;
         $customization = $event->invitation_customization;
 
@@ -303,6 +331,14 @@ class EventController extends Controller
     public function publish(Request $request, Event $event, EventCreditService $credits): RedirectResponse
     {
         $this->authorize('update', $event);
+
+        if ($event->isTicketed()) {
+            return redirect()
+                ->route('events.ticket-types.index', $event)
+                ->withErrors([
+                    'publish' => 'Ticketed events go live after EventHost activates ticket sales — they do not use event credits.',
+                ]);
+        }
 
         $needsPublishCredit = ! $event->is_published && ! $event->hasConsumedPublishCredit();
 

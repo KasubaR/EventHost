@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\EventProductKind;
 use App\Models\Event;
 use App\Rules\UserCanUseInvitationTemplate;
 use Illuminate\Foundation\Http\FormRequest;
@@ -25,6 +26,7 @@ class StoreEventRequest extends FormRequest
             'venue' => $this->venue === '' ? null : $this->venue,
             'location_name' => $this->location_name === '' ? null : $this->location_name,
             'rsvp_deadline' => $this->rsvp_deadline === '' ? null : $this->rsvp_deadline,
+            'product_kind' => $this->input('product_kind') ?: EventProductKind::Invitation->value,
         ]);
     }
 
@@ -41,6 +43,7 @@ class StoreEventRequest extends FormRequest
             ],
             'name' => ['required', 'string', 'max:255'],
             'event_type' => ['required', Rule::in(Event::EVENT_TYPES)],
+            'product_kind' => ['required', Rule::enum(EventProductKind::class)],
             'description' => ['nullable', 'string'],
             'event_date' => ['required', 'date', 'after_or_equal:today'],
             'event_time' => ['required', 'regex:/^([01]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/'],

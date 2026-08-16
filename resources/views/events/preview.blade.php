@@ -41,7 +41,11 @@
 
         <span class="evt-preview-bar-name">{{ $event->name }}</span>
 
-        @if ($event->is_published)
+        @if ($event->isTicketed() && ! $event->is_published)
+            <a href="{{ route('events.ticket-types.index', $event) }}" class="evt-preview-bar-publish">
+                <i class="fa-solid fa-ticket" aria-hidden="true"></i> Set up tickets
+            </a>
+        @elseif ($event->is_published)
             <span class="evt-preview-bar-note">
                 <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
                 {{ $event->is_public ? 'Live' : 'Published — private' }}

@@ -35,7 +35,14 @@
             @break
 
         @case('rsvp')
-            @includeFirst([$variantPartial, $defaultPartial])
+            {{-- Ticketed events show "Buy tickets" instead of an RSVP form,
+                 uniformly across every layout variant — see
+                 events/invitations/sections/tickets-cta.blade.php. --}}
+            @if (isset($event) && $event->isTicketed())
+                @include('events.invitations.sections.tickets-cta')
+            @else
+                @includeFirst([$variantPartial, $defaultPartial])
+            @endif
             @break
 
         @case('countdown')

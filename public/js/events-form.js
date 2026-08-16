@@ -338,3 +338,34 @@ function initMap() {
         );
     });
 }
+
+function bindProductKindToggle() {
+    const radios = document.querySelectorAll('input[name="product_kind"]');
+    if (radios.length === 0) {
+        return;
+    }
+
+    const invitationPanels = document.querySelectorAll('[data-product-panel="invitation"]');
+    const ticketedPanels = document.querySelectorAll('[data-product-panel="ticketed"]');
+
+    const apply = () => {
+        const selected = document.querySelector('input[name="product_kind"]:checked');
+        const isTicketed = selected instanceof HTMLInputElement && selected.value === 'ticketed';
+
+        invitationPanels.forEach((panel) => {
+            panel.hidden = isTicketed;
+        });
+        ticketedPanels.forEach((panel) => {
+            panel.hidden = ! isTicketed;
+        });
+    };
+
+    radios.forEach((radio) => {
+        radio.addEventListener('change', apply);
+    });
+    apply();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    bindProductKindToggle();
+});

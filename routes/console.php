@@ -16,3 +16,8 @@ Schedule::command('payments:poll-pending')
     ->withoutOverlapping()
     ->runInBackground();
 Schedule::command('credits:audit')->daily();
+Schedule::command('tickets:expire-reservations')->everyMinute()->withoutOverlapping();
+Schedule::command('tickets:poll-pending')
+    ->everyFiveMinutes()
+    ->withoutOverlapping()
+    ->runInBackground();

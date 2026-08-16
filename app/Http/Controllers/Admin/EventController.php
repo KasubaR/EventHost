@@ -59,6 +59,12 @@ class EventController extends Controller
         Event $event,
         EventCreditService $credits
     ): RedirectResponse {
+        if ($event->isTicketed()) {
+            return redirect()->back()->withErrors([
+                'is_published' => 'Ticketed events go live from the Ticketing queue — they do not use event credits.',
+            ]);
+        }
+
         $published = (bool) $request->validated()['is_published'];
 
         try {

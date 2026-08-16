@@ -106,6 +106,11 @@
                         <i class="fa-solid fa-star"></i> Reviews
                     </a>
                 @endif
+                @if(auth('admin')->user()?->can('ticketing.view'))
+                    <a href="{{ route('admin.ticketing.index') }}" class="dash-nav-link {{ request()->routeIs('admin.ticketing.*') ? 'is-active' : '' }}">
+                        <i class="fa-solid fa-ticket"></i> Ticketing
+                    </a>
+                @endif
                 @if(auth('admin')->user()?->can('settings.manage'))
                     <a href="{{ route('admin.settings.edit') }}" class="dash-nav-link {{ request()->routeIs('admin.settings.*') ? 'is-active' : '' }}">
                         <i class="fa-solid fa-sliders"></i> Settings

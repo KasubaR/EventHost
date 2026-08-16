@@ -2,7 +2,11 @@
 
 namespace App\Models;
 
+use App\Enums\CommissionMode;
+use App\Enums\EventProductKind;
 use App\Enums\RsvpStatus;
+use App\Enums\TicketingStatus;
+use App\Enums\TicketOrderStatus;
 use Cviebrock\EloquentSluggable\Sluggable;
 use Database\Factories\EventFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -51,6 +55,14 @@ class Event extends Model
         'invitation_template_id',
         'name',
         'event_type',
+        'product_kind',
+        'ticketing_status',
+        'commission_mode',
+        'ticketing_submitted_at',
+        'ticketing_reviewed_at',
+        'ticketing_reviewed_by',
+        'ticketing_rejection_note',
+        'agreed_payout_on',
         'description',
         'event_date',
         'event_time',
@@ -114,6 +126,96 @@ class Event extends Model
     public function rsvps(): HasMany
     {
         return $this->hasMany(Rsvp::class);
+    }
+
+    /**
+     * @return HasMany<TicketType, $this>
+     */
+    public function ticketTypes(): HasMany
+    {
+        return $this->hasMany(TicketType::class)->orderBy('sort_order')->orderBy('id');
+    }
+
+    /**
+     * @return BelongsTo<Admin, $this>
+     */
+    public function ticketingReviewer(): BelongsTo
+    {
+        return $this->belongsTo(Admin::class, 'ticketing_reviewed_by');
+    }
+
+    /**
+     * @return HasMany<TicketOrder, $this>
+     */
+    public function ticketOrders(): HasMany
+    {
+        return $this->hasMany(TicketOrder::class);
+    }
+
+    /**
+     * @return HasMany<Ticket, $this>
+     */
+    public function tickets(): HasMany
+    {
+        return $this->hasMany(Ticket::class);
+    }
+
+    public function isTicketed(): bool
+    {
+        return $this->product_kind === EventProductKind::Ticketed;
+    }
+
+    public function isInvitation(): bool
+    {
+        return $this->product_kind === EventProductKind::Invitation;
+    }
+
+    /**
+     * Public ticket sales are live only after EventHost has approved the event.
+     * Organizers cannot toggle this themselves.
+     */
+    public function ticketSalesAreApproved(): bool
+    {
+        return $this->isTicketed() && $this->ticketing_status === TicketingStatus::Approved;
+    }
+
+    /**
+     * Pending collections, paid orders, or occupying holds — deleting the
+     * event would cascade those rows and leave a Lenco charge with no tickets.
+     */
+    public function hasBlockingTicketCommerce(): bool
+    {
+        if (! $this->isTicketed()) {
+            return false;
+        }
+
+        if ($this->ticketOrders()->whereIn('status', [
+            ...TicketOrderStatus::inFlight(),
+            TicketOrderStatus::Paid,
+        ])->exists()) {
+            return true;
+        }
+
+        return TicketReservation::query()
+            ->where('event_id', $this->id)
+            ->occupyingCapacity()
+            ->exists();
+    }
+
+    public function canSubmitTicketing(): bool
+    {
+        return $this->isTicketed()
+            && in_array($this->ticketing_status, [TicketingStatus::Draft, TicketingStatus::Rejected], true);
+    }
+
+    public function canEditCommissionMode(): bool
+    {
+        return $this->isTicketed()
+            && in_array($this->ticketing_status, [
+                TicketingStatus::Draft,
+                TicketingStatus::Rejected,
+                TicketingStatus::PendingReview,
+            ], true);
     }
 
     /**
@@ -320,6 +422,13 @@ class Event extends Model
             'user_id' => 'integer',
             'invitation_template_id' => 'integer',
             'event_date' => 'date',
+            'product_kind' => EventProductKind::class,
+            'ticketing_status' => TicketingStatus::class,
+            'commission_mode' => CommissionMode::class,
+            'ticketing_submitted_at' => 'datetime',
+            'ticketing_reviewed_at' => 'datetime',
+            'ticketing_reviewed_by' => 'integer',
+            'agreed_payout_on' => 'date',
             'rsvp_deadline' => 'datetime',
             'is_public' => 'boolean',
             'allow_plus_one' => 'boolean',
@@ -360,6 +469,15 @@ class Event extends Model
     public function scopeUpcoming(Builder $query): Builder
     {
         return $query->whereDate('event_date', '>=', today());
+    }
+
+    /**
+     * @param  Builder<Event>  $query
+     * @return Builder<Event>
+     */
+    public function scopeTicketed(Builder $query): Builder
+    {
+        return $query->where('product_kind', EventProductKind::Ticketed);
     }
 
     public function getEventTypeLabelAttribute(): string
