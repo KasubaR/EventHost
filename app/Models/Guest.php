@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Casts\AsRsvpRemindersSent;
+use App\Enums\RsvpStatus;
 use App\Support\RsvpReminderBuckets;
 use Database\Factories\GuestFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -99,6 +100,20 @@ class Guest extends Model
     public function hasResponded(): bool
     {
         return $this->rsvp()->exists();
+    }
+
+    /**
+     * True when this guest should see (or be emailed) an entry-pass QR for a
+     * given RSVP: accepted, has a personal token to encode, and the host's
+     * plan includes check-in tools. RsvpController's web view and
+     * RsvpConfirmationNotification's email both funnel through this so the
+     * eligibility rule can't drift between the two surfaces.
+     */
+    public function hasEntryPassFor(Rsvp $rsvp, Event $event): bool
+    {
+        return $this->invitation_token !== null
+            && $rsvp->status === RsvpStatus::Accepted
+            && $event->ownerHasPremiumEventTools();
     }
 
     public function isCheckedIn(): bool

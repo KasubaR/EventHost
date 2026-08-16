@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use BaconQrCode\Renderer\GDLibRenderer;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
@@ -21,5 +22,17 @@ class QrCodeService
         );
 
         return (new Writer($renderer))->writeString($content);
+    }
+
+    /**
+     * Raster PNG, for contexts SVG doesn't work in — namely email attachments,
+     * which most mail clients strip or refuse to render inline. Uses
+     * bacon-qr-code's bundled GD renderer rather than its Imagick back end: GD
+     * is this app's one guaranteed image extension (see CLAUDE.md "PHP
+     * Extensions Required"), Imagick is only optional.
+     */
+    public function png(string $content, int $size = 320): string
+    {
+        return (new Writer(new GDLibRenderer($size)))->writeString($content);
     }
 }

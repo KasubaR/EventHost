@@ -21,4 +21,18 @@ enum RsvpStatus: string
     {
         return $this === self::Accepted;
     }
+
+    /**
+     * Guest-facing past-tense wording for the confirmation page/email ("Your
+     * response: Attending"), distinct from label()'s verb form which reads as
+     * a form action ("Accept this invitation") on the RSVP buttons themselves.
+     */
+    public function attendanceLabel(): string
+    {
+        return match ($this) {
+            self::Accepted => 'Attending',
+            self::Declined => 'Not Attending',
+            self::Maybe => 'Maybe Attending',
+        };
+    }
 }
