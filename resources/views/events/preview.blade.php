@@ -34,9 +34,9 @@
 @section('content')
 
     <div class="evt-preview-bar" role="navigation" aria-label="Invitation preview">
-        <a href="{{ route('events.edit', $event) }}" class="evt-preview-bar-back">
+        <a href="{{ $back['route'] }}" class="evt-preview-bar-back">
             <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
-            <span>Back to edit</span>
+            <span>{{ $back['label'] }}</span>
         </a>
 
         <span class="evt-preview-bar-name">{{ $event->name }}</span>

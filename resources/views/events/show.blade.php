@@ -42,8 +42,9 @@
                     @endunless
                 </a>
                 @if ($event->invitation_template_id !== null)
-                    {{-- Host-only view (works for drafts and private events too), not the /e/{slug} public link. --}}
-                    <a href="{{ route('events.preview', $event) }}" target="_blank" rel="noopener" class="evt-btn-outline"><i class="fa-solid fa-eye"></i> Preview</a>
+                    {{-- Host-only view (works for drafts and private events too), not the /e/{slug} public link.
+                         from=show so its back link returns here instead of to the edit form. --}}
+                    <a href="{{ route('events.preview', ['event' => $event, 'from' => 'show']) }}" target="_blank" rel="noopener" class="evt-btn-outline"><i class="fa-solid fa-eye"></i> Preview</a>
                 @endif
                 <a href="{{ route('events.edit', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-pen-to-square"></i> Edit</a>
                 <a href="{{ route('events.index') }}" class="evt-btn-outline"><i class="fa-solid fa-list"></i> All events</a>
@@ -194,27 +195,9 @@
             <div class="evt-section-body">
                 <img src="{{ $event->cover_image_url }}" alt="" class="evt-show-cover" width="1200" height="630">
 
-                <ul class="evt-detail-list evt-detail-list--after-cover">
-                    <li><i class="fa-regular fa-calendar"></i> {{ $event->event_date->format('l, F j, Y') }}
-                        @if ($event->event_time)
-                            · {{ \Illuminate\Support\Str::substr($event->event_time, 0, 5) }}
-                        @endif
-                    </li>
-                    @if ($event->venue)
-                        <li><i class="fa-solid fa-location-dot"></i> {{ $event->venue }}</li>
-                    @endif
-                    @if ($event->location_name)
-                        <li><i class="fa-regular fa-map"></i> {{ $event->location_name }}</li>
-                    @endif
-                    @if ($event->guest_limit)
-                        <li><i class="fa-solid fa-users"></i> Guest limit: {{ $event->guest_limit }}</li>
-                    @endif
-                </ul>
-
-                @if ($event->description)
-                    <div class="evt-desc-body">{{ $event->description }}</div>
-                @endif
-
+                {{-- Date, venue, guest limit, description etc. used to be listed here too, but
+                     that duplicated what "Preview" now shows in full, real context — keep this
+                     section to the status message the preview page doesn't cover. --}}
                 @if (! $event->is_published)
                     <p class="evt-muted">This event is still a draft. Edit and publish to share it.</p>
                 @elseif ($event->is_public)

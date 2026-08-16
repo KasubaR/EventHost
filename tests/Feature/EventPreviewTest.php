@@ -120,4 +120,33 @@ class EventPreviewTest extends TestCase
         $response->assertOk();
         $response->assertDontSee(route('events.preview', $event), escape: false);
     }
+
+    public function test_preview_opened_directly_links_back_to_edit(): void
+    {
+        $user = User::factory()->create();
+        $event = Event::factory()->for($user)->create([
+            'invitation_template_id' => $this->template()->id,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('events.preview', $event));
+
+        $response->assertOk();
+        $response->assertSee('Back to edit', escape: false);
+        $response->assertSee(route('events.edit', $event), escape: false);
+    }
+
+    public function test_preview_opened_from_the_show_page_links_back_to_it(): void
+    {
+        $user = User::factory()->create();
+        $event = Event::factory()->for($user)->create([
+            'invitation_template_id' => $this->template()->id,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('events.preview', ['event' => $event, 'from' => 'show']));
+
+        $response->assertOk();
+        $response->assertSee('Back to event', escape: false);
+        $response->assertSee(route('events.show', $event), escape: false);
+        $response->assertDontSee('Back to edit', escape: false);
+    }
 }
