@@ -312,6 +312,24 @@
   font-size: 14px;
 }
 
+/*
+ * Bare text inputs inside a .admin-tpl-field that ISN'T also .admin-field-wide
+ * — e.g. the review form's "Name shown" / "Context line" fields sitting next
+ * to the Rating/Order number inputs in a .admin-row-fields row. Declared
+ * before .admin-field-wide input[type="text"] (below) so that rule's
+ * width: 100% still wins where both classes are present, on equal
+ * specificity, via source order.
+ */
+.admin-tpl-field input[type="text"] {
+  min-width: 160px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--text-dark);
+}
+
 .admin-tpl-file input[type="file"] {
   width: 100%;
   font-size: 12px;
