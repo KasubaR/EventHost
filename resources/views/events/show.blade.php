@@ -193,11 +193,9 @@
 
         <div class="evt-section">
             <div class="evt-section-body">
-                <img src="{{ $event->cover_image_url }}" alt="" class="evt-show-cover" width="1200" height="630">
-
-                {{-- Date, venue, guest limit, description etc. used to be listed here too, but
-                     that duplicated what "Preview" now shows in full, real context — keep this
-                     section to the status message the preview page doesn't cover. --}}
+                {{-- Cover image, date, venue, guest limit, description etc. used to be listed
+                     here too, but that duplicated what "Preview" now shows in full, real context —
+                     keep this section to the status message the preview page doesn't cover. --}}
                 @if (! $event->is_published)
                     <p class="evt-muted">This event is still a draft. Edit and publish to share it.</p>
                 @elseif ($event->is_public)
