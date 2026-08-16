@@ -53,6 +53,14 @@
     </x-slot>
 
     <div class="evt-stack">
+        @unless ($event->is_public)
+            <div class="evt-flash evt-flash--info">
+                <i class="fa-solid fa-circle-info"></i>
+                This is a private event — it has no public page. Share each guest's personal invite link from
+                <a href="{{ route('events.guests.index', $event) }}">Guests</a>.
+            </div>
+        @endunless
+
         <div class="evt-grid-2 evt-rsvp-summary-grid">
             <div class="evt-stat-card">
                 <div class="evt-stat-value">{{ $rsvpSummary['invited'] }}</div>
@@ -191,19 +199,22 @@
             </div>
         </section>
 
-        <div class="evt-section">
-            <div class="evt-section-body">
-                {{-- Cover image, date, venue, guest limit, description etc. used to be listed
-                     here too, but that duplicated what "Preview" now shows in full, real context —
-                     keep this section to the status message the preview page doesn't cover. --}}
-                @if (! $event->is_published)
+        {{-- Cover image, date, venue, guest limit, description etc. used to be listed here too, but
+             that duplicated what "Preview" now shows in full, real context — keep this section to the
+             status message the preview page doesn't cover. The private-event note has its own tip at
+             the top of the page instead, so there is nothing left to show here for that case. --}}
+        @if (! $event->is_published)
+            <div class="evt-section">
+                <div class="evt-section-body">
                     <p class="evt-muted">This event is still a draft. Edit and publish to share it.</p>
-                @elseif ($event->is_public)
-                    <p class="evt-muted">Public page: <a href="{{ route('events.public', $event->slug) }}" class="evt-public-url">{{ url('/e/'.$event->slug) }}</a></p>
-                @else
-                    <p class="evt-muted">This is a private event — it has no public page. Share each guest's personal invite link from <a href="{{ route('events.guests.index', $event) }}">Guests</a>.</p>
-                @endif
+                </div>
             </div>
-        </div>
+        @elseif ($event->is_public)
+            <div class="evt-section">
+                <div class="evt-section-body">
+                    <p class="evt-muted">Public page: <a href="{{ route('events.public', $event->slug) }}" class="evt-public-url">{{ url('/e/'.$event->slug) }}</a></p>
+                </div>
+            </div>
+        @endif
     </div>
 </x-app-layout>
