@@ -21,25 +21,18 @@ class EventPreviewController extends Controller
     {
         $this->authorize('view', $event);
 
+        // Ticketed events have one fixed public page — there is no invitation
+        // layout to preview, so send the host back to the edit form.
+        if ($event->isTicketed()) {
+            return redirect()->route('events.edit', $event);
+        }
+
         // The preview link lives on both the edit page and the (read-only) show
         // page, so "back" has to return wherever the host actually came from —
         // otherwise a host who never opened the edit form lands there anyway.
         $back = $request->query('from') === 'show'
             ? ['route' => route('events.show', $event), 'label' => 'Back to event']
             : ['route' => route('events.edit', $event), 'label' => 'Back to edit'];
-
-        // Ticketed events have no layout to choose — they always render the
-        // fixed public template, so this check only applies to invitation
-        // events.
-        if ($event->isTicketed()) {
-            return view('events.preview', [
-                'event' => $event,
-                'rsvpOpen' => false,
-                'rsvpPublicAvailable' => false,
-                'invitation' => null,
-                'back' => $back,
-            ]);
-        }
 
         if ($event->invitation_template_id === null) {
             return redirect()->route('events.choose-template', $event)

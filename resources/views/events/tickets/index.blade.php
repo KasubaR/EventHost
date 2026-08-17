@@ -56,7 +56,11 @@
                 <dl class="tkt-locked-facts">
                     <div>
                         <dt>Online ticket sales</dt>
-                        <dd>{{ $event->ticketSalesAreApproved() ? 'Enabled' : 'Off until EventHost activates this event' }}</dd>
+                        <dd>
+                            <span class="tkt-sales-status {{ $event->ticketSalesAreApproved() ? 'tkt-sales-status--on' : 'tkt-sales-status--off' }}">
+                                {{ $event->ticketSalesAreApproved() ? 'Enabled' : 'Off until EventHost activates this event' }}
+                            </span>
+                        </dd>
                     </div>
                     <div>
                         <dt>Payment provider</dt>
@@ -79,28 +83,38 @@
                 </dl>
                 <p class="evt-muted tkt-locked-note">These values cannot be changed per event.</p>
 
-                <form method="post" action="{{ route('events.ticketing.update', $event) }}" class="profile-fields tkt-commission-form">
+                <form method="post" action="{{ route('events.ticketing.update', $event) }}" class="tkt-commission-form">
                     @csrf
                     @method('PATCH')
-                    <span class="profile-label">Who pays the commission</span>
-                    <label class="profile-label evt-check-label">
-                        <input type="radio" name="commission_mode" value="absorb" class="evt-check-input"
-                               @checked(old('commission_mode', $event->commission_mode?->value) === 'absorb')
-                               @disabled(! $event->canEditCommissionMode())>
-                        Deducted from my earnings
-                    </label>
-                    <label class="profile-label evt-check-label">
-                        <input type="radio" name="commission_mode" value="pass_through" class="evt-check-input"
-                               @checked(old('commission_mode', $event->commission_mode?->value) === 'pass_through')
-                               @disabled(! $event->canEditCommissionMode())>
-                        Added to the buyer’s price
-                    </label>
-                    @error('commission_mode')
-                        <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
-                    @enderror
+                    <div class="profile-field">
+                        <span class="profile-label">Who pays the commission</span>
+                        <div class="evt-product-choice" @if (! $event->canEditCommissionMode()) aria-disabled="true" @endif>
+                            <label class="evt-product-choice-card">
+                                <input type="radio" name="commission_mode" value="absorb" class="evt-check-input"
+                                       @checked(old('commission_mode', $event->commission_mode?->value) === 'absorb')
+                                       @disabled(! $event->canEditCommissionMode())>
+                                <span>
+                                    <strong>Deducted from my earnings</strong>
+                                    <span class="evt-product-choice-hint">Buyers pay the listed ticket price. The {{ $commissionPercent }}% commission comes out of what you receive.</span>
+                                </span>
+                            </label>
+                            <label class="evt-product-choice-card">
+                                <input type="radio" name="commission_mode" value="pass_through" class="evt-check-input"
+                                       @checked(old('commission_mode', $event->commission_mode?->value) === 'pass_through')
+                                       @disabled(! $event->canEditCommissionMode())>
+                                <span>
+                                    <strong>Added to the buyer’s price</strong>
+                                    <span class="evt-product-choice-hint">Buyers pay the ticket price plus {{ $commissionPercent }}%. You receive the listed price.</span>
+                                </span>
+                            </label>
+                        </div>
+                        @error('commission_mode')
+                            <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
+                        @enderror
+                    </div>
                     @if ($event->canEditCommissionMode())
                         <div class="evt-actions-bar">
-                            <button type="submit" class="evt-btn-outline">Save commission setting</button>
+                            <button type="submit" class="btn-primary">Save commission setting</button>
                         </div>
                     @endif
                 </form>

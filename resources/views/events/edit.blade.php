@@ -99,13 +99,13 @@
             @endif
         @endunless
 
-        @if ($event->invitation_template_id !== null || $event->isTicketed())
+        @if ($event->invitation_template_id !== null)
             <div class="evt-section" id="evt-preview-cta">
                 <div class="evt-section-body evt-actions-bar">
                     <a href="{{ route('events.preview', $event) }}" target="_blank" rel="noopener" class="evt-btn-outline" id="evt-preview-link" data-preview-link>
-                        <i class="fa-solid fa-eye"></i> Preview {{ $event->isTicketed() ? 'event' : 'invitation' }}
+                        <i class="fa-solid fa-eye"></i> Preview invitation
                     </a>
-                    <span class="evt-muted">Opens in a new tab — see exactly what {{ $event->isTicketed() ? 'buyers' : 'guests' }} will see before you publish.</span>
+                    <span class="evt-muted">Opens in a new tab — see exactly what guests will see before you publish.</span>
                 </div>
             </div>
         @endif

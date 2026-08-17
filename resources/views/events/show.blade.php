@@ -59,7 +59,7 @@
                         @endunless
                     </a>
                 @endif
-                @if ($event->invitation_template_id !== null || $event->isTicketed())
+                @if ($event->invitation_template_id !== null)
                     {{-- Host-only view (works for drafts and private events too), not the /e/{slug} public link.
                          from=show so its back link returns here instead of to the edit form. --}}
                     <a href="{{ route('events.preview', ['event' => $event, 'from' => 'show']) }}" target="_blank" rel="noopener" class="evt-btn-outline"><i class="fa-solid fa-eye"></i> Preview</a>

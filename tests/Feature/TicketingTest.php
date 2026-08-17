@@ -127,7 +127,8 @@ class TicketingTest extends TestCase
             ->get(route('events.show', $event))
             ->assertOk()
             ->assertSee('Tickets', false)
-            ->assertSee('Ticketed event', false);
+            ->assertSee('Ticketed event', false)
+            ->assertDontSee(route('events.preview', $event), false);
 
         $this->actingAs($user)
             ->get(route('events.ticket-types.index', $event))
@@ -609,7 +610,8 @@ class TicketingTest extends TestCase
             ->assertDontSee('Cover image', false)
             ->assertDontSee('Guest settings', false)
             ->assertDontSee('RSVP deadline', false)
-            ->assertSee('Preview event', false);
+            ->assertDontSee('Preview event', false)
+            ->assertDontSee(route('events.preview', $event), false);
     }
 
     public function test_ticketed_public_page_renders_the_fixed_template(): void
@@ -631,19 +633,15 @@ class TicketingTest extends TestCase
         $response->assertDontSee('evt-invitation', false);
     }
 
-    public function test_ticketed_preview_never_redirects_to_choose_template(): void
+    public function test_ticketed_preview_redirects_to_edit(): void
     {
         $user = User::factory()->create();
         $event = Event::factory()->for($user)->ticketed()->create();
         TicketType::factory()->for($event)->create(['name' => 'General']);
 
-        $response = $this->actingAs($user)->get(route('events.preview', $event));
-
-        $response->assertOk();
-        $response->assertSee('General', false);
-        $response->assertSee('Preview — this is exactly how your ticket page looks to buyers.', false);
-        $response->assertDontSee('Back to edit', false);
-        $response->assertDontSee('evt-preview-bar', false);
+        $this->actingAs($user)
+            ->get(route('events.preview', $event))
+            ->assertRedirect(route('events.edit', $event));
     }
 
     /**
