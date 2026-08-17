@@ -270,6 +270,22 @@ class EventCreditTest extends TestCase
             ->assertSee('Completed', escape: false);
     }
 
+    public function test_the_event_list_does_not_mark_a_past_draft_completed(): void
+    {
+        $user = User::factory()->create();
+        Event::factory()->create([
+            'user_id' => $user->id,
+            'event_date' => now()->subWeek()->format('Y-m-d'),
+            'is_published' => false,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('events.index'))
+            ->assertOk()
+            ->assertDontSee('Completed', escape: false)
+            ->assertSee('Draft', escape: false);
+    }
+
     public function test_the_edit_page_warns_that_redefining_costs_a_credit(): void
     {
         $user = User::factory()->withCredits(1)->create();

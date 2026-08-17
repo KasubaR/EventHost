@@ -30,9 +30,7 @@
                 @else
                     <span class="evt-badge evt-badge--draft"><i class="fa-solid fa-pen"></i> Draft</span>
                 @endif
-                {{-- Event::isLocked() applies to drafts too, so this sits alongside the status
-                     badge rather than replacing it. --}}
-                @if ($event->isLocked())
+                @if ($event->is_published && $event->isLocked())
                     <span class="evt-badge evt-badge--done"><i class="fa-solid fa-flag-checkered"></i> Completed</span>
                 @endif
             </div>
