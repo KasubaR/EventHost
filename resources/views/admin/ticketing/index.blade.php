@@ -45,6 +45,7 @@
                         <th>Types</th>
                         <th>Status</th>
                         <th>Submitted</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -57,6 +58,7 @@
                             <td>{{ $row->ticket_types_count }}</td>
                             <td>{{ $row->ticketing_status->label() }}</td>
                             <td>{{ $row->ticketing_submitted_at?->format('j M Y H:i') ?? '—' }}</td>
+                            <td><a href="{{ route('admin.ticketing.show', $row) }}" class="evt-btn-outline evt-btn-tiny">Review</a></td>
                         </tr>
                     @endforeach
                 </tbody>
