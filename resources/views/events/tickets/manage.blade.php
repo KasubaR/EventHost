@@ -91,12 +91,14 @@
                                                 </form>
 
                                                 @if ($ticketRow->status === \App\Enums\TicketStatus::Valid)
-                                                    <form method="post" action="{{ route('events.tickets.confirm-checkin', [$event, $ticketRow]) }}" class="evt-inline-form">
-                                                        @csrf
-                                                        <button type="submit" class="evt-more-item" role="menuitem">
-                                                            <i class="fa-solid fa-qrcode" aria-hidden="true"></i> <span>Check in</span>
-                                                        </button>
-                                                    </form>
+                                                    @if ($event->ownerHasPremiumEventTools())
+                                                        <form method="post" action="{{ route('events.tickets.confirm-checkin', [$event, $ticketRow]) }}" class="evt-inline-form">
+                                                            @csrf
+                                                            <button type="submit" class="evt-more-item" role="menuitem">
+                                                                <i class="fa-solid fa-qrcode" aria-hidden="true"></i> <span>Check in</span>
+                                                            </button>
+                                                        </form>
+                                                    @endif
 
                                                     <form method="post" action="{{ route('events.tickets.cancel', [$event, $ticketRow]) }}" class="evt-inline-form" data-confirm="Cancel this ticket? The buyer will no longer be able to use it.">
                                                         @csrf

@@ -169,6 +169,23 @@ class CheckInTest extends TestCase
         $response->assertJsonPath('guests.0.name', 'Alice Wonder');
     }
 
+    public function test_lookup_rejects_an_empty_or_one_character_query(): void
+    {
+        $owner = User::factory()->pro()->create();
+        $event = Event::factory()->for($owner)->create();
+        Guest::factory()->for($event)->create(['name' => 'Alice Wonder']);
+
+        $this->actingAs($owner)
+            ->getJson(route('events.checkin.lookup', $event).'?q=')
+            ->assertOk()
+            ->assertJsonCount(0, 'guests');
+
+        $this->actingAs($owner)
+            ->getJson(route('events.checkin.lookup', $event).'?q=A')
+            ->assertOk()
+            ->assertJsonCount(0, 'guests');
+    }
+
     public function test_check_in_is_refused_before_the_event_date(): void
     {
         $owner = User::factory()->pro()->create();

@@ -106,7 +106,7 @@ class TicketManagementTest extends TestCase
 
     public function test_confirm_checkin_from_the_management_table_flips_valid_to_used(): void
     {
-        $owner = User::factory()->create();
+        $owner = User::factory()->pro()->create();
         $event = $this->ticketedEvent($owner, ['event_date' => now()->toDateString()]);
         $ticket = Ticket::factory()->for($event)->create(['status' => TicketStatus::Valid]);
 
@@ -118,6 +118,32 @@ class TicketManagementTest extends TestCase
         $this->assertSame(TicketStatus::Used, $ticket->status);
         $this->assertNotNull($ticket->checked_in_at);
         $this->assertSame($owner->id, $ticket->checked_in_by);
+    }
+
+    public function test_base_tier_owner_is_redirected_to_billing_from_table_checkin(): void
+    {
+        $owner = User::factory()->create();
+        $event = $this->ticketedEvent($owner, ['event_date' => now()->toDateString()]);
+        $ticket = Ticket::factory()->for($event)->create(['status' => TicketStatus::Valid]);
+
+        $this->actingAs($owner)
+            ->post(route('events.tickets.confirm-checkin', [$event, $ticket]))
+            ->assertRedirect(route('billing.show'));
+
+        $this->assertSame(TicketStatus::Valid, $ticket->fresh()->status);
+        $this->assertNull($ticket->fresh()->checked_in_at);
+    }
+
+    public function test_checkin_action_is_hidden_for_a_base_tier_owner(): void
+    {
+        $owner = User::factory()->create();
+        $event = $this->ticketedEvent($owner);
+        Ticket::factory()->for($event)->create(['status' => TicketStatus::Valid]);
+
+        $this->actingAs($owner)
+            ->get(route('events.tickets.index', $event))
+            ->assertOk()
+            ->assertDontSee(route('events.tickets.confirm-checkin', [$event, $event->tickets()->first()]), escape: false);
     }
 
     public function test_a_non_owner_cannot_manage_tickets(): void

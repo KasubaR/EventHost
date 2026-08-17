@@ -171,4 +171,16 @@ class StaffScannerLinkTest extends TestCase
         $response->assertOk();
         $response->assertJsonCount(1, 'guests');
     }
+
+    public function test_lookup_rejects_an_empty_query(): void
+    {
+        $owner = User::factory()->pro()->create();
+        $event = Event::factory()->for($owner)->create();
+        $link = EventStaffLink::factory()->for($event)->create();
+        Guest::factory()->for($event)->create(['name' => 'Alice Wonder']);
+
+        $this->getJson(route('checkin.public.lookup', ['staffToken' => $link->token]).'?q=')
+            ->assertOk()
+            ->assertJsonCount(0, 'guests');
+    }
 }

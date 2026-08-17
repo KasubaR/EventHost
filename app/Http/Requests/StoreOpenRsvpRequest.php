@@ -85,10 +85,16 @@ class StoreOpenRsvpRequest extends FormRequest
             return null;
         }
 
-        return Event::query()
+        $event = Event::query()
             ->where('slug', $slug)
             ->where('is_published', true)
             ->where('is_public', true)
             ->first();
+
+        if ($event === null || ! $event->isInvitation()) {
+            return null;
+        }
+
+        return $event;
     }
 }

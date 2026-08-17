@@ -9,6 +9,7 @@ use App\Models\Ticket;
 use App\Notifications\TicketOrderConfirmationNotification;
 use App\Services\TicketCheckInService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\View\View;
 
@@ -72,19 +73,31 @@ class EventTicketManagementController extends Controller
         $this->authorizeTicketed($event);
         $this->authorizeTicketBelongsToEvent($event, $ticket);
 
-        if ($ticket->status !== TicketStatus::Valid) {
-            return back()->withErrors(['ticket' => 'Only a valid ticket can be cancelled.']);
-        }
+        return DB::transaction(function () use ($ticket): RedirectResponse {
+            /** @var Ticket $locked */
+            $locked = Ticket::query()->whereKey($ticket->id)->lockForUpdate()->firstOrFail();
 
-        $ticket->forceFill(['status' => TicketStatus::Cancelled])->save();
+            if ($locked->status !== TicketStatus::Valid) {
+                return back()->withErrors(['ticket' => 'Only a valid ticket can be cancelled.']);
+            }
 
-        return back()->with('status', 'ticket-cancelled');
+            // Cancelled tickets stop counting as sold (TicketType::soldQuantity),
+            // which restocks the seat. The original sale ledger row is left
+            // alone — buyer refunds are off-platform, same as Phase 19.
+            $locked->forceFill(['status' => TicketStatus::Cancelled])->save();
+
+            return back()->with('status', 'ticket-cancelled');
+        });
     }
 
     public function confirmCheckIn(Event $event, Ticket $ticket, TicketCheckInService $checkInService): RedirectResponse
     {
         $this->authorizeTicketed($event);
         $this->authorizeTicketBelongsToEvent($event, $ticket);
+
+        if (! $event->ownerHasPremiumEventTools()) {
+            return redirect()->route('billing.show')->with('status', 'premium-required-checkin');
+        }
 
         try {
             $result = $checkInService->confirm($ticket, auth()->id());

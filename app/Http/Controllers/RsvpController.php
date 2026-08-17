@@ -30,6 +30,7 @@ class RsvpController extends Controller
             ->firstOrFail();
 
         $event = $guest->event;
+        abort_unless($event->isInvitation(), 404);
 
         $showEntryPass = $this->guestHasEntryPass($guest, $event);
 
@@ -78,7 +79,7 @@ class RsvpController extends Controller
             ->with(['event', 'rsvp'])
             ->first();
 
-        abort_if($guest === null || ! $this->guestHasEntryPass($guest, $guest->event), 404);
+        abort_if($guest === null || ! $guest->event->isInvitation() || ! $this->guestHasEntryPass($guest, $guest->event), 404);
 
         $url = $guest->checkInQrUrl();
         abort_if($url === null, 404);
@@ -126,6 +127,7 @@ class RsvpController extends Controller
             ->firstOrFail();
 
         $event = $guest->event;
+        abort_unless($event->isInvitation(), 404);
 
         $payload = $request->validatedRsvpPayload();
 
@@ -144,6 +146,8 @@ class RsvpController extends Controller
             ->where('is_public', true)
             ->with('invitationTemplate')
             ->firstOrFail();
+
+        abort_unless($event->isInvitation(), 404);
 
         if (! $event->isRsvpOpen()) {
             return view('rsvp.closed', ['event' => $event, 'guest' => null]);

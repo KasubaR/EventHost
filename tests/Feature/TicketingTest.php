@@ -7,6 +7,7 @@ use App\Enums\EventProductKind;
 use App\Enums\TicketingStatus;
 use App\Models\Admin;
 use App\Models\Event;
+use App\Models\Guest;
 use App\Models\TicketType;
 use App\Models\User;
 use App\Support\TicketingSettings;
@@ -89,6 +90,55 @@ class TicketingTest extends TestCase
         $this->actingAs($user)
             ->get(route('events.ticket-types.index', $event))
             ->assertNotFound();
+    }
+
+    public function test_ticketed_event_has_no_guest_list(): void
+    {
+        $user = User::factory()->create();
+        $event = Event::factory()->for($user)->ticketed()->create();
+
+        $this->actingAs($user)
+            ->get(route('events.guests.index', $event))
+            ->assertNotFound();
+    }
+
+    public function test_ticketed_event_cannot_store_a_guest(): void
+    {
+        $user = User::factory()->create();
+        $event = Event::factory()->for($user)->ticketed()->create();
+
+        $this->actingAs($user)
+            ->post(route('events.guests.store', $event), ['name' => 'Alice'])
+            ->assertNotFound();
+
+        $this->assertSame(0, Guest::query()->where('event_id', $event->id)->count());
+    }
+
+    public function test_ticketed_event_404s_on_the_guest_checkin_scanner(): void
+    {
+        $user = User::factory()->pro()->create();
+        $event = Event::factory()->for($user)->ticketed()->create();
+
+        $this->actingAs($user)
+            ->get(route('events.checkin.scan', $event))
+            ->assertNotFound();
+    }
+
+    public function test_open_rsvp_404s_for_a_ticketed_event(): void
+    {
+        $event = Event::factory()->ticketed()->published()->create([
+            'is_public' => true,
+            'ticketing_status' => TicketingStatus::Approved,
+        ]);
+
+        $this->get(route('rsvp.open.show', $event->slug))->assertNotFound();
+        $this->post(route('rsvp.open.store', $event->slug), [
+            'name' => 'Alice',
+            'email' => 'alice@example.com',
+            'status' => 'accepted',
+        ])->assertNotFound();
+
+        $this->assertSame(0, Guest::query()->where('event_id', $event->id)->count());
     }
 
     public function test_owner_can_create_a_ticket_type(): void

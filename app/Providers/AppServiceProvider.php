@@ -108,6 +108,10 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(5)->by((string) $request->user()?->id ?? $request->ip());
         });
 
+        RateLimiter::for('ticket-resend', function (Request $request): Limit {
+            return Limit::perMinute(10)->by((string) $request->user()?->id ?? $request->ip());
+        });
+
         RateLimiter::for('ticket-hold', function (Request $request): Limit {
             $route = $request->route();
             $slug = $route?->parameter('slug');

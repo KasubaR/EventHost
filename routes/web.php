@@ -223,6 +223,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/events/{event}/tickets', [EventTicketManagementController::class, 'index'])
         ->name('events.tickets.index');
     Route::post('/events/{event}/tickets/{ticket}/resend', [EventTicketManagementController::class, 'resend'])
+        ->middleware('throttle:ticket-resend')
         ->name('events.tickets.resend');
     Route::post('/events/{event}/tickets/{ticket}/cancel', [EventTicketManagementController::class, 'cancel'])
         ->name('events.tickets.cancel');

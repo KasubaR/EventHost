@@ -7,6 +7,7 @@ use App\Exceptions\TicketCheckInException;
 use App\Models\Event;
 use App\Models\Ticket;
 use App\Services\TicketCheckInService;
+use App\Support\CheckInLookup;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,10 +15,8 @@ use Illuminate\View\View;
 
 /**
  * Door check-in scanner for ticketed events. Parallel to CheckInController
- * (guests), not a shared abstraction — see TicketCheckInService. Dashboard
- * scanner only for now, no shareable no-login staff link yet (that's
- * CheckInController/EventStaffLink's pattern for guests) — see
- * plans/ticketing.md §5.4.
+ * (guests), not a shared abstraction — see TicketCheckInService. The no-login
+ * staff-link twin is PublicTicketCheckInController.
  */
 class TicketCheckInController extends Controller
 {
@@ -49,6 +48,7 @@ class TicketCheckInController extends Controller
     public function confirmToken(Event $event, string $token, TicketCheckInService $checkInService): JsonResponse
     {
         $this->authorize('update', $event);
+        abort_unless($event->isTicketed(), 404);
 
         if (! $event->ownerHasPremiumEventTools()) {
             return response()->json(['message' => 'This event is not on a premium plan.'], 403);
@@ -69,6 +69,7 @@ class TicketCheckInController extends Controller
     public function confirmTicket(Event $event, Ticket $ticket, TicketCheckInService $checkInService): JsonResponse
     {
         $this->authorize('update', $event);
+        abort_unless($event->isTicketed(), 404);
         abort_unless($ticket->event_id === $event->id, 404);
 
         if (! $event->ownerHasPremiumEventTools()) {
@@ -81,12 +82,16 @@ class TicketCheckInController extends Controller
     public function lookup(Request $request, Event $event): JsonResponse
     {
         $this->authorize('update', $event);
+        abort_unless($event->isTicketed(), 404);
 
         if (! $event->ownerHasPremiumEventTools()) {
             return response()->json(['message' => 'This event is not on a premium plan.'], 403);
         }
 
-        $term = (string) $request->query('q', '');
+        $term = CheckInLookup::term((string) $request->query('q', ''));
+        if ($term === null) {
+            return response()->json(['tickets' => []]);
+        }
 
         $tickets = $event->tickets()
             ->search($term)

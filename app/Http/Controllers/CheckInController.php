@@ -7,6 +7,7 @@ use App\Models\Event;
 use App\Models\Guest;
 use App\Services\CheckInAnalyticsService;
 use App\Services\CheckInService;
+use App\Support\CheckInLookup;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,7 +17,7 @@ class CheckInController extends Controller
 {
     public function scan(Event $event, CheckInAnalyticsService $analyticsService): View|RedirectResponse
     {
-        $this->authorize('update', $event);
+        $this->authorizeInvitation($event);
 
         if (! $event->ownerHasPremiumEventTools()) {
             return redirect()->route('billing.show')->with('status', 'premium-required-checkin');
@@ -51,7 +52,7 @@ class CheckInController extends Controller
      */
     public function confirmToken(Event $event, string $token, CheckInService $checkInService): JsonResponse
     {
-        $this->authorize('update', $event);
+        $this->authorizeInvitation($event);
 
         if (! $event->ownerHasPremiumEventTools()) {
             return response()->json(['message' => 'This event is not on a premium plan.'], 403);
@@ -74,6 +75,7 @@ class CheckInController extends Controller
         $guest->loadMissing('event');
         $this->authorize('update', $guest);
         abort_unless($guest->event_id === $event->id, 404);
+        abort_unless($event->isInvitation(), 404);
 
         if (! $event->ownerHasPremiumEventTools()) {
             return response()->json(['message' => 'This event is not on a premium plan.'], 403);
@@ -84,13 +86,16 @@ class CheckInController extends Controller
 
     public function lookup(Request $request, Event $event): JsonResponse
     {
-        $this->authorize('update', $event);
+        $this->authorizeInvitation($event);
 
         if (! $event->ownerHasPremiumEventTools()) {
             return response()->json(['message' => 'This event is not on a premium plan.'], 403);
         }
 
-        $term = (string) $request->query('q', '');
+        $term = CheckInLookup::term((string) $request->query('q', ''));
+        if ($term === null) {
+            return response()->json(['guests' => []]);
+        }
 
         $guests = $event->guests()
             ->search($term)
@@ -114,5 +119,12 @@ class CheckInController extends Controller
         } catch (CheckInClosedException $e) {
             return response()->json(['message' => $e->getMessage()], 403);
         }
+    }
+
+    private function authorizeInvitation(Event $event): void
+    {
+        $this->authorize('update', $event);
+
+        abort_unless($event->isInvitation(), 404);
     }
 }

@@ -49,7 +49,7 @@ class GuestController extends Controller
 
     public function index(Request $request, Event $event): View
     {
-        $this->authorize('update', $event);
+        $this->authorizeInvitation($event);
 
         $groups = $event->guestGroups()->get();
 
@@ -76,7 +76,7 @@ class GuestController extends Controller
 
     public function export(Request $request, Event $event): StreamedResponse
     {
-        $this->authorize('update', $event);
+        $this->authorizeInvitation($event);
 
         $guestsQuery = $this->applyGuestFilters(
             $event->guests()->with(['rsvp', 'group', 'checkedInBy']),
@@ -128,7 +128,7 @@ class GuestController extends Controller
 
     public function exportPdf(Request $request, Event $event): Response
     {
-        $this->authorize('update', $event);
+        $this->authorizeInvitation($event);
 
         $filter = (string) $request->query('response', 'all');
 
@@ -165,7 +165,7 @@ class GuestController extends Controller
 
     public function create(Event $event): View
     {
-        $this->authorize('update', $event);
+        $this->authorizeInvitation($event);
 
         $groups = $event->guestGroups()->get();
         $tables = $event->tables()->orderBy('sort_order')->orderBy('label')->get();
@@ -175,6 +175,8 @@ class GuestController extends Controller
 
     public function store(StoreGuestRequest $request, Event $event): RedirectResponse
     {
+        abort_unless($event->isInvitation(), 404);
+
         $validated = $request->validated();
 
         $markSent = $validated['mark_invitation_sent'] ?? false;
@@ -201,6 +203,7 @@ class GuestController extends Controller
     {
         $guest->loadMissing('event');
         $this->authorize('update', $guest);
+        abort_unless($event->isInvitation(), 404);
 
         $groups = $event->guestGroups()->get();
         $tables = $event->tables()->orderBy('sort_order')->orderBy('label')->get();
@@ -211,6 +214,7 @@ class GuestController extends Controller
     public function update(UpdateGuestRequest $request, Event $event, Guest $guest): RedirectResponse
     {
         $guest->loadMissing('event');
+        abort_unless($event->isInvitation(), 404);
         $validated = $request->validated();
 
         $data = [
@@ -244,6 +248,7 @@ class GuestController extends Controller
         $this->authorize('update', $guest);
 
         abort_unless($guest->event_id === $event->id, 404);
+        abort_unless($event->isInvitation(), 404);
 
         $guest->forceFill([
             'invitation_sent' => true,
@@ -258,6 +263,7 @@ class GuestController extends Controller
         $guest->loadMissing('event.user');
         $this->authorize('update', $guest);
         abort_unless($guest->event_id === $event->id, 404);
+        abort_unless($event->isInvitation(), 404);
         abort_unless($event->ownerHasPremiumEventTools(), 403);
 
         $url = $guest->checkInQrUrl();
@@ -270,7 +276,7 @@ class GuestController extends Controller
 
     public function qrSheet(Event $event, QrCodeService $qrCodeService): Response|RedirectResponse
     {
-        $this->authorize('update', $event);
+        $this->authorizeInvitation($event);
 
         // Navigable link, so send the host to billing the way the tables page
         // does rather than dead-ending on a 403. The per-guest qr() endpoint
@@ -300,11 +306,19 @@ class GuestController extends Controller
     {
         $guest->loadMissing('event');
         $this->authorize('delete', $guest);
+        abort_unless($event->isInvitation(), 404);
 
         $guest->delete();
 
         return redirect()
             ->route('events.guests.index', $event)
             ->with('status', 'guest-deleted');
+    }
+
+    private function authorizeInvitation(Event $event): void
+    {
+        $this->authorize('update', $event);
+
+        abort_unless($event->isInvitation(), 404);
     }
 }

@@ -127,4 +127,17 @@ class PublicTicketLandingTest extends TestCase
 
         $this->assertSame(1, $event->fresh()->invitation_views_count);
     }
+
+    public function test_event_name_in_the_page_title_is_escaped(): void
+    {
+        $event = $this->approvedTicketedEvent([
+            'name' => '</title><img src=x onerror=alert(1)>',
+        ]);
+
+        $response = $this->get(route('events.public', ['slug' => $event->slug]));
+
+        $response->assertOk();
+        $response->assertDontSee('<img src=x', escape: false);
+        $response->assertSee('&lt;/title&gt;&lt;img src=x onerror=alert(1)&gt;', escape: false);
+    }
 }

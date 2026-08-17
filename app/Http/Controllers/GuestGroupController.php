@@ -13,7 +13,7 @@ class GuestGroupController extends Controller
 {
     public function index(Event $event): View
     {
-        $this->authorize('update', $event);
+        $this->authorizeInvitation($event);
 
         $groups = $event->guestGroups()->withCount('guests')->get();
 
@@ -22,6 +22,8 @@ class GuestGroupController extends Controller
 
     public function store(StoreGuestGroupRequest $request, Event $event): RedirectResponse
     {
+        abort_unless($event->isInvitation(), 404);
+
         $event->guestGroups()->create([
             'name' => $request->validated()['name'],
         ]);
@@ -34,6 +36,7 @@ class GuestGroupController extends Controller
     public function update(UpdateGuestGroupRequest $request, Event $event, GuestGroup $guest_group): RedirectResponse
     {
         abort_unless($guest_group->event_id === $event->id, 404);
+        abort_unless($event->isInvitation(), 404);
 
         $guest_group->update([
             'name' => $request->validated()['name'],
@@ -47,6 +50,7 @@ class GuestGroupController extends Controller
     public function destroy(Event $event, GuestGroup $guest_group): RedirectResponse
     {
         abort_unless($guest_group->event_id === $event->id, 404);
+        abort_unless($event->isInvitation(), 404);
 
         $this->authorize('delete', $guest_group);
 
@@ -55,5 +59,12 @@ class GuestGroupController extends Controller
         return redirect()
             ->route('events.guest-groups.index', $event)
             ->with('status', 'guest-group-deleted');
+    }
+
+    private function authorizeInvitation(Event $event): void
+    {
+        $this->authorize('update', $event);
+
+        abort_unless($event->isInvitation(), 404);
     }
 }

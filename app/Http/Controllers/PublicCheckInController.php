@@ -6,6 +6,7 @@ use App\Exceptions\CheckInClosedException;
 use App\Models\EventStaffLink;
 use App\Models\Guest;
 use App\Services\CheckInService;
+use App\Support\CheckInLookup;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -24,7 +25,10 @@ class PublicCheckInController extends Controller
         return view('events.checkin.public-scan', [
             'link' => $link,
             'event' => $link?->event,
-            'isActive' => $link !== null && $link->isActive() && $link->event->ownerHasPremiumEventTools(),
+            'isActive' => $link !== null
+                && $link->isActive()
+                && $link->event->isInvitation()
+                && $link->event->ownerHasPremiumEventTools(),
         ]);
     }
 
@@ -54,7 +58,10 @@ class PublicCheckInController extends Controller
     {
         $link = $this->resolveActiveLink($staffToken);
 
-        $term = (string) $request->query('q', '');
+        $term = CheckInLookup::term((string) $request->query('q', ''));
+        if ($term === null) {
+            return response()->json(['guests' => []]);
+        }
 
         $guests = $link->event->guests()
             ->search($term)
@@ -77,6 +84,7 @@ class PublicCheckInController extends Controller
 
         abort_if($link === null, 404);
         abort_unless($link->isActive(), 403, 'This scanner link has been revoked.');
+        abort_unless($link->event->isInvitation(), 404);
         abort_unless($link->event->ownerHasPremiumEventTools(), 403, 'This event is not on a premium plan.');
 
         return $link;

@@ -202,6 +202,23 @@ class TicketCheckInTest extends TestCase
             ->assertJsonCount(0, 'tickets');
     }
 
+    public function test_lookup_rejects_an_empty_or_one_character_query(): void
+    {
+        $owner = User::factory()->pro()->create();
+        $event = Event::factory()->for($owner)->ticketed()->create();
+        Ticket::factory()->for($event)->create(['attendee_name' => 'Alice Wonder']);
+
+        $this->actingAs($owner)
+            ->getJson(route('events.tickets.checkin.lookup', $event).'?q=')
+            ->assertOk()
+            ->assertJsonCount(0, 'tickets');
+
+        $this->actingAs($owner)
+            ->getJson(route('events.tickets.checkin.lookup', $event).'?q=A')
+            ->assertOk()
+            ->assertJsonCount(0, 'tickets');
+    }
+
     public function test_scanner_page_hides_the_camera_when_it_is_not_the_event_date(): void
     {
         $owner = User::factory()->pro()->create();

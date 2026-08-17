@@ -14,14 +14,14 @@ class GuestImportController extends Controller
 {
     public function create(Event $event): View
     {
-        $this->authorize('update', $event);
+        $this->authorizeInvitation($event);
 
         return view('events.guests.import', compact('event'));
     }
 
     public function store(StoreGuestImportRequest $request, Event $event): RedirectResponse
     {
-        $this->authorize('update', $event);
+        $this->authorizeInvitation($event);
 
         $import = new EventGuestsImport($event);
 
@@ -36,7 +36,7 @@ class GuestImportController extends Controller
 
     public function downloadTemplate(Event $event): StreamedResponse
     {
-        $this->authorize('update', $event);
+        $this->authorizeInvitation($event);
 
         $filename = 'guest-import-template.csv';
 
@@ -52,5 +52,12 @@ class GuestImportController extends Controller
         }, $filename, [
             'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
+    }
+
+    private function authorizeInvitation(Event $event): void
+    {
+        $this->authorize('update', $event);
+
+        abort_unless($event->isInvitation(), 404);
     }
 }

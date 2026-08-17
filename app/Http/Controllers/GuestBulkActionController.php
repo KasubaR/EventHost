@@ -16,6 +16,8 @@ class GuestBulkActionController extends Controller
         Event $event,
         CommunicationService $communicationService
     ): RedirectResponse {
+        abort_unless($event->isInvitation(), 404);
+
         $validated = $request->validated();
         $ids = $validated['guest_ids'];
         $action = $validated['action'];

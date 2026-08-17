@@ -6,6 +6,7 @@ use App\Exceptions\TicketCheckInException;
 use App\Models\EventStaffLink;
 use App\Models\Ticket;
 use App\Services\TicketCheckInService;
+use App\Support\CheckInLookup;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -29,7 +30,10 @@ class PublicTicketCheckInController extends Controller
         return view('events.tickets.checkin.public-scan', [
             'link' => $link,
             'event' => $link?->event,
-            'isActive' => $link !== null && $link->isActive() && $link->event->ownerHasPremiumEventTools(),
+            'isActive' => $link !== null
+                && $link->isActive()
+                && $link->event->isTicketed()
+                && $link->event->ownerHasPremiumEventTools(),
         ]);
     }
 
@@ -59,7 +63,10 @@ class PublicTicketCheckInController extends Controller
     {
         $link = $this->resolveActiveLink($staffToken);
 
-        $term = (string) $request->query('q', '');
+        $term = CheckInLookup::term((string) $request->query('q', ''));
+        if ($term === null) {
+            return response()->json(['tickets' => []]);
+        }
 
         $tickets = $link->event->tickets()
             ->search($term)

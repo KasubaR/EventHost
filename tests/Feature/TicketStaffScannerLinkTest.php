@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Event;
 use App\Models\EventStaffLink;
+use App\Models\Guest;
 use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -163,10 +164,55 @@ class TicketStaffScannerLinkTest extends TestCase
         $link = EventStaffLink::factory()->for($event)->create();
         $ticket = Ticket::factory()->create();
 
+        $this->get(route('tickets.checkin.public.scan', ['staffToken' => $link->token]))
+            ->assertOk()
+            ->assertSee("isn't active", false);
+
+        $this->getJson(route('tickets.checkin.public.lookup', ['staffToken' => $link->token]).'?q=Alice')
+            ->assertNotFound();
+
         $this->postJson(route('tickets.checkin.public.confirm-token', [
             'staffToken' => $link->token,
             'token' => $ticket->public_token,
         ]))->assertNotFound();
+    }
+
+    public function test_a_ticket_events_staff_link_cannot_be_used_on_the_guest_scan_route(): void
+    {
+        $owner = User::factory()->pro()->create();
+        $event = $this->ticketedEventOnToday($owner);
+        $link = EventStaffLink::factory()->for($event)->create();
+        $guest = Guest::factory()->for($event)->create();
+
+        $this->get(route('checkin.public.scan', ['staffToken' => $link->token]))
+            ->assertOk()
+            ->assertSee("isn't active", false);
+
+        $this->getJson(route('checkin.public.lookup', ['staffToken' => $link->token]).'?q=Alice')
+            ->assertNotFound();
+
+        $this->postJson(route('checkin.public.confirm-token', [
+            'staffToken' => $link->token,
+            'token' => $guest->invitation_token,
+        ]))->assertNotFound();
+
+        $this->assertNull($guest->fresh()->checked_in_at);
+    }
+
+    public function test_lookup_rejects_an_empty_query(): void
+    {
+        $owner = User::factory()->pro()->create();
+        $event = Event::factory()->for($owner)->ticketed()->create();
+        $link = EventStaffLink::factory()->for($event)->create();
+        Ticket::factory()->for($event)->create(['attendee_name' => 'Alice Wonder']);
+
+        $this->getJson(route('tickets.checkin.public.lookup', ['staffToken' => $link->token]).'?q=')
+            ->assertOk()
+            ->assertJsonCount(0, 'tickets');
+
+        $this->getJson(route('tickets.checkin.public.lookup', ['staffToken' => $link->token]).'?q=A')
+            ->assertOk()
+            ->assertJsonCount(0, 'tickets');
     }
 
     public function test_lookup_works_via_ticket_staff_link(): void
