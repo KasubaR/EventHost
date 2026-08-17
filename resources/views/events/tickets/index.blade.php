@@ -53,41 +53,27 @@
                 <p>Payment infrastructure is set by EventHost. You choose how the commission is applied.</p>
             </div>
             <div class="evt-section-body">
-                <dl class="tkt-locked-facts">
-                    <div>
-                        <dt>Online ticket sales</dt>
-                        <dd>
-                            <span class="tkt-sales-status {{ $event->ticketSalesAreApproved() ? 'tkt-sales-status--on' : 'tkt-sales-status--off' }}">
-                                {{ $event->ticketSalesAreApproved() ? 'Enabled' : 'Off until EventHost activates this event' }}
-                            </span>
-                        </dd>
-                    </div>
-                    <div>
-                        <dt>Payment provider</dt>
-                        <dd>EventHost / Lenco</dd>
-                    </div>
-                    <div>
-                        <dt>EventHost Ticketing Commission</dt>
-                        <dd>{{ $commissionPercent }}%</dd>
-                    </div>
-                    <div>
-                        <dt>Customer payment method</dt>
-                        <dd>Mobile Money / Bank Transfer</dd>
-                    </div>
+                <div class="tkt-summary-row">
+                    <span class="tkt-sales-status {{ $event->ticketSalesAreApproved() ? 'tkt-sales-status--on' : 'tkt-sales-status--off' }}">
+                        <i class="fa-solid {{ $event->ticketSalesAreApproved() ? 'fa-circle-check' : 'fa-circle-pause' }}"></i>
+                        {{ $event->ticketSalesAreApproved() ? 'Online ticket sales enabled' : 'Off until EventHost activates this event' }}
+                    </span>
+                    <span class="tkt-fact-chip">{{ rtrim(rtrim($commissionPercent, '0'), '.') }}% commission</span>
+                    <span class="tkt-fact-chip"><i class="fa-solid fa-mobile-screen-button"></i> Mobile Money / Bank Transfer</span>
                     @if ($event->agreed_payout_on)
-                        <div>
-                            <dt>Agreed payout date</dt>
-                            <dd>{{ $event->agreed_payout_on->format('j M Y') }}</dd>
-                        </div>
+                        <span class="tkt-fact-chip"><i class="fa-solid fa-calendar-check"></i> Payout {{ $event->agreed_payout_on->format('j M Y') }}</span>
                     @endif
-                </dl>
+                </div>
                 <p class="evt-muted tkt-locked-note">These values cannot be changed per event.</p>
 
                 <form method="post" action="{{ route('events.ticketing.update', $event) }}" class="tkt-commission-form">
                     @csrf
                     @method('PATCH')
                     <div class="profile-field">
-                        <span class="profile-label">Who pays the commission</span>
+                        <div class="tkt-commission-heading">
+                            <h3>Who pays the commission</h3>
+                            <p class="evt-muted">Choose whether buyers or you absorb the {{ $commissionPercent }}% fee.</p>
+                        </div>
                         <div class="evt-product-choice" @if (! $event->canEditCommissionMode()) aria-disabled="true" @endif>
                             <label class="evt-product-choice-card">
                                 <input type="radio" name="commission_mode" value="absorb" class="evt-check-input"

@@ -134,8 +134,9 @@ class TicketingTest extends TestCase
             ->get(route('events.ticket-types.index', $event))
             ->assertOk()
             ->assertSee('VIP', false)
-            ->assertSee('EventHost / Lenco', false)
-            ->assertSee('EventHost Ticketing Commission', false);
+            ->assertSee('commission', false)
+            ->assertSee('Mobile Money / Bank Transfer', false)
+            ->assertDontSee('EventHost / Lenco', false);
     }
 
     public function test_invitation_event_has_no_ticket_types_page(): void
