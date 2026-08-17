@@ -1909,8 +1909,9 @@ body.evt-qr-lightbox-open {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 280px));
     justify-content: center;
-    gap: 16px;
+    gap: 20px;
     width: 100%;
+    padding: 8px 0;
 }
 
 .evt-kind-card {
@@ -1928,14 +1929,30 @@ body.evt-qr-lightbox-open {
     text-align: center;
     text-decoration: none;
     box-shadow: var(--card-shadow, none);
+    transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+                border-color 0.22s ease,
+                background 0.22s ease;
 }
 
 .evt-kind-card:hover,
 .evt-kind-card:focus-visible {
-    outline: 2px solid var(--accent, #1e47bb);
-    outline-offset: 3px;
+    transform: translateY(-4px);
     border-color: var(--accent, #1e47bb);
     background: rgba(30, 71, 187, 0.05);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #1e47bb) 28%, transparent),
+                0 12px 28px rgba(30, 71, 187, 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .evt-kind-card {
+        transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .evt-kind-card:hover,
+    .evt-kind-card:focus-visible {
+        transform: none;
+    }
 }
 
 .evt-kind-card-icon {
