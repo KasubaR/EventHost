@@ -33,12 +33,25 @@
         <div class="evt-flash evt-flash--info"><i class="fa-solid fa-circle-info"></i> Guests and RSVPs are managed per event. Pick an event below, then choose "Guests &amp; RSVPs" on it.</div>
     @endif
 
+    <nav class="evt-kind-filter" aria-label="Filter by event kind">
+        <a href="{{ route('events.index') }}" class="{{ $kind === null ? 'is-active' : '' }}">All</a>
+        <a href="{{ route('events.index', ['kind' => 'invitation']) }}" class="{{ $kind === \App\Enums\EventProductKind::Invitation ? 'is-active' : '' }}">Invitation / RSVP</a>
+        <a href="{{ route('events.index', ['kind' => 'ticketed']) }}" class="{{ $kind === \App\Enums\EventProductKind::Ticketed ? 'is-active' : '' }}">Ticketed</a>
+    </nav>
+
     @if ($published->total() === 0 && $drafts->total() === 0)
         @if (request('from') === 'guests')
             <div class="dash-empty">
                 <div class="dash-empty-icon"><i class="fa-solid fa-users"></i></div>
                 <h2>No events yet</h2>
                 <p>You need an event before you can manage guests and RSVPs. Create one to get started.</p>
+                <a href="{{ route('events.create') }}" class="btn-primary"><i class="fa-solid fa-plus"></i> Create event</a>
+            </div>
+        @elseif ($kind !== null)
+            <div class="dash-empty">
+                <div class="dash-empty-icon"><i class="fa-solid {{ $kind === \App\Enums\EventProductKind::Ticketed ? 'fa-ticket' : 'fa-envelope-open-text' }}"></i></div>
+                <h2>No {{ $kind === \App\Enums\EventProductKind::Ticketed ? 'ticketed events' : 'invitations' }} yet</h2>
+                <p>Create one to see it here.</p>
                 <a href="{{ route('events.create') }}" class="btn-primary"><i class="fa-solid fa-plus"></i> Create event</a>
             </div>
         @else

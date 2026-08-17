@@ -40,7 +40,10 @@
             </div>
             <div class="evt-card-actions">
                 @if ($event->isTicketed())
-                    <a href="{{ route('events.tickets.overview', $event) }}" class="btn-primary"><i class="fa-solid fa-ticket"></i> Tickets</a>
+                    {{-- While still setting up (Draft/Rejected), send them to the same
+                         Tickets step the creation wizard uses rather than the empty
+                         ticketing dashboard — see plans/ticketing.md wizard reorder. --}}
+                    <a href="{{ route($event->canSubmitTicketing() ? 'events.ticket-types.index' : 'events.tickets.overview', $event) }}" class="btn-primary"><i class="fa-solid fa-ticket"></i> Tickets</a>
                 @else
                     <a href="{{ route('events.guests.index', $event) }}" class="btn-primary"><i class="fa-solid fa-users"></i> Guests & RSVPs</a>
                 @endif
@@ -245,7 +248,7 @@
         @if ($event->isTicketed() && ! $event->ticketSalesAreApproved())
             <div class="evt-section">
                 <div class="evt-section-body">
-                    <p class="evt-muted">{{ $event->ticketing_status->label() }}. <a href="{{ route('events.tickets.overview', $event) }}">Manage tickets</a> — sales go live after EventHost activates them.</p>
+                    <p class="evt-muted">{{ $event->ticketing_status->label() }}. <a href="{{ route($event->canSubmitTicketing() ? 'events.ticket-types.index' : 'events.tickets.overview', $event) }}">Manage tickets</a> — sales go live after EventHost activates them.</p>
                 </div>
             </div>
         @elseif (! $event->is_published)

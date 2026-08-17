@@ -21,9 +21,15 @@
         </div>
     </x-slot>
 
-    @include('events.tickets.partials.nav', ['event' => $event, 'active' => 'settings'])
+    @if ($setupMode)
+        @include('events.partials.steps', ['current' => 3, 'ticketed' => true])
+    @else
+        @include('events.tickets.partials.nav', ['event' => $event, 'active' => 'settings'])
+    @endif
 
-    @if (session('status') === 'ticket-type-created')
+    @if (session('status') === 'draft-saved')
+        <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Draft saved — add your ticket types below.</div>
+    @elseif (session('status') === 'ticket-type-created')
         <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Ticket type added.</div>
     @elseif (session('status') === 'ticket-type-updated')
         <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Ticket type saved.</div>
@@ -40,12 +46,7 @@
     @endif
 
     <div class="evt-stack">
-        @if ($event->ticketing_status === \App\Enums\TicketingStatus::Rejected && $event->ticketing_rejection_note)
-            <div class="evt-flash evt-flash--warn">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-                Activation was declined: {{ $event->ticketing_rejection_note }}
-            </div>
-        @endif
+        @include('events.tickets.partials.rejection-note', ['event' => $event])
 
         <div class="evt-section">
             <div class="evt-section-head">
@@ -141,35 +142,15 @@
             </div>
         </div>
 
-        @if ($event->canSubmitTicketing())
+        @include('events.tickets.partials.activation-panel', ['event' => $event, 'ticketTypes' => $ticketTypes])
+
+        @if ($setupMode)
             <div class="evt-section">
-                <div class="evt-section-head">
-                    <h2>Request activation</h2>
-                    <p>EventHost reviews ticketed events before buyers can pay.</p>
-                </div>
                 <div class="evt-section-body evt-actions-bar">
-                    <form method="post" action="{{ route('events.ticketing.submit', $event) }}" data-confirm="Submit this event for EventHost to activate ticket sales?">
-                        @csrf
-                        <button type="submit" class="btn-primary" @disabled($ticketTypes->where('is_active', true)->isEmpty())>
-                            <i class="fa-solid fa-paper-plane"></i> Submit for activation
-                        </button>
-                    </form>
-                    @if ($ticketTypes->where('is_active', true)->isEmpty())
-                        <span class="evt-muted">Add an active ticket type first.</span>
-                    @endif
-                </div>
-            </div>
-        @elseif ($event->ticketing_status === \App\Enums\TicketingStatus::PendingReview)
-            <div class="evt-section">
-                <div class="evt-section-body">
-                    <p class="evt-muted">Submitted {{ $event->ticketing_submitted_at?->format('j M Y, H:i') }}. Ticket sales stay off until EventHost approves.</p>
-                </div>
-            </div>
-        @elseif ($event->ticketSalesAreApproved())
-            <div class="evt-section">
-                <div class="evt-section-body">
-                    <p class="evt-muted">Public ticket page: <a href="{{ route('events.public', $event->slug) }}" class="evt-public-url">{{ url('/e/'.$event->slug) }}</a></p>
-                    <p class="evt-muted">Checkout is not live yet — buyers cannot pay until the next ticketing phase ships.</p>
+                    <a href="{{ route('events.edit', $event) }}" class="evt-btn-outline">
+                        Continue to event details <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                    <span class="evt-muted">Come back to Settings any time to add more ticket types.</span>
                 </div>
             </div>
         @endif

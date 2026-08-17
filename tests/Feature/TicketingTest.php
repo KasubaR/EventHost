@@ -571,7 +571,7 @@ class TicketingTest extends TestCase
         $this->assertSame('0.00', TicketingSettings::cancellationFeePercent());
     }
 
-    public function test_ticketed_store_skips_choose_template_and_lands_on_edit(): void
+    public function test_ticketed_store_skips_choose_template_and_lands_on_tickets_step(): void
     {
         $user = User::factory()->create();
 
@@ -585,7 +585,9 @@ class TicketingTest extends TestCase
 
         $event = Event::query()->where('user_id', $user->id)->firstOrFail();
 
-        $response->assertRedirect(route('events.edit', $event));
+        // Wizard step 3 (Tickets) is the landing point now, not the edit form
+        // (step 4) — see plans/ticketing.md's wizard reorder.
+        $response->assertRedirect(route('events.ticket-types.index', $event));
         $response->assertSessionHas('status', 'draft-saved');
     }
 

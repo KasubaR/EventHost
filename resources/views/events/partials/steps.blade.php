@@ -44,9 +44,20 @@
                 <span class="evt-step-label">Event details</span>
             </li>
             <li class="evt-steps-connector" aria-hidden="true"></li>
-            <li class="evt-step {{ $current >= 3 ? 'evt-step--active' : '' }}">
-                <span class="evt-step-num" aria-hidden="true">3</span>
-                <span class="evt-step-label">Tickets &amp; publish</span>
+            <li class="evt-step {{ $current === 3 ? 'evt-step--active' : ($current > 3 ? 'evt-step--done' : '') }}">
+                <span class="evt-step-num" aria-hidden="true">
+                    @if ($current > 3)
+                        <i class="fa-solid fa-check"></i>
+                    @else
+                        3
+                    @endif
+                </span>
+                <span class="evt-step-label">Tickets</span>
+            </li>
+            <li class="evt-steps-connector" aria-hidden="true"></li>
+            <li class="evt-step {{ $current >= 4 ? 'evt-step--active' : '' }}">
+                <span class="evt-step-num" aria-hidden="true">4</span>
+                <span class="evt-step-label">Review details &amp; publish</span>
             </li>
         </ol>
     </nav>

@@ -24,6 +24,10 @@ class EventTicketTypeController extends Controller
             'event' => $event,
             'ticketTypes' => $event->ticketTypes,
             'commissionPercent' => TicketingSettings::commissionPercent(),
+            // Draft/Rejected = still setting up, never submitted (or fixing a
+            // rejection) — show the creation-wizard chrome instead of the
+            // ticketing dashboard tabs. Same rule as Event::canSubmitTicketing().
+            'setupMode' => $event->canSubmitTicketing(),
         ]);
     }
 

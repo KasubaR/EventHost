@@ -25,6 +25,9 @@
                 <p class="dph-sub">{{ $event->name }}</p>
             </div>
             <div class="evt-card-actions">
+                @if ($event->isTicketed())
+                    <a href="{{ route('events.ticket-types.index', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-ticket"></i> Back to tickets</a>
+                @endif
                 <a href="{{ route('events.show', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-eye"></i> View</a>
                 <a href="{{ route('events.index') }}" class="evt-btn-outline"><i class="fa-solid fa-list"></i> All events</a>
             </div>
@@ -32,7 +35,7 @@
     </x-slot>
 
     @include('events.partials.steps', [
-        'current' => $event->isTicketed() ? 3 : 4,
+        'current' => 4,
         'ticketed' => $event->isTicketed(),
     ])
 
@@ -126,7 +129,6 @@
                     <i class="fa-solid fa-floppy-disk"></i> Save Draft
                 </button>
                 @if ($event->isTicketed())
-                    <a href="{{ route('events.ticket-types.index', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-ticket"></i> Tickets</a>
                     <span class="evt-muted">Ticketed events go live after EventHost activates sales — they do not use event credits.</span>
                 @elseif (! $event->is_published)
                     <button type="button" class="btn-primary" data-save-all data-publish data-requires-preview>
@@ -146,16 +148,9 @@
             </div>
         </div>
 
-        @if ($event->isTicketed() && ! $event->is_published)
-            <div class="evt-section evt-per-form-actions">
-                <div class="evt-section-head">
-                    <h2>Ticket sales</h2>
-                    <p>This page stays a draft until EventHost activates ticket sales.</p>
-                </div>
-                <div class="evt-section-body evt-actions-bar">
-                    <a href="{{ route('events.ticket-types.index', $event) }}" class="btn-primary"><i class="fa-solid fa-ticket"></i> Set up tickets</a>
-                </div>
-            </div>
+        @if ($event->isTicketed())
+            @include('events.tickets.partials.rejection-note', ['event' => $event])
+            @include('events.tickets.partials.activation-panel', ['event' => $event, 'ticketTypes' => $ticketTypes])
         @elseif (! $event->is_published)
             <div class="evt-section evt-per-form-actions">
                 <div class="evt-section-head">

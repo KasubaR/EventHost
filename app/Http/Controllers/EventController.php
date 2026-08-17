@@ -36,10 +36,13 @@ class EventController extends Controller
 
     public function index(): View
     {
+        $kind = EventProductKind::tryFrom((string) request('kind'));
+
         // Two independent paginators so a long draft list never pushes published
         // events off the page. Distinct page names keep their ?page params apart.
         $mine = fn () => Event::query()
             ->where('user_id', auth()->id())
+            ->when($kind, fn ($query) => $query->where('product_kind', $kind))
             ->orderByDesc('event_date')
             ->orderByDesc('created_at');
 
@@ -51,7 +54,7 @@ class EventController extends Controller
             ->paginate(10, ['*'], 'draft_page')
             ->withQueryString();
 
-        return view('events.index', compact('published', 'drafts'));
+        return view('events.index', compact('published', 'drafts', 'kind'));
     }
 
     public function create(Request $request): View|RedirectResponse
@@ -129,9 +132,10 @@ class EventController extends Controller
         // Ticketed events have no invitation layout to pick — they render the
         // one fixed public template (events/tickets/landing.blade.php), so
         // skip the preferred-template shortcut and the choose-template step
-        // entirely and land straight on the edit form.
+        // entirely. They land on the Tickets step (wizard step 3) instead of
+        // back on the details form — see plans/ticketing.md's wizard reorder.
         if ($event->isTicketed()) {
-            return redirect()->route('events.edit', $event)->with('status', 'draft-saved');
+            return redirect()->route('events.ticket-types.index', $event)->with('status', 'draft-saved');
         }
 
         if ($preferredTemplateId !== null) {
@@ -177,12 +181,17 @@ class EventController extends Controller
             $customizationToken = md5(json_encode($event->invitation_customization) ?: '');
         }
 
+        // Only ticketed events render the activation panel (step 4's closing
+        // action); everyone else gets null and the partial is never included.
+        $ticketTypes = $event->isTicketed() ? $event->loadMissing('ticketTypes')->ticketTypes : null;
+
         return view('events.edit', compact(
             'event',
             'invitationMerged',
             'templateFingerprint',
             'customizationToken',
             'publishCostsCredit',
+            'ticketTypes',
         ));
     }
 
