@@ -396,7 +396,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 10px;
+    padding: 14px 10px;
     border: 2px solid var(--line, #e0e0e8);
     border-radius: var(--radius-sm, 6px);
     font-size: 13px;
@@ -408,6 +408,13 @@
     border-color: var(--accent, #1e47bb);
     color: var(--accent, #1e47bb);
     background: rgba(30, 71, 187, 0.06);
+}
+
+.tkc-provider-logo {
+    height: 26px;
+    width: auto;
+    max-width: 100%;
+    display: block;
 }
 
 /* ── Summary ── */

@@ -45,16 +45,16 @@
                     <h2 class="tkc-section-title">Your details</h2>
                     <div class="tkc-field">
                         <label class="tkc-label" for="tkc-name">Full name</label>
-                        <input id="tkc-name" type="text" class="tkc-input" name="name" required autocomplete="name">
+                        <input id="tkc-name" type="text" class="tkc-input" name="name" required autocomplete="name" value="{{ old('name', $buyer->name ?? '') }}">
                     </div>
                     <div class="tkc-field">
                         <label class="tkc-label" for="tkc-email">Email</label>
-                        <input id="tkc-email" type="email" class="tkc-input" name="email" required autocomplete="email">
+                        <input id="tkc-email" type="email" class="tkc-input" name="email" required autocomplete="email" value="{{ old('email', $buyer->email ?? '') }}">
                         <p class="tkc-field-note">Your tickets and QR codes are sent here.</p>
                     </div>
                     <div class="tkc-field">
                         <label class="tkc-label" for="tkc-phone">Phone (optional)</label>
-                        <input id="tkc-phone" type="tel" class="tkc-input" name="phone" autocomplete="tel">
+                        <input id="tkc-phone" type="tel" class="tkc-input" name="phone" autocomplete="tel" value="{{ old('phone', $buyer->phone ?? '') }}">
                     </div>
 
                     <h2 class="tkc-section-title">Payment method</h2>
@@ -73,16 +73,20 @@
                         <div class="tkc-provider-grid">
                             <label class="tkc-provider-option">
                                 <input type="radio" name="provider" value="mtn" checked>
-                                <span class="tkc-provider-card">MTN Money</span>
+                                <span class="tkc-provider-card">
+                                    <img src="{{ asset('images/icon/Mtn-MoMo-Pay.svg') }}" alt="MTN MoMo" class="tkc-provider-logo">
+                                </span>
                             </label>
                             <label class="tkc-provider-option">
                                 <input type="radio" name="provider" value="airtel">
-                                <span class="tkc-provider-card">Airtel Money</span>
+                                <span class="tkc-provider-card">
+                                    <img src="{{ asset('images/icon/Airtel-Money-1.svg') }}" alt="Airtel Money" class="tkc-provider-logo">
+                                </span>
                             </label>
                         </div>
                         <div class="tkc-field">
                             <label class="tkc-label" for="tkc-momo-phone">Mobile money number</label>
-                            <input id="tkc-momo-phone" type="tel" class="tkc-input" name="momo_phone" placeholder="097 123 4567">
+                            <input id="tkc-momo-phone" type="tel" class="tkc-input" name="momo_phone" placeholder="097 123 4567" value="{{ old('momo_phone', $buyer->phone ?? '') }}">
                         </div>
                     </div>
 
@@ -94,6 +98,10 @@
                             </div>
                         </div>
                     @endif
+
+                    <button type="button" class="btn-primary tkc-pay-btn" id="tkcPayBtn">
+                        <i class="fa-solid fa-lock" aria-hidden="true"></i> Pay securely
+                    </button>
                 </section>
 
                 <aside class="tkc-summary-card">
@@ -114,9 +122,6 @@
                         <span>Total</span>
                         <span>K{{ number_format($buyerTotal, 2) }}</span>
                     </div>
-                    <button type="button" class="btn-primary tkc-pay-btn" id="tkcPayBtn">
-                        <i class="fa-solid fa-lock" aria-hidden="true"></i> Pay securely
-                    </button>
                     <p class="tkc-summary-note">
                         <i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Secured by Lenco.
                     </p>
