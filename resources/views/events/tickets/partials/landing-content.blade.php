@@ -52,31 +52,40 @@
     </div>
 @endif
 
-<div class="tev-wrap evt-public-page">
+<div class="tev-page">
     <div class="tev-hero @if (! $event->cover_image) tev-hero--fallback @endif">
         @if ($event->cover_image)
             <img src="{{ $event->cover_image_url }}" alt="" class="tev-hero-img">
         @endif
         <div class="tev-hero-scrim" aria-hidden="true"></div>
-        <div class="tev-hero-content">
-            <span class="tev-hero-type">{{ $typeLabels[$event->event_type] ?? $event->event_type }} &middot; Tickets</span>
-            <h1 class="tev-hero-title">{{ $event->name }}</h1>
-            <ul class="tev-hero-meta">
-                <li>
-                    <i class="fa-regular fa-calendar" aria-hidden="true"></i>
-                    {{ $event->event_date->format('l, F j, Y') }}
-                    @if ($event->event_time)
-                        &middot; {{ \Illuminate\Support\Str::substr($event->event_time, 0, 5) }}
-                    @endif
-                </li>
-                @if ($event->venue)
-                    <li><i class="fa-solid fa-location-dot" aria-hidden="true"></i> {{ $event->venue }}</li>
+        <div class="tev-hero-inner">
+            <div class="tev-hero-content">
+                <span class="tev-hero-type">{{ $typeLabels[$event->event_type] ?? $event->event_type }} &middot; Tickets</span>
+                <h1 class="tev-hero-title">{{ $event->name }}</h1>
+                @if ($event->description)
+                    <p class="tev-hero-lead">{{ \Illuminate\Support\Str::limit(trim(preg_replace('/\s+/', ' ', strip_tags((string) $event->description))), 160) }}</p>
                 @endif
-            </ul>
+                <ul class="tev-hero-meta">
+                    <li>
+                        <i class="fa-regular fa-calendar" aria-hidden="true"></i>
+                        {{ $event->event_date->format('l, F j, Y') }}
+                    </li>
+                    @if ($event->event_time)
+                        <li>
+                            <i class="fa-regular fa-clock" aria-hidden="true"></i>
+                            {{ \Illuminate\Support\Str::substr($event->event_time, 0, 5) }}
+                        </li>
+                    @endif
+                    @if ($event->venue)
+                        <li><i class="fa-solid fa-location-dot" aria-hidden="true"></i> {{ $event->venue }}</li>
+                    @endif
+                </ul>
+            </div>
         </div>
     </div>
 
-    <div class="tev-layout">
+    <div class="tev-wrap">
+        <div class="tev-layout">
         <div class="tev-main">
             @if ($event->description)
                 <section class="tkc-card tev-about">
@@ -200,5 +209,6 @@
                 </div>
             </div>
         </aside>
+        </div>
     </div>
 </div>

@@ -642,6 +642,8 @@ class TicketingTest extends TestCase
         $response->assertOk();
         $response->assertSee('General', false);
         $response->assertSee('Preview — this is exactly how your ticket page looks to buyers.', false);
+        $response->assertDontSee('Back to edit', false);
+        $response->assertDontSee('evt-preview-bar', false);
     }
 
     /**

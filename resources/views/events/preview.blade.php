@@ -43,33 +43,31 @@
 
 @section('content')
 
-    <div class="evt-preview-bar" role="navigation" aria-label="Invitation preview">
-        <a href="{{ $back['route'] }}" class="evt-preview-bar-back">
-            <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
-            <span>{{ $back['label'] }}</span>
-        </a>
-
-        <span class="evt-preview-bar-name">{{ $event->name }}</span>
-
-        @if ($event->isTicketed() && ! $event->is_published)
-            <a href="{{ route('events.ticket-types.index', $event) }}" class="evt-preview-bar-publish">
-                <i class="fa-solid fa-ticket" aria-hidden="true"></i> Set up tickets
+    @unless ($event->isTicketed())
+        <div class="evt-preview-bar" role="navigation" aria-label="Invitation preview">
+            <a href="{{ $back['route'] }}" class="evt-preview-bar-back">
+                <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+                <span>{{ $back['label'] }}</span>
             </a>
-        @elseif ($event->is_published)
-            <span class="evt-preview-bar-note">
-                <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
-                {{ $event->is_public ? 'Live' : 'Published — private' }}
-            </span>
-        @else
-            <form method="post" action="{{ route('events.publish', $event) }}">
-                @csrf
-                @method('patch')
-                <button type="submit" class="evt-preview-bar-publish">
-                    <i class="fa-solid fa-bullhorn" aria-hidden="true"></i> Publish event
-                </button>
-            </form>
-        @endif
-    </div>
+
+            <span class="evt-preview-bar-name">{{ $event->name }}</span>
+
+            @if ($event->is_published)
+                <span class="evt-preview-bar-note">
+                    <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+                    {{ $event->is_public ? 'Live' : 'Published — private' }}
+                </span>
+            @else
+                <form method="post" action="{{ route('events.publish', $event) }}">
+                    @csrf
+                    @method('patch')
+                    <button type="submit" class="evt-preview-bar-publish">
+                        <i class="fa-solid fa-bullhorn" aria-hidden="true"></i> Publish event
+                    </button>
+                </form>
+            @endif
+        </div>
+    @endunless
 
     @unless ($event->is_public)
         <div class="evt-session-banner evt-session-banner--info">
