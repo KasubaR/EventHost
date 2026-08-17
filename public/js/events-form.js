@@ -340,7 +340,7 @@ function initMap() {
 }
 
 function bindProductKindToggle() {
-    const radios = document.querySelectorAll('input[name="product_kind"]');
+    const radios = document.querySelectorAll('input[type="radio"][name="product_kind"]');
     if (radios.length === 0) {
         return;
     }
@@ -349,7 +349,7 @@ function bindProductKindToggle() {
     const ticketedPanels = document.querySelectorAll('[data-product-panel="ticketed"]');
 
     const apply = () => {
-        const selected = document.querySelector('input[name="product_kind"]:checked');
+        const selected = document.querySelector('input[type="radio"][name="product_kind"]:checked');
         const isTicketed = selected instanceof HTMLInputElement && selected.value === 'ticketed';
 
         invitationPanels.forEach((panel) => {

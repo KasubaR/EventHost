@@ -62,6 +62,8 @@ class TicketingTest extends TestCase
             ->assertSee('name="name"', false)
             ->assertSee('Ticketed event', false)
             ->assertDontSee('Cover image', false)
+            ->assertDontSee('Guest settings', false)
+            ->assertDontSee('RSVP deadline', false)
             ->assertDontSee('Invitation / RSVP', false);
     }
 
@@ -418,6 +420,60 @@ class TicketingTest extends TestCase
         $this->assertNull($event->cover_image);
     }
 
+    public function test_ticketed_store_ignores_invitation_guest_settings(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->post(route('events.store'), [
+            'name' => 'Summer Festival',
+            'event_type' => 'corporate',
+            'product_kind' => EventProductKind::Ticketed->value,
+            'event_date' => now()->addMonth()->format('Y-m-d'),
+            'event_time' => '18:00',
+            'is_public' => '0',
+            'allow_plus_one' => '1',
+            'rsvp_deadline' => now()->addDays(3)->format('Y-m-d\TH:i'),
+            'guest_limit' => '50',
+        ]);
+
+        $event = Event::query()->where('user_id', $user->id)->firstOrFail();
+        $this->assertTrue((bool) $event->is_public);
+        $this->assertFalse((bool) $event->allow_plus_one);
+        $this->assertNull($event->rsvp_deadline);
+        $this->assertNull($event->guest_limit);
+    }
+
+    public function test_ticketed_event_update_ignores_invitation_guest_settings(): void
+    {
+        $user = User::factory()->create();
+        $event = Event::factory()->for($user)->ticketed()->create([
+            'is_public' => true,
+            'allow_plus_one' => false,
+            'show_guest_list' => false,
+            'rsvp_deadline' => null,
+            'guest_limit' => null,
+        ]);
+
+        $this->actingAs($user)->patch(route('events.update', $event), [
+            'name' => $event->name,
+            'event_type' => $event->event_type,
+            'event_date' => $event->event_date->format('Y-m-d'),
+            'event_time' => '18:00',
+            'is_public' => '0',
+            'allow_plus_one' => '1',
+            'show_guest_list' => '1',
+            'rsvp_deadline' => now()->addDays(3)->format('Y-m-d\TH:i'),
+            'guest_limit' => '50',
+        ])->assertSessionHasNoErrors();
+
+        $event->refresh();
+        $this->assertTrue((bool) $event->is_public);
+        $this->assertFalse((bool) $event->allow_plus_one);
+        $this->assertFalse((bool) $event->show_guest_list);
+        $this->assertNull($event->rsvp_deadline);
+        $this->assertNull($event->guest_limit);
+    }
+
     public function test_host_cannot_overwrite_ticketed_hero_via_event_update(): void
     {
         Storage::fake('public');
@@ -551,6 +607,8 @@ class TicketingTest extends TestCase
             ->assertOk()
             ->assertDontSee('Choose invitation layout', false)
             ->assertDontSee('Cover image', false)
+            ->assertDontSee('Guest settings', false)
+            ->assertDontSee('RSVP deadline', false)
             ->assertSee('Preview event', false);
     }
 

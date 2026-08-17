@@ -108,6 +108,7 @@ class EventController extends Controller
             $data['is_published'] = false;
 
             if ($productKind === EventProductKind::Ticketed) {
+                unset($data['rsvp_deadline'], $data['guest_limit'], $data['allow_plus_one'], $data['show_guest_list']);
                 $data['ticketing_status'] = TicketingStatus::Draft;
                 $data['commission_mode'] = CommissionMode::Absorb;
                 $data['is_public'] = true;
@@ -230,6 +231,16 @@ class EventController extends Controller
 
                 // Never a column — it is the receipt for an upload that already happened.
                 unset($data['staged_media'], $data['cover_image']);
+
+                if ($event->isTicketed()) {
+                    unset(
+                        $data['is_public'],
+                        $data['rsvp_deadline'],
+                        $data['guest_limit'],
+                        $data['allow_plus_one'],
+                        $data['show_guest_list'],
+                    );
+                }
 
                 if ($newCoverPath !== null) {
                     $data['cover_image'] = $newCoverPath;

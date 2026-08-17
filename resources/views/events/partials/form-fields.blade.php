@@ -31,9 +31,11 @@
     $productKindLocked = $event !== null || $selectedProductKind instanceof \App\Enums\EventProductKind;
 @endphp
 
-<input type="hidden" name="is_public" value="0">
-<input type="hidden" name="allow_plus_one" value="0">
-<input type="hidden" name="show_guest_list" value="0">
+@unless ($isTicketed)
+    <input type="hidden" name="is_public" value="0">
+    <input type="hidden" name="allow_plus_one" value="0">
+    <input type="hidden" name="show_guest_list" value="0">
+@endunless
 
 <div class="evt-stack">
 
@@ -232,11 +234,15 @@
         </div>
     </div>
 
-    <div class="evt-section" data-product-panel="invitation" @if ($isTicketed) hidden @endif>
-        <div class="evt-section-head">
-            <h2>Guest settings</h2>
-            <p>RSVP rules and visibility (RSVP form comes later).</p>
-        </div>
+    {{-- RSVP / guest-list rules belong to invitation events. Ticketed events
+         sell through checkout, so this block is omitted once the product kind
+         is locked (create after the chooser, and every edit). --}}
+    @if (! $productKindLocked || ! $isTicketed)
+        <div class="evt-section" data-product-panel="invitation" @if ($isTicketed) hidden @endif>
+            <div class="evt-section-head">
+                <h2>Guest settings</h2>
+                <p>RSVP rules and visibility (RSVP form comes later).</p>
+            </div>
         <div class="evt-section-body profile-fields">
             <label class="profile-label evt-check-label">
                 <input type="checkbox" name="is_public" value="1" class="profile-input evt-check-input"
@@ -294,6 +300,7 @@
                 Show guest list on invitation
             </label>
         </div>
-    </div>
+        </div>
+    @endif
 
 </div>
