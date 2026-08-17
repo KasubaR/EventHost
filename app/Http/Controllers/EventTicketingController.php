@@ -41,13 +41,18 @@ class EventTicketingController extends Controller
         try {
             $activation->submit($event);
         } catch (TicketingActivationException $e) {
+            // Validation failure (no active ticket type) — send them back to
+            // where they can fix it, not away to My Events.
             return redirect()
                 ->route('events.ticket-types.index', $event)
                 ->withErrors(['ticketing' => $e->getMessage()]);
         }
 
+        // Success leaves the wizard entirely — My Events, not back to the
+        // Tickets page, since there's nothing further to do here until
+        // EventHost reviews it.
         return redirect()
-            ->route('events.ticket-types.index', $event)
+            ->route('events.index')
             ->with('status', 'ticketing-submitted');
     }
 }

@@ -246,7 +246,7 @@ class TicketingTest extends TestCase
 
         $this->actingAs($user)
             ->post(route('events.ticketing.submit', $event))
-            ->assertRedirect(route('events.ticket-types.index', $event))
+            ->assertRedirect(route('events.index'))
             ->assertSessionHas('status', 'ticketing-submitted');
 
         $this->assertSame(TicketingStatus::PendingReview, $event->fresh()->ticketing_status);

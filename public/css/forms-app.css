@@ -436,6 +436,12 @@
   color: var(--pink);
   margin: 0 auto 14px;
 }
+/* For a confirm dialog over a normal forward action rather than something
+   destructive — e.g. "Submit for activation" (see activation-panel.blade.php). */
+.profile-modal-icon--accent {
+  background: rgba(30,71,187,0.1);
+  color: var(--accent);
+}
 .profile-modal-header h3 {
   font-family: 'Outfit', sans-serif;
   font-size: 18px;

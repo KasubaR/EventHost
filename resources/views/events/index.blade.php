@@ -20,6 +20,8 @@
 
     @if (session('status') === 'event-deleted')
         <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Event deleted.</div>
+    @elseif (session('status') === 'ticketing-submitted')
+        <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Submitted for EventHost review. Ticket sales stay off until we approve.</div>
     @elseif (session('status') === 'no-event-credits')
         <div class="evt-flash evt-flash--warn"><i class="fa-solid fa-triangle-exclamation"></i> You have no event credits. <a href="{{ route('billing.show') }}">Buy an event credit</a> to publish.</div>
     @elseif (session('status') === 'draft-limit')
@@ -34,9 +36,18 @@
     @endif
 
     <nav class="evt-kind-filter" aria-label="Filter by event kind">
-        <a href="{{ route('events.index') }}" class="{{ $kind === null ? 'is-active' : '' }}">All</a>
-        <a href="{{ route('events.index', ['kind' => 'invitation']) }}" class="{{ $kind === \App\Enums\EventProductKind::Invitation ? 'is-active' : '' }}">Invitation / RSVP</a>
-        <a href="{{ route('events.index', ['kind' => 'ticketed']) }}" class="{{ $kind === \App\Enums\EventProductKind::Ticketed ? 'is-active' : '' }}">Ticketed</a>
+        <a href="{{ route('events.index') }}" class="evt-kind-filter-tab {{ $kind === null ? 'is-active' : '' }}">
+            <i class="fa-solid fa-layer-group" aria-hidden="true"></i>
+            All
+        </a>
+        <a href="{{ route('events.index', ['kind' => 'invitation']) }}" class="evt-kind-filter-tab {{ $kind === \App\Enums\EventProductKind::Invitation ? 'is-active' : '' }}">
+            <i class="fa-solid fa-envelope-open-text" aria-hidden="true"></i>
+            Invitation / RSVP
+        </a>
+        <a href="{{ route('events.index', ['kind' => 'ticketed']) }}" class="evt-kind-filter-tab {{ $kind === \App\Enums\EventProductKind::Ticketed ? 'is-active' : '' }}">
+            <i class="fa-solid fa-ticket" aria-hidden="true"></i>
+            Ticketed
+        </a>
     </nav>
 
     @if ($published->total() === 0 && $drafts->total() === 0)

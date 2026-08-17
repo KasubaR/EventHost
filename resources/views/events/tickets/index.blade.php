@@ -36,8 +36,6 @@
         <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Ticket type removed.</div>
     @elseif (session('status') === 'ticketing-settings-updated')
         <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Ticket sales settings saved.</div>
-    @elseif (session('status') === 'ticketing-submitted')
-        <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Submitted for EventHost review. Ticket sales stay off until we approve.</div>
     @endif
 
     @if ($errors->any())
