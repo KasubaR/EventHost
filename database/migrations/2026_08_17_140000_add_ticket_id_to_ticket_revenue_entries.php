@@ -25,8 +25,12 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('ticket_revenue_entries', function (Blueprint $table) {
+            // FK first: MySQL refuses to drop an index a foreign key still
+            // depends on (errno 1553), so dropUnique() before dropForeign()
+            // fails outright.
+            $table->dropForeign(['ticket_id']);
             $table->dropUnique(['ticket_id', 'type']);
-            $table->dropConstrainedForeignId('ticket_id');
+            $table->dropColumn('ticket_id');
         });
     }
 };
