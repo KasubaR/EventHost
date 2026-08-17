@@ -42,6 +42,33 @@ class EventManagementTest extends TestCase
             ->assertSeeInOrder(['Published', 'Live Gala', 'Drafts', 'Sketch Party'], false);
     }
 
+    public function test_events_index_has_separate_kind_tabs_and_filters_the_list(): void
+    {
+        $user = User::factory()->create();
+        Event::factory()->for($user)->create(['name' => 'Garden RSVP']);
+        Event::factory()->for($user)->ticketed()->create(['name' => 'Concert Tickets']);
+
+        $this->actingAs($user)
+            ->get(route('events.index'))
+            ->assertOk()
+            ->assertSee('Garden RSVP')
+            ->assertSee('Concert Tickets')
+            ->assertSee(route('events.index', ['kind' => 'invitation']), escape: false)
+            ->assertSee(route('events.index', ['kind' => 'ticketed']), escape: false);
+
+        $this->actingAs($user)
+            ->get(route('events.index', ['kind' => 'invitation']))
+            ->assertOk()
+            ->assertSee('Garden RSVP')
+            ->assertDontSee('Concert Tickets');
+
+        $this->actingAs($user)
+            ->get(route('events.index', ['kind' => 'ticketed']))
+            ->assertOk()
+            ->assertSee('Concert Tickets')
+            ->assertDontSee('Garden RSVP');
+    }
+
     public function test_store_creates_draft_and_redirects_to_choose_template(): void
     {
         $user = User::factory()->create();

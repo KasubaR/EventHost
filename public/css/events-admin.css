@@ -2174,42 +2174,53 @@ nav.tkt-tabs {
     border-color: var(--blue, #1e47bb);
 }
 
-.evt-kind-filter {
+/* Separate kind tabs on My Events — a bare <nav>, so it needs the same
+   override as .dash-nav / nav.set-tabs against global.css's site-wide
+   `nav {}` reset. Each tab is its own card, not one shared strip. */
+nav.evt-kind-filter {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
+    gap: 10px;
     position: static;
     z-index: auto;
     width: 100%;
     max-width: none;
     height: auto;
     margin: 0 0 20px;
-    padding: 4px;
+    padding: 0;
+    background: none;
+    border: none;
+}
+
+.evt-kind-filter-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
     background: var(--white);
     border: 1px solid var(--line);
     border-radius: var(--radius);
     box-shadow: var(--card-shadow);
-}
-
-.evt-kind-filter a {
-    display: inline-flex;
-    align-items: center;
-    padding: 8px 14px;
-    border-radius: var(--radius-sm);
     font-size: 13px;
     font-weight: 600;
     color: var(--gray-mid);
     text-decoration: none;
     white-space: nowrap;
-    transition: background 0.15s ease, color 0.15s ease;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
-.evt-kind-filter a:hover {
+.evt-kind-filter-tab i {
+    font-size: 12px;
+}
+
+.evt-kind-filter-tab:hover {
     background: var(--gray-light);
     color: var(--text-dark);
 }
 
-.evt-kind-filter a.is-active {
+.evt-kind-filter-tab.is-active {
     background: color-mix(in srgb, var(--accent) 10%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 28%, var(--line));
     color: var(--accent);
+    box-shadow: none;
 }
