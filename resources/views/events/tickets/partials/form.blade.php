@@ -111,15 +111,6 @@
     </div>
 
     <div class="profile-field">
-        <label for="refund_policy" class="profile-label">Refund policy <span class="profile-optional">optional</span></label>
-        <textarea id="refund_policy" name="refund_policy" rows="3"
-                  class="profile-input {{ $errors->has('refund_policy') ? 'profile-input--error' : '' }}">{{ old('refund_policy', $ticketType?->refund_policy ?? '') }}</textarea>
-        @error('refund_policy')
-            <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
-        @enderror
-    </div>
-
-    <div class="profile-field">
         <label for="sort_order" class="profile-label">Display order</label>
         <input id="sort_order" name="sort_order" type="number" min="0" step="1"
                class="profile-input {{ $errors->has('sort_order') ? 'profile-input--error' : '' }}"

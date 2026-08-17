@@ -1,14 +1,55 @@
 (function () {
     'use strict';
 
+    // Per-credential-type config (Phase 17). The scan/camera/lookup mechanics
+    // below are identical either way — only which result fields to show, which
+    // JSON keys the response uses, and a couple of copy strings differ. Picked
+    // once from data-checkin-kind, set by the server for a given event
+    // (product_kind is mutually exclusive, so a page never needs to guess).
+    var CONFIGS = {
+        guest: {
+            resultKey: 'guest',
+            lookupKey: 'guests',
+            lookupIdSegment: 'guest',
+            notFoundMessage: 'Could not check in this guest.',
+            nameOf: function (record) {
+                return record.name;
+            },
+            detailFields: [
+                ['Email', 'email'],
+                ['Phone', 'phone'],
+                ['Table', 'table'],
+                ['Meal preference', 'meal_preference'],
+                ['RSVP note', 'rsvp_note'],
+            ],
+        },
+        ticket: {
+            resultKey: 'ticket',
+            lookupKey: 'tickets',
+            lookupIdSegment: 'ticket',
+            notFoundMessage: 'Could not check in this ticket.',
+            nameOf: function (record) {
+                return record.attendee_name || 'Ticket #' + record.id;
+            },
+            detailFields: [
+                ['Ticket', 'ticket_type'],
+                ['Email', 'attendee_email'],
+                ['Phone', 'attendee_phone'],
+                ['Order', 'order_reference'],
+            ],
+        },
+    };
+
     document.addEventListener('DOMContentLoaded', function () {
         var root = document.getElementById('checkinScanner');
         if (!root || typeof jsQR === 'undefined') {
             return;
         }
 
+        var config = CONFIGS[root.getAttribute('data-checkin-kind') || 'guest'] || CONFIGS.guest;
+
         var base = root.getAttribute('data-checkin-base') || '';
-        var guestQrBase = root.getAttribute('data-guest-qr-base') || '';
+        var selfQrBase = root.getAttribute('data-self-qr-base') || '';
         var lookupUrl = root.getAttribute('data-lookup-url') || '';
         var csrfMeta = document.querySelector('meta[name="csrf-token"]');
         var csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '';
@@ -72,29 +113,21 @@
             showResultDetails(null);
         }
 
-        // Built with createElement/textContent, not innerHTML — guest-entered fields
-        // (name, notes, meal preference…) are untrusted strings and must never be
-        // parsed as markup.
-        function showResultDetails(guest) {
+        // Built with createElement/textContent, not innerHTML — guest/attendee
+        // entered fields (name, notes, meal preference…) are untrusted strings
+        // and must never be parsed as markup.
+        function showResultDetails(record) {
             if (!resultDetails) {
                 return;
             }
             resultDetails.innerHTML = '';
-            if (!guest) {
+            if (!record) {
                 return;
             }
 
-            var rows = [
-                ['Email', guest.email],
-                ['Phone', guest.phone],
-                ['Table', guest.table],
-                ['Meal preference', guest.meal_preference],
-                ['RSVP note', guest.rsvp_note],
-            ];
-
-            rows.forEach(function (row) {
+            config.detailFields.forEach(function (row) {
                 var label = row[0];
-                var value = row[1];
+                var value = record[row[1]];
                 if (!value) {
                     return;
                 }
@@ -136,30 +169,32 @@
                 })
                 .then(function (payload) {
                     if (!payload.ok) {
-                        showResult('error', (payload.data && payload.data.message) || 'Could not check in this guest.');
+                        showResult('error', (payload.data && payload.data.message) || config.notFoundMessage);
                         return;
                     }
 
-                    var guest = payload.data.guest;
+                    var record = payload.data[config.resultKey];
+                    var name = config.nameOf(record);
                     if (payload.data.already_checked_in) {
-                        showResult('warn', guest.name + ' already checked in.');
+                        showResult('warn', name + ' already checked in.');
                     } else {
-                        showResult('success', guest.name + ' checked in ✓');
+                        showResult('success', name + ' checked in ✓');
                         bumpArrivedCount();
                     }
-                    showResultDetails(guest);
+                    showResultDetails(record);
                 })
                 .catch(function () {
                     showResult('error', 'Network error — try again.');
                 });
         }
 
-        // Every guest's own QR always encodes the same dashboard-route shape
-        // (see Guest::checkInQrUrl()), regardless of which scanner page decodes
-        // it — a staff-link device has no reason to hold a login session, and
-        // printing a second, page-specific QR per guest was never on the table.
-        // Recognizing either shape here — this page's own base, or the shape
-        // guest QRs always carry — is what lets one unreprinted badge check in
+        // Every credential's own QR always encodes the same fixed shape
+        // (Guest::checkInQrUrl()'s dashboard route, or Ticket::publicUrl()'s /t
+        // route) regardless of which scanner page decodes it — a staff-link
+        // device has no reason to hold a login session, and printing a second,
+        // page-specific QR per credential was never on the table. Recognizing
+        // either shape here — this page's own base, or the shape a credential's
+        // QR always carries — is what lets one unreprinted badge/ticket check in
         // through either scanning path. The extracted token is never dialled at
         // the URL it was found under; it is always resubmitted against THIS
         // page's own base, which is the endpoint already authorized for it
@@ -170,7 +205,7 @@
                 return null;
             }
 
-            var prefixes = [base, guestQrBase];
+            var prefixes = [base, selfQrBase];
             for (var i = 0; i < prefixes.length; i++) {
                 var prefix = prefixes[i];
                 if (!prefix || text.indexOf(prefix + '/') !== 0) {
@@ -261,9 +296,6 @@
                 .then(function (stream) {
                     video.srcObject = stream;
                     video.play();
-                    if (hint) {
-                        hint.textContent = "Point the camera at a guest's invitation QR code.";
-                    }
                     rafId = window.requestAnimationFrame(tick);
                 })
                 .catch(function () {
@@ -273,32 +305,32 @@
                 });
         }
 
-        function renderLookupResults(guests) {
+        function renderLookupResults(records) {
             lookupResults.innerHTML = '';
 
-            if (!guests.length) {
+            if (!records.length) {
                 var empty = document.createElement('li');
                 empty.className = 'ckin-lookup-empty';
-                empty.textContent = 'No matching guests.';
+                empty.textContent = 'No matching records.';
                 lookupResults.appendChild(empty);
                 return;
             }
 
-            guests.forEach(function (guest) {
+            records.forEach(function (record) {
                 var li = document.createElement('li');
                 li.className = 'ckin-lookup-row';
 
                 var name = document.createElement('span');
-                name.textContent = guest.name + (guest.checked_in_at ? ' (checked in)' : '');
+                name.textContent = config.nameOf(record) + (record.checked_in_at ? ' (checked in)' : '');
                 li.appendChild(name);
 
                 var btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = 'evt-btn-outline evt-btn-tiny';
-                btn.textContent = guest.checked_in_at ? 'Already in' : 'Check in';
-                btn.disabled = !!guest.checked_in_at;
+                btn.textContent = record.checked_in_at ? 'Already in' : 'Check in';
+                btn.disabled = !!record.checked_in_at;
                 btn.addEventListener('click', function () {
-                    confirm(base + '/guest/' + encodeURIComponent(guest.id));
+                    confirm(base + '/' + config.lookupIdSegment + '/' + encodeURIComponent(record.id));
                 });
                 li.appendChild(btn);
 
@@ -323,7 +355,7 @@
                             return response.json();
                         })
                         .then(function (data) {
-                            renderLookupResults(data.guests || []);
+                            renderLookupResults(data[config.lookupKey] || []);
                         })
                         .catch(function () {
                             lookupResults.innerHTML = '';

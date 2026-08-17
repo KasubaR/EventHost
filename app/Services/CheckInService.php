@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Exceptions\CheckInClosedException;
 use App\Models\Guest;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Shared "mark this guest arrived" logic used by both the authenticated
@@ -24,40 +25,44 @@ class CheckInService
      */
     public function confirm(Guest $guest, ?int $staffUserId): array
     {
-        $guest->loadMissing('event');
+        return DB::transaction(function () use ($guest, $staffUserId): array {
+            /** @var Guest $locked */
+            $locked = Guest::query()->whereKey($guest->id)->lockForUpdate()->firstOrFail();
+            $locked->loadMissing('event');
 
-        if ($guest->event === null || ! $guest->event->isCheckInOpen()) {
-            throw new CheckInClosedException;
-        }
+            if ($locked->event === null || ! $locked->event->isCheckInOpen()) {
+                throw new CheckInClosedException;
+            }
 
-        $alreadyIn = $guest->isCheckedIn();
+            $alreadyIn = $locked->isCheckedIn();
 
-        if (! $alreadyIn) {
-            $guest->forceFill([
-                'checked_in_at' => now(),
-                'checked_in_by' => $staffUserId,
-            ])->save();
-        }
+            if (! $alreadyIn) {
+                $locked->forceFill([
+                    'checked_in_at' => now(),
+                    'checked_in_by' => $staffUserId,
+                ])->save();
+            }
 
-        // Door staff act on this the moment it lands — a full name-only match still
-        // leaves them guessing which table to point someone to, or whether the
-        // kitchen needs to know about a dietary restriction. loadMissing so every
-        // caller (dashboard scanner, staff-link scanner, manual lookup) gets the
-        // same payload without each having to remember the eager-load itself.
-        $guest->loadMissing(['rsvp', 'eventTable']);
+            // Door staff act on this the moment it lands — a full name-only match still
+            // leaves them guessing which table to point someone to, or whether the
+            // kitchen needs to know about a dietary restriction. loadMissing so every
+            // caller (dashboard scanner, staff-link scanner, manual lookup) gets the
+            // same payload without each having to remember the eager-load itself.
+            $locked->loadMissing(['rsvp', 'eventTable']);
 
-        return [
-            'guest' => [
-                'id' => $guest->id,
-                'name' => $guest->name,
-                'checked_in_at' => $guest->checked_in_at?->toIso8601String(),
-                'email' => $guest->email,
-                'phone' => $guest->phone,
-                'table' => $guest->tableLabel(),
-                'meal_preference' => $guest->rsvp?->meal_preference,
-                'rsvp_note' => $guest->rsvp?->message,
-            ],
-            'already_checked_in' => $alreadyIn,
-        ];
+            return [
+                'guest' => [
+                    'id' => $locked->id,
+                    'name' => $locked->name,
+                    'checked_in_at' => $locked->checked_in_at?->toIso8601String(),
+                    'email' => $locked->email,
+                    'phone' => $locked->phone,
+                    'table' => $locked->tableLabel(),
+                    'meal_preference' => $locked->rsvp?->meal_preference,
+                    'rsvp_note' => $locked->rsvp?->message,
+                ],
+                'already_checked_in' => $alreadyIn,
+            ];
+        });
     }
 }

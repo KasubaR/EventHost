@@ -258,13 +258,13 @@ class TicketingTest extends TestCase
 
         $this->actingAs($admin, 'admin')
             ->post(route('admin.ticketing.reject', $event), [
-                'ticketing_rejection_note' => 'Need a clearer venue and refund policy.',
+                'ticketing_rejection_note' => 'Need a clearer venue.',
             ])
             ->assertRedirect(route('admin.ticketing.show', $event));
 
         $event->refresh();
         $this->assertSame(TicketingStatus::Rejected, $event->ticketing_status);
-        $this->assertSame('Need a clearer venue and refund policy.', $event->ticketing_rejection_note);
+        $this->assertSame('Need a clearer venue.', $event->ticketing_rejection_note);
 
         $this->actingAs($owner)
             ->post(route('events.ticketing.submit', $event))
@@ -278,6 +278,78 @@ class TicketingTest extends TestCase
     {
         $this->assertSame('5.00', TicketingSettings::commissionPercent());
         $this->assertSame('0.00', TicketingSettings::cancellationFeePercent());
+    }
+
+    public function test_ticketed_store_skips_choose_template_and_lands_on_edit(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->post(route('events.store'), [
+            'name' => 'Summer Festival',
+            'event_type' => 'corporate',
+            'product_kind' => EventProductKind::Ticketed->value,
+            'event_date' => now()->addMonth()->format('Y-m-d'),
+            'event_time' => '18:00',
+        ]);
+
+        $event = Event::query()->where('user_id', $user->id)->firstOrFail();
+
+        $response->assertRedirect(route('events.edit', $event));
+        $response->assertSessionHas('status', 'draft-saved');
+    }
+
+    public function test_choose_template_redirects_ticketed_events_to_edit(): void
+    {
+        $user = User::factory()->create();
+        $event = Event::factory()->for($user)->ticketed()->create();
+
+        $this->actingAs($user)
+            ->get(route('events.choose-template', $event))
+            ->assertRedirect(route('events.edit', $event));
+    }
+
+    public function test_ticketed_edit_page_has_no_layout_picker(): void
+    {
+        $user = User::factory()->create();
+        $event = Event::factory()->for($user)->ticketed()->create();
+
+        $this->actingAs($user)
+            ->get(route('events.edit', $event))
+            ->assertOk()
+            ->assertDontSee('Choose invitation layout', false)
+            ->assertSee('Preview event', false);
+    }
+
+    public function test_ticketed_public_page_renders_the_fixed_template(): void
+    {
+        $user = User::factory()->create();
+        $event = Event::factory()->for($user)->ticketed()->create([
+            'is_published' => true,
+            'ticketing_status' => TicketingStatus::Approved,
+        ]);
+        TicketType::factory()->for($event)->create(['name' => 'VIP', 'price' => '350.00']);
+
+        $response = $this->get(route('events.public', $event->slug));
+
+        $response->assertOk();
+        $response->assertSee($event->name, false);
+        $response->assertSee('VIP', false);
+        $response->assertSee('K350.00', false);
+        $response->assertSee('Buy tickets', false);
+        $response->assertDontSee('evt-invitation', false);
+    }
+
+    public function test_ticketed_preview_never_redirects_to_choose_template(): void
+    {
+        $user = User::factory()->create();
+        $event = Event::factory()->for($user)->ticketed()->create();
+        TicketType::factory()->for($event)->create(['name' => 'General']);
+
+        $response = $this->actingAs($user)->get(route('events.preview', $event));
+
+        $response->assertOk();
+        $response->assertSee('General', false);
+        $response->assertSee('Preview — this is exactly how your ticket page looks to buyers.', false);
     }
 
     /**

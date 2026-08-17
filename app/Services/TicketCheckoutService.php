@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\CommissionMode;
 use App\Enums\TicketOrderStatus;
 use App\Enums\TicketReservationStatus;
 use App\Exceptions\TicketPurchaseException;
@@ -12,6 +13,7 @@ use App\Models\TicketPayment;
 use App\Models\TicketReservation;
 use App\Models\TicketType;
 use App\Support\TicketingSettings;
+use App\Support\TicketOrderMoney;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -72,14 +74,14 @@ class TicketCheckoutService
             }
 
             $faceValue = round($held->sum(fn ($r) => (float) $r->unit_price_snapshot * $r->quantity), 2);
-            $commissionPercent = (float) TicketingSettings::commissionPercent();
-            $commissionAmount = round($faceValue * $commissionPercent / 100, 2);
-            $isPassThrough = $event->commission_mode?->value === 'pass_through';
-            $hostAmount = $isPassThrough ? $faceValue : round($faceValue - $commissionAmount, 2);
-            $buyerTotal = $isPassThrough ? round($faceValue + $commissionAmount, 2) : $faceValue;
+            $money = TicketOrderMoney::calculate(
+                $faceValue,
+                TicketingSettings::commissionPercent(),
+                $event->commission_mode ?? CommissionMode::Absorb,
+            );
             $paymentExpiresAt = now()->addHours(self::PAYMENT_EXPIRES_HOURS);
 
-            $order = TicketOrder::query()->create([
+            $order = TicketOrder::query()->create(array_merge([
                 'event_id' => $event->id,
                 'order_reference' => TicketOrder::generateReference($event->id),
                 'cart_id' => $cartId,
@@ -88,14 +90,8 @@ class TicketCheckoutService
                 'buyer_phone' => $buyer['phone'] ?? null,
                 'status' => TicketOrderStatus::PendingPayment,
                 'currency' => 'ZMW',
-                'face_value' => $faceValue,
-                'commission_percent' => $commissionPercent,
-                'commission_mode' => $event->commission_mode,
-                'commission_amount' => $commissionAmount,
-                'buyer_total' => $buyerTotal,
-                'host_amount' => $hostAmount,
                 'expires_at' => $paymentExpiresAt,
-            ]);
+            ], $money->toOrderAttributes()));
 
             foreach ($held as $reservation) {
                 $order->items()->create([
@@ -121,7 +117,7 @@ class TicketCheckoutService
                 'ticket_order_id' => $order->id,
                 'provider' => $payment['provider'] ?? null,
                 'payment_method' => $payment['method'],
-                'amount' => $buyerTotal,
+                'amount' => $money->buyerTotal,
                 'currency' => 'ZMW',
                 'status' => 'pending',
                 'payment_reference' => $order->order_reference,
@@ -136,7 +132,7 @@ class TicketCheckoutService
             return [
                 'order' => $order,
                 'ticketPayment' => $ticketPayment,
-                'buyerTotal' => $buyerTotal,
+                'buyerTotal' => $money->buyerTotal,
                 'payment' => $payment,
             ];
         });
@@ -151,7 +147,7 @@ class TicketCheckoutService
         $context = [
             'user_id' => 0,
             'ref' => $order->order_reference,
-            'amount' => $buyerTotal,
+            'amount' => (float) $buyerTotal,
             'currency' => 'ZMW',
             'description' => 'Tickets — '.$event->name,
             'reference' => $order->order_reference,

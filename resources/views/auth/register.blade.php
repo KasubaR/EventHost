@@ -1,4 +1,4 @@
-@extends('layouts.site')
+@extends('layouts.site', ['hideSiteHeader' => true])
 
 @section('title', 'Create your account | Event Host')
 

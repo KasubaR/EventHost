@@ -6,12 +6,12 @@
         <script src="{{ asset('js/events-form.js') }}" defer></script>
     @endpush
 
-    <x-slot name="title">Tickets — {{ $event->name }}</x-slot>
+    <x-slot name="title">Ticketing settings — {{ $event->name }}</x-slot>
 
     <x-slot name="pageHeader">
         <div class="dph-inner">
             <div>
-                <h1 class="dph-title">Tickets</h1>
+                <h1 class="dph-title">Ticketing</h1>
                 <p class="dph-sub">{{ $event->name }} · {{ $event->ticketing_status->label() }}</p>
             </div>
             <div class="evt-card-actions">
@@ -20,6 +20,8 @@
             </div>
         </div>
     </x-slot>
+
+    @include('events.tickets.partials.nav', ['event' => $event, 'active' => 'settings'])
 
     @if (session('status') === 'ticket-type-created')
         <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Ticket type added.</div>

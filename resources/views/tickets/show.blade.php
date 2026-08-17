@@ -50,6 +50,28 @@
             </dl>
 
             <p class="tkc-muted">Show this QR code at the door. Save this page or the email it was sent to.</p>
+
+            @php
+                $waUrl = $ticket->attendee_phone
+                    ? \App\Support\WhatsAppInviteLink::url(
+                        $ticket->attendee_phone,
+                        \App\Support\WhatsAppInviteLink::ticketConfirmationMessage(
+                            $ticket->event->name,
+                            $ticket->attendee_name ?? '',
+                            $ticket->ticketType?->name ?? 'Ticket',
+                            $ticket->event->event_date->format('j F'),
+                            $ticket->event->venue,
+                            $ticket->publicUrl(),
+                        )
+                    )
+                    : null;
+            @endphp
+            <div class="tkc-ticket-actions">
+                <a href="{{ route('tickets.download', $ticket->public_token) }}" class="evt-btn-outline"><i class="fa-solid fa-download" aria-hidden="true"></i> Download ticket</a>
+                @if ($waUrl)
+                    <a href="{{ $waUrl }}" target="_blank" rel="noopener" class="evt-btn-outline"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i> Send to WhatsApp</a>
+                @endif
+            </div>
         </div>
     </article>
 @endsection

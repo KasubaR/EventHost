@@ -1365,6 +1365,29 @@ body > .evt-more-menu .evt-more-item--danger:hover {
     color: var(--gray-mid, #64748b);
 }
 
+/* Ticket::status pills (Phase 16) — valid/used reuse the accepted/maybe
+   palette, refunded/cancelled reuse declined/pending rather than adding two
+   more colors to the same scale. */
+.evt-pill--valid {
+    background: rgba(39, 174, 96, 0.12);
+    color: var(--green, #27ae60);
+}
+
+.evt-pill--used {
+    background: rgba(243, 156, 18, 0.15);
+    color: var(--orange, #d68910);
+}
+
+.evt-pill--refunded {
+    background: rgba(231, 76, 60, 0.12);
+    color: #c0392b;
+}
+
+.evt-pill--cancelled {
+    background: rgba(100, 116, 139, 0.12);
+    color: var(--gray-mid, #64748b);
+}
+
 .evt-word-break {
     word-break: break-all;
 }
@@ -1922,6 +1945,65 @@ body.evt-qr-lightbox-open {
 .tkt-type-row:last-child {
     border-bottom: 0;
     padding-bottom: 0;
+}
+
+/* Ticketing section tab strip (Phase 15) — a bare <nav>, so it needs the same
+   override as .dash-nav / nav.set-tabs / nav.legal-toc against global.css's
+   site-wide `nav {}` reset. Sits above .evt-stack on every ticketing page. */
+nav.tkt-tabs {
+    display: flex;
+    align-items: stretch;
+    flex-wrap: wrap;
+    gap: 4px;
+    position: static;
+    z-index: auto;
+    width: 100%;
+    max-width: none;
+    height: auto;
+    margin: 0 0 20px;
+    padding: 4px;
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--card-shadow);
+}
+
+.tkt-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gray-mid);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.tkt-tab i {
+    font-size: 12px;
+}
+
+.tkt-tab:hover {
+    background: var(--gray-light);
+    color: var(--text-dark);
+}
+
+.tkt-tab--active {
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    color: var(--accent);
+}
+
+.tkt-tab--disabled {
+    color: var(--gray-mid);
+    opacity: 0.45;
+    cursor: default;
+}
+
+.tkt-pagination {
+    margin-top: 16px;
 }
 
 .admin-filter-row {

@@ -43,8 +43,9 @@
         <div class="evt-section">
             <div class="evt-section-body">
                 @include('events.checkin.partials.scanner-widget', [
+                    'kind' => 'guest',
                     'checkinBase' => url('/events/'.$event->id.'/checkin'),
-                    'guestQrBase' => url('/events/'.$event->id.'/checkin'),
+                    'selfQrBase' => url('/events/'.$event->id.'/checkin'),
                     'lookupUrl' => route('events.checkin.lookup', $event),
                     'checkInOpen' => $event->isCheckInOpen(),
                     'checkInDateLabel' => $event->event_date?->timezone(config('app.timezone'))->format('j M Y'),

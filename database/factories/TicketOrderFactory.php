@@ -34,6 +34,7 @@ class TicketOrderFactory extends Factory
             'commission_percent' => '5.00',
             'commission_mode' => CommissionMode::Absorb,
             'commission_amount' => '10.00',
+            'buyer_fee' => '0.00',
             'buyer_total' => '200.00',
             'host_amount' => '190.00',
             'paid_at' => null,

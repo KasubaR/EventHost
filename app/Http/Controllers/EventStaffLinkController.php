@@ -24,7 +24,7 @@ class EventStaffLinkController extends Controller
             'label' => $label !== '' ? $label : null,
         ]);
 
-        return redirect()->route('events.checkin.scan', $event)->with('status', 'staff-link-created');
+        return redirect()->to($this->scanRouteFor($event))->with('status', 'staff-link-created');
     }
 
     public function destroy(Event $event, EventStaffLink $link): RedirectResponse
@@ -34,6 +34,19 @@ class EventStaffLinkController extends Controller
 
         $link->delete();
 
-        return redirect()->route('events.checkin.scan', $event)->with('status', 'staff-link-revoked');
+        return redirect()->to($this->scanRouteFor($event))->with('status', 'staff-link-revoked');
+    }
+
+    /**
+     * This controller is already generic (an EventStaffLink is just
+     * event_id/token/label, no guest-specific column) — the only thing that
+     * ever differed per credential type was which dashboard page to bounce
+     * back to, so that's the only branch added here.
+     */
+    private function scanRouteFor(Event $event): string
+    {
+        return $event->isTicketed()
+            ? route('events.tickets.checkin.scan', $event)
+            : route('events.checkin.scan', $event);
     }
 }

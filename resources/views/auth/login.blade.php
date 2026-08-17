@@ -1,4 +1,4 @@
-@extends('layouts.site')
+@extends('layouts.site', ['hideSiteHeader' => true])
 
 @section('title', 'Sign in | Event Host')
 
@@ -20,8 +20,6 @@
         <li><span aria-current="page">Sign In</span></li>
       </ol>
     </nav>
-
-    <div class="auth-hero-badge"><span class="dot"></span> Welcome back</div>
 
     <h1 class="auth-hero-headline">
       Sign in to your<br>

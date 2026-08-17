@@ -71,8 +71,18 @@
   z-index: 2;
 }
 
-/* Breadcrumb */
-.auth-breadcrumb { margin-bottom: 18px; }
+/* Breadcrumb — a <nav>, so global.css's bare `nav {}` (sticky navy bar) applies.
+   Reset it here, same pattern as .dash-nav, nav.set-tabs, nav.legal-toc. */
+nav.auth-breadcrumb {
+  position: static;
+  z-index: auto;
+  background: none;
+  display: block;
+  height: auto;
+  padding: 0;
+  border-bottom: none;
+  margin-bottom: 18px;
+}
 .auth-breadcrumb ol {
   display: flex;
   align-items: center;
@@ -102,27 +112,6 @@
   font-size: 13px;
   font-weight: 700;
   color: var(--cyan);
-}
-
-/* Hero badge — reuse home page style */
-.auth-hero-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(255,255,255,0.12);
-  border: 1px solid rgba(255,255,255,0.22);
-  border-radius: 50px;
-  padding: 6px 14px;
-  font-size: 12px;
-  font-weight: 600;
-  color: rgba(255,255,255,0.95);
-  margin-bottom: 18px;
-}
-.auth-hero-badge .dot {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--cyan);
-  flex-shrink: 0;
 }
 
 .auth-hero-headline {

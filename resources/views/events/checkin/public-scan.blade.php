@@ -25,12 +25,13 @@
                 </p>
             @else
                 @include('events.checkin.partials.scanner-widget', [
+                    'kind' => 'guest',
                     'checkinBase' => url('/checkin/'.$link->token),
                     // A guest's own printed/shown QR always encodes the dashboard
                     // route's URL shape (see Guest::checkInQrUrl()), never this
                     // staff-link one — recognizing it here is what lets the same,
                     // unreprinted badge check in through either scanning path.
-                    'guestQrBase' => url('/events/'.$event->id.'/checkin'),
+                    'selfQrBase' => url('/events/'.$event->id.'/checkin'),
                     'lookupUrl' => url('/checkin/'.$link->token.'/lookup'),
                     'checkInOpen' => $event->isCheckInOpen(),
                     'checkInDateLabel' => $event->event_date?->timezone(config('app.timezone'))->format('j M Y'),

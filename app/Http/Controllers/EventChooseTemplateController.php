@@ -14,9 +14,16 @@ use Illuminate\View\View;
 
 class EventChooseTemplateController extends Controller
 {
-    public function show(Request $request, Event $event): View
+    public function show(Request $request, Event $event): View|RedirectResponse
     {
         $this->authorize('update', $event);
+
+        // Ticketed events use the one fixed public template — there is
+        // nothing to pick here. Defensive against stale/bookmarked links;
+        // nothing in the UI points here for a ticketed event.
+        if ($event->isTicketed()) {
+            return redirect()->route('events.edit', $event);
+        }
 
         $q = trim((string) $request->query('q', ''));
         $categorySlug = $request->query('category');
@@ -55,6 +62,10 @@ class EventChooseTemplateController extends Controller
 
     public function update(ChooseEventTemplateRequest $request, Event $event): RedirectResponse
     {
+        if ($event->isTicketed()) {
+            return redirect()->route('events.edit', $event);
+        }
+
         $event->update([
             'invitation_template_id' => (int) $request->validated('invitation_template_id'),
         ]);

@@ -112,9 +112,16 @@ class TicketPurchaseFlowTest extends TestCase
         $order = TicketOrder::query()->where('event_id', $event->id)->firstOrFail();
         $this->assertSame(TicketOrderStatus::Paid, $order->status);
         $this->assertSame('400.00', (string) $order->face_value);
+        $this->assertSame('5.00', (string) $order->commission_percent);
+        $this->assertSame(CommissionMode::Absorb, $order->commission_mode);
         $this->assertSame('20.00', (string) $order->commission_amount);
+        $this->assertSame('0.00', (string) $order->buyer_fee);
         $this->assertSame('380.00', (string) $order->host_amount);
         $this->assertSame('400.00', (string) $order->buyer_total);
+        $this->assertSame('400.00', (string) $order->ticket_price);
+        $this->assertSame('5.00', (string) $order->commission_rate);
+        $this->assertSame('380.00', (string) $order->organizer_earnings);
+        $this->assertSame('400.00', (string) $order->total_paid);
         $this->assertCount(2, $order->tickets);
         $this->assertSame(2, $type->fresh()->soldQuantity());
     }
@@ -149,8 +156,10 @@ class TicketPurchaseFlowTest extends TestCase
         $order = TicketOrder::query()->where('event_id', $event->id)->firstOrFail();
         $this->assertSame('200.00', (string) $order->face_value);
         $this->assertSame('10.00', (string) $order->commission_amount);
+        $this->assertSame('10.00', (string) $order->buyer_fee);
         $this->assertSame('210.00', (string) $order->buyer_total);
         $this->assertSame('200.00', (string) $order->host_amount);
+        $this->assertSame(CommissionMode::PassThrough, $order->commission_mode);
     }
 
     public function test_hold_rejects_when_quantity_exceeds_capacity(): void

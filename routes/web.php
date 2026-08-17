@@ -13,7 +13,9 @@ use App\Http\Controllers\EventPreviewController;
 use App\Http\Controllers\EventStaffLinkController;
 use App\Http\Controllers\EventTableController;
 use App\Http\Controllers\EventTicketCheckoutController;
+use App\Http\Controllers\EventTicketDashboardController;
 use App\Http\Controllers\EventTicketingController;
+use App\Http\Controllers\EventTicketManagementController;
 use App\Http\Controllers\EventTicketPurchaseController;
 use App\Http\Controllers\EventTicketTypeController;
 use App\Http\Controllers\GuestBulkActionController;
@@ -25,6 +27,7 @@ use App\Http\Controllers\MapLinkController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PublicCheckInController;
 use App\Http\Controllers\PublicEventController;
+use App\Http\Controllers\PublicTicketCheckInController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\RsvpController;
 use App\Http\Controllers\Settings\AccountController as SettingsAccountController;
@@ -33,6 +36,7 @@ use App\Http\Controllers\Settings\ProfileController as SettingsProfileController
 use App\Http\Controllers\Settings\SecurityController as SettingsSecurityController;
 use App\Http\Controllers\TableUploadController;
 use App\Http\Controllers\TemplateLibraryController;
+use App\Http\Controllers\TicketCheckInController;
 use App\Http\Controllers\TicketController;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
@@ -98,6 +102,10 @@ Route::get('/t/{token}', [TicketController::class, 'show'])
 Route::get('/t/{token}/qr.svg', [TicketController::class, 'qr'])
     ->where('token', '[A-Za-z0-9]{16,64}')
     ->name('tickets.qr');
+Route::get('/t/{token}/download', [TicketController::class, 'download'])
+    ->middleware('throttle:ticket-download')
+    ->where('token', '[A-Za-z0-9]{16,64}')
+    ->name('tickets.download');
 
 Route::get('/e/{slug}/table/{code}', [TableUploadController::class, 'show'])->name('table.upload.show');
 Route::post('/e/{slug}/table/{code}/photos', [TableUploadController::class, 'store'])
@@ -106,6 +114,17 @@ Route::post('/e/{slug}/table/{code}/photos', [TableUploadController::class, 'sto
 
 Route::get('/e/{slug}/gallery', [EventGalleryController::class, 'show'])->name('event.gallery.show');
 Route::get('/e/{slug}/gallery/feed', [EventGalleryController::class, 'feed'])->name('event.gallery.feed');
+
+// Ticket staff-link scanner (Phase 17) — registered before the guest catch-all
+// below, since /checkin/{staffToken} would otherwise swallow /checkin/tickets/…
+// by matching "tickets" as staffToken. Twin of PublicCheckInController, one
+// path segment over so both can live under /checkin without colliding.
+Route::get('/checkin/tickets/{staffToken}', [PublicTicketCheckInController::class, 'scan'])->name('tickets.checkin.public.scan');
+Route::middleware('throttle:staff-checkin')->group(function () {
+    Route::get('/checkin/tickets/{staffToken}/lookup', [PublicTicketCheckInController::class, 'lookup'])->name('tickets.checkin.public.lookup');
+    Route::post('/checkin/tickets/{staffToken}/ticket/{ticket}', [PublicTicketCheckInController::class, 'confirmTicket'])->name('tickets.checkin.public.confirm-ticket');
+    Route::post('/checkin/tickets/{staffToken}/{token}', [PublicTicketCheckInController::class, 'confirmToken'])->name('tickets.checkin.public.confirm-token');
+});
 
 Route::get('/checkin/{staffToken}', [PublicCheckInController::class, 'scan'])->name('checkin.public.scan');
 // Guest badges encode this path (see Guest::checkInQrUrl()). Phone cameras GET
@@ -196,6 +215,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/events/{event}/ticketing/submit', [EventTicketingController::class, 'submit'])
         ->name('events.ticketing.submit');
 
+    // Host "Ticketing" section (Phase 15/16) — Overview dashboard + the
+    // individual-tickets table. Settings stays on events.ticket-types.* above;
+    // Check-in stays on events.tickets.checkin.* below.
+    Route::get('/events/{event}/tickets/overview', [EventTicketDashboardController::class, 'overview'])
+        ->name('events.tickets.overview');
+    Route::get('/events/{event}/tickets', [EventTicketManagementController::class, 'index'])
+        ->name('events.tickets.index');
+    Route::post('/events/{event}/tickets/{ticket}/resend', [EventTicketManagementController::class, 'resend'])
+        ->name('events.tickets.resend');
+    Route::post('/events/{event}/tickets/{ticket}/cancel', [EventTicketManagementController::class, 'cancel'])
+        ->name('events.tickets.cancel');
+    Route::post('/events/{event}/tickets/{ticket}/confirm-checkin', [EventTicketManagementController::class, 'confirmCheckIn'])
+        ->name('events.tickets.confirm-checkin');
+
     Route::get('/events/{event}/tables/qr-sheet.pdf', [EventTableController::class, 'qrSheet'])
         ->name('events.tables.qr-sheet');
     Route::get('/events/{event}/tables/{table}/qr.svg', [EventTableController::class, 'qr'])
@@ -216,6 +249,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('events.checkin.confirm-token');
     Route::get('/events/{event}/checkin', [CheckInController::class, 'scan'])
         ->name('events.checkin.scan');
+
+    Route::get('/events/{event}/tickets/checkin/lookup', [TicketCheckInController::class, 'lookup'])
+        ->name('events.tickets.checkin.lookup');
+    Route::post('/events/{event}/tickets/checkin/ticket/{ticket}', [TicketCheckInController::class, 'confirmTicket'])
+        ->name('events.tickets.checkin.confirm-ticket');
+    Route::post('/events/{event}/tickets/checkin/{token}', [TicketCheckInController::class, 'confirmToken'])
+        ->name('events.tickets.checkin.confirm-token');
+    Route::get('/events/{event}/tickets/checkin', [TicketCheckInController::class, 'scan'])
+        ->name('events.tickets.checkin.scan');
 
     Route::patch('/events/{event}/photos/{photo}', [EventPhotoController::class, 'update'])
         ->name('events.photos.update');

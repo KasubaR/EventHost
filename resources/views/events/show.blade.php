@@ -40,17 +40,26 @@
             </div>
             <div class="evt-card-actions">
                 @if ($event->isTicketed())
-                    <a href="{{ route('events.ticket-types.index', $event) }}" class="btn-primary"><i class="fa-solid fa-ticket"></i> Tickets</a>
+                    <a href="{{ route('events.tickets.overview', $event) }}" class="btn-primary"><i class="fa-solid fa-ticket"></i> Tickets</a>
                 @else
                     <a href="{{ route('events.guests.index', $event) }}" class="btn-primary"><i class="fa-solid fa-users"></i> Guests & RSVPs</a>
                 @endif
-                <a href="{{ route('events.tables.index', $event) }}" class="evt-btn-outline">
-                    <i class="fa-solid fa-qrcode"></i> QR check-in & photo wall
-                    @unless ($event->ownerHasPremiumEventTools())
-                        <span class="evt-credit-badge">Pro</span>
-                    @endunless
-                </a>
-                @if ($event->invitation_template_id !== null)
+                @if ($event->isTicketed())
+                    <a href="{{ route('events.tickets.checkin.scan', $event) }}" class="evt-btn-outline">
+                        <i class="fa-solid fa-qrcode"></i> Check-in scanner
+                        @unless ($event->ownerHasPremiumEventTools())
+                            <span class="evt-credit-badge">Pro</span>
+                        @endunless
+                    </a>
+                @else
+                    <a href="{{ route('events.tables.index', $event) }}" class="evt-btn-outline">
+                        <i class="fa-solid fa-qrcode"></i> QR check-in & photo wall
+                        @unless ($event->ownerHasPremiumEventTools())
+                            <span class="evt-credit-badge">Pro</span>
+                        @endunless
+                    </a>
+                @endif
+                @if ($event->invitation_template_id !== null || $event->isTicketed())
                     {{-- Host-only view (works for drafts and private events too), not the /e/{slug} public link.
                          from=show so its back link returns here instead of to the edit form. --}}
                     <a href="{{ route('events.preview', ['event' => $event, 'from' => 'show']) }}" target="_blank" rel="noopener" class="evt-btn-outline"><i class="fa-solid fa-eye"></i> Preview</a>
@@ -236,7 +245,7 @@
         @if ($event->isTicketed() && ! $event->ticketSalesAreApproved())
             <div class="evt-section">
                 <div class="evt-section-body">
-                    <p class="evt-muted">{{ $event->ticketing_status->label() }}. <a href="{{ route('events.ticket-types.index', $event) }}">Manage tickets</a> — sales go live after EventHost activates them.</p>
+                    <p class="evt-muted">{{ $event->ticketing_status->label() }}. <a href="{{ route('events.tickets.overview', $event) }}">Manage tickets</a> — sales go live after EventHost activates them.</p>
                 </div>
             </div>
         @elseif (! $event->is_published)

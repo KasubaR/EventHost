@@ -28,7 +28,6 @@ class TicketTypeFactory extends Factory
             'max_per_order' => 10,
             'image_path' => null,
             'terms' => null,
-            'refund_policy' => null,
             'sort_order' => 0,
             'is_active' => true,
         ];

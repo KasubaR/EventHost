@@ -22,7 +22,6 @@ class StoreTicketTypeRequest extends FormRequest
             'sales_starts_at' => $this->sales_starts_at === '' ? null : $this->sales_starts_at,
             'sales_ends_at' => $this->sales_ends_at === '' ? null : $this->sales_ends_at,
             'terms' => $this->terms === '' ? null : $this->terms,
-            'refund_policy' => $this->refund_policy === '' ? null : $this->refund_policy,
             'sort_order' => $this->sort_order === '' || $this->sort_order === null ? 0 : $this->sort_order,
         ]);
     }
@@ -43,7 +42,6 @@ class StoreTicketTypeRequest extends FormRequest
             'max_per_order' => ['required', 'integer', 'min:1', 'max:100', 'gte:min_per_order'],
             'image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
             'terms' => ['nullable', 'string', 'max:10000'],
-            'refund_policy' => ['nullable', 'string', 'max:10000'],
             'sort_order' => ['integer', 'min:0', 'max:65535'],
             'is_active' => ['boolean'],
         ];

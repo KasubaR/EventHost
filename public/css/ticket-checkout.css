@@ -438,6 +438,22 @@
 .tkc-ticket-row-cta {
     color: var(--accent, #1e47bb);
     font-size: 13px;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.tkc-ticket-row-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.tkc-ticket-actions {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 18px;
 }
 
 .tkc-qr-wrap {

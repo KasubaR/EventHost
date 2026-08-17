@@ -29,7 +29,6 @@ class TicketType extends Model
         'max_per_order',
         'image_path',
         'terms',
-        'refund_policy',
         'sort_order',
         'is_active',
     ];
@@ -59,9 +58,8 @@ class TicketType extends Model
     }
 
     /**
-     * Issued seats that still count against capacity. Refunded/cancelled
-     * tickets free their slot back up (refunds are a later phase, but the
-     * capacity math is written to already do the right thing once they exist).
+     * Issued seats that still count against capacity. Cancelled tickets
+     * free their slot back up.
      */
     public function soldQuantity(): int
     {

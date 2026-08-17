@@ -20,16 +20,19 @@
             @if ($order->isPaid())
                 <div class="tkc-result tkc-result--success">
                     <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
-                    <h1 class="tkc-title">You're all set!</h1>
-                    <p class="tkc-muted">Your tickets for {{ $order->event->name }} have been emailed to {{ $order->buyer_email }}.</p>
+                    <h1 class="tkc-title">Payment successful</h1>
+                    <p class="tkc-muted">Your tickets are ready — also emailed to {{ $order->buyer_email }}.</p>
                 </div>
 
                 <div class="tkc-ticket-list">
                     @foreach ($order->tickets as $ticket)
-                        <a href="{{ route('tickets.show', $ticket->public_token) }}" class="tkc-ticket-row">
+                        <div class="tkc-ticket-row">
                             <span><i class="fa-solid fa-ticket" aria-hidden="true"></i> Ticket #{{ $ticket->id }}</span>
-                            <span class="tkc-ticket-row-cta">View ticket <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
-                        </a>
+                            <span class="tkc-ticket-row-actions">
+                                <a href="{{ route('tickets.show', $ticket->public_token) }}" class="tkc-ticket-row-cta">View ticket</a>
+                                <a href="{{ route('tickets.download', $ticket->public_token) }}" class="tkc-ticket-row-cta">Download</a>
+                            </span>
+                        </div>
                     @endforeach
                 </div>
             @elseif ($order->status->isTerminal())

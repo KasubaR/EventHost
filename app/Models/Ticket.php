@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\TicketStatus;
 use Database\Factories\TicketFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -62,9 +63,46 @@ class Ticket extends Model
         return $this->belongsTo(TicketType::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function checkedInBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'checked_in_by');
+    }
+
     public function isValid(): bool
     {
         return $this->status === TicketStatus::Valid;
+    }
+
+    public function isCheckedIn(): bool
+    {
+        return $this->checked_in_at !== null;
+    }
+
+    /**
+     * Search by attendee name/email/phone for the check-in scanner's manual
+     * fallback. Same shape as Guest::scopeSearch(), including LIKE-wildcard
+     * escaping so a typed `%` or `_` is a literal, not "match everything".
+     *
+     * @param  Builder<Ticket>  $query
+     * @return Builder<Ticket>
+     */
+    public function scopeSearch($query, ?string $term)
+    {
+        $term = is_string($term) ? trim($term) : '';
+        if ($term === '') {
+            return $query;
+        }
+
+        $like = '%'.addcslashes($term, '%_\\').'%';
+
+        return $query->where(function ($q) use ($like) {
+            $q->where('attendee_name', 'like', $like)
+                ->orWhere('attendee_email', 'like', $like)
+                ->orWhere('attendee_phone', 'like', $like);
+        });
     }
 
     /**
@@ -89,6 +127,8 @@ class Ticket extends Model
             'price_paid' => 'decimal:2',
             'status' => TicketStatus::class,
             'issued_at' => 'datetime',
+            'checked_in_at' => 'datetime',
+            'checked_in_by' => 'integer',
         ];
     }
 }

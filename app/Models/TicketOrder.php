@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\CommissionMode;
 use App\Enums\TicketOrderStatus;
 use Database\Factories\TicketOrderFactory;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,6 +18,18 @@ class TicketOrder extends Model
     use HasFactory;
 
     /**
+     * Money columns are a checkout snapshot (see TicketOrderMoney). Do not
+     * recompute from TicketingSettings::commissionPercent() or the event's
+     * current commission_mode — those can change after the buyer has paid.
+     *
+     * Semantic names used in reporting:
+     *   ticket_price        → face_value
+     *   commission_rate     → commission_percent
+     *   commission_amount   → commission_amount
+     *   buyer_fee           → buyer_fee (0 absorb; = commission pass-through)
+     *   organizer_earnings  → host_amount
+     *   total_paid          → buyer_total
+     *
      * @var list<string>
      */
     protected $fillable = [
@@ -32,6 +45,7 @@ class TicketOrder extends Model
         'commission_percent',
         'commission_mode',
         'commission_amount',
+        'buyer_fee',
         'buyer_total',
         'host_amount',
         'paid_at',
@@ -89,6 +103,38 @@ class TicketOrder extends Model
     }
 
     /**
+     * @return Attribute<string, never>
+     */
+    protected function ticketPrice(): Attribute
+    {
+        return Attribute::get(fn () => $this->face_value);
+    }
+
+    /**
+     * @return Attribute<string, never>
+     */
+    protected function commissionRate(): Attribute
+    {
+        return Attribute::get(fn () => $this->commission_percent);
+    }
+
+    /**
+     * @return Attribute<string, never>
+     */
+    protected function organizerEarnings(): Attribute
+    {
+        return Attribute::get(fn () => $this->host_amount);
+    }
+
+    /**
+     * @return Attribute<string, never>
+     */
+    protected function totalPaid(): Attribute
+    {
+        return Attribute::get(fn () => $this->buyer_total);
+    }
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array
@@ -100,6 +146,7 @@ class TicketOrder extends Model
             'face_value' => 'decimal:2',
             'commission_percent' => 'decimal:2',
             'commission_amount' => 'decimal:2',
+            'buyer_fee' => 'decimal:2',
             'buyer_total' => 'decimal:2',
             'host_amount' => 'decimal:2',
             'paid_at' => 'datetime',

@@ -3,31 +3,41 @@
 
 @push('head')
     <meta name="robots" content="noindex, nofollow">
-@endpush
-
-@foreach ($invitation['theme']['google_font_families'] as $gf)
-    @push('head')
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family={{ $gf }}&display=swap">
-    @endpush
-@endforeach
-
-@push('head')
-    <link rel="stylesheet" href="{{ asset('css/rsvp-public.css') }}">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/glightbox/dist/css/glightbox.min.css">
     <link rel="stylesheet" href="{{ asset('css/events-public.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/events-invitation.css') }}">
-    @php $layoutCss = \App\Support\InvitationLayoutVariant::cssFile($invitation['layout_variant'] ?? \App\Support\InvitationLayoutVariant::STANDARD); @endphp
-    @if ($layoutCss)
-        <link rel="stylesheet" href="{{ asset('css/'.$layoutCss) }}">
-    @endif
 @endpush
 
-@push('scripts')
-    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/glightbox/dist/js/glightbox.min.js" defer></script>
-    <script src="{{ asset('js/invitation-public.js') }}" defer></script>
-@endpush
+@unless ($event->isTicketed())
+    @foreach ($invitation['theme']['google_font_families'] as $gf)
+        @push('head')
+            <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family={{ $gf }}&display=swap">
+        @endpush
+    @endforeach
+
+    @push('head')
+        <link rel="stylesheet" href="{{ asset('css/rsvp-public.css') }}">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/glightbox/dist/css/glightbox.min.css">
+        <link rel="stylesheet" href="{{ asset('css/events-invitation.css') }}">
+        @php $layoutCss = \App\Support\InvitationLayoutVariant::cssFile($invitation['layout_variant'] ?? \App\Support\InvitationLayoutVariant::STANDARD); @endphp
+        @if ($layoutCss)
+            <link rel="stylesheet" href="{{ asset('css/'.$layoutCss) }}">
+        @endif
+    @endpush
+
+    @push('scripts')
+        <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" defer></script>
+        <script src="https://cdn.jsdelivr.net/npm/glightbox/dist/js/glightbox.min.js" defer></script>
+        <script src="{{ asset('js/invitation-public.js') }}" defer></script>
+    @endpush
+@else
+    @push('head')
+        <link rel="stylesheet" href="{{ asset('css/ticket-checkout.css') }}">
+        <link rel="stylesheet" href="{{ asset('css/ticket-event-public.css') }}">
+    @endpush
+    @push('scripts')
+        <script src="{{ asset('js/ticket-event-public.js') }}" defer></script>
+    @endpush
+@endunless
 
 @section('title', 'Preview — '.$event->name.' | '.config('app.name'))
 
@@ -68,13 +78,20 @@
         </div>
     @endunless
 
-    @include('events.invitations.renderer', [
-        'event' => $event,
-        'rsvpOpen' => $rsvpOpen,
-        'rsvpPublicAvailable' => $rsvpPublicAvailable,
-        'invitation' => $invitation,
-        'isPreview' => true,
-        'previewLabel' => 'Preview — this is exactly how your invitation looks to guests.',
-    ])
+    @if ($event->isTicketed())
+        @include('events.tickets.partials.landing-content', [
+            'event' => $event,
+            'isPreview' => true,
+        ])
+    @else
+        @include('events.invitations.renderer', [
+            'event' => $event,
+            'rsvpOpen' => $rsvpOpen,
+            'rsvpPublicAvailable' => $rsvpPublicAvailable,
+            'invitation' => $invitation,
+            'isPreview' => true,
+            'previewLabel' => 'Preview — this is exactly how your invitation looks to guests.',
+        ])
+    @endif
 
 @endsection

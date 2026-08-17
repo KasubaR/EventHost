@@ -123,5 +123,11 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('ticket-verify', function (Request $request): Limit {
             return Limit::perMinute(10)->by((string) $request->ip());
         });
+
+        // DomPDF + QR raster per hit — tighter than the HTML ticket page, which
+        // stays unthrottled like rsvp.token.show. Cached in TicketController too.
+        RateLimiter::for('ticket-download', function (Request $request): Limit {
+            return Limit::perMinute(10)->by((string) $request->ip());
+        });
     }
 }

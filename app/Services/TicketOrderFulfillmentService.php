@@ -21,6 +21,8 @@ use Illuminate\Support\Str;
  */
 class TicketOrderFulfillmentService
 {
+    public function __construct(private readonly TicketRevenueLedgerService $ledger) {}
+
     /**
      * Idempotent: a duplicate webhook/verify call on an already-paid order is
      * a no-op. Refunded orders are never re-issued. Failed / cancelled /
@@ -86,6 +88,11 @@ class TicketOrderFulfillmentService
             $locked->status = TicketOrderStatus::Paid;
             $locked->paid_at = now();
             $locked->save();
+
+            // Same transaction as the status flip — this is financial
+            // history, not a best-effort side effect, so it must commit or
+            // roll back atomically with "the order is paid".
+            $this->ledger->recordSale($locked);
 
             return $locked->id;
         });

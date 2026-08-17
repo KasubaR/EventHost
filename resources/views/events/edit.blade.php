@@ -31,7 +31,7 @@
         </div>
     </x-slot>
 
-    @include('events.partials.steps', ['current' => 3])
+    @include('events.partials.steps', ['current' => 3, 'ticketed' => $event->isTicketed()])
 
     @if (session('status') === 'draft-saved')
         <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Draft saved — continue editing or publish below.</div>
@@ -71,36 +71,38 @@
             </div>
         </form>
 
-        @if ($event->invitation_template_id === null)
-            <div class="evt-section evt-section-prompt">
-                <div class="evt-section-head">
-                    <h2>Invitation layout</h2>
-                    <p>Pick a template to unlock colors, typography, gallery, and section controls.</p>
+        @unless ($event->isTicketed())
+            @if ($event->invitation_template_id === null)
+                <div class="evt-section evt-section-prompt">
+                    <div class="evt-section-head">
+                        <h2>Invitation layout</h2>
+                        <p>Pick a template to unlock colors, typography, gallery, and section controls.</p>
+                    </div>
+                    <div class="evt-section-body evt-actions-bar">
+                        <a href="{{ route('events.choose-template', $event) }}" class="btn-primary">
+                            <i class="fa-solid fa-layer-group"></i> Choose invitation layout
+                        </a>
+                        <span class="evt-muted">Required before guests see your styled invitation.</span>
+                    </div>
                 </div>
-                <div class="evt-section-body evt-actions-bar">
-                    <a href="{{ route('events.choose-template', $event) }}" class="btn-primary">
-                        <i class="fa-solid fa-layer-group"></i> Choose invitation layout
-                    </a>
-                    <span class="evt-muted">Required before guests see your styled invitation.</span>
-                </div>
-            </div>
-        @else
-            @include('events.partials.invitation-design-form', ['event' => $event, 'invitationMerged' => $invitationMerged])
+            @else
+                @include('events.partials.invitation-design-form', ['event' => $event, 'invitationMerged' => $invitationMerged])
 
-            <p class="evt-muted evt-template-switch-note">
-                <a href="{{ route('events.choose-template', $event) }}">Switch to a different layout</a>
-                <span aria-hidden="true"> · </span>
-                Fine-tuning resets some layout-specific section defaults until you save design again.
-            </p>
-        @endif
+                <p class="evt-muted evt-template-switch-note">
+                    <a href="{{ route('events.choose-template', $event) }}">Switch to a different layout</a>
+                    <span aria-hidden="true"> · </span>
+                    Fine-tuning resets some layout-specific section defaults until you save design again.
+                </p>
+            @endif
+        @endunless
 
-        @if ($event->invitation_template_id !== null)
+        @if ($event->invitation_template_id !== null || $event->isTicketed())
             <div class="evt-section" id="evt-preview-cta">
                 <div class="evt-section-body evt-actions-bar">
                     <a href="{{ route('events.preview', $event) }}" target="_blank" rel="noopener" class="evt-btn-outline" id="evt-preview-link" data-preview-link>
-                        <i class="fa-solid fa-eye"></i> Preview invitation
+                        <i class="fa-solid fa-eye"></i> Preview {{ $event->isTicketed() ? 'event' : 'invitation' }}
                     </a>
-                    <span class="evt-muted">Opens in a new tab — see exactly what guests will see before you publish.</span>
+                    <span class="evt-muted">Opens in a new tab — see exactly what {{ $event->isTicketed() ? 'buyers' : 'guests' }} will see before you publish.</span>
                 </div>
             </div>
         @endif

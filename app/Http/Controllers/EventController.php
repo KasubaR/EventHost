@@ -112,6 +112,14 @@ class EventController extends Controller
             throw $e;
         }
 
+        // Ticketed events have no invitation layout to pick — they render the
+        // one fixed public template (events/tickets/landing.blade.php), so
+        // skip the preferred-template shortcut and the choose-template step
+        // entirely and land straight on the edit form.
+        if ($event->isTicketed()) {
+            return redirect()->route('events.edit', $event)->with('status', 'draft-saved');
+        }
+
         if ($preferredTemplateId !== null) {
             $preferredTemplate = InvitationTemplate::find((int) $preferredTemplateId);
             if ($preferredTemplate && $request->user()->canUseInvitationTemplate($preferredTemplate)) {

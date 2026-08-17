@@ -37,6 +37,14 @@ class PublicEventController extends Controller
             abort(403);
         }
 
+        // Ticketed events skip the invitation-template system entirely and
+        // render the one fixed public template — no theme merge needed.
+        if ($event->isTicketed()) {
+            Event::query()->whereKey($event->getKey())->increment('invitation_views_count');
+
+            return view('events.tickets.landing', compact('event'));
+        }
+
         $event->loadMissing('invitationTemplate');
 
         $rsvpOpen = $event->isRsvpOpen();

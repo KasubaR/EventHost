@@ -56,8 +56,20 @@ class EventStaffLink extends Model
         return $this->revoked_at === null;
     }
 
+    /**
+     * One link, one URL shape per event — never both. A staff link is always
+     * created from inside its own event's check-in page (guest or ticket),
+     * which already knows which kind it is, so there's nothing to ask the
+     * organizer here; this just routes to the scanner that understands this
+     * event's credential type (see PublicCheckInController vs
+     * PublicTicketCheckInController).
+     */
     public function scannerUrl(): string
     {
+        if ($this->event?->isTicketed()) {
+            return route('tickets.checkin.public.scan', ['staffToken' => $this->token], absolute: true);
+        }
+
         return route('checkin.public.scan', ['staffToken' => $this->token], absolute: true);
     }
 

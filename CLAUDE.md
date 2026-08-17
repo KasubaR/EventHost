@@ -61,6 +61,8 @@ Laravel 12 application. Auth via Laravel Breeze (Blade stack). No Alpine.js — 
 | `public/css/datetime-picker.css` | Custom date/time picker (`.dtp-*`) — pair with `js/datetime-picker.js` |
 | `public/css/custom-select.css` | Custom dropdown (`.cs-*`) — pair with `js/custom-select.js` |
 | `public/css/media-uploader.css` | Upload-on-pick tiles (`.mup-*`) — pair with `js/media-uploader.js`; pushed by `events/edit.blade.php` |
+| `public/css/ticket-checkout.css` | Buyer-facing ticket flow (`.tkc-*`) — picker, checkout, order status, `/t/{token}` ticket page |
+| `public/css/ticket-event-public.css` | Fixed public landing page for ticketed events (`.tev-*`) — hero/about/location layout only; ticket-row text and card chrome reuse `.tkc-*` from `ticket-checkout.css` (loaded alongside) and the generic `.evt-public-*` shell from `events-public.css`. Pushed by `events/tickets/landing.blade.php` and `events/preview.blade.php` when the event is ticketed |
 
 Layouts: `layouts/site.blade.php` loads `global.css` + `account-components.css` + Vite; `layouts/app.blade.php` adds `dashboard-shell.css` + `forms-app.css`. Tailwind ships via Vite (`resources/css/app.css`) alongside these files.
 

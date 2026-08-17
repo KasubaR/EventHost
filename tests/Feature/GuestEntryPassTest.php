@@ -172,7 +172,7 @@ class GuestEntryPassTest extends TestCase
         $response = $this->actingAs($owner)->get(route('events.checkin.scan', $event));
 
         $response->assertOk();
-        $response->assertSee('data-guest-qr-base="'.url('/events/'.$event->id.'/checkin').'"', false);
+        $response->assertSee('data-self-qr-base="'.url('/events/'.$event->id.'/checkin').'"', false);
         $response->assertSee('data-checkin-base="'.url('/events/'.$event->id.'/checkin').'"', false);
     }
 
@@ -190,7 +190,7 @@ class GuestEntryPassTest extends TestCase
         // ...but it now also recognizes the shape a guest's own QR actually carries,
         // which is the dashboard route, not this one. Without this attribute the
         // page silently ignores every real guest badge — see plans/guest-entry-pass.md §6.
-        $response->assertSee('data-guest-qr-base="'.url('/events/'.$event->id.'/checkin').'"', false);
+        $response->assertSee('data-self-qr-base="'.url('/events/'.$event->id.'/checkin').'"', false);
     }
 
     public function test_a_guests_own_qr_url_resolves_correctly_via_the_staff_link_endpoint(): void

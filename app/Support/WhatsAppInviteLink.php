@@ -31,4 +31,37 @@ final class WhatsAppInviteLink
             $rsvpUrl
         );
     }
+
+    /**
+     * Ticket purchase confirmation, sent the same way as invitationMessage()
+     * — a wa.me deeplink the buyer (or the page) opens, not a server-initiated
+     * send. Takes primitives rather than a Ticket model, same reasoning as
+     * invitationMessage() above.
+     */
+    public static function ticketConfirmationMessage(
+        string $eventName,
+        string $attendeeName,
+        string $ticketTypeName,
+        string $eventDateLabel,
+        ?string $venue,
+        string $ticketUrl,
+    ): string {
+        $lines = [
+            'Your ticket for '.$eventName.' is confirmed.',
+            '',
+            'Ticket: '.$ticketTypeName,
+            'Name: '.$attendeeName,
+            'Date: '.$eventDateLabel,
+        ];
+
+        if ($venue !== null && $venue !== '') {
+            $lines[] = 'Venue: '.$venue;
+        }
+
+        $lines[] = '';
+        $lines[] = 'View your ticket:';
+        $lines[] = $ticketUrl;
+
+        return implode("\n", $lines);
+    }
 }

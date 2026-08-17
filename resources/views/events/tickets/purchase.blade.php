@@ -25,7 +25,7 @@
                     @endif
                 </ul>
                 <a href="{{ route('events.public', $event->slug) }}" class="tkc-back-link">
-                    <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to invitation
+                    <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to event
                 </a>
             </header>
 

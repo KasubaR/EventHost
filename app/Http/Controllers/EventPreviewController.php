@@ -21,6 +21,26 @@ class EventPreviewController extends Controller
     {
         $this->authorize('view', $event);
 
+        // The preview link lives on both the edit page and the (read-only) show
+        // page, so "back" has to return wherever the host actually came from —
+        // otherwise a host who never opened the edit form lands there anyway.
+        $back = $request->query('from') === 'show'
+            ? ['route' => route('events.show', $event), 'label' => 'Back to event']
+            : ['route' => route('events.edit', $event), 'label' => 'Back to edit'];
+
+        // Ticketed events have no layout to choose — they always render the
+        // fixed public template, so this check only applies to invitation
+        // events.
+        if ($event->isTicketed()) {
+            return view('events.preview', [
+                'event' => $event,
+                'rsvpOpen' => false,
+                'rsvpPublicAvailable' => false,
+                'invitation' => null,
+                'back' => $back,
+            ]);
+        }
+
         if ($event->invitation_template_id === null) {
             return redirect()->route('events.choose-template', $event)
                 ->with('status', 'pick-layout-to-preview');
@@ -29,13 +49,6 @@ class EventPreviewController extends Controller
         $rsvpOpen = $event->isRsvpOpen();
         $rsvpPublicAvailable = $event->is_public && $rsvpOpen;
         $invitation = $customizationService->merge($event);
-
-        // The preview link lives on both the edit page and the (read-only) show
-        // page, so "back" has to return wherever the host actually came from —
-        // otherwise a host who never opened the edit form lands there anyway.
-        $back = $request->query('from') === 'show'
-            ? ['route' => route('events.show', $event), 'label' => 'Back to event']
-            : ['route' => route('events.edit', $event), 'label' => 'Back to edit'];
 
         // Deliberately does not touch invitation_views_count — that counter is
         // real guest traffic, and the host reviewing their own draft is not a view.
