@@ -10,7 +10,7 @@
 @if ($event->canSubmitTicketing())
     <div class="evt-section">
         <div class="evt-section-head">
-            <h2>Request activation</h2>
+            <h2>Request Activation</h2>
             <p>EventHost reviews ticketed events before buyers can pay.</p>
         </div>
         <div class="evt-section-body evt-actions-bar">

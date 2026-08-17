@@ -49,7 +49,7 @@
 
         <div class="evt-section">
             <div class="evt-section-head">
-                <h2>Ticket sales</h2>
+                <h2>Ticket Sales</h2>
                 <p>Payment infrastructure is set by EventHost. You choose how the commission is applied.</p>
             </div>
             <div class="evt-section-body">
@@ -76,7 +76,7 @@
                     @method('PATCH')
                     <div class="profile-field">
                         <div class="tkt-commission-heading">
-                            <h3>Who pays the commission</h3>
+                            <h3>Who Pays the Commission</h3>
                             <p class="evt-muted">Choose whether buyers or you absorb the {{ $commissionPercent }}% fee.</p>
                         </div>
                         <div class="evt-product-choice" @if (! $event->canEditCommissionMode()) aria-disabled="true" @endif>
@@ -115,7 +115,7 @@
         <div class="evt-section">
             <div class="evt-section-head evt-section-head--with-action">
                 <div>
-                    <h2>Ticket types</h2>
+                    <h2>Ticket Types</h2>
                     <p>Named prices and quantities buyers will choose from.</p>
                 </div>
                 <a href="{{ route('events.ticket-types.create', $event) }}" class="btn-primary"><i class="fa-solid fa-plus"></i> Add ticket type</a>

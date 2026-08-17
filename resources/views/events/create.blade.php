@@ -19,7 +19,7 @@
     <x-slot name="pageHeader">
         <div class="dph-inner">
             <div>
-                <h1 class="dph-title">Create event</h1>
+                <h1 class="dph-title">Create Event</h1>
                 @if (! $productKind)
                     <p class="dph-sub">First, choose how people join this event. You cannot change this later.</p>
                 @elseif ($productKind === \App\Enums\EventProductKind::Ticketed)
@@ -62,12 +62,19 @@
             @include('events.partials.form-fields', ['event' => null, 'selectedProductKind' => $productKind])
 
             <div class="evt-section-body evt-actions-bar">
-                <button type="submit" class="btn-primary">
-                    <i class="fa-solid fa-floppy-disk"></i> Save draft
-                </button>
                 @if ($productKind === \App\Enums\EventProductKind::Ticketed)
+                    {{-- "Save draft" belongs to step 4, the one place you actually
+                         revisit and re-save — this submit just creates the row and
+                         moves the wizard on, so it reads as a forward action instead
+                         of a second "save draft". --}}
+                    <button type="submit" class="btn-primary">
+                        Continue to tickets <i class="fa-solid fa-arrow-right"></i>
+                    </button>
                     <span class="evt-muted">Ticket sales go live after EventHost review — no event credit.</span>
                 @else
+                    <button type="submit" class="btn-primary">
+                        <i class="fa-solid fa-floppy-disk"></i> Save draft
+                    </button>
                     <span class="evt-muted">Publishing is available after save and uses 1 event credit.</span>
                 @endif
             </div>

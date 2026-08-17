@@ -8,7 +8,7 @@
     <x-slot name="pageHeader">
         <div class="dph-inner">
             <div>
-                <h1 class="dph-title">My events</h1>
+                <h1 class="dph-title">My Events</h1>
                 <p class="dph-sub">Drafts and published invitations.</p>
             </div>
             <a href="{{ route('events.create') }}" class="btn-primary">
@@ -43,21 +43,21 @@
         @if (request('from') === 'guests')
             <div class="dash-empty">
                 <div class="dash-empty-icon"><i class="fa-solid fa-users"></i></div>
-                <h2>No events yet</h2>
+                <h2>No Events Yet</h2>
                 <p>You need an event before you can manage guests and RSVPs. Create one to get started.</p>
                 <a href="{{ route('events.create') }}" class="btn-primary"><i class="fa-solid fa-plus"></i> Create event</a>
             </div>
         @elseif ($kind !== null)
             <div class="dash-empty">
                 <div class="dash-empty-icon"><i class="fa-solid {{ $kind === \App\Enums\EventProductKind::Ticketed ? 'fa-ticket' : 'fa-envelope-open-text' }}"></i></div>
-                <h2>No {{ $kind === \App\Enums\EventProductKind::Ticketed ? 'ticketed events' : 'invitations' }} yet</h2>
+                <h2>No {{ $kind === \App\Enums\EventProductKind::Ticketed ? 'Ticketed Events' : 'Invitations' }} Yet</h2>
                 <p>Create one to see it here.</p>
                 <a href="{{ route('events.create') }}" class="btn-primary"><i class="fa-solid fa-plus"></i> Create event</a>
             </div>
         @else
             <div class="dash-empty">
                 <div class="dash-empty-icon"><i class="fa-solid fa-envelope-open-text"></i></div>
-                <h2>No events yet</h2>
+                <h2>No Events Yet</h2>
                 <p>Create your first invitation to see it here.</p>
                 <a href="{{ route('events.create') }}" class="btn-primary"><i class="fa-solid fa-plus"></i> Create event</a>
             </div>

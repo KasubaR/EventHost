@@ -41,7 +41,7 @@
 
     <div class="evt-section">
         <div class="evt-section-head">
-            <h2>Event details</h2>
+            <h2>Event Details</h2>
             <p>Name, type, and description.</p>
         </div>
         <div class="evt-section-body profile-fields">
@@ -96,7 +96,7 @@
 
     <div class="evt-section">
         <div class="evt-section-head">
-            <h2>Schedule &amp; venue</h2>
+            <h2>Schedule &amp; Venue</h2>
             <p>When and where you are hosting.</p>
         </div>
         <div class="evt-section-body">
@@ -195,7 +195,7 @@
     @if (! $productKindLocked || ! $isTicketed)
         <div class="evt-section" data-product-panel="invitation" @if ($isTicketed) hidden @endif>
             <div class="evt-section-head">
-                <h2>Cover image</h2>
+                <h2>Cover Image</h2>
                 <p>Recommended wide image; we crop to 1200×630 for sharing.</p>
             </div>
             <div class="evt-section-body">
@@ -226,7 +226,7 @@
 
     <div class="evt-section" data-product-panel="ticketed" @unless ($isTicketed) hidden @endunless>
         <div class="evt-section-head">
-            <h2>Ticket sales</h2>
+            <h2>Ticket Sales</h2>
             <p>EventHost checkout is the only online payment path for this event.</p>
         </div>
         <div class="evt-section-body">
@@ -240,7 +240,7 @@
     @if (! $productKindLocked || ! $isTicketed)
         <div class="evt-section" data-product-panel="invitation" @if ($isTicketed) hidden @endif>
             <div class="evt-section-head">
-                <h2>Guest settings</h2>
+                <h2>Guest Settings</h2>
                 <p>RSVP rules and visibility (RSVP form comes later).</p>
             </div>
         <div class="evt-section-body profile-fields">

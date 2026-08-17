@@ -21,7 +21,7 @@
     <x-slot name="pageHeader">
         <div class="dph-inner">
             <div>
-                <h1 class="dph-title">Edit event</h1>
+                <h1 class="dph-title">Edit Event</h1>
                 <p class="dph-sub">{{ $event->name }}</p>
             </div>
             <div class="evt-card-actions">
@@ -81,7 +81,7 @@
             @if ($event->invitation_template_id === null)
                 <div class="evt-section evt-section-prompt">
                     <div class="evt-section-head">
-                        <h2>Invitation layout</h2>
+                        <h2>Invitation Layout</h2>
                         <p>Pick a template to unlock colors, typography, gallery, and section controls.</p>
                     </div>
                     <div class="evt-section-body evt-actions-bar">
@@ -195,7 +195,7 @@
             <div class="profile-card-header">
                 <div class="profile-card-icon" aria-hidden="true"><i class="fa-solid fa-trash"></i></div>
                 <div>
-                    <h3>Delete event</h3>
+                    <h3>Delete Event</h3>
                     <p>This permanently removes the event and its cover image.</p>
                 </div>
             </div>
