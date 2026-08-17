@@ -27,6 +27,28 @@
   margin-top: 0;
 }
 
+.admin-shell .dash-sidebar {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--accent) 38%, var(--line)) transparent;
+}
+
+.admin-shell .dash-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.admin-shell .dash-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.admin-shell .dash-sidebar::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--accent) 38%, var(--line));
+  border-radius: 999px;
+}
+
+.admin-shell .dash-sidebar::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
 .admin-table-wrap {
   overflow-x: auto;
   border-radius: var(--radius);
@@ -538,4 +560,15 @@
   min-width: 0;
   font-size: 12px;
   word-break: break-all;
+}
+
+/* Laravel's default Tailwind paginator paints white tiles. On the gray admin
+   canvas that reads as a floating menu — keep the controls, drop the fill. */
+.admin-shell nav[aria-label="Pagination Navigation"] .bg-white,
+.admin-shell nav[aria-label="Pagination Navigation"] .bg-gray-200 {
+  background-color: transparent;
+}
+
+.admin-shell nav[aria-label="Pagination Navigation"] .shadow-sm {
+  box-shadow: none;
 }
