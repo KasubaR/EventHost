@@ -13,12 +13,17 @@ class UpdateTicketedHeroRequest extends FormRequest
     }
 
     /**
+     * JSON picks (media-uploader.js) send `file`; a no-JS form post still
+     * sends `hero_image`. Same crop rules either way.
+     *
      * @return array<string, mixed>
      */
     public function rules(): array
     {
+        $field = $this->hasFile('file') || $this->wantsJson() ? 'file' : 'hero_image';
+
         return [
-            'hero_image' => array_merge(['required'], InvitationMediaRules::coverRules()),
+            $field => array_merge(['required'], InvitationMediaRules::coverRules()),
         ];
     }
 }

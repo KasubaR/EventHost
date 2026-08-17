@@ -6,6 +6,11 @@
  * form still posts binaries and the controller still accepts them — the same
  * progressive-enhancement contract event-edit-save.js uses.
  *
+ * data-upload-commit="1" persists the file on the server immediately (admin hero)
+ * instead of staging an id for a later save. Success is HTTP 201 + { url }.
+ * data-upload-queue on an ancestor mounts the tile list there instead of next
+ * to the input (so the input can sit under a pick button).
+ *
  * Two things here are load-bearing:
  *
  *   1. XMLHttpRequest, not fetch. fetch() reports no upload progress, and a real
@@ -60,12 +65,18 @@
         this.maxBytes = parseInt(input.dataset.uploadMaxBytes || '0', 10);
         this.single = isSingle(this.slot);
         this.form = input.form || input.closest('form');
+        this.commit = input.dataset.uploadCommit === '1';
         this.items = [];
 
         this.queue = document.createElement('ul');
         this.queue.className = 'mup-queue';
         this.queue.setAttribute('aria-live', 'polite');
-        input.parentNode.insertBefore(this.queue, input.nextSibling);
+        var host = input.closest('[data-upload-queue]');
+        if (host) {
+            host.appendChild(this.queue);
+        } else {
+            input.parentNode.insertBefore(this.queue, input.nextSibling);
+        }
 
         this.bind();
     }
@@ -275,11 +286,23 @@
                 payload = {};
             }
 
-            if (xhr.status === 201 && payload.id) {
+            var committed = self.commit && xhr.status === 201 && payload.url;
+            var staged = !self.commit && xhr.status === 201 && payload.id;
+
+            if (committed || staged) {
                 item.bar.style.width = '100%';
-                item.stagedId = payload.id;
-                self.attachHidden(item, payload.id);
-                self.setState(item, 'done', 'Ready', false);
+                if (staged) {
+                    item.stagedId = payload.id;
+                    self.attachHidden(item, payload.id);
+                }
+                self.setState(item, 'done', self.commit ? 'Saved' : 'Ready', false);
+                if (committed) {
+                    item.removeBtn.hidden = true;
+                    self.input.dispatchEvent(new CustomEvent('mediauploader:complete', {
+                        bubbles: true,
+                        detail: payload,
+                    }));
+                }
                 return;
             }
 

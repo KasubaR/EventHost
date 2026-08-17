@@ -91,6 +91,12 @@
     color: var(--accent, #1e47bb);
 }
 
+.tkc-header {
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--line, #e0e0e8);
+}
+
 .tkc-muted {
     color: var(--gray-mid, #8e8ea8);
     font-size: 14px;
@@ -116,15 +122,56 @@
 /* ── Ticket type picker ── */
 .tkc-type-row {
     display: grid;
-    grid-template-columns: 1fr auto auto;
-    align-items: center;
-    gap: 16px;
-    padding: 16px 0;
-    border-bottom: 1px solid var(--line, #e0e0e8);
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+        "info price"
+        "qty qty";
+    align-items: start;
+    gap: 12px 16px;
+    margin-top: 12px;
+    padding: 16px;
+    border: 1px solid var(--line, #e0e0e8);
+    border-radius: 12px;
+    background: var(--white, #fff);
+}
+
+.tkc-type-info {
+    grid-area: info;
+    min-width: 0;
+}
+
+.tkc-type-price {
+    grid-area: price;
+    font-weight: 800;
+    font-size: 18px;
+    color: var(--navy, #0d0d2b);
+    white-space: nowrap;
+    text-align: right;
+}
+
+.tkc-type-qty {
+    grid-area: qty;
+    justify-self: end;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+}
+
+@media (min-width: 640px) {
+    .tkc-type-row {
+        grid-template-columns: 1fr auto auto;
+        grid-template-areas: "info price qty";
+        align-items: center;
+    }
 }
 
 .tkc-type-row.is-disabled {
     opacity: 0.5;
+}
+
+.tkc-picker .tkc-section-title {
+    margin-top: 0;
 }
 
 .tkc-type-name {
@@ -145,19 +192,70 @@
     margin: 4px 0 0;
 }
 
-.tkc-type-price {
+.tkc-type-qty-label {
+    font-size: 11px;
     font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--gray-mid, #8e8ea8);
+}
+
+.tkc-type-qty-stepper {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--line, #e0e0e8);
+    border-radius: var(--radius-sm, 6px);
+    overflow: hidden;
+    background: var(--white, #fff);
+}
+
+.tkc-type-qty-btn {
+    width: 36px;
+    height: 36px;
+    border: 0;
+    background: var(--gray-light, #f4f5f9);
     color: var(--navy, #0d0d2b);
-    white-space: nowrap;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.tkc-type-qty-btn:hover:not(:disabled) {
+    background: rgba(30, 71, 187, 0.1);
+    color: var(--accent, #1e47bb);
+}
+
+.tkc-type-qty-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
 }
 
 .tkc-type-qty input {
-    width: 64px;
-    padding: 8px 10px;
-    border: 1px solid var(--line, #e0e0e8);
-    border-radius: var(--radius-sm, 6px);
-    font-size: 14px;
+    width: 48px;
+    height: 36px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-left: 1px solid var(--line, #e0e0e8);
+    border-right: 1px solid var(--line, #e0e0e8);
+    border-radius: 0;
+    font-size: 15px;
+    font-weight: 700;
     text-align: center;
+    color: var(--navy, #0d0d2b);
+    background: var(--white, #fff);
+    appearance: textfield;
+    -moz-appearance: textfield;
+}
+
+.tkc-type-qty input::-webkit-outer-spin-button,
+.tkc-type-qty input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
 }
 
 .tkc-submit-btn {

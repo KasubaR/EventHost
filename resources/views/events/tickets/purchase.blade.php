@@ -4,6 +4,10 @@
     <link rel="stylesheet" href="{{ asset('css/ticket-checkout.css') }}">
 @endpush
 
+@push('scripts')
+    <script src="{{ asset('js/ticket-checkout.js') }}" defer></script>
+@endpush
+
 @section('title', 'Buy tickets | '.$event->name)
 
 @section('content')
@@ -40,11 +44,14 @@
             @else
                 <form method="POST" action="{{ route('events.public.tickets.hold', $event->slug) }}" class="tkc-picker">
                     @csrf
+                    <h2 class="tkc-section-title">Choose your tickets</h2>
 
                     @foreach ($event->ticketTypes as $ticketType)
                         @php
                             $available = $ticketType->availableQuantity();
                             $purchasable = $ticketType->isPurchasable();
+                            $maxQty = $purchasable ? min($ticketType->max_per_order, $available ?? $ticketType->max_per_order) : 0;
+                            $defaultQty = $purchasable ? min($ticketType->min_per_order, $maxQty) : 0;
                         @endphp
                         <div class="tkc-type-row {{ ! $purchasable ? 'is-disabled' : '' }}">
                             <div class="tkc-type-info">
@@ -59,23 +66,32 @@
                                 @endif
                             </div>
                             <div class="tkc-type-price">K{{ number_format((float) $ticketType->price, 2) }}</div>
-                            <div class="tkc-type-qty">
-                                <input
-                                    type="number"
-                                    name="quantities[{{ $ticketType->id }}]"
-                                    min="0"
-                                    max="{{ $purchasable ? min($ticketType->max_per_order, $available ?? $ticketType->max_per_order) : 0 }}"
-                                    value="0"
-                                    inputmode="numeric"
-                                    {{ ! $purchasable ? 'disabled' : '' }}
-                                    aria-label="Quantity for {{ $ticketType->name }}"
-                                >
+                            <div class="tkc-type-qty" @if ($purchasable) data-tkc-qty @endif>
+                                <span class="tkc-type-qty-label" id="qty-label-{{ $ticketType->id }}">Qty</span>
+                                <div class="tkc-type-qty-stepper">
+                                    <button type="button" class="tkc-type-qty-btn" data-tkc-qty-dec @disabled(! $purchasable) aria-label="Decrease quantity for {{ $ticketType->name }}">
+                                        <i class="fa-solid fa-minus" aria-hidden="true"></i>
+                                    </button>
+                                    <input
+                                        type="number"
+                                        name="quantities[{{ $ticketType->id }}]"
+                                        min="0"
+                                        max="{{ $maxQty }}"
+                                        value="{{ old('quantities.'.$ticketType->id, $defaultQty) }}"
+                                        inputmode="numeric"
+                                        {{ ! $purchasable ? 'disabled' : '' }}
+                                        aria-labelledby="qty-label-{{ $ticketType->id }}"
+                                    >
+                                    <button type="button" class="tkc-type-qty-btn" data-tkc-qty-inc @disabled(! $purchasable) aria-label="Increase quantity for {{ $ticketType->name }}">
+                                        <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     @endforeach
 
                     <button type="submit" class="btn-primary tkc-submit-btn">
-                        <i class="fa-solid fa-cart-shopping" aria-hidden="true"></i> Continue to checkout
+                        <i class="fa-solid fa-credit-card" aria-hidden="true"></i> Continue to checkout
                     </button>
                     <p class="tkc-hold-note">Selected tickets are held for you for 10 minutes.</p>
                 </form>

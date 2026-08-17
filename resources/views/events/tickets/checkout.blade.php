@@ -28,7 +28,7 @@
              data-hold-expires-at="{{ $earliestExpiry?->toIso8601String() }}">
         <div class="tkc-card">
             <header class="tkc-header">
-                <p class="tkc-event-badge"><i class="fa-solid fa-ticket" aria-hidden="true"></i> Checkout</p>
+                <p class="tkc-event-badge"><i class="fa-solid fa-credit-card" aria-hidden="true"></i> Checkout</p>
                 <h1 class="tkc-title">{{ $event->name }}</h1>
                 <a href="{{ route('events.public.tickets', $event->slug) }}" class="tkc-back-link">
                     <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Change tickets

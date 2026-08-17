@@ -12,9 +12,12 @@ use App\Models\StagedMedia;
 use App\Models\TicketType;
 use App\Models\User;
 use App\Support\TicketingSettings;
+use App\Notifications\TicketingApprovedNotification;
+use App\Notifications\TicketingRejectedNotification;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -330,6 +333,28 @@ class TicketingTest extends TestCase
         $this->assertTrue($event->ticketSalesAreApproved());
     }
 
+    public function test_approving_ticket_sales_notifies_the_organizer(): void
+    {
+        Notification::fake();
+
+        $owner = User::factory()->create();
+        $event = Event::factory()->for($owner)->ticketed()->create([
+            'ticketing_status' => TicketingStatus::PendingReview,
+            'ticketing_submitted_at' => now(),
+            'cover_image' => 'events/hero.webp',
+        ]);
+        TicketType::factory()->for($event)->create();
+
+        $admin = Admin::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.ticketing.approve', $event), [])
+            ->assertRedirect(route('admin.ticketing.show', $event));
+
+        Notification::assertSentTo($owner, TicketingApprovedNotification::class);
+    }
+
     public function test_admin_cannot_approve_without_a_hero_image(): void
     {
         $owner = User::factory()->create();
@@ -373,7 +398,9 @@ class TicketingTest extends TestCase
             ->get(route('admin.ticketing.show', $event))
             ->assertOk()
             ->assertSee('Hero image', false)
-            ->assertSee('No hero image yet', false);
+            ->assertSee('No hero image yet', false)
+            ->assertSee('data-upload-commit="1"', false)
+            ->assertSee('js/media-uploader.js', false);
 
         $this->actingAs($admin, 'admin')
             ->post(route('admin.ticketing.hero', $event), [
@@ -381,6 +408,37 @@ class TicketingTest extends TestCase
             ])
             ->assertRedirect(route('admin.ticketing.show', $event))
             ->assertSessionHas('status', 'ticketing-hero-updated');
+
+        $event->refresh();
+        $this->assertNotNull($event->cover_image);
+        $this->assertMatchesRegularExpression('/\.webp$/', $event->cover_image);
+        Storage::disk('public')->assertExists($event->cover_image);
+    }
+
+    public function test_admin_can_upload_a_ticketed_hero_image_on_pick(): void
+    {
+        if (! extension_loaded('gd') && ! extension_loaded('imagick')) {
+            $this->markTestSkipped('GD or Imagick is required for hero image processing.');
+        }
+
+        Storage::fake('public');
+
+        $owner = User::factory()->create();
+        $event = Event::factory()->for($owner)->ticketed()->create([
+            'ticketing_status' => TicketingStatus::PendingReview,
+            'ticketing_submitted_at' => now(),
+        ]);
+
+        $admin = Admin::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin, 'admin')
+            ->postJson(route('admin.ticketing.hero', $event), [
+                'slot' => 'cover',
+                'file' => UploadedFile::fake()->image('hero.jpg', 1400, 800),
+            ])
+            ->assertCreated()
+            ->assertJsonStructure(['url']);
 
         $event->refresh();
         $this->assertNotNull($event->cover_image);
@@ -563,6 +621,33 @@ class TicketingTest extends TestCase
 
         $this->assertSame(TicketingStatus::PendingReview, $event->fresh()->ticketing_status);
         $this->assertNull($event->fresh()->ticketing_rejection_note);
+    }
+
+    public function test_rejecting_ticket_sales_notifies_the_organizer(): void
+    {
+        Notification::fake();
+
+        $owner = User::factory()->create();
+        $event = Event::factory()->for($owner)->ticketed()->create([
+            'ticketing_status' => TicketingStatus::PendingReview,
+            'ticketing_submitted_at' => now(),
+        ]);
+        TicketType::factory()->for($event)->create();
+
+        $admin = Admin::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.ticketing.reject', $event), [
+                'ticketing_rejection_note' => 'Need a clearer venue.',
+            ])
+            ->assertRedirect(route('admin.ticketing.show', $event));
+
+        Notification::assertSentTo(
+            $owner,
+            TicketingRejectedNotification::class,
+            fn (TicketingRejectedNotification $n) => $n->note === 'Need a clearer venue.'
+        );
     }
 
     public function test_commission_defaults_to_five_percent(): void

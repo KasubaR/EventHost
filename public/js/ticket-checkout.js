@@ -1,5 +1,7 @@
 (function () {
     document.addEventListener('DOMContentLoaded', () => {
+        initQtySteppers(document);
+
         const root = document.querySelector('[data-checkout-root]');
         if (!root) {
             return;
@@ -119,4 +121,52 @@
             }
         }
     });
+
+    function initQtySteppers(root) {
+        root.querySelectorAll('[data-tkc-qty]').forEach((wrap) => {
+            if (wrap.dataset.tkcQtyReady === '1') {
+                return;
+            }
+            wrap.dataset.tkcQtyReady = '1';
+
+            const input = wrap.querySelector('input[type="number"]');
+            const minus = wrap.querySelector('[data-tkc-qty-dec]');
+            const plus = wrap.querySelector('[data-tkc-qty-inc]');
+            if (!input) {
+                return;
+            }
+
+            const min = () => parseInt(input.min || '0', 10);
+            const max = () => {
+                const parsed = parseInt(input.max, 10);
+                return Number.isNaN(parsed) ? 100 : parsed;
+            };
+
+            const clamp = (value) => Math.min(max(), Math.max(min(), value));
+
+            const syncButtons = () => {
+                const value = parseInt(input.value, 10) || 0;
+                if (minus) minus.disabled = value <= min();
+                if (plus) plus.disabled = value >= max();
+            };
+
+            const set = (value) => {
+                input.value = String(clamp(value));
+                syncButtons();
+            };
+
+            if (minus) {
+                minus.addEventListener('click', () => {
+                    set((parseInt(input.value, 10) || 0) - 1);
+                });
+            }
+            if (plus) {
+                plus.addEventListener('click', () => {
+                    set((parseInt(input.value, 10) || 0) + 1);
+                });
+            }
+            input.addEventListener('change', () => set(parseInt(input.value, 10) || 0));
+            syncButtons();
+        });
+    }
 })();

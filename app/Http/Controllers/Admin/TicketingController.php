@@ -13,6 +13,7 @@ use App\Models\Event;
 use App\Services\TicketingActivationService;
 use App\Support\AdminActivity;
 use App\Support\InvitationMediaStager;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -59,11 +60,11 @@ class TicketingController extends Controller
         ]);
     }
 
-    public function updateHero(UpdateTicketedHeroRequest $request, Event $event): RedirectResponse
+    public function updateHero(UpdateTicketedHeroRequest $request, Event $event): RedirectResponse|JsonResponse
     {
         abort_unless($event->isTicketed(), 404);
 
-        $file = $request->file('hero_image');
+        $file = $request->file('file') ?? $request->file('hero_image');
         if (! $file instanceof UploadedFile) {
             abort(422);
         }
@@ -86,6 +87,13 @@ class TicketingController extends Controller
         AdminActivity::log('Admin set ticketed event hero image', [
             'event_id' => $event->id,
         ]);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'url' => $event->cover_image_url,
+                'name' => mb_substr((string) $file->getClientOriginalName(), 0, 255),
+            ], 201);
+        }
 
         return redirect()
             ->route('admin.ticketing.show', $event)

@@ -2,9 +2,12 @@
     @push('styles')
         <link rel="stylesheet" href="{{ asset('css/events-admin.css') }}">
         <link rel="stylesheet" href="{{ asset('css/datetime-picker.css') }}">
+        <link rel="stylesheet" href="{{ asset('css/media-uploader.css') }}">
     @endpush
     @push('scripts')
         <script src="{{ asset('js/datetime-picker.js') }}" defer></script>
+        <script src="{{ asset('js/media-uploader.js') }}" defer></script>
+        <script src="{{ asset('js/admin-hero-upload.js') }}" defer></script>
     @endpush
 
     @php
@@ -43,26 +46,37 @@
     <div class="admin-panel-card admin-hero-card">
         <h2>Hero image</h2>
         <p class="admin-muted">Wide banner for the public ticket page. Cropped to 1200×630.</p>
-        @if ($ev->cover_image)
-            <img src="{{ $ev->cover_image_url }}" alt="" width="1200" height="630" class="admin-hero-preview">
-        @else
-            <p class="admin-muted admin-mt-sm">No hero image yet. Upload one before approving ticket sales.</p>
-        @endif
+        <img @if ($ev->cover_image) src="{{ $ev->cover_image_url }}" @endif alt="" width="1200" height="630" class="admin-hero-preview" @if (! $ev->cover_image) hidden @endif>
+        @unless ($ev->cover_image)
+            <p class="admin-muted admin-mt-sm" data-hero-empty>No hero image yet. Upload one before approving ticket sales.</p>
+        @endunless
 
         @if (auth('admin')->user()?->can('ticketing.approve'))
             <form method="post" action="{{ route('admin.ticketing.hero', $ev) }}" enctype="multipart/form-data" class="profile-form admin-mt-md">
                 @csrf
-                <label class="admin-tpl-field admin-tpl-file" for="hero_image">
-                    <span>{{ $ev->cover_image ? 'Replace hero image' : 'Upload hero image' }}</span>
-                    <input id="hero_image" name="hero_image" type="file" required accept="image/jpeg,image/png,image/webp">
-                </label>
+                <div class="admin-hero-upload" data-upload-queue>
+                    <label class="admin-hero-pick" for="hero_image">
+                        <i class="fa-solid fa-image" aria-hidden="true"></i>
+                        <span data-hero-label>{{ $ev->cover_image ? 'Replace hero image' : 'Upload hero image' }}</span>
+                        <input id="hero_image" name="hero_image" type="file" accept="image/jpeg,image/png,image/webp"
+                               data-upload-slot="cover"
+                               data-upload-url="{{ route('admin.ticketing.hero', $ev) }}"
+                               data-upload-max-bytes="{{ \App\Support\InvitationMediaRules::COVER_MAX_KB * 1024 }}"
+                               data-upload-commit="1">
+                    </label>
+                </div>
                 <p class="admin-muted">JPEG, PNG or WebP up to 4 MB.</p>
                 @error('hero_image')
                     <p class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
                 @enderror
-                <div class="admin-actions admin-mt-sm">
-                    <button type="submit" class="btn-primary">Save hero</button>
-                </div>
+                @error('file')
+                    <p class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
+                @enderror
+                <noscript>
+                    <div class="admin-actions admin-mt-sm">
+                        <button type="submit" class="btn-primary">Save hero</button>
+                    </div>
+                </noscript>
             </form>
         @endif
     </div>
@@ -86,7 +100,7 @@
                            class="profile-input" value="{{ old('agreed_payout_on') }}"
                            min="{{ $ev->event_date?->format('Y-m-d') }}">
                     <div class="admin-actions admin-mt-md">
-                        <button type="submit" class="btn-primary" @disabled(! $ev->cover_image)>Approve ticket sales</button>
+                        <button type="submit" class="btn-primary" data-hero-approve @disabled(! $ev->cover_image)>Approve ticket sales</button>
                     </div>
                 </form>
 
@@ -103,22 +117,40 @@
 
         <div class="admin-panel-card">
             <h2>Ticket types</h2>
-            @forelse ($ev->ticketTypes as $type)
-                <p class="admin-muted admin-mt-sm">
-                    <strong>{{ $type->name }}</strong>
-                    · {{ \App\Support\TicketingSettings::formatZmw($type->price) }}
-                    · {{ $type->quantity === null ? 'Unlimited' : number_format($type->quantity) }}
-                    · {{ $type->is_active ? 'Active' : 'Hidden' }}
-                </p>
-            @empty
+            @if ($ev->ticketTypes->isEmpty())
                 <p class="admin-muted admin-mt-sm">No ticket types.</p>
-            @endforelse
-
-            @if(auth('admin')->user()?->can('users.view') && $ev->user)
-                <p class="admin-mt-md"><a href="{{ route('admin.users.show', $ev->user) }}">Organizer account</a></p>
+            @else
+                <ul class="tkt-type-list admin-mt-sm">
+                    @foreach ($ev->ticketTypes as $type)
+                        <li class="tkt-type-row">
+                            <div>
+                                <strong>{{ $type->name }}</strong>
+                                <p class="evt-muted">
+                                    {{ \App\Support\TicketingSettings::formatZmw($type->price) }}
+                                    · {{ $type->quantity === null ? 'Unlimited' : number_format($type->quantity).' available' }}
+                                </p>
+                            </div>
+                            <span class="tkt-sales-status {{ $type->is_active ? 'tkt-sales-status--on' : 'tkt-sales-status--off' }}">
+                                {{ $type->is_active ? 'Active' : 'Hidden' }}
+                            </span>
+                        </li>
+                    @endforeach
+                </ul>
             @endif
-            @if(auth('admin')->user()?->can('events.view'))
-                <p><a href="{{ route('admin.events.show', $ev) }}">Event record</a></p>
+
+            @if((auth('admin')->user()?->can('users.view') && $ev->user) || auth('admin')->user()?->can('events.view'))
+                <div class="admin-panel-links admin-mt-md">
+                    @if(auth('admin')->user()?->can('users.view') && $ev->user)
+                        <a href="{{ route('admin.users.show', $ev->user) }}" class="admin-panel-link">
+                            <i class="fa-solid fa-user"></i> Organizer account
+                        </a>
+                    @endif
+                    @if(auth('admin')->user()?->can('events.view'))
+                        <a href="{{ route('admin.events.show', $ev) }}" class="admin-panel-link">
+                            <i class="fa-solid fa-calendar-days"></i> Event record
+                        </a>
+                    @endif
+                </div>
             @endif
         </div>
     </div>

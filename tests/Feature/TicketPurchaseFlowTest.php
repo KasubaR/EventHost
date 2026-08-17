@@ -68,7 +68,9 @@ class TicketPurchaseFlowTest extends TestCase
 
         $this->get(route('events.public.tickets', $event->slug))
             ->assertOk()
-            ->assertSee('General Admission', false);
+            ->assertSee('General Admission', false)
+            ->assertSee('Qty', false)
+            ->assertSee('value="1"', false);
     }
 
     public function test_full_flow_absorb_commission_issues_tickets_and_pays_host_amount_minus_commission(): void

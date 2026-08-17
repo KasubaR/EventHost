@@ -6,6 +6,8 @@ use App\Enums\TicketingStatus;
 use App\Exceptions\TicketingActivationException;
 use App\Models\Admin;
 use App\Models\Event;
+use App\Notifications\TicketingApprovedNotification;
+use App\Notifications\TicketingRejectedNotification;
 use Illuminate\Support\Facades\DB;
 
 class TicketingActivationService
@@ -34,7 +36,7 @@ class TicketingActivationService
 
     public function approve(Event $event, Admin $admin, ?string $agreedPayoutOn = null): void
     {
-        DB::transaction(function () use ($event, $admin, $agreedPayoutOn): void {
+        $locked = DB::transaction(function () use ($event, $admin, $agreedPayoutOn): Event {
             $locked = Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
 
             if ($locked->ticketing_status !== TicketingStatus::PendingReview) {
@@ -54,12 +56,19 @@ class TicketingActivationService
                 'is_published' => true,
                 'is_public' => true,
             ])->save();
+
+            return $locked;
         });
+
+        // Outside the transaction: a queued notification only needs to fire
+        // once the approval has actually committed, and there's no reason to
+        // hold the row lock while it dispatches.
+        $locked->user?->notify(new TicketingApprovedNotification($locked));
     }
 
     public function reject(Event $event, Admin $admin, string $note): void
     {
-        DB::transaction(function () use ($event, $admin, $note): void {
+        $locked = DB::transaction(function () use ($event, $admin, $note): Event {
             $locked = Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
 
             if ($locked->ticketing_status !== TicketingStatus::PendingReview) {
@@ -72,6 +81,10 @@ class TicketingActivationService
                 'ticketing_reviewed_by' => $admin->id,
                 'ticketing_rejection_note' => $note,
             ])->save();
+
+            return $locked;
         });
+
+        $locked->user?->notify(new TicketingRejectedNotification($locked, $note));
     }
 }
