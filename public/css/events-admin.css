@@ -2163,10 +2163,22 @@ nav.tkt-tabs {
     margin-top: 16px;
 }
 
+/* It's a bare <nav>, so global.css's site-header nav {} rule (sticky navy
+   bar, fixed height) applies unless overridden here — same gotcha as
+   .dash-nav, nav.set-tabs, .tkt-tabs and .evt-kind-filter. */
 .admin-filter-row {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+    position: static;
+    z-index: auto;
+    top: auto;
+    width: 100%;
+    max-width: none;
+    height: auto;
+    padding: 0;
+    background: none;
+    justify-content: flex-start;
 }
 
 .admin-filter-row .is-active {
