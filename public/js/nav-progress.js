@@ -5,8 +5,8 @@
  * Billing, ...) or submitting a form reloads the whole document. Without any
  * feedback, the previous page just sits frozen for the entire round trip
  * before the browser swaps in the new one. This shows a thin progress line
- * plus a pulsing EventHost mark (the same icon used as the favicon) so the
- * click visibly registers while the next page loads.
+ * plus the EventHost mark with a spinning ring around it (the same icon used
+ * as the favicon) so the click visibly registers while the next page loads.
  *
  * Dependency-free, same pattern as datetime-picker.js / custom-select.js.
  * Pair with the #nav-progress-bar / #nav-progress-badge rules in
@@ -23,7 +23,12 @@
   // Same monogram as public/images/logo/EventHost Logo_Icon.svg, inlined so
   // it can be styled/animated without an extra request.
   badge.innerHTML =
-    '<svg viewBox="0 0 540 540" xmlns="http://www.w3.org/2000/svg">' +
+    '<span class="nav-progress-ring" aria-hidden="true">' +
+    '<svg viewBox="0 0 48 48">' +
+    '<circle class="nav-progress-ring-track" cx="24" cy="24" r="20"/>' +
+    '<circle class="nav-progress-ring-arc" cx="24" cy="24" r="20"/>' +
+    '</svg></span>' +
+    '<svg class="nav-progress-mark" viewBox="0 0 540 540" xmlns="http://www.w3.org/2000/svg">' +
     '<path fill="#e00e4f" d="m465.72,74.28v195.72c0,108.3-87.42,195.72-195.72,195.72s-195.72-87.42-195.72-195.72,88.07-195.72,195.72-195.72h195.72Z"/>' +
     '<g fill="#fff">' +
     '<path d="m379.3,290.27v59.21h30.23v-76.93c-7.58,9.06-18.18,15.48-30.23,17.72Zm-98.14,59.21h30.23v-58.34h-30.23v58.34Z"/>' +
