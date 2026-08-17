@@ -53,6 +53,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Ticketing wizard step 3 — commission picker saves itself the moment a
+    // card is picked, instead of needing a separate "Save commission
+    // setting" click. Scoped to data-auto-submit so the Settings-page copy
+    // of this same form (outside the wizard) still requires an explicit save.
+    document.querySelectorAll('form.tkt-commission-form[data-auto-submit]').forEach((form) => {
+        form.querySelectorAll('input[type="radio"]').forEach((radio) => {
+            radio.addEventListener('change', () => form.requestSubmit());
+        });
+    });
+
     // Map picker
     initMap();
 });

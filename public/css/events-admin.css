@@ -69,6 +69,17 @@
     color: var(--gray-mid, #64748b);
 }
 
+/* A section-head with a CTA on the right (e.g. "Add ticket type" on the
+   Ticket types card) instead of sitting in the page header where it's easy
+   to miss on shorter viewports. */
+.evt-section-head--with-action {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
 .evt-section-body {
     padding: 20px;
 }

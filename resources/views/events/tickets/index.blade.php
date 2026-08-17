@@ -15,7 +15,6 @@
                 <p class="dph-sub">{{ $event->name }} · {{ $event->ticketing_status->label() }}</p>
             </div>
             <div class="evt-card-actions">
-                <a href="{{ route('events.ticket-types.create', $event) }}" class="btn-primary"><i class="fa-solid fa-plus"></i> Add ticket type</a>
                 <a href="{{ route('events.show', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-arrow-left"></i> Event</a>
             </div>
         </div>
@@ -67,7 +66,12 @@
                 </div>
                 <p class="evt-muted tkt-locked-note">These values cannot be changed per event.</p>
 
-                <form method="post" action="{{ route('events.ticketing.update', $event) }}" class="tkt-commission-form">
+                {{-- Step 3 of the wizard auto-saves on pick — data-auto-submit tells
+                     events-form.js to submit on radio change instead of showing a
+                     separate Save button. Outside the wizard (Settings), the pick still
+                     needs an explicit save. --}}
+                <form method="post" action="{{ route('events.ticketing.update', $event) }}" class="tkt-commission-form"
+                      @if ($setupMode) data-auto-submit @endif>
                     @csrf
                     @method('PATCH')
                     <div class="profile-field">
@@ -99,7 +103,7 @@
                             <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                         @enderror
                     </div>
-                    @if ($event->canEditCommissionMode())
+                    @if ($event->canEditCommissionMode() && ! $setupMode)
                         <div class="evt-actions-bar">
                             <button type="submit" class="btn-primary">Save commission setting</button>
                         </div>
@@ -109,9 +113,12 @@
         </div>
 
         <div class="evt-section">
-            <div class="evt-section-head">
-                <h2>Ticket types</h2>
-                <p>Named prices and quantities buyers will choose from.</p>
+            <div class="evt-section-head evt-section-head--with-action">
+                <div>
+                    <h2>Ticket types</h2>
+                    <p>Named prices and quantities buyers will choose from.</p>
+                </div>
+                <a href="{{ route('events.ticket-types.create', $event) }}" class="btn-primary"><i class="fa-solid fa-plus"></i> Add ticket type</a>
             </div>
             <div class="evt-section-body">
                 @if ($ticketTypes->isEmpty())
@@ -142,17 +149,20 @@
             </div>
         </div>
 
-        @include('events.tickets.partials.activation-panel', ['event' => $event, 'ticketTypes' => $ticketTypes])
-
         @if ($setupMode)
+            {{-- Submitting for activation is the closing action of step 4, not
+                 here — reaching it requires passing through Review & publish
+                 first, so review never gets skipped. --}}
             <div class="evt-section">
                 <div class="evt-section-body evt-actions-bar">
-                    <a href="{{ route('events.edit', $event) }}" class="evt-btn-outline">
-                        Continue to event details <i class="fa-solid fa-arrow-right"></i>
+                    <a href="{{ route('events.edit', $event) }}" class="btn-primary">
+                        Continue to review &amp; publish <i class="fa-solid fa-arrow-right"></i>
                     </a>
-                    <span class="evt-muted">Come back to Settings any time to add more ticket types.</span>
+                    <span class="evt-muted">Review your event details, then submit for activation there.</span>
                 </div>
             </div>
+        @else
+            @include('events.tickets.partials.activation-panel', ['event' => $event, 'ticketTypes' => $ticketTypes])
         @endif
     </div>
 </x-app-layout>
