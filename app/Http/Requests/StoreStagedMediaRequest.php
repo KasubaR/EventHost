@@ -62,6 +62,15 @@ class StoreStagedMediaRequest extends FormRequest
 
             $slot = (string) $this->input('slot');
 
+            if ($slot === StagedMedia::SLOT_COVER && $event->isTicketed()) {
+                $validator->errors()->add(
+                    'file',
+                    'The public hero for a ticketed event is set by EventHost, not from this form.'
+                );
+
+                return;
+            }
+
             // Slots the layout does not have at all are rejected outright — no
             // pending edit in the open form can make them appear.
             $variant = InvitationLayoutVariant::normalize(

@@ -26,7 +26,6 @@ class StoreEventRequest extends FormRequest
             'venue' => $this->venue === '' ? null : $this->venue,
             'location_name' => $this->location_name === '' ? null : $this->location_name,
             'rsvp_deadline' => $this->rsvp_deadline === '' ? null : $this->rsvp_deadline,
-            'product_kind' => $this->input('product_kind') ?: EventProductKind::Invitation->value,
         ]);
     }
 

@@ -61,15 +61,25 @@ class EventController extends Controller
         }
 
         $prefTemplateId = null;
-        $slug = $request->query('template');
-        if (is_string($slug) && $slug !== '') {
+        $templateSlug = $request->query('template');
+        if (is_string($templateSlug) && $templateSlug !== '') {
             $prefTemplateId = InvitationTemplate::query()
-                ->where('slug', $slug)
+                ->where('slug', $templateSlug)
                 ->where('is_active', true)
                 ->value('id');
+            if ($prefTemplateId === null) {
+                $templateSlug = null;
+            }
+        } else {
+            $templateSlug = null;
         }
 
-        return view('events.create', compact('prefTemplateId'));
+        $productKind = $this->resolveCreateProductKind($request, $prefTemplateId);
+        if ($productKind === EventProductKind::Ticketed) {
+            $prefTemplateId = null;
+        }
+
+        return view('events.create', compact('prefTemplateId', 'templateSlug', 'productKind'));
     }
 
     public function store(StoreEventRequest $request): RedirectResponse
@@ -80,12 +90,16 @@ class EventController extends Controller
 
         $data = $request->validated();
         $preferredTemplateId = $data['preferred_invitation_template_id'] ?? null;
-        unset($data['preferred_invitation_template_id']);
+        unset($data['preferred_invitation_template_id'], $data['cover_image']);
 
+        $productKind = EventProductKind::from((string) $data['product_kind']);
         $newPath = null;
 
         try {
-            if ($request->hasFile('cover_image')) {
+            // Ticketed events have no host cover — EventHost uploads the public
+            // hero on the ticketing review page. Ignore a file that arrived
+            // because the host switched product kind after picking one.
+            if ($productKind !== EventProductKind::Ticketed && $request->hasFile('cover_image')) {
                 $newPath = $this->storeCoverImage($request->file('cover_image'));
                 $data['cover_image'] = $newPath;
             }
@@ -93,7 +107,6 @@ class EventController extends Controller
             $data['user_id'] = (int) $request->user()->id;
             $data['is_published'] = false;
 
-            $productKind = EventProductKind::from((string) $data['product_kind']);
             if ($productKind === EventProductKind::Ticketed) {
                 $data['ticketing_status'] = TicketingStatus::Draft;
                 $data['commission_mode'] = CommissionMode::Absorb;
@@ -184,12 +197,16 @@ class EventController extends Controller
         // redisplayed showing it, so deleting it here would break that page.
         $coverIsRollbackable = false;
 
-        $stagedCover = StagedMedia::query()
-            ->ownedBy($event->id, $request->user()->id)
-            ->where('slot', StagedMedia::SLOT_COVER)
-            ->whereIn('id', array_map('intval', (array) $request->input('staged_media', [])))
-            ->latest('id')
-            ->first();
+        $acceptHostCover = ! $event->isTicketed();
+
+        $stagedCover = $acceptHostCover
+            ? StagedMedia::query()
+                ->ownedBy($event->id, $request->user()->id)
+                ->where('slot', StagedMedia::SLOT_COVER)
+                ->whereIn('id', array_map('intval', (array) $request->input('staged_media', [])))
+                ->latest('id')
+                ->first()
+            : null;
 
         // "Publish event" submits this same form, so the pending edits are saved
         // in the same request rather than being discarded by a separate publish post.
@@ -198,10 +215,10 @@ class EventController extends Controller
         $chargeable = false;
 
         try {
-            if ($stagedCover !== null) {
+            if ($acceptHostCover && $stagedCover !== null) {
                 $previousCover = $event->cover_image;
                 $newCoverPath = $stagedCover->path;
-            } elseif ($request->hasFile('cover_image')) {
+            } elseif ($acceptHostCover && $request->hasFile('cover_image')) {
                 $previousCover = $event->cover_image;
                 $newCoverPath = $this->storeCoverImage($request->file('cover_image'));
                 $coverIsRollbackable = true;
@@ -212,7 +229,7 @@ class EventController extends Controller
                 $data = $request->validated();
 
                 // Never a column — it is the receipt for an upload that already happened.
-                unset($data['staged_media']);
+                unset($data['staged_media'], $data['cover_image']);
 
                 if ($newCoverPath !== null) {
                     $data['cover_image'] = $newCoverPath;
@@ -394,6 +411,31 @@ class EventController extends Controller
             .'uses 1 event credit, and you have none left.',
             'no-credits-to-redefine',
         ];
+    }
+
+    private function resolveCreateProductKind(Request $request, mixed $prefTemplateId): ?EventProductKind
+    {
+        $fromQuery = $request->query('kind');
+        if (is_string($fromQuery)) {
+            $kind = EventProductKind::tryFrom($fromQuery);
+            if ($kind !== null) {
+                return $kind;
+            }
+        }
+
+        $fromOld = old('product_kind');
+        if (is_string($fromOld)) {
+            $kind = EventProductKind::tryFrom($fromOld);
+            if ($kind !== null) {
+                return $kind;
+            }
+        }
+
+        if ($prefTemplateId !== null) {
+            return EventProductKind::Invitation;
+        }
+
+        return null;
     }
 
     /**

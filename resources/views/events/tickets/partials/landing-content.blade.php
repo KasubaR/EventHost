@@ -7,12 +7,12 @@
     events/preview.blade.php for invitation events.
 
     Structure mirrors the reference mock (preview.html): a full hero with the
-    title/meta overlaid on the cover image, then a two-column layout — About /
-    Tickets / Location on the left, a sticky buy-box on the right. Card chrome
-    and buyer-facing text (.tkc-*) are reused from ticket-checkout.css so this
-    page and the buy flow feel like one product; the hero/grid pieces are
-    ticket-event-public.css's own (.tev-*) since nothing else on the site
-    overlays text on an image like this.
+    title/meta overlaid on the EventHost-set hero image (stored as cover_image),
+    then a two-column layout — About / Tickets / Location on the left, a sticky
+    buy-box on the right. Card chrome and buyer-facing text (.tkc-*) are reused
+    from ticket-checkout.css so this page and the buy flow feel like one product;
+    the hero/grid pieces are ticket-event-public.css's own (.tev-*) since nothing
+    else on the site overlays text on an image like this.
 --}}
 @php
     $typeLabels = [

@@ -41,6 +41,10 @@ class TicketingActivationService
                 throw new TicketingActivationException('Only events awaiting review can be approved.');
             }
 
+            if (! filled($locked->cover_image)) {
+                throw new TicketingActivationException('Add a hero image before approving ticket sales.');
+            }
+
             $locked->forceFill([
                 'ticketing_status' => TicketingStatus::Approved,
                 'ticketing_reviewed_at' => now(),

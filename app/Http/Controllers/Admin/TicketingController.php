@@ -7,12 +7,16 @@ use App\Exceptions\TicketingActivationException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ApproveTicketingRequest;
 use App\Http\Requests\Admin\RejectTicketingRequest;
+use App\Http\Requests\Admin\UpdateTicketedHeroRequest;
 use App\Models\Admin;
 use App\Models\Event;
 use App\Services\TicketingActivationService;
 use App\Support\AdminActivity;
+use App\Support\InvitationMediaStager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class TicketingController extends Controller
@@ -53,6 +57,39 @@ class TicketingController extends Controller
         return view('admin.ticketing.show', [
             'adminEvent' => $event,
         ]);
+    }
+
+    public function updateHero(UpdateTicketedHeroRequest $request, Event $event): RedirectResponse
+    {
+        abort_unless($event->isTicketed(), 404);
+
+        $file = $request->file('hero_image');
+        if (! $file instanceof UploadedFile) {
+            abort(422);
+        }
+
+        $newPath = InvitationMediaStager::storeCover($file);
+        $previous = $event->cover_image;
+
+        try {
+            $event->forceFill(['cover_image' => $newPath])->save();
+        } catch (\Throwable $e) {
+            Storage::disk('public')->delete($newPath);
+
+            throw $e;
+        }
+
+        if ($previous) {
+            Storage::disk('public')->delete($previous);
+        }
+
+        AdminActivity::log('Admin set ticketed event hero image', [
+            'event_id' => $event->id,
+        ]);
+
+        return redirect()
+            ->route('admin.ticketing.show', $event)
+            ->with('status', 'ticketing-hero-updated');
     }
 
     public function approve(

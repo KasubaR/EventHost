@@ -22,12 +22,13 @@
         ? $rsvpOld
         : (isset($event) && $event?->rsvp_deadline ? $event->rsvp_deadline->format('Y-m-d\TH:i') : '');
 
+    $selectedProductKind = $selectedProductKind ?? null;
     $productKind = old(
         'product_kind',
-        $event?->product_kind?->value ?? \App\Enums\EventProductKind::Invitation->value
+        $event?->product_kind?->value ?? ($selectedProductKind?->value ?? \App\Enums\EventProductKind::Invitation->value)
     );
     $isTicketed = $productKind === \App\Enums\EventProductKind::Ticketed->value;
-    $productKindLocked = $event !== null;
+    $productKindLocked = $event !== null || $selectedProductKind instanceof \App\Enums\EventProductKind;
 @endphp
 
 <input type="hidden" name="is_public" value="0">
@@ -69,36 +70,14 @@
 
             <div class="profile-field">
                 <span class="profile-label">How people join</span>
-                @if ($productKindLocked)
-                    <p class="evt-readonly-note">
-                        {{ $event->product_kind->label() }}
+                <p class="evt-readonly-note">
+                    {{ $event?->product_kind?->label() ?? \App\Enums\EventProductKind::from($productKind)->label() }}
+                    @if ($event)
                         — this is set when the event is created and cannot be changed.
-                    </p>
-                @else
-                    <div class="evt-product-choice" data-product-kind>
-                        <label class="evt-product-choice-card">
-                            <input type="radio" name="product_kind" value="invitation"
-                                   class="evt-check-input"
-                                   @checked($productKind === 'invitation')>
-                            <span>
-                                <strong>Invitation / RSVP</strong>
-                                <span class="evt-product-choice-hint">Guests respond on a personal or public invite. Publishing uses 1 event credit.</span>
-                            </span>
-                        </label>
-                        <label class="evt-product-choice-card">
-                            <input type="radio" name="product_kind" value="ticketed"
-                                   class="evt-check-input"
-                                   @checked($productKind === 'ticketed')>
-                            <span>
-                                <strong>Ticketed event</strong>
-                                <span class="evt-product-choice-hint">Sell tickets through EventHost checkout (Lenco). EventHost reviews sales before they go live — no event credit.</span>
-                            </span>
-                        </label>
-                    </div>
-                    @error('product_kind')
-                        <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
-                    @enderror
-                @endif
+                    @else
+                        <a href="{{ route('events.create') }}" class="evt-kind-change">Change</a>
+                    @endif
+                </p>
             </div>
 
             <div class="profile-field">
@@ -207,35 +186,41 @@
         </div>
     </div>
 
-    <div class="evt-section">
-        <div class="evt-section-head">
-            <h2>Cover image</h2>
-            <p>Recommended wide image; we crop to 1200×630 for sharing.</p>
-        </div>
-        <div class="evt-section-body">
-            <div class="profile-photo-row">
-                <img src="{{ isset($event) ? $event->cover_image_url : asset('images/default-event.png') }}" alt="" width="120" height="68" class="profile-photo-preview evt-cover-preview" id="evt-cover-preview">
-                <div>
-                    <label for="cover_image" class="profile-photo-btn">
-                        <i class="fa-solid fa-image"></i> Upload cover
-                    </label>
-                    {{-- Staged on pick only when the event already exists; the create
-                         page has no id to scope an upload to, so it posts the file
-                         with the form as it always has. --}}
-                    <input id="cover_image" name="cover_image" type="file" accept="image/jpeg,image/png,image/webp" class="profile-photo-input"
-                           @isset($event)
-                               data-upload-slot="cover"
-                               data-upload-url="{{ route('events.media.stage', $event) }}"
-                               data-upload-max-bytes="{{ \App\Support\InvitationMediaRules::COVER_MAX_KB * 1024 }}"
-                           @endisset>
-                    <p class="profile-photo-hint">JPG, PNG or WEBP · Max 4MB</p>
-                    @error('cover_image')
-                        <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
-                    @enderror
+    {{-- Ticketed events have no host cover. EventHost sets the public hero
+         (same 1200×630 crop, stored as cover_image) on the ticketing review
+         page. On create the section stays in the DOM so the product-kind
+         toggle can hide it; on a locked ticketed edit it is omitted entirely. --}}
+    @if (! $productKindLocked || ! $isTicketed)
+        <div class="evt-section" data-product-panel="invitation" @if ($isTicketed) hidden @endif>
+            <div class="evt-section-head">
+                <h2>Cover image</h2>
+                <p>Recommended wide image; we crop to 1200×630 for sharing.</p>
+            </div>
+            <div class="evt-section-body">
+                <div class="profile-photo-row">
+                    <img src="{{ isset($event) ? $event->cover_image_url : asset('images/default-event.png') }}" alt="" width="120" height="68" class="profile-photo-preview evt-cover-preview" id="evt-cover-preview">
+                    <div>
+                        <label for="cover_image" class="profile-photo-btn">
+                            <i class="fa-solid fa-image"></i> Upload cover
+                        </label>
+                        {{-- Staged on pick only when the event already exists; the create
+                             page has no id to scope an upload to, so it posts the file
+                             with the form as it always has. --}}
+                        <input id="cover_image" name="cover_image" type="file" accept="image/jpeg,image/png,image/webp" class="profile-photo-input"
+                               @isset($event)
+                                   data-upload-slot="cover"
+                                   data-upload-url="{{ route('events.media.stage', $event) }}"
+                                   data-upload-max-bytes="{{ \App\Support\InvitationMediaRules::COVER_MAX_KB * 1024 }}"
+                               @endisset>
+                        <p class="profile-photo-hint">JPG, PNG or WEBP · Max 4MB</p>
+                        @error('cover_image')
+                            <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
+                        @enderror
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    @endif
 
     <div class="evt-section" data-product-panel="ticketed" @unless ($isTicketed) hidden @endunless>
         <div class="evt-section-head">

@@ -125,6 +125,7 @@ Route::prefix('admin')
         });
 
         Route::middleware(['permission:ticketing.approve,admin', 'throttle:admin-mutations'])->group(function (): void {
+            Route::post('/ticketing/{event}/hero', [AdminTicketingController::class, 'updateHero'])->name('ticketing.hero');
             Route::post('/ticketing/{event}/approve', [AdminTicketingController::class, 'approve'])->name('ticketing.approve');
             Route::post('/ticketing/{event}/reject', [AdminTicketingController::class, 'reject'])->name('ticketing.reject');
         });

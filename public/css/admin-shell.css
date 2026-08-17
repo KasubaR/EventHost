@@ -151,6 +151,22 @@
   margin-bottom: 12px;
 }
 
+.admin-hero-preview {
+  display: block;
+  width: 100%;
+  max-width: 560px;
+  aspect-ratio: 1200 / 630;
+  object-fit: cover;
+  margin-top: 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--line);
+}
+
+.admin-hero-card {
+  margin-bottom: 20px;
+}
+
 .admin-mt-lg {
   margin-top: 28px;
 }

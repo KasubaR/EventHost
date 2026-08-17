@@ -31,7 +31,10 @@
         </div>
     </x-slot>
 
-    @include('events.partials.steps', ['current' => 3, 'ticketed' => $event->isTicketed()])
+    @include('events.partials.steps', [
+        'current' => $event->isTicketed() ? 3 : 4,
+        'ticketed' => $event->isTicketed(),
+    ])
 
     @if (session('status') === 'draft-saved')
         <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Draft saved — continue editing or publish below.</div>

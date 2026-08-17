@@ -32,11 +32,40 @@
         <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Ticket sales approved. The public page is live — checkout ships in a later phase.</div>
     @elseif (session('status') === 'ticketing-rejected')
         <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Activation declined. The organizer can edit and resubmit.</div>
+    @elseif (session('status') === 'ticketing-hero-updated')
+        <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Hero image saved. It is the banner on the public ticket page.</div>
     @endif
 
     @if ($errors->any())
         <div class="profile-errors evt-flash" role="alert"><i class="fa-solid fa-circle-exclamation"></i> {{ $errors->first() }}</div>
     @endif
+
+    <div class="admin-panel-card admin-hero-card">
+        <h2>Hero image</h2>
+        <p class="admin-muted">Wide banner for the public ticket page. Cropped to 1200×630.</p>
+        @if ($ev->cover_image)
+            <img src="{{ $ev->cover_image_url }}" alt="" width="1200" height="630" class="admin-hero-preview">
+        @else
+            <p class="admin-muted admin-mt-sm">No hero image yet. Upload one before approving ticket sales.</p>
+        @endif
+
+        @if (auth('admin')->user()?->can('ticketing.approve'))
+            <form method="post" action="{{ route('admin.ticketing.hero', $ev) }}" enctype="multipart/form-data" class="profile-form admin-mt-md">
+                @csrf
+                <label class="admin-tpl-field admin-tpl-file" for="hero_image">
+                    <span>{{ $ev->cover_image ? 'Replace hero image' : 'Upload hero image' }}</span>
+                    <input id="hero_image" name="hero_image" type="file" required accept="image/jpeg,image/png,image/webp">
+                </label>
+                <p class="admin-muted">JPEG, PNG or WebP up to 4 MB.</p>
+                @error('hero_image')
+                    <p class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
+                @enderror
+                <div class="admin-actions admin-mt-sm">
+                    <button type="submit" class="btn-primary">Save hero</button>
+                </div>
+            </form>
+        @endif
+    </div>
 
     <div class="admin-detail-grid">
         <div class="admin-panel-card">
@@ -57,7 +86,7 @@
                            class="profile-input" value="{{ old('agreed_payout_on') }}"
                            min="{{ $ev->event_date?->format('Y-m-d') }}">
                     <div class="admin-actions admin-mt-md">
-                        <button type="submit" class="btn-primary">Approve ticket sales</button>
+                        <button type="submit" class="btn-primary" @disabled(! $ev->cover_image)>Approve ticket sales</button>
                     </div>
                 </form>
 

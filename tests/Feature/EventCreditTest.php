@@ -21,6 +21,7 @@ class EventCreditTest extends TestCase
         return array_merge([
             'name' => 'Chanda & Mwila Wedding',
             'event_type' => 'wedding',
+            'product_kind' => 'invitation',
             'event_date' => now()->addMonth()->format('Y-m-d'),
             'event_time' => '14:00',
             'venue' => 'Lusaka Grand',

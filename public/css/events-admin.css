@@ -1894,6 +1894,65 @@ body.evt-qr-lightbox-open {
     color: var(--navy, #1a2a4a);
 }
 
+.evt-kind-change {
+    margin-left: 6px;
+    font-weight: 600;
+    color: var(--accent, #1e47bb);
+    text-decoration: none;
+}
+
+.evt-kind-change:hover {
+    text-decoration: underline;
+}
+
+.evt-kind-picker {
+    display: grid;
+    gap: 14px;
+}
+
+@media (min-width: 720px) {
+    .evt-kind-picker {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.evt-kind-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 22px 20px;
+    border: 1px solid var(--border-soft, rgba(26, 42, 74, 0.12));
+    border-radius: 14px;
+    background: var(--surface, #fff);
+    color: inherit;
+    text-decoration: none;
+    box-shadow: var(--card-shadow, none);
+}
+
+.evt-kind-card:hover,
+.evt-kind-card:focus-visible {
+    border-color: var(--blue, #1e47bb);
+    background: rgba(30, 71, 187, 0.05);
+}
+
+.evt-kind-card-icon {
+    font-size: 22px;
+    color: var(--blue, #1e47bb);
+}
+
+.evt-kind-card strong {
+    font-family: Outfit, sans-serif;
+    font-size: 18px;
+}
+
+.evt-kind-card-hint {
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.45;
+    color: var(--gray-mid, #64748b);
+}
+
 .tkt-locked-facts {
     display: grid;
     gap: 12px;

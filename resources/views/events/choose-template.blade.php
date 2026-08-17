@@ -18,7 +18,7 @@
         </div>
     </x-slot>
 
-    @include('events.partials.steps', ['current' => 2])
+    @include('events.partials.steps', ['current' => 3])
 
     @if (session('status') === 'draft-saved')
         <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Draft saved — choose a layout below.</div>

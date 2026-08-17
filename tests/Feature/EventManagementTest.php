@@ -49,6 +49,7 @@ class EventManagementTest extends TestCase
         $response = $this->actingAs($user)->post(route('events.store'), [
             'name' => 'Summer Gathering',
             'event_type' => 'birthday',
+            'product_kind' => 'invitation',
             'description' => null,
             'event_date' => now()->addWeek()->format('Y-m-d'),
             'event_time' => '15:30',
@@ -194,6 +195,7 @@ class EventManagementTest extends TestCase
             'latitude' => null,
             'longitude' => null,
             'cover_image' => $file,
+            'product_kind' => 'invitation',
             'is_public' => '1',
             'rsvp_deadline' => null,
             'guest_limit' => null,

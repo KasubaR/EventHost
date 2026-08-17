@@ -8,11 +8,14 @@ use App\Enums\TicketingStatus;
 use App\Models\Admin;
 use App\Models\Event;
 use App\Models\Guest;
+use App\Models\StagedMedia;
 use App\Models\TicketType;
 use App\Models\User;
 use App\Support\TicketingSettings;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class TicketingTest extends TestCase
@@ -25,13 +28,63 @@ class TicketingTest extends TestCase
         $this->seed(RolePermissionSeeder::class);
     }
 
-    public function test_store_defaults_to_invitation_product(): void
+    public function test_create_starts_by_choosing_how_people_join(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->get(route('events.create'))
+            ->assertOk()
+            ->assertSee('Invitation / RSVP', false)
+            ->assertSee('Guests respond on a personal or public invite. Publishing uses 1 event credit.', false)
+            ->assertSee('Ticketed event', false)
+            ->assertSee('Sell tickets through EventHost checkout (Lenco). EventHost reviews sales before they go live — no event credit.', false)
+            ->assertDontSee('name="name"', false)
+            ->assertSee(route('events.create', ['kind' => 'invitation']), false)
+            ->assertSee(route('events.create', ['kind' => 'ticketed']), false);
+    }
+
+    public function test_create_details_form_locks_the_chosen_product_kind(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->get(route('events.create', ['kind' => 'invitation']))
+            ->assertOk()
+            ->assertSee('name="name"', false)
+            ->assertSee('Invitation / RSVP', false)
+            ->assertSee('Change', false)
+            ->assertDontSee('Ticketed event', false);
+
+        $this->actingAs($user)
+            ->get(route('events.create', ['kind' => 'ticketed']))
+            ->assertOk()
+            ->assertSee('name="name"', false)
+            ->assertSee('Ticketed event', false)
+            ->assertDontSee('Cover image', false)
+            ->assertDontSee('Invitation / RSVP', false);
+    }
+
+    public function test_store_requires_a_product_kind(): void
     {
         $user = User::factory()->create();
 
         $this->actingAs($user)->post(route('events.store'), [
             'name' => 'Garden Party',
             'event_type' => 'birthday',
+            'event_date' => now()->addWeek()->format('Y-m-d'),
+            'event_time' => '15:00',
+        ])->assertSessionHasErrors('product_kind');
+    }
+
+    public function test_store_creates_an_invitation_product(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->post(route('events.store'), [
+            'name' => 'Garden Party',
+            'event_type' => 'birthday',
+            'product_kind' => EventProductKind::Invitation->value,
             'event_date' => now()->addWeek()->format('Y-m-d'),
             'event_time' => '15:00',
         ])->assertRedirect();
@@ -249,6 +302,7 @@ class TicketingTest extends TestCase
         $event = Event::factory()->for($owner)->ticketed()->create([
             'ticketing_status' => TicketingStatus::PendingReview,
             'ticketing_submitted_at' => now(),
+            'cover_image' => 'events/hero.webp',
         ]);
         TicketType::factory()->for($event)->create();
 
@@ -270,6 +324,135 @@ class TicketingTest extends TestCase
         $this->assertSame($payoutOn, $event->agreed_payout_on?->format('Y-m-d'));
         $this->assertSame(0, $owner->fresh()->event_credits);
         $this->assertTrue($event->ticketSalesAreApproved());
+    }
+
+    public function test_admin_cannot_approve_without_a_hero_image(): void
+    {
+        $owner = User::factory()->create();
+        $event = Event::factory()->for($owner)->ticketed()->create([
+            'ticketing_status' => TicketingStatus::PendingReview,
+            'ticketing_submitted_at' => now(),
+        ]);
+        TicketType::factory()->for($event)->create();
+
+        $admin = Admin::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin, 'admin')
+            ->from(route('admin.ticketing.show', $event))
+            ->post(route('admin.ticketing.approve', $event))
+            ->assertRedirect(route('admin.ticketing.show', $event))
+            ->assertSessionHasErrors('ticketing');
+
+        $this->assertSame(TicketingStatus::PendingReview, $event->fresh()->ticketing_status);
+        $this->assertFalse((bool) $event->fresh()->is_published);
+    }
+
+    public function test_admin_can_upload_a_ticketed_hero_image(): void
+    {
+        if (! extension_loaded('gd') && ! extension_loaded('imagick')) {
+            $this->markTestSkipped('GD or Imagick is required for hero image processing.');
+        }
+
+        Storage::fake('public');
+
+        $owner = User::factory()->create();
+        $event = Event::factory()->for($owner)->ticketed()->create([
+            'ticketing_status' => TicketingStatus::PendingReview,
+            'ticketing_submitted_at' => now(),
+        ]);
+
+        $admin = Admin::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.ticketing.show', $event))
+            ->assertOk()
+            ->assertSee('Hero image', false)
+            ->assertSee('No hero image yet', false);
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.ticketing.hero', $event), [
+                'hero_image' => UploadedFile::fake()->image('hero.jpg', 1400, 800),
+            ])
+            ->assertRedirect(route('admin.ticketing.show', $event))
+            ->assertSessionHas('status', 'ticketing-hero-updated');
+
+        $event->refresh();
+        $this->assertNotNull($event->cover_image);
+        $this->assertMatchesRegularExpression('/\.webp$/', $event->cover_image);
+        Storage::disk('public')->assertExists($event->cover_image);
+    }
+
+    public function test_support_cannot_upload_a_ticketed_hero_image(): void
+    {
+        $owner = User::factory()->create();
+        $event = Event::factory()->for($owner)->ticketed()->create();
+
+        $support = Admin::factory()->create();
+        $support->assignRole('support');
+
+        $this->actingAs($support, 'admin')
+            ->post(route('admin.ticketing.hero', $event), [
+                'hero_image' => UploadedFile::fake()->image('hero.jpg', 1400, 800),
+            ])
+            ->assertForbidden();
+
+        $this->assertNull($event->fresh()->cover_image);
+    }
+
+    public function test_ticketed_store_ignores_a_host_cover_upload(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->post(route('events.store'), [
+            'name' => 'Summer Festival',
+            'event_type' => 'corporate',
+            'product_kind' => EventProductKind::Ticketed->value,
+            'event_date' => now()->addMonth()->format('Y-m-d'),
+            'event_time' => '18:00',
+            'cover_image' => UploadedFile::fake()->image('cover.jpg', 1400, 800),
+        ]);
+
+        $event = Event::query()->where('user_id', $user->id)->firstOrFail();
+        $this->assertNull($event->cover_image);
+    }
+
+    public function test_host_cannot_overwrite_ticketed_hero_via_event_update(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->create();
+        Storage::disk('public')->put('events/admin-hero.webp', 'x');
+        $event = Event::factory()->for($user)->ticketed()->create([
+            'cover_image' => 'events/admin-hero.webp',
+        ]);
+
+        $this->actingAs($user)->patch(route('events.update', $event), [
+            'name' => $event->name,
+            'event_type' => $event->event_type,
+            'event_date' => $event->event_date->format('Y-m-d'),
+            'event_time' => '18:00',
+            'cover_image' => UploadedFile::fake()->image('sneaky.jpg', 1400, 800),
+        ])->assertSessionHasNoErrors();
+
+        $event->refresh();
+        $this->assertSame('events/admin-hero.webp', $event->cover_image);
+    }
+
+    public function test_host_cannot_stage_a_cover_on_a_ticketed_event(): void
+    {
+        $user = User::factory()->create();
+        $event = Event::factory()->for($user)->ticketed()->create();
+
+        $this->actingAs($user)
+            ->postJson(route('events.media.stage', $event), [
+                'slot' => StagedMedia::SLOT_COVER,
+                'file' => UploadedFile::fake()->image('cover.jpg', 1400, 800),
+            ])
+            ->assertUnprocessable();
+
+        $this->assertSame(0, StagedMedia::query()->where('event_id', $event->id)->count());
     }
 
     public function test_support_can_view_but_not_approve_ticketing(): void
@@ -367,6 +550,7 @@ class TicketingTest extends TestCase
             ->get(route('events.edit', $event))
             ->assertOk()
             ->assertDontSee('Choose invitation layout', false)
+            ->assertDontSee('Cover image', false)
             ->assertSee('Preview event', false);
     }
 
