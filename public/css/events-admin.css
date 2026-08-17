@@ -2180,10 +2180,12 @@ nav.tkt-tabs {
 nav.evt-kind-filter {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 8px;
     position: static;
     z-index: auto;
-    width: 100%;
+    width: auto;
     max-width: none;
     height: auto;
     margin: 0 0 20px;
