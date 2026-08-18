@@ -126,7 +126,7 @@
                         @foreach ($ticketTypes as $type)
                             <li class="tkt-type-row">
                                 <div>
-                                    <strong>{{ $type->name }}</strong>
+                                    <span class="tkt-type-name">{{ $type->name }}</span>
                                     <p class="evt-muted">{{ \App\Support\TicketingSettings::formatZmw($type->price) }}
                                         · {{ $type->quantity === null ? 'Unlimited' : number_format($type->quantity).' available' }}
                                         · {{ $type->is_active ? 'Active' : 'Hidden' }}

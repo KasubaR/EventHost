@@ -41,7 +41,13 @@
         <div class="admin-panel-card">
             <h2>Summary</h2>
             <p class="admin-muted admin-mt-sm">Type: {{ $ev->event_type }}</p>
-            <p class="admin-muted">Guests: {{ $ev->guests_count }} · RSVPs: {{ $ev->rsvps_count }}</p>
+            <p class="admin-muted">
+                Guests: {{ $ev->guests_count }} ·
+                RSVPs: {{ $ev->rsvps_count }}
+                @if(auth('admin')->user()?->can('rsvps.view'))
+                    <a href="{{ route('admin.events.rsvps', $ev) }}" class="admin-link">View RSVPs</a>
+                @endif
+            </p>
             <p class="admin-muted">Published: {{ $ev->is_published ? 'Yes' : 'No' }}</p>
             <p class="admin-muted">Public RSVP allowed: {{ $ev->is_public ? 'Yes' : 'No' }}</p>
             @if ($ev->isTicketed())

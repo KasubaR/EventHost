@@ -146,6 +146,7 @@
   align-items: center;
   gap: 8px;
   color: var(--accent);
+  font-family: 'DM Sans', sans-serif;
   font-size: 13px;
   font-weight: 600;
   text-decoration: none;
@@ -195,11 +196,14 @@
   background: var(--white);
   box-shadow: var(--card-shadow);
   padding: 18px 20px;
+  font-family: 'DM Sans', sans-serif;
 }
 
 .admin-panel-card h2 {
-  font-family: Outfit, sans-serif;
+  font-family: 'Outfit', sans-serif;
   font-size: 18px;
+  font-weight: 700;
+  color: var(--text-dark);
   margin-bottom: 12px;
 }
 

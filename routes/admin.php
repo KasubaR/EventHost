@@ -76,7 +76,7 @@ Route::prefix('admin')
         });
 
         Route::middleware('permission:rsvps.view,admin')->group(function (): void {
-            Route::get('/rsvps', [AdminRsvpController::class, 'index'])->name('rsvps.index');
+            Route::get('/events/{event}/rsvps', [AdminRsvpController::class, 'index'])->name('events.rsvps');
         });
 
         Route::middleware('permission:notifications.view,admin')->group(function (): void {

@@ -71,11 +71,6 @@
                         <i class="fa-solid fa-address-book"></i> Guests
                     </a>
                 @endif
-                @if(auth('admin')->user()?->can('rsvps.view'))
-                    <a href="{{ route('admin.rsvps.index') }}" class="dash-nav-link {{ request()->routeIs('admin.rsvps.*') ? 'is-active' : '' }}">
-                        <i class="fa-solid fa-reply"></i> RSVPs
-                    </a>
-                @endif
                 @if(auth('admin')->user()?->can('notifications.view'))
                     <a href="{{ route('admin.notifications.index') }}" class="dash-nav-link {{ request()->routeIs('admin.notifications.*') ? 'is-active' : '' }}">
                         <i class="fa-solid fa-paper-plane"></i> Notifications

@@ -2041,6 +2041,7 @@ body.evt-qr-lightbox-open {
     gap: 7px;
     padding: 5px 12px;
     border-radius: 999px;
+    font-family: 'DM Sans', sans-serif;
     font-size: 13px;
     font-weight: 700;
 }
@@ -2094,14 +2095,29 @@ body.evt-qr-lightbox-open {
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
+    align-items: center;
     gap: 12px;
     padding: 12px 0;
     border-bottom: 1px solid var(--border-soft, rgba(26, 42, 74, 0.08));
+    font-family: 'DM Sans', sans-serif;
 }
 
 .tkt-type-row:last-child {
     border-bottom: 0;
     padding-bottom: 0;
+}
+
+.tkt-type-name {
+    display: block;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-dark, #1a1a2e);
+    line-height: 1.35;
+}
+
+.tkt-type-row p {
+    margin-top: 2px;
 }
 
 /* Ticketing section tab strip (Phase 15) — a bare <nav>, so it needs the same

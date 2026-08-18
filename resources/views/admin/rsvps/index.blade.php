@@ -3,21 +3,35 @@
         <link rel="stylesheet" href="{{ asset('css/events-admin.css') }}">
     @endpush
 
-    <x-slot name="title">RSVPs</x-slot>
+    @php
+        $ev = $adminEvent;
+    @endphp
+
+    <x-slot name="title">{{ $ev->name }} · RSVPs</x-slot>
 
     <x-slot name="pageHeader">
         <div class="dph-inner">
             <div>
-                <h1 class="dph-title">RSVPs</h1>
-                <p class="dph-sub">Monitor responses platform-wide.</p>
+                <nav class="dash-breadcrumb">
+                    <a href="{{ route('admin.events.index') }}">Events</a>
+                    <i class="fa-solid fa-chevron-right"></i>
+                    <a href="{{ route('admin.events.show', $ev) }}">{{ $ev->name }}</a>
+                    <i class="fa-solid fa-chevron-right"></i>
+                    <span>RSVPs</span>
+                </nav>
+                <h1 class="dph-title">{{ $ev->name }}</h1>
+                <p class="dph-sub">Owner: {{ $ev->user?->email ?? '—' }}</p>
+            </div>
+            <div class="admin-actions">
+                <a href="{{ route('admin.events.show', $ev) }}" class="evt-btn-outline dash-header-cta">Back to event</a>
             </div>
         </div>
     </x-slot>
 
-    <form method="get" action="{{ route('admin.rsvps.index') }}" class="admin-filter-bar" role="search">
+    <form method="get" action="{{ route('admin.events.rsvps', $ev) }}" class="admin-filter-bar" role="search">
         <div>
             <label class="evt-sr-only" for="admin-rsvp-q">Search</label>
-            <input id="admin-rsvp-q" type="search" name="q" value="{{ $search }}" placeholder="Guest or event">
+            <input id="admin-rsvp-q" type="search" name="q" value="{{ $search }}" placeholder="Guest name or email">
         </div>
         <button type="submit" class="btn-primary">Search</button>
     </form>
@@ -29,8 +43,6 @@
                 <th>Guest</th>
                 <th>Status</th>
                 <th>Headcount</th>
-                <th>Event</th>
-                <th>Organizer</th>
                 <th>Updated</th>
             </tr>
             </thead>
@@ -40,12 +52,10 @@
                     <td>{{ $rsvp->guest?->name ?? '—' }}</td>
                     <td>{{ $rsvp->status instanceof \BackedEnum ? $rsvp->status->value : $rsvp->status }}</td>
                     <td>{{ $rsvp->attendee_count }}</td>
-                    <td>{{ $rsvp->event?->name ?? '—' }}</td>
-                    <td>{{ $rsvp->event?->user?->email ?? '—' }}</td>
                     <td>{{ $rsvp->updated_at->format('M j, Y') }}</td>
                 </tr>
             @empty
-                <tr><td colspan="6" class="admin-muted">No RSVPs match.</td></tr>
+                <tr><td colspan="4" class="admin-muted">No RSVPs match.</td></tr>
             @endforelse
             </tbody>
         </table>

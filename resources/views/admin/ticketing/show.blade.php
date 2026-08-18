@@ -124,8 +124,8 @@
                     @foreach ($ev->ticketTypes as $type)
                         <li class="tkt-type-row">
                             <div>
-                                <strong>{{ $type->name }}</strong>
-                                <p class="evt-muted">
+                                <span class="tkt-type-name">{{ $type->name }}</span>
+                                <p class="admin-muted">
                                     {{ \App\Support\TicketingSettings::formatZmw($type->price) }}
                                     · {{ $type->quantity === null ? 'Unlimited' : number_format($type->quantity).' available' }}
                                 </p>

@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Event Ticketing Demo</title>
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        font-family: Inter, Arial, sans-serif;
+        background: #f5f7fb;
+        color: #18202a;
+        line-height: 1.5;
+    }
+    .topbar {
+        background: #111827;
+        color: white;
+        padding: 15px 6%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .brand { font-size: 21px; font-weight: 800; }
+    .brand span { color: #60a5fa; }
+    .nav { display: flex; gap: 20px; align-items: center; }
+    .nav a { color: #d1d5db; text-decoration: none; font-size: 14px; }
+    .nav .btn { background: #2563eb; color: white; padding: 9px 16px; border-radius: 8px; }
+
+    .hero {
+        min-height: 410px;
+        background:
+            linear-gradient(90deg, rgba(15,23,42,.94), rgba(15,23,42,.55)),
+            url("https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1800&q=85")
+            center/cover;
+        color: white;
+        display: flex;
+        align-items: center;
+    }
+    .hero-content { width: min(1100px, 88%); margin: auto; }
+    .tag {
+        display: inline-block;
+        background: rgba(255,255,255,.15);
+        border: 1px solid rgba(255,255,255,.25);
+        padding: 6px 12px;
+        border-radius: 999px;
+        font-size: 13px;
+        margin-bottom: 18px;
+    }
+    h1 { font-size: clamp(38px, 6vw, 68px); line-height: 1.02; max-width: 800px; }
+    .hero p { margin-top: 18px; color: #e5e7eb; font-size: 17px; }
+    .event-meta {
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
+        margin-top: 25px;
+        font-size: 15px;
+    }
+
+    .container { width: min(1100px, 88%); margin: auto; }
+    .main {
+        display: grid;
+        grid-template-columns: 1.5fr .9fr;
+        gap: 28px;
+        padding: 45px 0;
+    }
+    .card {
+        background: white;
+        border-radius: 16px;
+        padding: 26px;
+        box-shadow: 0 8px 30px rgba(15,23,42,.07);
+    }
+    .card h2 { font-size: 23px; margin-bottom: 15px; }
+    .about p { color: #5b6472; }
+
+    .ticket {
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 18px;
+        margin-top: 13px;
+    }
+    .ticket-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 15px;
+    }
+    .ticket-name { font-weight: 700; }
+    .ticket-info { color: #6b7280; font-size: 13px; margin-top: 4px; }
+    .price { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
+    button {
+        border: 0;
+        background: #2563eb;
+        color: white;
+        padding: 10px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 700;
+    }
+    button:hover { background: #1d4ed8; }
+
+    .buy-box { position: sticky; top: 20px; }
+    .selected {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 10px;
+        padding: 15px;
+        margin: 15px 0;
+    }
+    .buy-button {
+        width: 100%;
+        padding: 14px;
+        font-size: 16px;
+        margin-top: 10px;
+    }
+    .small { color: #6b7280; font-size: 13px; }
+
+    .share {
+        display: flex;
+        gap: 10px;
+        margin-top: 18px;
+    }
+    .share button {
+        background: #f3f4f6;
+        color: #374151;
+        flex: 1;
+    }
+
+    footer {
+        background: #111827;
+        color: #9ca3af;
+        text-align: center;
+        padding: 28px;
+        font-size: 13px;
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.55);
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        z-index: 20;
+    }
+    .modal.active { display: flex; }
+    .modal-box {
+        background: white;
+        width: min(460px, 100%);
+        border-radius: 16px;
+        padding: 26px;
+    }
+    .modal-box h2 { margin-bottom: 8px; }
+    .form-group { margin-top: 15px; }
+    .form-group label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+    input {
+        width: 100%;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        padding: 11px;
+        font-size: 15px;
+    }
+    .close {
+        float: right;
+        background: #f3f4f6;
+        color: #374151;
+        padding: 7px 10px;
+    }
+
+    @media(max-width: 800px) {
+        .main { grid-template-columns: 1fr; }
+        .buy-box { position: static; }
+        .nav a:not(.btn) { display: none; }
+    }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+    <div class="brand">Ticket<span>Hub</span></div>
+    <nav class="nav">
+        <a href="#">Browse Events</a>
+        <a href="#">How It Works</a>
+        <a class="btn" href="#">Organizer Login</a>
+    </nav>
+</header>
+
+<section class="hero">
+    <div class="hero-content">
+        <span class="tag">MUSIC • LUSAKA</span>
+        <h1>Summer Music Festival 2026</h1>
+        <p>Experience live music, entertainment and an unforgettable night with thousands of music lovers.</p>
+        <div class="event-meta">
+            <span>📅 28 September 2026</span>
+            <span>🕕 18:00</span>
+            <span>📍 Lusaka Showgrounds</span>
+        </div>
+    </div>
+</section>
+
+<main class="container main">
+    <section>
+        <div class="card about">
+            <h2>About the Event</h2>
+            <p>
+                Join us for the Summer Music Festival 2026. Enjoy performances from
+                local and international artists, food, entertainment and a great atmosphere.
+            </p>
+        </div>
+
+        <div class="card" style="margin-top: 25px;">
+            <h2>Choose Your Ticket</h2>
+
+            <div class="ticket">
+                <div class="ticket-row">
+                    <div>
+                        <div class="ticket-name">Early Bird</div>
+                        <div class="ticket-info">Limited availability • 200 tickets</div>
+                    </div>
+                    <div style="text-align:right">
+                        <div class="price">K150</div>
+                        <button onclick="selectTicket('Early Bird', 150)">Select</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ticket">
+                <div class="ticket-row">
+                    <div>
+                        <div class="ticket-name">Regular</div>
+                        <div class="ticket-info">500 tickets available</div>
+                    </div>
+                    <div style="text-align:right">
+                        <div class="price">K200</div>
+                        <button onclick="selectTicket('Regular', 200)">Select</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ticket">
+                <div class="ticket-row">
+                    <div>
+                        <div class="ticket-name">VIP</div>
+                        <div class="ticket-info">Premium access • 100 tickets</div>
+                    </div>
+                    <div style="text-align:right">
+                        <div class="price">K500</div>
+                        <button onclick="selectTicket('VIP', 500)">Select</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top:25px;">
+            <h2>Location</h2>
+            <p class="small">Lusaka Showgrounds, Lusaka, Zambia</p>
+            <div style="margin-top:15px; height:180px; background:#e5e7eb; border-radius:12px; display:flex; align-items:center; justify-content:center; color:#6b7280;">
+                Map / Google Maps integration
+            </div>
+        </div>
+    </section>
+
+    <aside>
+        <div class="card buy-box">
+            <h2>Your Ticket</h2>
+            <p class="small">Select a ticket type to continue.</p>
+
+            <div id="selectedBox" class="selected">
+                <strong>No ticket selected</strong>
+                <div class="small">Choose one of the ticket types.</div>
+            </div>
+
+            <div class="small">Secure payment through TicketHub</div>
+            <button class="buy-button" onclick="checkout()">Continue to Checkout</button>
+
+            <div class="share">
+                <button onclick="shareEvent()">Share</button>
+                <button onclick="whatsapp()">WhatsApp</button>
+            </div>
+        </div>
+    </aside>
+</main>
+
+<footer>
+    © 2026 TicketHub • Secure online event ticketing
+</footer>
+
+<div class="modal" id="modal">
+    <div class="modal-box">
+        <button class="close" onclick="closeModal()">✕</button>
+        <h2>Checkout</h2>
+        <p class="small" id="checkoutDetails"></p>
+
+        <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" placeholder="Enter your full name">
+        </div>
+
+        <div class="form-group">
+            <label>Phone Number</label>
+            <input type="tel" placeholder="097 XXX XXXX">
+        </div>
+
+        <button class="buy-button" onclick="alert('Demo only — payment gateway would open here.')">
+            Proceed to Payment
+        </button>
+    </div>
+</div>
+
+<script>
+let selectedTicket = null;
+
+function selectTicket(name, price) {
+    selectedTicket = { name, price };
+    document.getElementById('selectedBox').innerHTML = `
+        <strong>${name}</strong>
+        <div style="font-size:20px;font-weight:800;margin-top:4px;">K${price}</div>
+        <div class="small">1 ticket selected</div>
+    `;
+}
+
+function checkout() {
+    if (!selectedTicket) {
+        alert('Please select a ticket first.');
+        return;
+    }
+
+    document.getElementById('checkoutDetails').textContent =
+        `${selectedTicket.name} Ticket — K${selectedTicket.price}`;
+
+    document.getElementById('modal').classList.add('active');
+}
+
+function closeModal() {
+    document.getElementById('modal').classList.remove('active');
+}
+
+function shareEvent() {
+    if (navigator.share) {
+        navigator.share({
+            title: 'Summer Music Festival 2026',
+            text: 'Get your tickets for Summer Music Festival 2026',
+            url: window.location.href
+        });
+    } else {
+        navigator.clipboard.writeText(window.location.href);
+        alert('Event link copied.');
+    }
+}
+
+function whatsapp() {
+    const text = encodeURIComponent(
+        'Check out Summer Music Festival 2026: ' + window.location.href
+    );
+    window.open('https://wa.me/?text=' + text, '_blank');
+}
+</script>
+
+</body>
+</html>
