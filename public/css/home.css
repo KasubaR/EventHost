@@ -169,184 +169,21 @@
 .trust-stat strong { color: var(--white); }
 .trust-stat > i { color: var(--cyan); font-size: 14px; }
 
-/* Hero phone mockup */
+/* Hero mockup imagery */
 .hero-right {
   position: relative;
   display: flex;
   justify-content: center;
   animation: fadeUp 0.7s 0.15s ease both;
 }
-.phone-frame {
-  width: 260px;
-  background: #fff;
-  border-radius: 28px;
-  border: 1px solid var(--line);
-  box-shadow: var(--card-shadow), 0 24px 48px rgba(0, 0, 0, 0.18);
-  overflow: hidden;
-  position: relative;
-  z-index: 2;
-}
-.phone-notch {
-  width: 80px;
-  height: 18px;
-  background: #fff;
-  border-radius: 0 0 12px 12px;
-  margin: 0 auto;
-  position: relative;
-  z-index: 3;
-}
-.phone-screen {
-  padding: 0;
-  background: var(--gray-light);
-  min-height: 460px;
-}
-.phone-inv-header {
-  position: relative;
-  padding: 18px 16px 12px;
-  text-align: center;
-  overflow: hidden;
-  min-height: 118px;
-}
-.phone-inv-header-bg {
-  position: absolute;
-  inset: 0;
+.hero-mockup-main {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-  z-index: 0;
-}
-.phone-inv-header::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(26, 26, 110, 0.92), rgba(79, 62, 200, 0.88));
-  z-index: 1;
-}
-.phone-inv-header-inner {
+  max-width: 560px;
+  height: auto;
+  display: block;
   position: relative;
   z-index: 2;
-}
-.phone-inv-header .inv-header-icon {
-  margin-bottom: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.phone-inv-header .inv-header-icon i { font-size: 26px; color: #fff; opacity: 0.95; }
-.phone-inv-header h3 {
-  font-family: 'Outfit', sans-serif;
-  font-size: 15px;
-  font-weight: 700;
-  color: #fff;
-}
-.phone-inv-header p { font-size: 11px; opacity: 0.85; margin-top: 2px; color: #fff; }
-
-.phone-inv-body { padding: 14px 14px 18px; }
-.phone-inv-detail {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: var(--white);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--line);
-  padding: 10px 12px;
-  margin-bottom: 8px;
-  font-size: 12px;
-  color: var(--text-dark);
-}
-.phone-inv-detail .icon {
-  width: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  color: var(--accent);
-}
-.phone-inv-detail .icon i { font-size: 14px; }
-
-.phone-inv-rsvp { margin-top: 14px; display: flex; gap: 8px; }
-.rsvp-btn {
-  flex: 1;
-  padding: 10px;
-  border-radius: var(--radius-sm);
-  border: none;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-.rsvp-yes { background: var(--accent); color: #fff; }
-.rsvp-no {
-  background: var(--white);
-  border: 1px solid var(--line);
-  color: var(--gray-mid);
-}
-
-.phone-notif {
-  position: absolute;
-  bottom: 56px;
-  right: -24px;
-  background: var(--white);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 10px 14px;
-  width: 190px;
-  box-shadow: var(--card-shadow);
-  animation: floatCard 3s ease-in-out infinite alternate;
-  z-index: 5;
-}
-.phone-notif .notif-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
-}
-.phone-notif .notif-head i { font-size: 14px; color: var(--pink); }
-.phone-notif .notif-title {
-  font-size: 11px;
-  font-weight: 700;
-  margin-bottom: 0;
-  color: var(--text-dark);
-}
-.phone-notif .notif-sub { font-size: 10px; color: var(--gray-mid); }
-
-.phone-notif2 {
-  position: absolute;
-  top: 88px;
-  left: -32px;
-  background: linear-gradient(135deg, var(--purple), var(--accent));
-  border-radius: var(--radius);
-  padding: 12px 14px;
-  width: 150px;
-  box-shadow: 0 8px 28px rgba(30, 71, 187, 0.45);
-  animation: floatCard 4s ease-in-out infinite alternate-reverse;
-  z-index: 5;
-  font-size: 11px;
-  color: #fff;
-}
-.counter-num {
-  font-family: 'Outfit', sans-serif;
-  font-size: 24px;
-  font-weight: 800;
-  line-height: 1;
-}
-.phone-notif2 .counter-sub {
-  font-size: 11px;
-  opacity: 0.95;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 4px;
-}
-.phone-notif2 .counter-sub i { font-size: 12px; }
-
-@keyframes floatCard {
-  from { transform: translateY(0); }
-  to { transform: translateY(-8px); }
+  filter: drop-shadow(0 24px 48px rgba(0, 0, 0, 0.28));
 }
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(20px); }

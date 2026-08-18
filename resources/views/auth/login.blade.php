@@ -12,39 +12,49 @@
 <section class="auth-hero">
   <div class="auth-hero-inner">
 
-    {{-- Breadcrumbs --}}
-    <nav class="auth-breadcrumb" aria-label="Breadcrumb">
-      <ol>
-        <li><a href="{{ url('/') }}"><i class="fa-solid fa-house"></i> Home</a></li>
-        <li aria-hidden="true"><i class="fa-solid fa-chevron-right"></i></li>
-        <li><span aria-current="page">Sign In</span></li>
-      </ol>
-    </nav>
+    <div class="auth-hero-content">
+      {{-- Breadcrumbs --}}
+      <nav class="auth-breadcrumb" aria-label="Breadcrumb">
+        <ol>
+          <li><a href="{{ url('/') }}"><i class="fa-solid fa-house"></i> Home</a></li>
+          <li aria-hidden="true"><i class="fa-solid fa-chevron-right"></i></li>
+          <li><span aria-current="page">Sign In</span></li>
+        </ol>
+      </nav>
 
-    <h1 class="auth-hero-headline">
-      Sign in to your<br>
-      <span class="auth-hero-accent">Event Host</span> account
-    </h1>
-    <p class="auth-hero-sub">
-      Pick up right where you left off — manage your events, track RSVPs live, and keep your guests in the loop.
-    </p>
+      <h1 class="auth-hero-headline">
+        Sign in to your<br>
+        <span class="auth-hero-accent">Event Host</span> account
+      </h1>
+      <p class="auth-hero-sub">
+        Pick up right where you left off — manage your events, track RSVPs live, and keep your guests in the loop.
+      </p>
 
-    {{-- Stats row --}}
-    <div class="auth-hero-stats">
-      <div class="auth-stat">
-        <div class="auth-stat-n">5k+</div>
-        <div class="auth-stat-l">Events hosted</div>
+      {{-- Stats row --}}
+      <div class="auth-hero-stats">
+        <div class="auth-stat">
+          <div class="auth-stat-n">5k+</div>
+          <div class="auth-stat-l">Events hosted</div>
+        </div>
+        <div class="auth-stat-sep"></div>
+        <div class="auth-stat">
+          <div class="auth-stat-n">98%</div>
+          <div class="auth-stat-l">Guest satisfaction</div>
+        </div>
+        <div class="auth-stat-sep"></div>
+        <div class="auth-stat">
+          <div class="auth-stat-n">Free</div>
+          <div class="auth-stat-l">First event</div>
+        </div>
       </div>
-      <div class="auth-stat-sep"></div>
-      <div class="auth-stat">
-        <div class="auth-stat-n">98%</div>
-        <div class="auth-stat-l">Guest satisfaction</div>
-      </div>
-      <div class="auth-stat-sep"></div>
-      <div class="auth-stat">
-        <div class="auth-stat-n">Free</div>
-        <div class="auth-stat-l">First event</div>
-      </div>
+    </div>
+
+    <div class="auth-hero-visual">
+      <img class="auth-hero-mockup"
+           src="{{ asset('images/hero-mockup-guest.png') }}"
+           width="400" height="445"
+           alt="A guest smiling while RSVPing on her phone"
+           loading="eager" decoding="async">
     </div>
 
   </div>

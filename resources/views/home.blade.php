@@ -25,48 +25,11 @@
       </div>
     </div>
     <div class="hero-right">
-      <div class="phone-notif2">
-        <div class="counter-num">247</div>
-        <div class="counter-sub"><i class="fa-solid fa-circle-check" aria-hidden="true"></i><span>RSVPs confirmed</span></div>
-      </div>
-      <div class="phone-frame">
-        <div class="phone-notch"></div>
-        <div class="phone-screen">
-          <div class="phone-inv-header">
-            <img class="phone-inv-header-bg" src="https://images.unsplash.com/photo-1558636508-e0db3814bd5d?auto=format&fit=crop&w=520&h=360&q=80" alt="" width="260" height="160" loading="lazy" decoding="async">
-            <div class="phone-inv-header-inner">
-              <div class="inv-header-icon"><i class="fa-solid fa-cake-candles" aria-hidden="true"></i></div>
-              <h3>Sarah's Birthday Bash</h3>
-              <p>You're officially invited!</p>
-            </div>
-          </div>
-          <div class="phone-inv-body">
-            <div class="phone-inv-detail">
-              <span class="icon"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i></span>
-              <span>Saturday, June 14 · 7:00 PM</span>
-            </div>
-            <div class="phone-inv-detail">
-              <span class="icon"><i class="fa-solid fa-location-dot" aria-hidden="true"></i></span>
-              <span>Kabanje Ballroom, Lusaka</span>
-            </div>
-            <div class="phone-inv-detail">
-              <span class="icon"><i class="fa-solid fa-shirt" aria-hidden="true"></i></span>
-              <span>Dress Code: Cocktail Attire</span>
-            </div>
-            <div class="phone-inv-rsvp">
-              <button type="button" class="rsvp-btn rsvp-yes"><i class="fa-solid fa-check" aria-hidden="true"></i> Attending</button>
-              <button type="button" class="rsvp-btn rsvp-no"><i class="fa-solid fa-xmark" aria-hidden="true"></i> Decline</button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="phone-notif">
-        <div class="notif-head">
-          <i class="fa-solid fa-envelope" aria-hidden="true"></i>
-          <span class="notif-title">New RSVP!</span>
-        </div>
-        <div class="notif-sub">Michael confirmed attendance just now</div>
-      </div>
+      <img class="hero-mockup-main"
+           src="{{ asset('images/hero-mockup-laptops.png') }}"
+           width="900" height="668"
+           alt="An Event Host invitation site shown across three laptop screens"
+           loading="eager" decoding="async">
     </div>
   </div>
 </section>

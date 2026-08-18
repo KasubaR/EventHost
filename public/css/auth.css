@@ -69,6 +69,25 @@
   margin: 0 auto;
   position: relative;
   z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 40px;
+}
+
+.auth-hero-content { flex: 1; min-width: 0; }
+
+.auth-hero-visual { flex-shrink: 0; }
+.auth-hero-mockup {
+  display: block;
+  width: 220px;
+  height: auto;
+  filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.35));
+  animation: authHeroFloat 4s ease-in-out infinite alternate;
+}
+@keyframes authHeroFloat {
+  from { transform: translateY(0); }
+  to { transform: translateY(-10px); }
 }
 
 /* Breadcrumb — a <nav>, so global.css's bare `nav {}` (sticky navy bar) applies.
@@ -463,6 +482,7 @@ nav.auth-breadcrumb {
   .auth-form-section { padding: 36px 20px 56px; }
   .auth-form-card { padding: 24px 20px; }
   .auth-hero-headline { font-size: 28px; }
+  .auth-hero-visual { display: none; }
 }
 
 /* Account type toggle */

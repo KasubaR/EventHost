@@ -23,37 +23,47 @@
 <section class="auth-hero">
   <div class="auth-hero-inner">
 
-    <nav class="auth-breadcrumb" aria-label="Breadcrumb">
-      <ol>
-        <li><a href="{{ url('/') }}"><i class="fa-solid fa-house"></i> Home</a></li>
-        <li aria-hidden="true"><i class="fa-solid fa-chevron-right"></i></li>
-        <li><span aria-current="page">Sign Up</span></li>
-      </ol>
-    </nav>
+    <div class="auth-hero-content">
+      <nav class="auth-breadcrumb" aria-label="Breadcrumb">
+        <ol>
+          <li><a href="{{ url('/') }}"><i class="fa-solid fa-house"></i> Home</a></li>
+          <li aria-hidden="true"><i class="fa-solid fa-chevron-right"></i></li>
+          <li><span aria-current="page">Sign Up</span></li>
+        </ol>
+      </nav>
 
-    <h1 class="auth-hero-headline">
-      Create your<br>
-      <span class="auth-hero-accent">Event Host</span> account
-    </h1>
-    <p class="auth-hero-sub">
-      Three quick steps and you are in. Verify your email, buy an event credit when you are ready, then publish your first invitation.
-    </p>
+      <h1 class="auth-hero-headline">
+        Create your<br>
+        <span class="auth-hero-accent">Event Host</span> account
+      </h1>
+      <p class="auth-hero-sub">
+        Three quick steps and you are in. Verify your email, buy an event credit when you are ready, then publish your first invitation.
+      </p>
 
-    <div class="auth-hero-stats">
-      <div class="auth-stat">
-        <div class="auth-stat-n">3</div>
-        <div class="auth-stat-l">Simple steps</div>
+      <div class="auth-hero-stats">
+        <div class="auth-stat">
+          <div class="auth-stat-n">3</div>
+          <div class="auth-stat-l">Simple steps</div>
+        </div>
+        <div class="auth-stat-sep"></div>
+        <div class="auth-stat">
+          <div class="auth-stat-n">2 min</div>
+          <div class="auth-stat-l">To sign up</div>
+        </div>
+        <div class="auth-stat-sep"></div>
+        <div class="auth-stat">
+          <div class="auth-stat-n">K450</div>
+          <div class="auth-stat-l">From per event</div>
+        </div>
       </div>
-      <div class="auth-stat-sep"></div>
-      <div class="auth-stat">
-        <div class="auth-stat-n">2 min</div>
-        <div class="auth-stat-l">To sign up</div>
-      </div>
-      <div class="auth-stat-sep"></div>
-      <div class="auth-stat">
-        <div class="auth-stat-n">K450</div>
-        <div class="auth-stat-l">From per event</div>
-      </div>
+    </div>
+
+    <div class="auth-hero-visual">
+      <img class="auth-hero-mockup"
+           src="{{ asset('images/hero-mockup-guest.png') }}"
+           width="400" height="445"
+           alt="A guest smiling while RSVPing on her phone"
+           loading="eager" decoding="async">
     </div>
 
   </div>
