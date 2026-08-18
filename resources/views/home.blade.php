@@ -18,10 +18,10 @@
       </h1>
       <p class="hero-sub">Design stunning invitations, manage RSVPs, and track your guests — all from one elegant platform. Works on WhatsApp too.</p>
       <div class="hero-ctas">
-        <button class="btn-hero-primary">
-          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+        <a href="{{ auth()->check() ? route('events.create') : route('register') }}" class="btn-hero-primary">
           Create Your Event
-        </button>
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
       </div>
     </div>
     <div class="hero-right">

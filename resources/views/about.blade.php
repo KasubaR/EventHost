@@ -15,7 +15,7 @@
         <p>Event Host was born from a simple idea — that every host deserves beautiful, stress-free invitations and every guest deserves a seamless experience, no matter where they are.</p>
         <div class="about-hero-ctas">
             <a href="{{ route('register') }}" class="btn-hero-primary">
-                <i class="fa-solid fa-gift" aria-hidden="true"></i> Create Free Event
+                <i class="fa-solid fa-plus" aria-hidden="true"></i> Create Your Event
             </a>
             <a href="{{ route('contact') }}" class="btn-hero-secondary">Contact Us →</a>
         </div>
@@ -198,10 +198,10 @@
 <section class="about-cta">
     <div class="about-cta-inner">
         <h2>Ready to host your next<br>unforgettable event?</h2>
-        <p>Join thousands of hosts across Zambia who trust Event Host to make their events shine. Your first invitation is completely free.</p>
+        <p>Join thousands of hosts across Zambia who trust Event Host to make their events shine. Sign up free and publish your first event in minutes.</p>
         <div class="about-cta-actions">
             <a href="{{ route('register') }}" class="btn-hero-primary" style="font-size:16px;padding:16px 36px">
-                <i class="fa-solid fa-gift" aria-hidden="true"></i> Create Free Event
+                <i class="fa-solid fa-plus" aria-hidden="true"></i> Create Your Event
             </a>
             <a href="{{ url('/#pricing') }}" class="btn-hero-secondary" style="font-size:16px;padding:16px 36px">
                 See Pricing →

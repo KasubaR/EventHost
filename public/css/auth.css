@@ -484,7 +484,9 @@ nav.auth-breadcrumb {
   .auth-form-section { padding: 36px 20px 56px; }
   .auth-form-card { padding: 24px 20px; }
   .auth-hero-headline { font-size: 28px; }
-  .auth-hero-visual { display: none; }
+  .auth-hero-inner { flex-direction: column; gap: 20px; }
+  .auth-hero-visual { display: flex; justify-content: center; width: 100%; }
+  .auth-hero-mockup { width: 150px; }
 }
 
 /* Account type toggle */

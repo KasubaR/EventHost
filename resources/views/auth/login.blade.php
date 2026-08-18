@@ -43,8 +43,8 @@
         </div>
         <div class="auth-stat-sep"></div>
         <div class="auth-stat">
-          <div class="auth-stat-n">Free</div>
-          <div class="auth-stat-l">First event</div>
+          <div class="auth-stat-n">24/7</div>
+          <div class="auth-stat-l">Dashboard access</div>
         </div>
       </div>
     </div>

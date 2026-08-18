@@ -89,6 +89,7 @@
   cursor: pointer;
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
   transition: all 0.25s;
+  text-decoration: none;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -808,7 +809,7 @@
 /* ── RESPONSIVE (landing sections only; nav/footer in global.css) ── */
 @media (max-width: 1024px) {
   .hero-inner { grid-template-columns: 1fr; }
-  .hero-right { display: none; }
+  .hero-right { margin-top: 8px; }
   .testi-grid,
   .pricing-grid { grid-template-columns: repeat(2, 1fr); }
   .templates-grid { grid-template-columns: repeat(2, 1fr); }
@@ -828,4 +829,5 @@
   .steps { grid-template-columns: 1fr; }
   .event-types-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .steps::before { display: none; }
+  .hero-mockup-main { max-width: 420px; }
 }
