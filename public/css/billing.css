@@ -78,7 +78,7 @@
 /* ── Plan grid ── */
 .billing-plans {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 14px;
 }
 
@@ -222,6 +222,36 @@
 
 .billing-plan-card.is-selected .billing-plan-select-indicator {
   display: flex;
+}
+
+/* Enterprise — Contact Sales only, not a selectable checkout option */
+.billing-plan-card.is-static {
+  cursor: default;
+}
+
+.billing-plan-card.is-static:hover {
+  transform: none;
+  border-color: var(--line);
+  box-shadow: none;
+}
+
+.billing-plan-contact-btn {
+  display: block;
+  margin-top: auto;
+  padding: 9px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  transition: background 0.18s, color 0.18s;
+}
+
+.billing-plan-contact-btn:hover {
+  background: var(--accent);
+  color: var(--white);
 }
 
 /* ── Checkout 2-col ── */
@@ -485,11 +515,13 @@
 }
 
 /* ── Responsive ── */
-@media (max-width: 860px) {
+@media (max-width: 900px) {
   .billing-plans {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
+}
 
+@media (max-width: 860px) {
   .billing-checkout {
     grid-template-columns: 1fr;
   }
@@ -497,6 +529,12 @@
   .billing-summary-card {
     position: static;
     order: -1;
+  }
+}
+
+@media (max-width: 560px) {
+  .billing-plans {
+    grid-template-columns: 1fr;
   }
 }
 

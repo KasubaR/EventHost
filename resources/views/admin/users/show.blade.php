@@ -70,6 +70,21 @@
                 @else
                     <p class="admin-muted admin-mt-md">You cannot change your own status here.</p>
                 @endif
+
+                <form method="post" action="{{ route('admin.users.update-tier', $u) }}" class="profile-form admin-mt-md">
+                    @csrf
+                    @method('PATCH')
+                    <label for="user-tier">Subscription tier</label>
+                    <select id="user-tier" name="subscription_tier" class="profile-input">
+                        @foreach (\App\Enums\SubscriptionTier::cases() as $tierOption)
+                            <option value="{{ $tierOption->value }}" @selected($u->subscriptionTier() === $tierOption)>{{ $tierOption->label() }}</option>
+                        @endforeach
+                    </select>
+                    <p class="admin-muted" style="margin-top:6px;">Enterprise is Contact Sales only — assign it here once a custom deal is agreed off-platform.</p>
+                    <div class="admin-actions admin-mt-md">
+                        <button type="submit" class="btn-primary">Update tier</button>
+                    </div>
+                </form>
             @endif
 
             @if(auth('admin')->user()?->can('users.password_reset'))

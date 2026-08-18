@@ -8,6 +8,7 @@ enum SubscriptionTier: string
     case Base = 'base';
     case Pro = 'pro';
     case ProPlus = 'pro_plus';
+    case Enterprise = 'enterprise';
 
     public function rank(): int
     {
@@ -16,6 +17,7 @@ enum SubscriptionTier: string
             self::Base => 0,
             self::Pro => 1,
             self::ProPlus => 2,
+            self::Enterprise => 3,
         };
     }
 
@@ -40,6 +42,7 @@ enum SubscriptionTier: string
             self::Base => 'Base',
             self::Pro => 'Pro',
             self::ProPlus => 'Pro+',
+            self::Enterprise => 'Enterprise',
         };
     }
 }

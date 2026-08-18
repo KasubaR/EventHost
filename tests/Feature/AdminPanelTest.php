@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\SubscriptionTier;
 use App\Models\Admin;
 use App\Models\CreditTransaction;
 use App\Models\Event;
@@ -107,6 +108,30 @@ class AdminPanelTest extends TestCase
             ->assertSessionHasErrors(['status']);
 
         $this->assertSame('active', $customer->fresh()->status);
+    }
+
+    public function test_super_admin_can_assign_enterprise_tier_to_a_user(): void
+    {
+        $admin = $this->superAdmin();
+        $target = User::factory()->create(['subscription_tier' => SubscriptionTier::Base]);
+
+        $this->actingAs($admin, 'admin')
+            ->patch(route('admin.users.update-tier', $target), ['subscription_tier' => 'enterprise'])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(SubscriptionTier::Enterprise, $target->fresh()->subscriptionTier());
+    }
+
+    public function test_updating_tier_rejects_an_unknown_value(): void
+    {
+        $admin = $this->superAdmin();
+        $target = User::factory()->create(['subscription_tier' => SubscriptionTier::Base]);
+
+        $this->actingAs($admin, 'admin')
+            ->patch(route('admin.users.update-tier', $target), ['subscription_tier' => 'not-a-real-tier'])
+            ->assertSessionHasErrors(['subscription_tier']);
+
+        $this->assertSame(SubscriptionTier::Base, $target->fresh()->subscriptionTier());
     }
 
     public function test_super_admin_can_delete_another_user(): void

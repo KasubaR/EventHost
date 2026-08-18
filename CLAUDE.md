@@ -221,6 +221,22 @@ Users have an `event_credits` column. Publishing an event costs 1 credit (`User:
 
 When payments are implemented, call `$user->increment('event_credits')` in the payment webhook and it will plug straight in.
 
+### Subscription Tiers
+
+`App\Enums\SubscriptionTier` ranks accounts `none < base < pro < pro_plus < enterprise` and gates
+features via `User::subscriptionTierRank()` (e.g. `canUsePremiumEventTools()` is Pro+, `canChooseInvitationPalette()`
+is Pro+ tier ProPlus). `base`, `pro` and `pro_plus` each have a matching entry in `config('billing.plans')`
+with a fixed ZMW price, self-checkout through the Lenco flow (`billing/checkout.blade.php` renders one
+card per config key), and `PaymentCompletionService` raises the buyer's `subscription_tier` on success.
+
+`enterprise` is deliberately **not** in `config('billing.plans')` — it's a Contact Sales tier for custom
+templates, multi-page invitation sites and fully bespoke event builds, which are hand-built off-platform,
+not something the checkout flow can sell automatically. The homepage pricing card links straight to
+`/contact` instead of `billing.show`. Because there's no payment event to hook into, an admin with
+`users.manage_status` assigns the tier by hand from the user show page (`PATCH /admin/users/{user}/tier`)
+once a custom deal is agreed — the same page also grants event credits, since an Enterprise account still
+needs credits to publish.
+
 ### Event Preview
 
 `GET /events/{event}/preview` (`EventPreviewController`) renders the event's real, current invitation —

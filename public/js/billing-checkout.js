@@ -32,7 +32,7 @@
             if (summaryPriceEl && card.dataset.planPrice) summaryPriceEl.textContent = card.dataset.planPrice;
         }
 
-        root.querySelectorAll('.billing-plan-card').forEach((card) => {
+        root.querySelectorAll('.billing-plan-card:not(.is-static)').forEach((card) => {
             card.addEventListener('click', () => {
                 root.querySelectorAll('.billing-plan-card').forEach((c) => c.classList.remove('is-selected'));
                 card.classList.add('is-selected');

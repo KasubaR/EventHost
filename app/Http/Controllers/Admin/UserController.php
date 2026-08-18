@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\SubscriptionTier;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateAdminUserStatusRequest;
 use App\Models\Admin;
@@ -12,6 +13,7 @@ use App\Support\AdminActivity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class UserController extends Controller
@@ -124,6 +126,31 @@ class UserController extends Controller
         ]);
 
         return redirect()->back()->with('status', 'Credits added successfully.');
+    }
+
+    /**
+     * Enterprise is a Contact Sales tier — there is no self-checkout plan for
+     * it in config('billing.plans'), so this is the only way a customer who
+     * bought a custom package off-platform ends up with the tier on their
+     * account. Any tier is assignable here, including downgrading someone
+     * back off Enterprise once a custom engagement ends.
+     */
+    public function updateTier(Request $request, User $user): RedirectResponse
+    {
+        $validated = $request->validate([
+            'subscription_tier' => ['required', Rule::enum(SubscriptionTier::class)],
+        ]);
+
+        $tier = SubscriptionTier::from($validated['subscription_tier']);
+        $user->subscription_tier = $tier;
+        $user->save();
+
+        AdminActivity::log('Admin changed user subscription tier', [
+            'target_user_id' => $user->id,
+            'tier' => $tier->value,
+        ]);
+
+        return redirect()->back()->with('status', 'Subscription tier updated successfully.');
     }
 
     private function adminActsOnLinkedCustomerAccount(Request $request, User $user): bool
