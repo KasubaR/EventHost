@@ -50,7 +50,9 @@ Route::post($lencoWebhookPath, [PaymentController::class, 'webhook'])
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
 Route::get('/about', function () {
-    return view('about');
+    return view('about', [
+        'activeTemplateCount' => \App\Models\InvitationTemplate::activeCount(),
+    ]);
 })->name('about');
 
 // Static policy pages. Linked from the footer and from the sign-in / sign-up

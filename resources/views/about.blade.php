@@ -176,7 +176,7 @@
                         </div>
                         <div class="about-zp-text">
                             <h4>Elegant Designs</h4>
-                            <p>30+ premium templates</p>
+                            <p>{{ $activeTemplateCount }} premium templates</p>
                         </div>
                     </div>
                     <div class="about-zambia-point">

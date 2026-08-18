@@ -303,11 +303,9 @@
         <div class="price-amount"><sup>K</sup>750<span class="period"> / event</span></div>
         <div class="price-desc">For serious hosts who want everything</div>
         <ul class="price-features">
-          <li>Unlimited events</li>
-          <li>Unlimited guests</li>
-          <li>30+ premium templates</li>
+          <li>Up to 150 guests</li>
+          <li>{{ $activeTemplateCount }} premium templates</li>
           <li>Advanced RSVP dashboard</li>
-          <li>WhatsApp reminders</li>
           <li>Photo gallery</li>
           <li>Countdown timer</li>
           <li>Analytics & exports</li>
@@ -327,7 +325,21 @@
           <li>Priority support</li>
           <li>Dedicated account manager</li>
         </ul>
-        <a href="{{ auth()->check() ? route('billing.show', ['plan' => 'pro_plus']) : route('contact') }}" class="btn-price btn-price-outline">Contact Sales</a>
+        <a href="{{ auth()->check() ? route('billing.show', ['plan' => 'pro_plus']) : route('register') }}" class="btn-price btn-price-outline">Get Pro+</a>
+      </div>
+      <div class="price-card">
+        <div class="price-plan">Enterprise</div>
+        <div class="price-amount">Custom</div>
+        <div class="price-desc">Custom templates, multi-page or fully bespoke events</div>
+        <ul class="price-features">
+          <li>Everything in Pro+</li>
+          <li>Custom-designed templates</li>
+          <li>Multi-page invitation sites</li>
+          <li>Fully custom event builds</li>
+          <li>Dedicated designer</li>
+          <li>Tailored quote &amp; timeline</li>
+        </ul>
+        <a href="{{ route('contact') }}" class="btn-price btn-price-outline">Contact Sales</a>
       </div>
     </div>
   </div>

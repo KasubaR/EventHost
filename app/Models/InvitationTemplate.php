@@ -64,6 +64,16 @@ class InvitationTemplate extends Model
     }
 
     /**
+     * Live count backing the "N premium templates" marketing copy (home,
+     * billing checkout, about) — replaces a hand-maintained "30+" that drifted
+     * from the real catalog size.
+     */
+    public static function activeCount(): int
+    {
+        return self::query()->where('is_active', true)->count();
+    }
+
+    /**
      * @return BelongsToMany<InvitationTemplateCategory, $this>
      */
     public function categories(): BelongsToMany

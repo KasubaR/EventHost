@@ -45,6 +45,9 @@ class HomeController extends Controller
             ->limit(Review::HOMEPAGE_FEATURED_LIMIT)
             ->get();
 
-        return view('home', compact('upcomingEvents', 'featuredTemplates', 'homepageFaqs', 'featuredReviews'));
+        // Backs the "N premium templates" pricing-card copy — see home.blade.php.
+        $activeTemplateCount = InvitationTemplate::activeCount();
+
+        return view('home', compact('upcomingEvents', 'featuredTemplates', 'homepageFaqs', 'featuredReviews', 'activeTemplateCount'));
     }
 }

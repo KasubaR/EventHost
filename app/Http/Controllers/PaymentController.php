@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\InitiatePaymentRequest;
 use App\Jobs\RetryLencoPayment;
+use App\Models\InvitationTemplate;
 use App\Models\Payment;
 use App\Models\TicketPayment;
 use App\Models\User;
@@ -50,6 +51,7 @@ class PaymentController extends Controller
             'user' => $user,
             'selectedPlan' => $request->query('plan'),
             'bankTransferEnabled' => (bool) config('services.lenco.bank_transfer_enabled', true),
+            'activeTemplateCount' => InvitationTemplate::activeCount(),
         ]);
     }
 

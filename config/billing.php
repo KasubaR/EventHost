@@ -26,10 +26,11 @@ return [
             'tier' => 'pro',
             'guest_limit_default' => null,
             'features' => [
-                'Unlimited guests',
-                '30+ premium templates',
+                'Up to 150 guests',
+                // {template_count} is resolved at render time — see
+                // billing/checkout.blade.php — from InvitationTemplate::activeCount().
+                '{template_count} premium templates',
                 'Advanced RSVP dashboard',
-                'WhatsApp reminders',
                 'Photo gallery',
                 'Countdown timer',
                 'Analytics & exports',

@@ -82,7 +82,7 @@
                         <div class="billing-plan-period">per event</div>
                         <ul class="billing-plan-features">
                             @foreach ($plan['features'] as $feature)
-                                <li><i class="fa-solid fa-check" aria-hidden="true"></i> {{ $feature }}</li>
+                                <li><i class="fa-solid fa-check" aria-hidden="true"></i> {{ str_replace('{template_count}', $activeTemplateCount, $feature) }}</li>
                             @endforeach
                         </ul>
                         <div class="billing-plan-select-indicator">
@@ -90,6 +90,26 @@
                         </div>
                     </label>
                 @endforeach
+
+                {{-- Enterprise is Contact Sales only — custom templates, multi-page sites and bespoke
+                     event builds aren't priced or checked out here. Not a <label>/radio like the plans
+                     above, and deliberately excluded from billing-checkout.js's card-select binding. --}}
+                <div class="billing-plan-card is-static">
+                    <div class="billing-plan-icon">
+                        <i class="fa-solid fa-gem" aria-hidden="true"></i>
+                    </div>
+                    <div class="billing-plan-name">Enterprise</div>
+                    <div class="billing-plan-price">Custom</div>
+                    <div class="billing-plan-period">Custom templates &amp; events</div>
+                    <ul class="billing-plan-features">
+                        <li><i class="fa-solid fa-check" aria-hidden="true"></i> Everything in Pro+</li>
+                        <li><i class="fa-solid fa-check" aria-hidden="true"></i> Custom-designed templates</li>
+                        <li><i class="fa-solid fa-check" aria-hidden="true"></i> Multi-page invitation sites</li>
+                        <li><i class="fa-solid fa-check" aria-hidden="true"></i> Fully custom event builds</li>
+                        <li><i class="fa-solid fa-check" aria-hidden="true"></i> Dedicated designer</li>
+                    </ul>
+                    <a href="{{ route('contact') }}" class="billing-plan-contact-btn">Contact Sales</a>
+                </div>
             </div>
         </section>
 
