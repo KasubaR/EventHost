@@ -8,15 +8,6 @@
     @endpush
 
     @php
-        $typeLabels = [
-            'wedding' => 'Wedding',
-            'birthday' => 'Birthday',
-            'graduation' => 'Graduation',
-            'corporate' => 'Corporate Event',
-            'baby_shower' => 'Baby Shower',
-            'funeral' => 'Memorial',
-            'church' => 'Church Event',
-        ];
         $eaTotals = $eventAnalytics['totals'];
         $evtAnalyticsChartPayload = [
             'daily_rsvps' => $eventAnalytics['daily_rsvps'],
@@ -32,7 +23,7 @@
             <div>
                 <h1 class="dph-title">{{ $event->name }}</h1>
                 <p class="dph-sub">
-                    <span class="evt-type-tag">{{ $typeLabels[$event->event_type] ?? $event->event_type }}</span>
+                    <span class="evt-type-tag">{{ \App\Models\Event::TYPE_LABELS[$event->event_type] ?? $event->event_type }}</span>
                     @if ($event->isTicketed())
                         <span class="evt-type-tag">{{ $event->product_kind->label() }}</span>
                     @endif

@@ -3,18 +3,6 @@
         <link rel="stylesheet" href="{{ asset('css/events-admin.css') }}">
     @endpush
 
-    @php
-        $typeLabels = [
-            'wedding' => 'Wedding',
-            'birthday' => 'Birthday',
-            'graduation' => 'Graduation',
-            'corporate' => 'Corporate',
-            'baby_shower' => 'Baby Shower',
-            'funeral' => 'Memorial',
-            'church' => 'Church Event',
-        ];
-    @endphp
-
     <x-slot name="title">Events</x-slot>
 
     <x-slot name="pageHeader">
@@ -57,7 +45,7 @@
                 <tr>
                     <td>{{ $event->name }}</td>
                     <td>{{ $event->user?->email ?? '—' }}</td>
-                    <td>{{ $typeLabels[$event->event_type] ?? $event->event_type }}</td>
+                    <td>{{ \App\Models\Event::TYPE_LABELS[$event->event_type] ?? $event->event_type }}</td>
                     <td>{{ $event->guests_count }}</td>
                     <td>{{ $event->rsvps_count }}</td>
                     <td>{{ $event->is_published ? 'Yes' : 'No' }}</td>

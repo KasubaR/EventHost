@@ -34,6 +34,13 @@ class StoreEventRequest extends FormRequest
      */
     public function rules(): array
     {
+        // Options differ by product kind (ticketed events get commercial
+        // types like Concert/Conference instead of Wedding/Baby Shower) — see
+        // Event::eventTypesFor(). Falls back to the full union when
+        // product_kind itself is missing/invalid, so that error surfaces on
+        // its own field instead of a confusing second one on event_type.
+        $productKind = EventProductKind::tryFrom((string) $this->input('product_kind'));
+
         return [
             'preferred_invitation_template_id' => [
                 'nullable',
@@ -41,7 +48,7 @@ class StoreEventRequest extends FormRequest
                 new UserCanUseInvitationTemplate,
             ],
             'name' => ['required', 'string', 'max:255'],
-            'event_type' => ['required', Rule::in(Event::EVENT_TYPES)],
+            'event_type' => ['required', Rule::in(Event::eventTypesFor($productKind))],
             'product_kind' => ['required', Rule::enum(EventProductKind::class)],
             'description' => ['nullable', 'string'],
             'event_date' => ['required', 'date', 'after_or_equal:today'],

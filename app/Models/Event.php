@@ -22,7 +22,11 @@ class Event extends Model
     /** @use HasFactory<EventFactory> */
     use HasFactory, Sluggable;
 
-    public const EVENT_TYPES = [
+    /**
+     * The invitation/RSVP flavor of EVENT_TYPES — personal and family events.
+     * Unchanged from the original single list; see EVENT_TYPES below.
+     */
+    public const INVITATION_EVENT_TYPES = [
         'wedding',
         'birthday',
         'graduation',
@@ -33,7 +37,50 @@ class Event extends Model
     ];
 
     /**
-     * Display labels for EVENT_TYPES. Note "funeral" reads as "Memorial".
+     * Commercial, pay-for-entry event types — used for ticketed events
+     * instead of INVITATION_EVENT_TYPES. "corporate" is shared between both.
+     */
+    public const TICKETED_EVENT_TYPES = [
+        'concert',
+        'conference',
+        'festival',
+        'party',
+        'sports',
+        'comedy',
+        'exhibition',
+        'workshop',
+        'corporate',
+        'other',
+    ];
+
+    /**
+     * Union of both — kept for the handful of places that aren't product-kind
+     * aware (AdminAnalyticsService's cross-kind breakdown, and the fallback in
+     * eventTypesFor() when the kind isn't known yet). Prefer eventTypesFor()
+     * over this for anything that renders or validates a specific event.
+     */
+    public const EVENT_TYPES = [
+        'wedding',
+        'birthday',
+        'graduation',
+        'corporate',
+        'baby_shower',
+        'funeral',
+        'church',
+        'concert',
+        'conference',
+        'festival',
+        'party',
+        'sports',
+        'comedy',
+        'exhibition',
+        'workshop',
+        'other',
+    ];
+
+    /**
+     * Display labels for every value across EVENT_TYPES. Note "funeral" reads
+     * as "Memorial".
      *
      * @var array<string, string>
      */
@@ -45,7 +92,40 @@ class Event extends Model
         'baby_shower' => 'Baby Shower',
         'funeral' => 'Memorial',
         'church' => 'Church Event',
+        'concert' => 'Concert',
+        'conference' => 'Conference',
+        'festival' => 'Festival',
+        'party' => 'Party / Nightlife',
+        'sports' => 'Sports Event',
+        'comedy' => 'Comedy Show',
+        'exhibition' => 'Exhibition',
+        'workshop' => 'Workshop / Class',
+        'other' => 'Other',
     ];
+
+    /**
+     * The event_type options valid for a given product kind, with the current
+     * value grandfathered in if it isn't already in that kind's canonical
+     * set — so an event created before this split (or under a kind whose
+     * list has since changed) never fails re-validation just because its
+     * own stored value isn't in the "new" list.
+     *
+     * @return list<string>
+     */
+    public static function eventTypesFor(?EventProductKind $kind, ?string $includeCurrent = null): array
+    {
+        $base = match ($kind) {
+            EventProductKind::Ticketed => self::TICKETED_EVENT_TYPES,
+            EventProductKind::Invitation => self::INVITATION_EVENT_TYPES,
+            default => self::EVENT_TYPES,
+        };
+
+        if ($includeCurrent !== null && ! in_array($includeCurrent, $base, true)) {
+            $base[] = $includeCurrent;
+        }
+
+        return $base;
+    }
 
     /**
      * @var list<string>

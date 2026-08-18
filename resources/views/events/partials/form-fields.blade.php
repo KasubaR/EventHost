@@ -4,16 +4,6 @@
 @endpush
 
 @php
-    $typeLabels = [
-        'wedding' => 'Wedding',
-        'birthday' => 'Birthday',
-        'graduation' => 'Graduation',
-        'corporate' => 'Corporate Event',
-        'baby_shower' => 'Baby Shower',
-        'funeral' => 'Memorial',
-        'church' => 'Church Event',
-    ];
-
     $timeRaw = old('event_time', isset($event) ? $event?->event_time : '12:00:00');
     $timeForInput = is_string($timeRaw) && strlen($timeRaw) >= 5 ? substr($timeRaw, 0, 5) : '12:00';
 
@@ -29,6 +19,15 @@
     );
     $isTicketed = $productKind === \App\Enums\EventProductKind::Ticketed->value;
     $productKindLocked = $event !== null || $selectedProductKind instanceof \App\Enums\EventProductKind;
+
+    // Options differ by product kind — ticketed events get commercial types
+    // (Concert, Conference, ...) instead of the invitation list (Wedding,
+    // Baby Shower, ...). Grandfathers the event's own current value in if
+    // it's not in that kind's canonical set. See Event::eventTypesFor().
+    $eventTypeOptions = \App\Models\Event::eventTypesFor(
+        \App\Enums\EventProductKind::from($productKind),
+        $event?->event_type
+    );
 @endphp
 
 @unless ($isTicketed)
@@ -59,9 +58,9 @@
                 <label for="event_type" class="profile-label">Event type</label>
                 <select id="event_type" name="event_type" required data-cs data-cs-icon="fa-solid fa-tag"
                         class="profile-input {{ $errors->has('event_type') ? 'profile-input--error' : '' }}">
-                    @foreach(\App\Models\Event::EVENT_TYPES as $type)
-                        <option value="{{ $type }}" @selected(old('event_type', $event?->event_type ?? 'wedding') === $type)>
-                            {{ $typeLabels[$type] ?? $type }}
+                    @foreach($eventTypeOptions as $type)
+                        <option value="{{ $type }}" @selected(old('event_type', $event?->event_type ?? $eventTypeOptions[0]) === $type)>
+                            {{ \App\Models\Event::TYPE_LABELS[$type] ?? $type }}
                         </option>
                     @endforeach
                 </select>

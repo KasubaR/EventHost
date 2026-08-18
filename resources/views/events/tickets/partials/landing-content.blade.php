@@ -15,15 +15,6 @@
     else on the site overlays text on an image like this.
 --}}
 @php
-    $typeLabels = [
-        'wedding' => 'Wedding',
-        'birthday' => 'Birthday',
-        'graduation' => 'Graduation',
-        'corporate' => 'Corporate Event',
-        'baby_shower' => 'Baby Shower',
-        'funeral' => 'Memorial',
-        'church' => 'Church Event',
-    ];
 
     $ticketTypes = $event->ticketTypes;
 
@@ -60,7 +51,7 @@
         <div class="tev-hero-scrim" aria-hidden="true"></div>
         <div class="tev-hero-inner">
             <div class="tev-hero-content">
-                <span class="tev-hero-type">{{ $typeLabels[$event->event_type] ?? $event->event_type }} &middot; Tickets</span>
+                <span class="tev-hero-type">{{ \App\Models\Event::TYPE_LABELS[$event->event_type] ?? $event->event_type }} &middot; Tickets</span>
                 <h1 class="tev-hero-title">{{ $event->name }}</h1>
                 @if ($event->description)
                     <p class="tev-hero-lead">{{ \Illuminate\Support\Str::limit(trim(preg_replace('/\s+/', ' ', strip_tags((string) $event->description))), 160) }}</p>

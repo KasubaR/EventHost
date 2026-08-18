@@ -31,9 +31,17 @@ class UpdateEventRequest extends FormRequest
      */
     public function rules(): array
     {
+        // product_kind is immutable and not part of this payload, so derive
+        // the allowed options from the event being edited — and grandfather
+        // its current value in, so an event whose stored type predates this
+        // kind split (or a since-changed list) can still be saved without
+        // being forced to change Event type first. See Event::eventTypesFor().
+        $event = $this->route('event');
+        $eventTypes = Event::eventTypesFor($event?->product_kind, $event?->event_type);
+
         return [
             'name' => ['sometimes', 'required', 'string', 'max:255'],
-            'event_type' => ['sometimes', 'required', Rule::in(Event::EVENT_TYPES)],
+            'event_type' => ['sometimes', 'required', Rule::in($eventTypes)],
             'description' => ['nullable', 'string'],
             'event_date' => ['sometimes', 'required', 'date'],
             'event_time' => ['sometimes', 'required', 'regex:/^([01]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/'],

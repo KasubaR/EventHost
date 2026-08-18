@@ -195,23 +195,13 @@ class AdminAnalyticsService
             return [];
         }
 
-        $labels = [
-            'wedding' => 'Wedding',
-            'birthday' => 'Birthday',
-            'graduation' => 'Graduation',
-            'corporate' => 'Corporate',
-            'baby_shower' => 'Baby Shower',
-            'funeral' => 'Memorial',
-            'church' => 'Church',
-        ];
-
         $out = [];
         foreach ($rows as $type => $count) {
             $c = (int) $count;
             if ($c > 0) {
                 $out[] = [
                     'key' => (string) $type,
-                    'label' => $labels[(string) $type] ?? (string) $type,
+                    'label' => Event::TYPE_LABELS[(string) $type] ?? (string) $type,
                     'count' => $c,
                     'pct' => round(($c / $total) * 100, 1),
                 ];

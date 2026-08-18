@@ -59,6 +59,7 @@ class EventFactory extends Factory
             'ticketing_status' => TicketingStatus::Draft,
             'commission_mode' => CommissionMode::Absorb,
             'is_public' => true,
+            'event_type' => fake()->randomElement(Event::TICKETED_EVENT_TYPES),
         ]);
     }
 }
