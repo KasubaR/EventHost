@@ -1,6 +1,10 @@
 <x-admin-layout>
     @push('styles')
         <link rel="stylesheet" href="{{ asset('css/events-admin.css') }}">
+        <link rel="stylesheet" href="{{ asset('css/custom-select.css') }}">
+    @endpush
+    @push('scripts')
+        <script src="{{ asset('js/custom-select.js') }}" defer></script>
     @endpush
 
     <x-slot name="title">Reports</x-slot>
@@ -17,7 +21,8 @@
     <form method="get" action="{{ route('admin.reports.index') }}" class="admin-filter-bar">
         <div>
             <label class="evt-sr-only" for="admin-report-status">Status</label>
-            <select id="admin-report-status" name="status">
+            <select id="admin-report-status" name="status" data-cs data-cs-size="sm" data-cs-search="never"
+                    data-cs-icon="fa-solid fa-filter">
                 <option value="">All statuses</option>
                 <option value="pending" @selected($filterStatus === 'pending')>Pending</option>
                 <option value="reviewed" @selected($filterStatus === 'reviewed')>Reviewed</option>

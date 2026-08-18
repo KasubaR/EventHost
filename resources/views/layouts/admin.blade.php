@@ -66,11 +66,6 @@
                         <i class="fa-solid fa-calendar-days"></i> Events
                     </a>
                 @endif
-                @if(auth('admin')->user()?->can('guests.view'))
-                    <a href="{{ route('admin.guests.index') }}" class="dash-nav-link {{ request()->routeIs('admin.guests.*') ? 'is-active' : '' }}">
-                        <i class="fa-solid fa-address-book"></i> Guests
-                    </a>
-                @endif
                 @if(auth('admin')->user()?->can('notifications.view'))
                     <a href="{{ route('admin.notifications.index') }}" class="dash-nav-link {{ request()->routeIs('admin.notifications.*') ? 'is-active' : '' }}">
                         <i class="fa-solid fa-paper-plane"></i> Notifications

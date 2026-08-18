@@ -72,7 +72,7 @@ Route::prefix('admin')
         });
 
         Route::middleware('permission:guests.view,admin')->group(function (): void {
-            Route::get('/guests', [AdminGuestController::class, 'index'])->name('guests.index');
+            Route::get('/events/{event}/guests', [AdminGuestController::class, 'index'])->name('events.guests');
         });
 
         Route::middleware('permission:rsvps.view,admin')->group(function (): void {
@@ -129,6 +129,7 @@ Route::prefix('admin')
             Route::post('/ticketing/{event}/hero', [AdminTicketingController::class, 'updateHero'])->name('ticketing.hero');
             Route::post('/ticketing/{event}/approve', [AdminTicketingController::class, 'approve'])->name('ticketing.approve');
             Route::post('/ticketing/{event}/reject', [AdminTicketingController::class, 'reject'])->name('ticketing.reject');
+            Route::patch('/ticketing/{event}/terms', [AdminTicketingController::class, 'updateTerms'])->name('ticketing.terms');
         });
 
         Route::middleware(['permission:reviews.manage,admin', 'throttle:admin-mutations'])->group(function (): void {

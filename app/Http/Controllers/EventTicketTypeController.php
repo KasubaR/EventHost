@@ -6,7 +6,6 @@ use App\Http\Requests\StoreTicketTypeRequest;
 use App\Http\Requests\UpdateTicketTypeRequest;
 use App\Models\Event;
 use App\Models\TicketType;
-use App\Support\TicketingSettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -23,7 +22,7 @@ class EventTicketTypeController extends Controller
         return view('events.tickets.index', [
             'event' => $event,
             'ticketTypes' => $event->ticketTypes,
-            'commissionPercent' => TicketingSettings::commissionPercent(),
+            'commissionPercent' => $event->commissionPercent(),
             // Draft/Rejected = still setting up, never submitted (or fixing a
             // rejection) — show the creation-wizard chrome instead of the
             // ticketing dashboard tabs. Same rule as Event::canSubmitTicketing().

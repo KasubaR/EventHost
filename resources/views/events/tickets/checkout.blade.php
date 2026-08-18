@@ -14,7 +14,7 @@
     @php
         $faceValue = $reservations->sum(fn ($r) => (float) $r->unit_price_snapshot * $r->quantity);
         $isPassThrough = $event->commission_mode?->value === 'pass_through';
-        $commissionPercent = \App\Support\TicketingSettings::commissionPercent();
+        $commissionPercent = $event->commissionPercent();
         $commissionAmount = round($faceValue * (float) $commissionPercent / 100, 2);
         $buyerTotal = $isPassThrough ? $faceValue + $commissionAmount : $faceValue;
         $earliestExpiry = $reservations->min('expires_at');

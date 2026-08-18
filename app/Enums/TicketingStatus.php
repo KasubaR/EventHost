@@ -20,4 +20,28 @@ enum TicketingStatus: string
             self::Rejected => 'Activation declined',
         };
     }
+
+    /**
+     * Visual tone for admin pills and callouts.
+     */
+    public function tone(): string
+    {
+        return match ($this) {
+            self::Approved => 'ok',
+            self::PendingReview => 'info',
+            self::Rejected => 'danger',
+            self::Draft, self::NotApplicable => 'warn',
+        };
+    }
+
+    public function icon(): string
+    {
+        return match ($this) {
+            self::Approved => 'fa-circle-check',
+            self::PendingReview => 'fa-hourglass-half',
+            self::Rejected => 'fa-circle-xmark',
+            self::Draft => 'fa-pen-to-square',
+            self::NotApplicable => 'fa-ticket',
+        };
+    }
 }

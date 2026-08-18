@@ -11,9 +11,9 @@ use App\Models\Guest;
 use App\Models\StagedMedia;
 use App\Models\TicketType;
 use App\Models\User;
-use App\Support\TicketingSettings;
 use App\Notifications\TicketingApprovedNotification;
 use App\Notifications\TicketingRejectedNotification;
+use App\Support\TicketingSettings;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -654,6 +654,106 @@ class TicketingTest extends TestCase
     {
         $this->assertSame('5.00', TicketingSettings::commissionPercent());
         $this->assertSame('0.00', TicketingSettings::cancellationFeePercent());
+    }
+
+    public function test_event_commission_and_cancellation_fee_fall_back_to_platform_default_when_not_negotiated(): void
+    {
+        $event = Event::factory()->ticketed()->create();
+
+        $this->assertFalse($event->hasCommissionOverride());
+        $this->assertFalse($event->hasCancellationFeeOverride());
+        $this->assertSame('5.00', $event->commissionPercent());
+        $this->assertSame('0.00', $event->cancellationFeePercent());
+    }
+
+    public function test_admin_can_set_negotiated_ticketing_terms_for_one_event(): void
+    {
+        $owner = User::factory()->create();
+        $event = Event::factory()->for($owner)->ticketed()->create([
+            'ticketing_status' => TicketingStatus::PendingReview,
+            'ticketing_submitted_at' => now(),
+        ]);
+
+        $admin = Admin::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin, 'admin')
+            ->patch(route('admin.ticketing.terms', $event), [
+                'commission_percent_override' => '8.5',
+                'cancellation_fee_percent_override' => '2',
+            ])
+            ->assertRedirect(route('admin.ticketing.show', $event))
+            ->assertSessionHas('status', 'ticketing-terms-updated');
+
+        $event->refresh();
+        $this->assertTrue($event->hasCommissionOverride());
+        $this->assertTrue($event->hasCancellationFeeOverride());
+        $this->assertSame('8.50', $event->commissionPercent());
+        $this->assertSame('2.00', $event->cancellationFeePercent());
+
+        // Other ticketed events keep using the platform default untouched.
+        $unrelated = Event::factory()->ticketed()->create();
+        $this->assertSame('5.00', $unrelated->commissionPercent());
+    }
+
+    public function test_admin_can_clear_negotiated_terms_back_to_platform_default(): void
+    {
+        $owner = User::factory()->create();
+        $event = Event::factory()->for($owner)->ticketed()->create([
+            'commission_percent_override' => '9.00',
+            'cancellation_fee_percent_override' => '3.00',
+        ]);
+
+        $admin = Admin::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin, 'admin')
+            ->patch(route('admin.ticketing.terms', $event), [
+                'commission_percent_override' => '',
+                'cancellation_fee_percent_override' => '',
+            ])
+            ->assertRedirect(route('admin.ticketing.show', $event));
+
+        $event->refresh();
+        $this->assertFalse($event->hasCommissionOverride());
+        $this->assertFalse($event->hasCancellationFeeOverride());
+        $this->assertSame('5.00', $event->commissionPercent());
+    }
+
+    public function test_negotiated_terms_reject_out_of_range_values(): void
+    {
+        $owner = User::factory()->create();
+        $event = Event::factory()->for($owner)->ticketed()->create();
+
+        $admin = Admin::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin, 'admin')
+            ->from(route('admin.ticketing.show', $event))
+            ->patch(route('admin.ticketing.terms', $event), [
+                'commission_percent_override' => '150',
+            ])
+            ->assertRedirect(route('admin.ticketing.show', $event))
+            ->assertSessionHasErrors('commission_percent_override');
+
+        $this->assertNull($event->fresh()->commission_percent_override);
+    }
+
+    public function test_support_cannot_update_negotiated_ticketing_terms(): void
+    {
+        $owner = User::factory()->create();
+        $event = Event::factory()->for($owner)->ticketed()->create();
+
+        $support = Admin::factory()->create();
+        $support->assignRole('support');
+
+        $this->actingAs($support, 'admin')
+            ->patch(route('admin.ticketing.terms', $event), [
+                'commission_percent_override' => '10.00',
+            ])
+            ->assertForbidden();
+
+        $this->assertNull($event->fresh()->commission_percent_override);
     }
 
     public function test_ticketed_store_skips_choose_template_and_lands_on_tickets_step(): void

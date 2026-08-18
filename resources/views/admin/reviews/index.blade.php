@@ -16,6 +16,9 @@
                 <h1 class="dph-title">Reviews</h1>
                 <p class="dph-sub">Approve what hosts send in, and pick which reviews appear on the homepage.</p>
             </div>
+            <button type="button" class="btn-primary dash-header-cta" id="openVideoReviewModal">
+                <i class="fa-solid fa-plus" aria-hidden="true"></i> Add video review
+            </button>
         </div>
     </x-slot>
 
@@ -50,9 +53,13 @@
         </div>
     @endif
 
-    <div class="admin-panel-card">
-        <h2>How this works</h2>
-        <p class="admin-muted">
+    <details class="admin-help">
+        <summary class="admin-help-summary">
+            <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+            How this works
+            <i class="fa-solid fa-chevron-down admin-help-caret" aria-hidden="true"></i>
+        </summary>
+        <p class="admin-muted admin-help-body">
             Hosts can review each event they ran once the date has passed. New reviews arrive below as
             <strong>Awaiting review</strong> and are invisible to the public until approved. Approving a review does not
             put it on the homepage — tick <strong>Feature on homepage</strong> as well. The homepage shows up to
@@ -61,77 +68,7 @@
             {{ $featuredCount === 1 ? 'is' : 'are' }} featured. If a host edits a review it comes straight back here as
             pending and drops off the homepage. Review text is plain text — HTML is escaped, not rendered.
         </p>
-    </div>
-
-    <div class="admin-panel-card admin-mt-lg">
-        <h2>Add a video review</h2>
-        <p class="admin-muted">
-            Video testimonials are added here by you, never uploaded by hosts. Paste a public or unlisted YouTube link —
-            only videos that allow embedding will play. The poster image is the still shown before someone clicks play;
-            without one the card falls back to a plain play button. A video review is published as soon as you add it,
-            and appears in <strong>Published</strong> below where you can edit or unpublish it like any other.
-        </p>
-
-        <form method="post" action="{{ route('admin.reviews.store') }}" enctype="multipart/form-data" class="admin-mt-sm">
-            @csrf
-            <input type="hidden" name="_form" value="create">
-
-            <label class="admin-tpl-field admin-field-wide">
-                <span>Quote shown under the video</span>
-                <textarea name="body" rows="3" maxlength="1500" required>{{ $oldFor('create', 'body', '') }}</textarea>
-            </label>
-
-            <label class="admin-tpl-field admin-field-wide">
-                <span>YouTube link or video ID</span>
-                <input type="text" name="video_ref" value="{{ $oldFor('create', 'video_ref', '') }}" maxlength="500"
-                       placeholder="https://www.youtube.com/watch?v=… or youtu.be/…" required>
-            </label>
-
-            <div class="admin-row-fields">
-                <label class="admin-tpl-field">
-                    <span>Name shown</span>
-                    <input type="text" name="author_name" value="{{ $oldFor('create', 'author_name', '') }}" maxlength="255" required>
-                </label>
-
-                <label class="admin-tpl-field">
-                    <span>Context line</span>
-                    <input type="text" name="author_context" value="{{ $oldFor('create', 'author_context', '') }}" maxlength="255" placeholder="Wedding · Lusaka">
-                </label>
-
-                <label class="admin-tpl-field">
-                    <span>Rating <span class="admin-muted">optional</span></span>
-                    <input type="number" name="rating" value="{{ $oldFor('create', 'rating', '') }}" min="1" max="5" step="1">
-                </label>
-
-                <label class="admin-tpl-field">
-                    <span>Order</span>
-                    <input type="number" name="featured_sort_order" value="{{ $oldFor('create', 'featured_sort_order', 0) }}" min="0" max="999" step="1" required>
-                </label>
-
-                <label class="admin-tpl-check admin-faq-check">
-                    <input type="hidden" name="is_featured" value="0">
-                    <input type="checkbox" name="is_featured" value="1" @checked((bool) $oldFor('create', 'is_featured', false))>
-                    <span>Feature on homepage</span>
-                </label>
-            </div>
-
-            <div class="admin-row-fields">
-                <label class="admin-tpl-field admin-tpl-file">
-                    <span>Poster image <span class="admin-muted">optional, cropped to 16:9</span></span>
-                    <input type="file" name="video_poster" accept="image/jpeg,image/png,image/webp">
-                </label>
-
-                <label class="admin-tpl-field admin-tpl-file">
-                    <span>Photo of the reviewer <span class="admin-muted">optional, cropped square</span></span>
-                    <input type="file" name="author_photo" accept="image/jpeg,image/png,image/webp">
-                </label>
-            </div>
-
-            <div class="admin-actions admin-mt-sm">
-                <button type="submit" class="btn-primary evt-btn-tiny"><i class="fa-solid fa-plus"></i> Add video review</button>
-            </div>
-        </form>
-    </div>
+    </details>
 
     @foreach ([
         ['title' => 'Awaiting review', 'items' => $pending, 'empty' => 'Nothing waiting — the queue is clear.'],
@@ -288,4 +225,105 @@
             <p class="admin-muted">{{ $group['empty'] }}</p>
         @endforelse
     @endforeach
+
+    <div class="profile-modal-overlay" id="videoReviewModalOverlay" role="dialog" aria-modal="true" aria-labelledby="videoReviewModalTitle">
+        <div class="profile-modal admin-form-modal">
+            <div class="admin-form-modal-head">
+                <h2 id="videoReviewModalTitle">Add a video review</h2>
+                <button type="button" class="admin-form-modal-close" id="closeVideoReviewModal" aria-label="Close">
+                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                </button>
+            </div>
+            <p class="admin-muted admin-form-modal-intro">
+                Video testimonials are added here by you, never uploaded by hosts. Paste a public or unlisted YouTube link —
+                only videos that allow embedding will play. The poster image is the still shown before someone clicks play;
+                without one the card falls back to a plain play button. A video review is published as soon as you add it,
+                and appears in <strong>Published</strong> below where you can edit or unpublish it like any other.
+            </p>
+
+            <form method="post" action="{{ route('admin.reviews.store') }}" enctype="multipart/form-data" class="admin-form-modal-body">
+                @csrf
+                <input type="hidden" name="_form" value="create">
+
+                <label class="admin-tpl-field admin-field-wide">
+                    <span>Quote shown under the video</span>
+                    <textarea name="body" rows="3" maxlength="1500" required>{{ $oldFor('create', 'body', '') }}</textarea>
+                </label>
+
+                <label class="admin-tpl-field admin-field-wide">
+                    <span>YouTube link or video ID</span>
+                    <input type="text" name="video_ref" value="{{ $oldFor('create', 'video_ref', '') }}" maxlength="500"
+                           placeholder="https://www.youtube.com/watch?v=… or youtu.be/…" required>
+                </label>
+
+                <div class="admin-row-fields">
+                    <label class="admin-tpl-field">
+                        <span>Name shown</span>
+                        <input type="text" name="author_name" value="{{ $oldFor('create', 'author_name', '') }}" maxlength="255" required>
+                    </label>
+
+                    <label class="admin-tpl-field">
+                        <span>Context line</span>
+                        <input type="text" name="author_context" value="{{ $oldFor('create', 'author_context', '') }}" maxlength="255" placeholder="Wedding · Lusaka">
+                    </label>
+
+                    <label class="admin-tpl-field">
+                        <span>Rating <span class="admin-muted">optional</span></span>
+                        <input type="number" name="rating" value="{{ $oldFor('create', 'rating', '') }}" min="1" max="5" step="1">
+                    </label>
+
+                    <label class="admin-tpl-field">
+                        <span>Order</span>
+                        <input type="number" name="featured_sort_order" value="{{ $oldFor('create', 'featured_sort_order', 0) }}" min="0" max="999" step="1" required>
+                    </label>
+
+                    <label class="admin-tpl-check admin-faq-check">
+                        <input type="hidden" name="is_featured" value="0">
+                        <input type="checkbox" name="is_featured" value="1" @checked((bool) $oldFor('create', 'is_featured', false))>
+                        <span>Feature on homepage</span>
+                    </label>
+                </div>
+
+                <div class="admin-row-fields">
+                    <label class="admin-tpl-field admin-tpl-file">
+                        <span>Poster image <span class="admin-muted">optional, cropped to 16:9</span></span>
+                        <input type="file" name="video_poster" accept="image/jpeg,image/png,image/webp">
+                    </label>
+
+                    <label class="admin-tpl-field admin-tpl-file">
+                        <span>Photo of the reviewer <span class="admin-muted">optional, cropped square</span></span>
+                        <input type="file" name="author_photo" accept="image/jpeg,image/png,image/webp">
+                    </label>
+                </div>
+
+                <div class="admin-form-modal-actions">
+                    <button type="button" class="profile-modal-cancel" id="cancelVideoReviewModal">Cancel</button>
+                    <button type="submit" class="btn-primary"><i class="fa-solid fa-plus" aria-hidden="true"></i> Add video review</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    (function () {
+        const overlay = document.getElementById('videoReviewModalOverlay');
+        const openBtn = document.getElementById('openVideoReviewModal');
+        const closeBtn = document.getElementById('closeVideoReviewModal');
+        const cancelBtn = document.getElementById('cancelVideoReviewModal');
+        if (!overlay || !openBtn) return;
+
+        function open() { overlay.classList.add('is-open'); }
+        function close() { overlay.classList.remove('is-open'); }
+
+        openBtn.addEventListener('click', open);
+        if (closeBtn) closeBtn.addEventListener('click', close);
+        if (cancelBtn) cancelBtn.addEventListener('click', close);
+        overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
+        document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+
+        @if (old('_form') === 'create')
+            open();
+        @endif
+    }());
+    </script>
 </x-admin-layout>

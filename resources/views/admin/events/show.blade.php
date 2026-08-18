@@ -5,6 +5,7 @@
 
     @php
         $ev = $adminEvent;
+        $ticketingTone = $ev->isTicketed() ? $ev->ticketing_status->tone() : 'info';
     @endphp
 
     <x-slot name="title">{{ $ev->name }}</x-slot>
@@ -40,25 +41,58 @@
     <div class="admin-detail-grid">
         <div class="admin-panel-card">
             <h2>Summary</h2>
-            <p class="admin-muted admin-mt-sm">Type: {{ $ev->event_type }}</p>
-            <p class="admin-muted">
-                Guests: {{ $ev->guests_count }} ·
-                RSVPs: {{ $ev->rsvps_count }}
-                @if(auth('admin')->user()?->can('rsvps.view'))
-                    <a href="{{ route('admin.events.rsvps', $ev) }}" class="admin-link">View RSVPs</a>
-                @endif
-            </p>
-            <p class="admin-muted">Published: {{ $ev->is_published ? 'Yes' : 'No' }}</p>
-            <p class="admin-muted">Public RSVP allowed: {{ $ev->is_public ? 'Yes' : 'No' }}</p>
-            @if ($ev->isTicketed())
-                <p class="admin-muted">Product: {{ $ev->product_kind->label() }} · {{ $ev->ticketing_status->label() }}</p>
-            @endif
+
+            <dl class="admin-fact-grid">
+                <div class="admin-fact">
+                    <dt>Type</dt>
+                    <dd>
+                        {{ $ev->event_type_label }}
+                        @if ($ev->event_date)
+                            <span class="admin-fact-sub">{{ $ev->event_date->format('j M Y') }}</span>
+                        @endif
+                    </dd>
+                </div>
+                <div class="admin-fact">
+                    <dt>Public RSVP</dt>
+                    <dd>{{ $ev->is_public ? 'Allowed' : 'Invite only' }}</dd>
+                </div>
+                <div class="admin-fact">
+                    <dt>Guests</dt>
+                    <dd>
+                        {{ number_format($ev->guests_count) }}
+                        @if(auth('admin')->user()?->can('guests.view'))
+                            <a href="{{ route('admin.events.guests', $ev) }}" class="admin-link admin-fact-link">View guests</a>
+                        @endif
+                    </dd>
+                </div>
+                <div class="admin-fact">
+                    <dt>RSVPs</dt>
+                    <dd>
+                        {{ number_format($ev->rsvps_count) }}
+                        @if(auth('admin')->user()?->can('rsvps.view'))
+                            <a href="{{ route('admin.events.rsvps', $ev) }}" class="admin-link admin-fact-link">View RSVPs</a>
+                        @endif
+                    </dd>
+                </div>
+            </dl>
 
             @if ($ev->isTicketed())
-                <p class="admin-muted admin-mt-md">Ticketed events go live from the Ticketing queue — they do not use event credits.</p>
-                @if(auth('admin')->user()?->can('ticketing.view'))
-                    <p class="admin-mt-sm"><a href="{{ route('admin.ticketing.show', $ev) }}">Open ticketing review</a></p>
-                @endif
+                <div class="admin-callout admin-callout--{{ $ticketingTone }}">
+                    <div class="admin-callout-icon" aria-hidden="true">
+                        <i class="fa-solid {{ $ev->ticketing_status->icon() }}"></i>
+                    </div>
+                    <div>
+                        <p class="admin-callout-kicker">Ticketing</p>
+                        <p class="admin-callout-body">Ticketed events go live from the Ticketing queue — they do not use event credits.</p>
+                        @if(auth('admin')->user()?->can('ticketing.view'))
+                            <div class="admin-callout-actions">
+                                <a href="{{ route('admin.ticketing.show', $ev) }}" class="btn-primary">
+                                    <i class="fa-solid fa-ticket" aria-hidden="true"></i> Open ticketing review
+                                </a>
+                            </div>
+                        @endif
+                    </div>
+                </div>
             @elseif(auth('admin')->user()?->can('events.publish_toggle'))
                 <form method="post" action="{{ route('admin.events.publish', $ev) }}" class="profile-form admin-mt-md">
                     @csrf
@@ -78,7 +112,7 @@
             @endif
 
             @if(auth('admin')->user()?->can('events.delete'))
-                <form method="post" action="{{ route('admin.events.destroy', $ev) }}" class="profile-form admin-mt-md" data-confirm="Permanently delete this event and related guests/RSVPs?">
+                <form method="post" action="{{ route('admin.events.destroy', $ev) }}" class="profile-form admin-danger-row" data-confirm="Permanently delete this event and related guests/RSVPs?">
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="evt-btn-outline evt-btn-danger-outline">Delete event</button>

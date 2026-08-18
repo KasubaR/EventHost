@@ -166,49 +166,30 @@
         </section>
     </div>
 
-    <div class="admin-detail-grid admin-mt-md">
-        <section class="admin-panel-card">
-            <h2>Recent events</h2>
+    @if ($pendingTicketingRequests !== null)
+        <section class="admin-panel-card admin-mt-md">
+            <h2>Ticketing requests</h2>
             <div class="admin-table-wrap">
                 <table class="admin-table">
                     <thead>
-                    <tr><th>Event</th><th>Owner</th><th>Published</th></tr>
+                    <tr><th>Event</th><th>Organizer</th><th>Types</th><th>Submitted</th><th></th></tr>
                     </thead>
                     <tbody>
-                    @forelse ($recentEvents as $ev)
+                    @forelse ($pendingTicketingRequests as $ev)
                         <tr>
                             <td>{{ $ev->name }}</td>
                             <td>{{ $ev->user?->email ?? '—' }}</td>
-                            <td>{{ $ev->is_published ? 'Yes' : 'No' }}</td>
+                            <td>{{ $ev->ticket_types_count }}</td>
+                            <td>{{ $ev->ticketing_submitted_at?->format('j M Y H:i') ?? '—' }}</td>
+                            <td><a href="{{ route('admin.ticketing.show', $ev) }}" class="evt-btn-outline evt-btn-tiny">Review</a></td>
                         </tr>
                     @empty
-                        <tr><td colspan="3" class="admin-muted">No events.</td></tr>
+                        <tr><td colspan="5" class="admin-muted">No pending ticketing requests.</td></tr>
                     @endforelse
                     </tbody>
                 </table>
             </div>
+            <p class="admin-mt-sm"><a href="{{ route('admin.ticketing.index') }}" class="admin-link">View all ticketing requests</a></p>
         </section>
-
-        <section class="admin-panel-card">
-            <h2>Recent RSVPs</h2>
-            <div class="admin-table-wrap">
-                <table class="admin-table">
-                    <thead>
-                    <tr><th>Guest</th><th>Event</th><th>Status</th></tr>
-                    </thead>
-                    <tbody>
-                    @forelse ($recentRsvps as $r)
-                        <tr>
-                            <td>{{ $r->guest?->name ?? '—' }}</td>
-                            <td>{{ $r->event?->name ?? '—' }}</td>
-                            <td>{{ $r->status instanceof \BackedEnum ? $r->status->value : $r->status }}</td>
-                        </tr>
-                    @empty
-                        <tr><td colspan="3" class="admin-muted">No RSVPs.</td></tr>
-                    @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </section>
-    </div>
+    @endif
 </x-admin-layout>

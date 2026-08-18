@@ -12,7 +12,6 @@ use App\Models\TicketOrder;
 use App\Models\TicketPayment;
 use App\Models\TicketReservation;
 use App\Models\TicketType;
-use App\Support\TicketingSettings;
 use App\Support\TicketOrderMoney;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -76,7 +75,7 @@ class TicketCheckoutService
             $faceValue = round($held->sum(fn ($r) => (float) $r->unit_price_snapshot * $r->quantity), 2);
             $money = TicketOrderMoney::calculate(
                 $faceValue,
-                TicketingSettings::commissionPercent(),
+                $event->commissionPercent(),
                 $event->commission_mode ?? CommissionMode::Absorb,
             );
             $paymentExpiresAt = now()->addHours(self::PAYMENT_EXPIRES_HOURS);

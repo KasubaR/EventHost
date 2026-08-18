@@ -128,6 +128,53 @@ class TicketPurchaseFlowTest extends TestCase
         $this->assertSame(2, $type->fresh()->soldQuantity());
     }
 
+    public function test_checkout_uses_the_events_negotiated_commission_override_not_the_platform_default(): void
+    {
+        Notification::fake();
+
+        // Platform default stays 5% (TicketingSettings' seeded default); this
+        // event negotiated a lower rate, so checkout must snapshot 8%, not it.
+        $event = $this->approvedTicketedEvent([
+            'commission_mode' => CommissionMode::Absorb,
+            'commission_percent_override' => '8.00',
+        ]);
+        $type = TicketType::factory()->for($event)->create(['price' => '200.00', 'quantity' => 10]);
+
+        $this->post(route('events.public.tickets.hold', $event->slug), [
+            'quantities' => [$type->id => 1],
+        ])->assertRedirect(route('events.public.tickets.checkout', $event->slug));
+
+        $lenco = Mockery::mock(LencoService::class);
+        $lenco->shouldReceive('initiateMobileMoneyPayment')->once()->andReturn([
+            'success' => true,
+            'transactionId' => 'col_ticket_override',
+            'lencoReference' => 'LEN-T-OVERRIDE',
+            'status' => 'successful',
+            'amount' => 200.00,
+            'currency' => 'ZMW',
+            'provider' => 'mtn',
+            'rawResponse' => [],
+        ]);
+        $this->app->instance(LencoService::class, $lenco);
+
+        $response = $this->postJson(route('events.public.tickets.checkout.store', $event->slug), [
+            'name' => 'Jane Buyer',
+            'email' => 'jane@example.com',
+            'phone' => '0961234567',
+            'payment_method' => 'mobile_money',
+            'provider' => 'mtn',
+            'momo_phone' => '0961234567',
+        ]);
+
+        $response->assertOk()->assertJsonPath('success', true);
+
+        $order = TicketOrder::query()->where('event_id', $event->id)->firstOrFail();
+        $this->assertSame('200.00', (string) $order->face_value);
+        $this->assertSame('8.00', (string) $order->commission_percent);
+        $this->assertSame('16.00', (string) $order->commission_amount);
+        $this->assertSame('184.00', (string) $order->host_amount);
+    }
+
     public function test_pass_through_commission_adds_fee_to_buyer_total_and_pays_host_full_face_value(): void
     {
         $event = $this->approvedTicketedEvent(['commission_mode' => CommissionMode::PassThrough]);

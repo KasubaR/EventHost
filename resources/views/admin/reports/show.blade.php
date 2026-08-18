@@ -1,6 +1,10 @@
 <x-admin-layout>
     @push('styles')
         <link rel="stylesheet" href="{{ asset('css/events-admin.css') }}">
+        <link rel="stylesheet" href="{{ asset('css/custom-select.css') }}">
+    @endpush
+    @push('scripts')
+        <script src="{{ asset('js/custom-select.js') }}" defer></script>
     @endpush
 
     <x-slot name="title">Report #{{ $report->id }}</x-slot>
@@ -46,7 +50,8 @@
                     @csrf
                     @method('PATCH')
                     <label for="report-status">Status</label>
-                    <select id="report-status" name="status" class="profile-input admin-mt-sm">
+                    <select id="report-status" name="status" class="profile-input admin-mt-sm"
+                            data-cs data-cs-search="never" data-cs-icon="fa-solid fa-flag">
                         <option value="pending" @selected($report->status === 'pending')>Pending</option>
                         <option value="reviewed" @selected($report->status === 'reviewed')>Reviewed</option>
                         <option value="resolved" @selected($report->status === 'resolved')>Resolved</option>

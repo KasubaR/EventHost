@@ -2,6 +2,10 @@
     @push('styles')
         <link rel="stylesheet" href="{{ asset('css/events-admin.css') }}">
         <link rel="stylesheet" href="{{ asset('css/dashboard-home.css') }}">
+        <link rel="stylesheet" href="{{ asset('css/custom-select.css') }}">
+    @endpush
+    @push('scripts')
+        <script src="{{ asset('js/custom-select.js') }}" defer></script>
     @endpush
 
     <x-slot name="title">Payments</x-slot>
@@ -56,7 +60,8 @@
     <form method="get" action="{{ route('admin.payments.index') }}" class="admin-filter-bar admin-mt-md">
         <div>
             <label class="evt-sr-only" for="admin-payment-status">Status</label>
-            <select id="admin-payment-status" name="status">
+            <select id="admin-payment-status" name="status" data-cs data-cs-size="sm" data-cs-search="never"
+                    data-cs-icon="fa-solid fa-filter">
                 <option value="">Any status</option>
                 <option value="pending" @selected($filterStatus === 'pending')>Pending</option>
                 <option value="processing" @selected($filterStatus === 'processing')>Processing</option>
@@ -67,10 +72,11 @@
         </div>
         <div>
             <label class="evt-sr-only" for="admin-payment-method">Method</label>
-            <select id="admin-payment-method" name="method">
+            <select id="admin-payment-method" name="method" data-cs data-cs-size="sm" data-cs-search="never"
+                    data-cs-icon="fa-solid fa-wallet">
                 <option value="">Any method</option>
-                <option value="mobile_money" @selected($filterMethod === 'mobile_money')>Mobile money</option>
-                <option value="bank_transfer" @selected($filterMethod === 'bank_transfer')>Bank transfer</option>
+                <option value="mobile_money" data-icon="fa-solid fa-mobile-screen-button" @selected($filterMethod === 'mobile_money')>Mobile money</option>
+                <option value="bank_transfer" data-icon="fa-solid fa-building-columns" @selected($filterMethod === 'bank_transfer')>Bank transfer</option>
             </select>
         </div>
         <label class="admin-checkbox-inline">

@@ -37,6 +37,8 @@
         <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Activation declined. The organizer can edit and resubmit.</div>
     @elseif (session('status') === 'ticketing-hero-updated')
         <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Hero image saved. It is the banner on the public ticket page.</div>
+    @elseif (session('status') === 'ticketing-terms-updated')
+        <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Negotiated terms saved.</div>
     @endif
 
     @if ($errors->any())
@@ -84,12 +86,81 @@
     <div class="admin-detail-grid">
         <div class="admin-panel-card">
             <h2>Summary</h2>
-            <p class="admin-muted admin-mt-sm">{{ $ev->event_type_label }} · {{ $ev->event_date?->format('j M Y') }}</p>
-            <p class="admin-muted">Commission mode: {{ $ev->commission_mode?->label() ?? '—' }}</p>
-            <p class="admin-muted">Platform commission: {{ \App\Support\TicketingSettings::commissionPercent() }}%</p>
-            <p class="admin-muted">Published: {{ $ev->is_published ? 'Yes' : 'No' }}</p>
+
+            <dl class="admin-fact-grid">
+                <div class="admin-fact">
+                    <dt>Type</dt>
+                    <dd>
+                        {{ $ev->event_type_label }}
+                        @if ($ev->event_date)
+                            <span class="admin-fact-sub">{{ $ev->event_date->format('j M Y') }}</span>
+                        @endif
+                    </dd>
+                </div>
+                <div class="admin-fact">
+                    <dt>Commission mode</dt>
+                    <dd>{{ $ev->commission_mode?->label() ?? '—' }}</dd>
+                </div>
+                <div class="admin-fact">
+                    <dt>Commission rate</dt>
+                    <dd>
+                        {{ $ev->commissionPercent() }}%
+                        <span class="admin-fact-sub">{{ $ev->hasCommissionOverride() ? '(custom)' : '(platform default)' }}</span>
+                    </dd>
+                </div>
+                <div class="admin-fact">
+                    <dt>Cancellation fee</dt>
+                    <dd>
+                        {{ $ev->cancellationFeePercent() }}%
+                        <span class="admin-fact-sub">{{ $ev->hasCancellationFeeOverride() ? '(custom)' : '(platform default)' }}</span>
+                    </dd>
+                </div>
+                <div class="admin-fact">
+                    <dt>Ticket types</dt>
+                    <dd>{{ number_format($ev->ticketTypes->count()) }}</dd>
+                </div>
+            </dl>
+
+            @if(auth('admin')->user()?->can('ticketing.approve'))
+                <form method="post" action="{{ route('admin.ticketing.terms', $ev) }}" class="profile-form admin-mt-md">
+                    @csrf
+                    @method('PATCH')
+                    <fieldset>
+                        <legend class="admin-muted">Negotiated terms <span class="profile-optional">blank = platform default</span></legend>
+                        <label for="commission_percent_override" class="admin-mt-sm">Commission % for this event</label>
+                        <input id="commission_percent_override" name="commission_percent_override" type="number" step="0.01" min="0" max="100"
+                               class="profile-input {{ $errors->has('commission_percent_override') ? 'profile-input--error' : '' }}"
+                               placeholder="{{ \App\Support\TicketingSettings::commissionPercent() }}"
+                               value="{{ old('commission_percent_override', $ev->commission_percent_override) }}">
+                        @error('commission_percent_override')
+                            <p class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
+                        @enderror
+
+                        <label for="cancellation_fee_percent_override" class="admin-mt-sm">Cancellation fee % for this event</label>
+                        <input id="cancellation_fee_percent_override" name="cancellation_fee_percent_override" type="number" step="0.01" min="0" max="100"
+                               class="profile-input {{ $errors->has('cancellation_fee_percent_override') ? 'profile-input--error' : '' }}"
+                               placeholder="{{ \App\Support\TicketingSettings::cancellationFeePercent() }}"
+                               value="{{ old('cancellation_fee_percent_override', $ev->cancellation_fee_percent_override) }}">
+                        @error('cancellation_fee_percent_override')
+                            <p class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
+                        @enderror
+                    </fieldset>
+                    <div class="admin-actions admin-mt-md">
+                        <button type="submit" class="btn-primary">Save terms</button>
+                    </div>
+                </form>
+            @endif
+
             @if ($ev->ticketing_rejection_note)
-                <p class="admin-muted">Last note: {{ $ev->ticketing_rejection_note }}</p>
+                <div class="admin-callout admin-callout--danger">
+                    <div class="admin-callout-icon" aria-hidden="true">
+                        <i class="fa-solid fa-circle-exclamation"></i>
+                    </div>
+                    <div>
+                        <p class="admin-callout-kicker">Last note</p>
+                        <p class="admin-callout-body">{{ $ev->ticketing_rejection_note }}</p>
+                    </div>
+                </div>
             @endif
 
             @if ($ev->ticketing_status === \App\Enums\TicketingStatus::PendingReview && auth('admin')->user()?->can('ticketing.approve'))

@@ -128,7 +128,11 @@
                 </table>
             </div>
             @if(auth('admin')->user()?->can('events.view'))
-                <p class="admin-mt-sm"><a href="{{ route('admin.events.index', ['q' => $u->email]) }}" class="admin-link">View events for this owner</a></p>
+                <p class="admin-mt-sm">
+                    <a href="{{ route('admin.events.index', ['q' => $u->email]) }}" class="evt-btn-outline">
+                        View events for this owner <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </p>
             @endif
         </div>
 

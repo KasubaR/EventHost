@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\TicketingStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\NotificationLog;
@@ -10,6 +11,7 @@ use App\Models\Report;
 use App\Models\Rsvp;
 use App\Models\User;
 use App\Support\BillingPlan;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -28,8 +30,7 @@ class DashboardController extends Controller
             'finance' => $this->financeStats(),
             'currency' => BillingPlan::currency(),
             'recentUsers' => User::query()->latest()->limit(5)->get(),
-            'recentEvents' => Event::query()->with('user:id,name,email')->latest()->limit(5)->get(),
-            'recentRsvps' => Rsvp::query()->with(['guest:id,name', 'event:id,name'])->latest()->limit(5)->get(),
+            'pendingTicketingRequests' => $this->pendingTicketingRequests(),
             'recentFailedNotifications' => NotificationLog::query()
                 ->with(['event:id,name', 'guest:id,name'])
                 ->where('status', NotificationLog::STATUS_FAILED)
@@ -64,5 +65,27 @@ class DashboardController extends Controller
             'completed_payments' => $completed()->count(),
             'pending_payments' => Payment::query()->inProgress()->count(),
         ];
+    }
+
+    /**
+     * Returns null when the admin may not review ticketing, and the view then
+     * omits the panel entirely — same convention as financeStats().
+     *
+     * @return Collection<int, Event>|null
+     */
+    private function pendingTicketingRequests(): ?Collection
+    {
+        if (auth('admin')->user()?->can('ticketing.view') !== true) {
+            return null;
+        }
+
+        return Event::query()
+            ->ticketed()
+            ->where('ticketing_status', TicketingStatus::PendingReview)
+            ->with('user:id,name,email')
+            ->withCount('ticketTypes')
+            ->orderByDesc('ticketing_submitted_at')
+            ->limit(5)
+            ->get();
     }
 }

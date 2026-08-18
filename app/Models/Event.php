@@ -7,6 +7,7 @@ use App\Enums\EventProductKind;
 use App\Enums\RsvpStatus;
 use App\Enums\TicketingStatus;
 use App\Enums\TicketOrderStatus;
+use App\Support\TicketingSettings;
 use Cviebrock\EloquentSluggable\Sluggable;
 use Database\Factories\EventFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -143,6 +144,8 @@ class Event extends Model
         'ticketing_reviewed_by',
         'ticketing_rejection_note',
         'agreed_payout_on',
+        'commission_percent_override',
+        'cancellation_fee_percent_override',
         'description',
         'event_date',
         'event_time',
@@ -296,6 +299,44 @@ class Event extends Model
                 TicketingStatus::Rejected,
                 TicketingStatus::PendingReview,
             ], true);
+    }
+
+    /**
+     * Effective commission rate for this event: the rate EventHost staff
+     * negotiated with the organizer (admin.ticketing.show), or the platform
+     * default when nothing was negotiated. Every checkout calculation and
+     * every commission display — host or admin facing — must read this
+     * rather than TicketingSettings::commissionPercent() directly, or a
+     * per-event deal silently stops applying at one of the surfaces.
+     */
+    public function commissionPercent(): string
+    {
+        return $this->commission_percent_override !== null
+            ? TicketingSettings::normalizeForStorage($this->commission_percent_override)
+            : TicketingSettings::commissionPercent();
+    }
+
+    public function hasCommissionOverride(): bool
+    {
+        return $this->commission_percent_override !== null;
+    }
+
+    /**
+     * Effective cancellation fee rate for this event — same override-or-default
+     * rule as commissionPercent(). No cancellation flow consumes this yet
+     * (see TicketingSettings::cancellationFeePercent()), but the per-event
+     * override is captured now so the rate is already in place once one exists.
+     */
+    public function cancellationFeePercent(): string
+    {
+        return $this->cancellation_fee_percent_override !== null
+            ? TicketingSettings::normalizeForStorage($this->cancellation_fee_percent_override)
+            : TicketingSettings::cancellationFeePercent();
+    }
+
+    public function hasCancellationFeeOverride(): bool
+    {
+        return $this->cancellation_fee_percent_override !== null;
     }
 
     /**
@@ -509,6 +550,8 @@ class Event extends Model
             'ticketing_reviewed_at' => 'datetime',
             'ticketing_reviewed_by' => 'integer',
             'agreed_payout_on' => 'date',
+            'commission_percent_override' => 'decimal:2',
+            'cancellation_fee_percent_override' => 'decimal:2',
             'rsvp_deadline' => 'datetime',
             'is_public' => 'boolean',
             'allow_plus_one' => 'boolean',

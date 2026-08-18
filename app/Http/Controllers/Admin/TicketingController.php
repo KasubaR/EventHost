@@ -7,6 +7,7 @@ use App\Exceptions\TicketingActivationException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ApproveTicketingRequest;
 use App\Http\Requests\Admin\RejectTicketingRequest;
+use App\Http\Requests\Admin\UpdateEventTicketingTermsRequest;
 use App\Http\Requests\Admin\UpdateTicketedHeroRequest;
 use App\Models\Admin;
 use App\Models\Event;
@@ -125,6 +126,32 @@ class TicketingController extends Controller
         return redirect()
             ->route('admin.ticketing.show', $event)
             ->with('status', 'ticketing-approved');
+    }
+
+    /**
+     * Sets or clears this event's negotiated commission / cancellation-fee
+     * rates. Deliberately not folded into approve() — the organizer's terms
+     * can be revisited any time the event is ticketed, not just at the one
+     * moment activation is decided, so this has no ticketing_status gate.
+     */
+    public function updateTerms(UpdateEventTicketingTermsRequest $request, Event $event): RedirectResponse
+    {
+        abort_unless($event->isTicketed(), 404);
+
+        $event->forceFill([
+            'commission_percent_override' => $request->validated('commission_percent_override'),
+            'cancellation_fee_percent_override' => $request->validated('cancellation_fee_percent_override'),
+        ])->save();
+
+        AdminActivity::log('Admin updated ticketing terms', [
+            'event_id' => $event->id,
+            'commission_percent_override' => $event->commission_percent_override,
+            'cancellation_fee_percent_override' => $event->cancellation_fee_percent_override,
+        ]);
+
+        return redirect()
+            ->route('admin.ticketing.show', $event)
+            ->with('status', 'ticketing-terms-updated');
     }
 
     public function reject(
