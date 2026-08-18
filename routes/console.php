@@ -21,3 +21,13 @@ Schedule::command('tickets:poll-pending')
     ->everyFiveMinutes()
     ->withoutOverlapping()
     ->runInBackground();
+
+// Shared hosting has no Supervisor to keep `queue:work` running persistently,
+// so ride the same cron minute the rest of the scheduler already needs.
+// --stop-when-empty exits once the backlog is drained instead of idling,
+// and --max-time keeps a burst from running past the next minute's overlap
+// check even if it does have to wait on something slow (e.g. SMTP).
+Schedule::command('queue:work --stop-when-empty --max-time=50 --tries=3')
+    ->everyMinute()
+    ->withoutOverlapping()
+    ->runInBackground();
