@@ -24,10 +24,15 @@ Schedule::command('tickets:poll-pending')
 
 // Shared hosting has no Supervisor to keep `queue:work` running persistently,
 // so ride the same cron minute the rest of the scheduler already needs.
-// --stop-when-empty exits once the backlog is drained instead of idling,
-// and --max-time keeps a burst from running past the next minute's overlap
-// check even if it does have to wait on something slow (e.g. SMTP).
-Schedule::command('queue:work --stop-when-empty --max-time=50 --tries=3')
+// --queue=high,default is required: several notifications (WelcomeNotification,
+// PaymentReceiptNotification, TicketOrderConfirmationNotification,
+// EmailChangedNotification, ContactMessageNotification) are dispatched onto
+// the `high` queue, and a bare `queue:work` only ever drains `default` and
+// silently leaves `high` jobs queued forever. --stop-when-empty exits once
+// the backlog is drained instead of idling, and --max-time keeps a burst
+// from running past the next minute's overlap check even if it does have
+// to wait on something slow (e.g. SMTP).
+Schedule::command('queue:work --queue=high,default --stop-when-empty --max-time=50 --tries=3')
     ->everyMinute()
     ->withoutOverlapping()
     ->runInBackground();
