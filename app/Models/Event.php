@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\CommissionMode;
 use App\Enums\EventProductKind;
+use App\Enums\EventStaffRole;
 use App\Enums\RsvpStatus;
 use App\Enums\TicketingStatus;
 use App\Enums\TicketOrderStatus;
@@ -372,6 +373,37 @@ class Event extends Model
     }
 
     /**
+     * Accounts with access to this event beyond the owner — Phase 18.
+     * Includes pending (unaccepted) invites; scope with whereNotNull('accepted_at')
+     * for accounts that can actually log in and act, or use staffRoleFor().
+     *
+     * @return HasMany<EventStaff, $this>
+     */
+    public function staff(): HasMany
+    {
+        return $this->hasMany(EventStaff::class)->orderByDesc('created_at');
+    }
+
+    /**
+     * The accepted staff role this user holds on this event, or null if they
+     * hold none (including the owner — check EventAccess::isOwner separately).
+     * Not cached: staff rows change rarely enough that a live query per check
+     * is simpler than invalidating a cache, same call shape as
+     * ownerHasPremiumEventTools().
+     */
+    public function staffRoleFor(User $user): ?EventStaffRole
+    {
+        // Eloquent's value() still hydrates a model internally (unlike the
+        // base query builder), so this comes back already cast to the enum.
+        $role = $this->staff()
+            ->where('user_id', $user->id)
+            ->whereNotNull('accepted_at')
+            ->value('role');
+
+        return $role instanceof EventStaffRole ? $role : null;
+    }
+
+    /**
      * @return HasOne<Review, $this>
      */
     public function review(): HasOne
@@ -617,6 +649,15 @@ class Event extends Model
         // something has bypassed request validation — fall back to the default.
         if ($path && ! str_contains($path, '://')) {
             return asset('storage/'.$path);
+        }
+
+        // Template preview sample events (InvitationTemplate::previewSampleEvent())
+        // stage an Unsplash placeholder here instead of a real cover_image, since
+        // cover_image itself must stay a validated storage path for real events.
+        // This attribute is never persisted — it only exists on in-memory previews.
+        $previewUrl = $this->getAttribute('preview_cover_image_url');
+        if (is_string($previewUrl) && $previewUrl !== '') {
+            return $previewUrl;
         }
 
         return asset('images/default-event.png');

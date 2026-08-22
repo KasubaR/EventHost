@@ -10,7 +10,7 @@
         <div class="gallery-mosaic evt-bg-gallery-mosaic">
             @foreach ($galleryPaths as $index => $path)
                 <figure class="gm-tile {{ $gmClasses[$index] ?? 'gm-5' }} evt-bg-gm-figure">
-                    <img src="{{ asset('storage/'.$path) }}" alt="" loading="lazy" decoding="async" width="800" height="600">
+                    <img src="{{ \App\Support\InvitationMediaUrl::resolve($path) }}" alt="" loading="lazy" decoding="async" width="800" height="600">
                 </figure>
             @endforeach
         </div>

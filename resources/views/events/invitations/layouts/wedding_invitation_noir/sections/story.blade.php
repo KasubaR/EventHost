@@ -12,9 +12,9 @@
     $photoSrc = $event->cover_image_url;
     $gallery = array_values(array_filter(array_map('strval', $invitation['media']['gallery'] ?? [])));
     if (count($gallery) > 1) {
-        $photoSrc = asset('storage/'.$gallery[1]);
+        $photoSrc = \App\Support\InvitationMediaUrl::resolve($gallery[1]);
     } elseif (count($gallery) > 0) {
-        $photoSrc = asset('storage/'.$gallery[0]);
+        $photoSrc = \App\Support\InvitationMediaUrl::resolve($gallery[0]);
     }
 @endphp
 

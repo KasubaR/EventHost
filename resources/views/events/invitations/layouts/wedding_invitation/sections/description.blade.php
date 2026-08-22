@@ -10,16 +10,7 @@
         }
     }
 
-    $wiMediaSrc = static function (string $pathOrUrl): string {
-        if ($pathOrUrl === '') {
-            return '';
-        }
-        if (str_starts_with($pathOrUrl, 'http://') || str_starts_with($pathOrUrl, 'https://') || str_starts_with($pathOrUrl, '/')) {
-            return $pathOrUrl;
-        }
-
-        return asset('storage/'.$pathOrUrl);
-    };
+    $wiMediaSrc = static fn (string $pathOrUrl): string => \App\Support\InvitationMediaUrl::resolve($pathOrUrl) ?? '';
 
     $couplePaths = array_values(array_filter(array_map('strval', $invitation['media']['couple_photos'] ?? [])));
     $fallback = $event->cover_image_url;

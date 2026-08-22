@@ -12,12 +12,12 @@
                 @foreach ($row1 as $path)
                     <div class="wi2-gallery-cell">
                         <a
-                            href="{{ asset('storage/'.$path) }}"
+                            href="{{ \App\Support\InvitationMediaUrl::resolve($path) }}"
                             class="glightbox wi2-gallery-lightbox"
                             data-gallery="{{ $galleryId }}"
                             data-type="image"
                         >
-                            <img src="{{ asset('storage/'.$path) }}" alt="" loading="lazy" width="800" height="500">
+                            <img src="{{ \App\Support\InvitationMediaUrl::resolve($path) }}" alt="" loading="lazy" width="800" height="500">
                         </a>
                     </div>
                 @endforeach
@@ -28,12 +28,12 @@
                 @foreach ($row2 as $path)
                     <div class="wi2-gallery-cell">
                         <a
-                            href="{{ asset('storage/'.$path) }}"
+                            href="{{ \App\Support\InvitationMediaUrl::resolve($path) }}"
                             class="glightbox wi2-gallery-lightbox"
                             data-gallery="{{ $galleryId }}"
                             data-type="image"
                         >
-                            <img src="{{ asset('storage/'.$path) }}" alt="" loading="lazy" width="800" height="500">
+                            <img src="{{ \App\Support\InvitationMediaUrl::resolve($path) }}" alt="" loading="lazy" width="800" height="500">
                         </a>
                     </div>
                 @endforeach

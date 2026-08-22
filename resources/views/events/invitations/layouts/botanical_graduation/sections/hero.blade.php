@@ -32,7 +32,7 @@
     $couplePaths = array_values(array_filter(array_map('strval', $invitation['media']['couple_photos'] ?? [])));
     $heroPortrait = $invitation['media']['hero_portrait'] ?? null;
     $heroPortrait = is_string($heroPortrait) && $heroPortrait !== '' ? $heroPortrait : null;
-    $singleFrameSrc = $heroPortrait ? asset('storage/'.$heroPortrait) : $event->cover_image_url;
+    $singleFrameSrc = $heroPortrait ? \App\Support\InvitationMediaUrl::resolve($heroPortrait) : $event->cover_image_url;
 @endphp
 
 <div class="evt-bg-nav-strip nav-strip">
@@ -85,13 +85,13 @@
             <div class="evt-bg-couple-frames" role="presentation">
                 @foreach (array_slice($couplePaths, 0, 2) as $path)
                     <div class="photo-frame photo-frame--couple">
-                        <img src="{{ asset('storage/'.$path) }}" alt="" class="evt-bg-frame-photo" width="260" height="340">
+                        <img src="{{ \App\Support\InvitationMediaUrl::resolve($path) }}" alt="" class="evt-bg-frame-photo" width="260" height="340">
                     </div>
                 @endforeach
             </div>
         @elseif (count($couplePaths) === 1)
             <div class="photo-frame">
-                <img src="{{ asset('storage/'.$couplePaths[0]) }}" alt="" class="evt-bg-frame-photo" width="320" height="400">
+                <img src="{{ \App\Support\InvitationMediaUrl::resolve($couplePaths[0]) }}" alt="" class="evt-bg-frame-photo" width="320" height="400">
             </div>
         @else
             <div class="photo-frame">

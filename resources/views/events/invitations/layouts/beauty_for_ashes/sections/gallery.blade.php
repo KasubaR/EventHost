@@ -22,9 +22,9 @@
         }
         $src = null;
         if (isset($couple[$i]) && $couple[$i] !== '') {
-            $src = asset('storage/'.$couple[$i]);
+            $src = \App\Support\InvitationMediaUrl::resolve($couple[$i]);
         } elseif (isset($gallery[$i]) && $gallery[$i] !== '') {
-            $src = asset('storage/'.$gallery[$i]);
+            $src = \App\Support\InvitationMediaUrl::resolve($gallery[$i]);
         }
         $slots[] = ['role' => $role, 'name' => $nm, 'src' => $src, 'featured' => $i === $hostSlot && $hasContent];
     }

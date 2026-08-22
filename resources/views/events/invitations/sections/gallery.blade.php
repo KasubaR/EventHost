@@ -10,13 +10,13 @@
                     <div class="swiper-slide">
                         <figure class="evt-inv-gallery-slide">
                             <a
-                                href="{{ asset('storage/'.$path) }}"
+                                href="{{ \App\Support\InvitationMediaUrl::resolve($path) }}"
                                 class="glightbox evt-inv-gallery-lightbox"
                                 data-gallery="{{ $galleryId }}"
                                 data-type="image"
                             >
                                 <img
-                                    src="{{ asset('storage/'.$path) }}"
+                                    src="{{ \App\Support\InvitationMediaUrl::resolve($path) }}"
                                     alt=""
                                     loading="lazy"
                                     decoding="async"

@@ -7,7 +7,7 @@
         $storyImg = $event->cover_image_url;
         $gallery = array_values(array_filter(array_map('strval', $invitation['media']['gallery'] ?? [])));
         if (count($gallery) > 0) {
-            $storyImg = asset('storage/'.$gallery[0]);
+            $storyImg = \App\Support\InvitationMediaUrl::resolve($gallery[0]);
         }
     @endphp
 

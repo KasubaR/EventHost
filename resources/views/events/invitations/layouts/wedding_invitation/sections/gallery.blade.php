@@ -12,13 +12,13 @@
             @foreach (array_slice($gallery, 0, 6) as $idx => $path)
                 <div class="wi-gallery-item {{ $gridClasses[$idx] ?? '' }}">
                     <a
-                        href="{{ asset('storage/'.$path) }}"
+                        href="{{ \App\Support\InvitationMediaUrl::resolve($path) }}"
                         class="glightbox"
                         data-gallery="{{ $galleryId }}"
                         data-type="image"
                     >
                         <img
-                            src="{{ asset('storage/'.$path) }}"
+                            src="{{ \App\Support\InvitationMediaUrl::resolve($path) }}"
                             alt=""
                             loading="lazy"
                             decoding="async"

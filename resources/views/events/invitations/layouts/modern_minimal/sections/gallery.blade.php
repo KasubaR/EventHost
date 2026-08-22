@@ -10,12 +10,12 @@
             @foreach (array_slice($gallery, 0, 5) as $path)
                 <div class="mm-gallery-item">
                     <a
-                        href="{{ asset('storage/'.$path) }}"
+                        href="{{ \App\Support\InvitationMediaUrl::resolve($path) }}"
                         class="glightbox mm-gallery-lightbox"
                         data-gallery="{{ $galleryId }}"
                         data-type="image"
                     >
-                        <img src="{{ asset('storage/'.$path) }}" alt="" loading="lazy" width="800" height="600">
+                        <img src="{{ \App\Support\InvitationMediaUrl::resolve($path) }}" alt="" loading="lazy" width="800" height="600">
                     </a>
                 </div>
             @endforeach

@@ -160,8 +160,17 @@ class InvitationTemplate extends Model
             $event->event_date = now()->addMonths(4)->startOfDay();
             $event->event_time = '16:00:00';
             $event->rsvp_deadline = now()->addMonths(3);
+            $event->preview_cover_image_url = self::unsplash('1520854221256-17451cc331bf');
             $event->invitation_customization = [
                 'schema_version' => InvitationCustomizationService::CURRENT_SCHEMA_VERSION,
+                'media' => [
+                    'gallery' => [
+                        self::unsplash('1606216794074-735e91aa2c92', 1000),
+                        self::unsplash('1591604466107-ec97de577aff', 1000),
+                        self::unsplash('1519657337289-077653f724ed', 1000),
+                        self::unsplash('1465495976277-4387d4b0b4c6', 1000),
+                    ],
+                ],
                 'content' => [
                     'story' => $event->description,
                     'schedule' => [
@@ -180,8 +189,19 @@ class InvitationTemplate extends Model
             $event->event_date = now()->addMonths(3)->next('Sunday')->startOfDay();
             $event->event_time = '16:00:00';
             $event->rsvp_deadline = now()->addMonths(2);
+            $event->preview_cover_image_url = self::unsplash('1519167758481-83f550bb49b3');
             $event->invitation_customization = [
                 'schema_version' => InvitationCustomizationService::CURRENT_SCHEMA_VERSION,
+                'media' => [
+                    'gallery' => [
+                        self::unsplash('1583939003579-730e3918a45a', 1000),
+                        self::unsplash('1606216794074-735e91aa2c92', 1000),
+                        self::unsplash('1591604466107-ec97de577aff', 1000),
+                        self::unsplash('1465495976277-4387d4b0b4c6', 1000),
+                        self::unsplash('1523438885200-e635ba2c371e', 1000),
+                        self::unsplash('1519657337289-077653f724ed', 1000),
+                    ],
+                ],
                 'content' => [
                     'schedule' => [
                         ['time' => '3:30 PM', 'title' => 'Guests Arrive', 'detail' => 'Welcome drinks & canapés in the rose garden'],
@@ -207,8 +227,22 @@ class InvitationTemplate extends Model
             $event->location_name = 'The Grand Pavilion';
             $event->event_date = now()->addMonths(2)->next('Saturday')->startOfDay();
             $event->event_time = '15:00:00';
+            $event->preview_cover_image_url = self::unsplash('1519741497674-611481863552');
             $event->invitation_customization = [
                 'schema_version' => InvitationCustomizationService::CURRENT_SCHEMA_VERSION,
+                'media' => [
+                    'couple_photos' => [
+                        self::unsplash('1583939003579-730e3918a45a', 1000),
+                        self::unsplash('1591604466107-ec97de577aff', 1000),
+                        self::unsplash('1606216794074-735e91aa2c92', 1000),
+                    ],
+                    'gallery' => [
+                        self::unsplash('1523438885200-e635ba2c371e', 1000),
+                        self::unsplash('1519167758481-83f550bb49b3', 1000),
+                        self::unsplash('1465495976277-4387d4b0b4c6', 1000),
+                        self::unsplash('1519657337289-077653f724ed', 1000),
+                    ],
+                ],
                 'content' => [
                     'story' => 'It began with a glance across a crowded room — the kind that makes time pause. From that moment, they knew. Through seasons of laughter and quiet evenings, their love grew into something timeless. Now, surrounded by all the people they hold dear, they invite you to witness the beginning of forever.',
                     'schedule' => [
@@ -245,6 +279,15 @@ class InvitationTemplate extends Model
             $event->location_name = 'Lusaka, Zambia';
             $event->invitation_customization = [
                 'schema_version' => InvitationCustomizationService::CURRENT_SCHEMA_VERSION,
+                'media' => [
+                    // Positional — index N is speaker_cards[N]'s photo (see gallery.blade.php).
+                    'couple_photos' => [
+                        self::unsplash('1531123897727-8f129e1688ce', 1000),
+                        self::unsplash('1573497019940-1c28c88b4f3e', 1000),
+                        self::unsplash('1544005313-94ddf0286df2', 1000),
+                        self::unsplash('1580489944761-15a19d654956', 1000),
+                    ],
+                ],
                 'content' => [
                     'story' => 'A time to reset to the set Standard, as we go back to the Beautiful Beginning',
                     'schedule' => [
@@ -267,9 +310,50 @@ class InvitationTemplate extends Model
                     'contact_phone_secondary' => '+260 974 887 453',
                 ],
             ];
-        } else {
+        } elseif ($this->slug === 'graduation-template-2-botanical-blush') {
+            $event->name = 'Amina Chulu';
+            $event->event_type = 'graduation';
+            $event->description = "Bachelor of Science, Class of {$starts->format('Y')}\n\nFour years of late nights and early mornings — please join us to celebrate the finish line.";
+            $event->venue = 'University Great Hall';
+            $event->location_name = 'Lusaka, Zambia';
+            $event->event_date = now()->addMonths(2)->startOfDay();
+            $event->event_time = '10:00:00';
+            $event->rsvp_deadline = now()->addMonths(1);
+            $event->preview_cover_image_url = self::unsplash('1523580846011-d3a5bc25702b');
             $event->invitation_customization = [
                 'schema_version' => InvitationCustomizationService::CURRENT_SCHEMA_VERSION,
+                'media' => [
+                    'couple_photos' => [
+                        self::unsplash('1627556704302-624286467c65', 1000),
+                        self::unsplash('1541339907198-e08756dedf3f', 1000),
+                    ],
+                    'gallery' => [
+                        self::unsplash('1541339907198-e08756dedf3f', 1000),
+                        self::unsplash('1523580846011-d3a5bc25702b', 1000),
+                        self::unsplash('1627556704302-624286467c65', 1000),
+                        self::unsplash('1592280771190-3e2e4d571952', 1000),
+                        self::unsplash('1519452575417-564c1401ecc0', 1000),
+                    ],
+                ],
+                'content' => [
+                    'story' => 'Four years, countless assignments, and a few too many all-nighters later — we made it. Thank you for every bit of support along the way.',
+                    'schedule' => [
+                        ['title' => 'Ceremony', 'time' => '10:00 AM', 'detail' => 'University Great Hall'],
+                        ['title' => 'Reception', 'time' => '1:00 PM', 'detail' => 'Family lunch & photos'],
+                    ],
+                ],
+            ];
+        } else {
+            $event->preview_cover_image_url = self::unsplash('1606216794074-735e91aa2c92');
+            $event->invitation_customization = [
+                'schema_version' => InvitationCustomizationService::CURRENT_SCHEMA_VERSION,
+                'media' => [
+                    'gallery' => [
+                        self::unsplash('1519741497674-611481863552', 1000),
+                        self::unsplash('1583939003579-730e3918a45a', 1000),
+                        self::unsplash('1465495976277-4387d4b0b4c6', 1000),
+                    ],
+                ],
                 'content' => [
                     'story' => 'From a chance meeting to this celebration — we would love you to share the day with us.',
                     'schedule' => [
@@ -281,6 +365,17 @@ class InvitationTemplate extends Model
         }
 
         return $event;
+    }
+
+    /**
+     * A pinned, verified Unsplash photo for template preview sample events —
+     * never resolved against the live Unsplash API, just a stable CDN URL.
+     * Real events never have one of these; see Event::getCoverImageUrlAttribute()
+     * and InvitationMediaUrl::resolve().
+     */
+    private static function unsplash(string $photoId, int $width = 1600): string
+    {
+        return "https://images.unsplash.com/photo-{$photoId}?auto=format&fit=crop&w={$width}&q=80";
     }
 
     public function requiredTier(): SubscriptionTier
