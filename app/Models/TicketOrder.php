@@ -92,6 +92,18 @@ class TicketOrder extends Model
         return $this->hasMany(Ticket::class);
     }
 
+    /**
+     * Inverse of TicketRevenueEntry::order() — added for Phase 24
+     * reconciliation (e.g. "find paid orders with no sale entry"). No writer
+     * uses this; TicketRevenueLedgerService still writes ledger rows directly.
+     *
+     * @return HasMany<TicketRevenueEntry, $this>
+     */
+    public function revenueEntries(): HasMany
+    {
+        return $this->hasMany(TicketRevenueEntry::class);
+    }
+
     public function isPaid(): bool
     {
         return $this->status === TicketOrderStatus::Paid;

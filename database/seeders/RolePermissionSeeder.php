@@ -28,6 +28,7 @@ class RolePermissionSeeder extends Seeder
         'ticketing.view',
         'ticketing.approve',
         'ticketing.payouts.manage',
+        'ticketing.reconcile',
         'settings.manage',
         'analytics.view',
         'payments.view',

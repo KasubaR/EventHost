@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\GuestController as AdminGuestController;
 use App\Http\Controllers\Admin\InvitationTemplateController as AdminInvitationTemplateController;
 use App\Http\Controllers\Admin\NotificationLogController;
 use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
+use App\Http\Controllers\Admin\ReconciliationController;
 use App\Http\Controllers\Admin\ReportController as AdminReportController;
 use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\Admin\RsvpController as AdminRsvpController;
@@ -129,6 +130,11 @@ Route::prefix('admin')
             Route::get('/ticketing/revenue', [TicketRevenueController::class, 'index'])->name('ticketing.revenue.index');
             Route::get('/ticketing/revenue/{event}', [TicketRevenueController::class, 'show'])->name('ticketing.revenue.show');
 
+            // Same early-registration reasoning as /ticketing/revenue above —
+            // must precede /ticketing/{event}.
+            Route::get('/ticketing/reconciliation', [ReconciliationController::class, 'index'])->name('ticketing.reconciliation.index');
+            Route::get('/ticketing/reconciliation/{order}', [ReconciliationController::class, 'order'])->name('ticketing.reconciliation.order');
+
             Route::get('/ticketing', [AdminTicketingController::class, 'index'])->name('ticketing.index');
             Route::get('/ticketing/{event}', [AdminTicketingController::class, 'show'])->name('ticketing.show');
         });
@@ -142,6 +148,10 @@ Route::prefix('admin')
 
         Route::middleware(['permission:ticketing.payouts.manage,admin', 'throttle:admin-mutations'])->group(function (): void {
             Route::post('/ticketing/revenue/{event}/payouts', [TicketRevenueController::class, 'storePayout'])->name('ticketing.revenue.payouts.store');
+        });
+
+        Route::middleware(['permission:ticketing.reconcile,admin', 'throttle:admin-mutations'])->group(function (): void {
+            Route::post('/ticketing/reconciliation/{order}/reverify', [ReconciliationController::class, 'reverify'])->name('ticketing.reconciliation.reverify');
         });
 
         Route::middleware(['permission:reviews.manage,admin', 'throttle:admin-mutations'])->group(function (): void {
