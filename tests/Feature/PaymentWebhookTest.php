@@ -270,6 +270,74 @@ class PaymentWebhookTest extends TestCase
     }
 
     /**
+     * "Duplicate webhook" / "Webhook received twice" — Lenco (or a network
+     * retry) can deliver the identical successful webhook more than once.
+     * The ticket-order webhook already has a dedicated idempotency test
+     * (TicketPurchaseFlowTest::test_webhook_completes_ticket_order_and_is_idempotent_on_replay);
+     * the credit-payment webhook did not before this one.
+     */
+    public function test_webhook_is_idempotent_when_the_same_success_is_delivered_twice(): void
+    {
+        $user = User::factory()->withoutCredits()->create();
+        $payment = Payment::factory()->for($user)->withTransactionId('col_duplicate')->create([
+            'amount' => 450.00,
+            'currency' => 'ZMW',
+            'plan_key' => 'base',
+            'status' => 'pending',
+        ]);
+
+        $data = [
+            'id' => 'col_duplicate',
+            'reference' => $payment->payment_reference,
+            'status' => 'successful',
+            'amount' => 450.00,
+            'currency' => 'ZMW',
+        ];
+
+        $this->postSignedWebhook($data);
+        $this->postSignedWebhook($data);
+
+        $user->refresh();
+        $payment->refresh();
+
+        $this->assertSame('completed', $payment->status);
+        // Not 2 — completion is a no-op once the payment is already terminal.
+        $this->assertSame(1, $user->event_credits);
+        $this->assertSame(1, CreditTransaction::query()->where('payment_id', $payment->id)->count());
+    }
+
+    /**
+     * "Failed payment" — the straightforward case: a payment that never
+     * succeeded, reported failed directly. The existing failure-adjacent
+     * tests (amount mismatch, missing amount, and the two "later failed
+     * webhook claws back credits" tests) all cover more complex paths but
+     * never this plain one.
+     */
+    public function test_webhook_fails_a_pending_payment_reported_failed_by_provider(): void
+    {
+        $user = User::factory()->withoutCredits()->create();
+        $payment = Payment::factory()->for($user)->withTransactionId('col_plain_fail')->create([
+            'amount' => 450.00,
+            'currency' => 'ZMW',
+            'plan_key' => 'base',
+            'status' => 'pending',
+        ]);
+
+        $this->postSignedWebhook([
+            'id' => 'col_plain_fail',
+            'reference' => $payment->payment_reference,
+            'status' => 'failed',
+        ]);
+
+        $payment->refresh();
+        $user->refresh();
+
+        $this->assertSame('failed', $payment->status);
+        $this->assertSame(0, $user->event_credits);
+        $this->assertSame(0, CreditTransaction::query()->where('payment_id', $payment->id)->count());
+    }
+
+    /**
      * @param  array<string, mixed>  $data
      */
     private function postSignedWebhook(array $data): void

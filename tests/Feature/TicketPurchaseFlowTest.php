@@ -6,8 +6,11 @@ use App\Enums\CommissionMode;
 use App\Enums\TicketingStatus;
 use App\Enums\TicketOrderStatus;
 use App\Enums\TicketReservationStatus;
+use App\Enums\TicketStatus;
+use App\Exceptions\TicketPurchaseException;
 use App\Jobs\RetryLencoTicketPayment;
 use App\Models\Event;
+use App\Models\Ticket;
 use App\Models\TicketOrder;
 use App\Models\TicketReservation;
 use App\Models\TicketType;
@@ -15,6 +18,8 @@ use App\Models\User;
 use App\Services\LencoService;
 use App\Services\TicketOrderFulfillmentService;
 use App\Services\TicketPaymentStatusService;
+use App\Services\TicketReconciliationService;
+use App\Services\TicketReservationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
@@ -851,6 +856,421 @@ class TicketPurchaseFlowTest extends TestCase
             ->assertSessionHasErrors('ticket_type');
 
         $this->assertDatabaseHas('ticket_types', ['id' => $type->id]);
+    }
+
+    /**
+     * "Last ticket purchased" — the difficult-case list, not a new scenario:
+     * exercises the full flow (hold -> checkout -> webhook) against a type
+     * with exactly one seat left, and confirms it's actually sold out
+     * afterward (not just held), including a further hold attempt bouncing.
+     */
+    public function test_last_available_ticket_completes_the_full_purchase_and_marks_sold_out(): void
+    {
+        Notification::fake();
+
+        $event = $this->approvedTicketedEvent();
+        $type = TicketType::factory()->for($event)->create(['price' => '150.00', 'quantity' => 3]);
+        // Two seats already sold — one left.
+        Ticket::factory()->count(2)->for($type, 'ticketType')->for($event)->create(['status' => TicketStatus::Valid]);
+        $this->assertSame(1, $type->fresh()->availableQuantity());
+
+        $this->post(route('events.public.tickets.hold', $event->slug), ['quantities' => [$type->id => 1]]);
+
+        $lenco = Mockery::mock(LencoService::class);
+        $lenco->shouldReceive('initiateMobileMoneyPayment')->once()->andReturn([
+            'success' => true,
+            'transactionId' => 'col_last_ticket',
+            'status' => 'pending',
+            'rawResponse' => [],
+        ]);
+        $this->app->instance(LencoService::class, $lenco);
+
+        $this->postJson(route('events.public.tickets.checkout.store', $event->slug), [
+            'name' => 'Last Buyer',
+            'email' => 'last@example.com',
+            'payment_method' => 'mobile_money',
+            'provider' => 'mtn',
+            'momo_phone' => '0961234567',
+        ])->assertOk();
+
+        $order = TicketOrder::query()->where('event_id', $event->id)->firstOrFail();
+        $this->app->forgetInstance(LencoService::class);
+
+        $payload = json_encode([
+            'data' => [
+                'id' => 'col_last_ticket',
+                'reference' => $order->order_reference,
+                'status' => 'successful',
+                'amount' => (float) $order->buyer_total,
+                'currency' => 'ZMW',
+            ],
+        ]);
+        $this->postSignedWebhook($payload)->assertOk();
+
+        $order->refresh();
+        $this->assertSame(TicketOrderStatus::Paid, $order->status);
+        $this->assertCount(1, $order->tickets);
+        $this->assertSame(3, $type->fresh()->soldQuantity());
+        $this->assertSame(0, $type->fresh()->availableQuantity());
+
+        // The type is genuinely sold out now, not just "held" — a fresh
+        // buyer bounces immediately.
+        $this->flushSession();
+        $this->post(route('events.public.tickets.hold', $event->slug), [
+            'quantities' => [$type->id => 1],
+        ])->assertRedirect(route('events.public.tickets', $event->slug))
+            ->assertSessionHasErrors('tickets');
+    }
+
+    /**
+     * "Two people buying the last ticket simultaneously" — TicketReservationService::
+     * hold() takes TicketType::lockForUpdate() before computing availableQuantity(),
+     * inside one DB transaction per call. Under real concurrent load (MySQL),
+     * that row lock serializes two simultaneous requests into exactly the
+     * sequence exercised here: whichever hold() commits first wins the seat,
+     * and the second call only proceeds — re-reading live, post-commit
+     * capacity — once the first transaction has released the lock. This
+     * test proves the outcome that guarantee produces; true parallel-thread
+     * execution against two live connections isn't exercisable against the
+     * single-connection SQLite `:memory:` test database (phpunit.xml), so
+     * the row-lock's serialization itself is asserted by reading
+     * TicketReservationService::hold() rather than reproduced here.
+     */
+    public function test_two_buyers_racing_for_the_last_ticket_only_one_wins_the_hold(): void
+    {
+        $event = $this->approvedTicketedEvent();
+        $type = TicketType::factory()->for($event)->create(['price' => '200.00', 'quantity' => 1]);
+
+        $service = app(TicketReservationService::class);
+
+        $winning = $service->hold($event, 'cart-a', [$type->id => 1]);
+        $this->assertCount(1, $winning);
+
+        try {
+            $service->hold($event, 'cart-b', [$type->id => 1]);
+            $this->fail('Expected the second, losing buyer to be rejected — the seat is already held.');
+        } catch (TicketPurchaseException $e) {
+            $this->assertStringContainsString('sold out', strtolower($e->getMessage()));
+        }
+
+        $this->assertSame(0, $type->fresh()->availableQuantity());
+        $this->assertSame(
+            1,
+            TicketReservation::query()->where('ticket_type_id', $type->id)->where('status', TicketReservationStatus::Held)->count(),
+        );
+        // The loser's cart never got a row at all — hold() throws before
+        // creating anything for the type it rejected.
+        $this->assertSame(0, TicketReservation::query()->where('cart_id', 'cart-b')->count());
+    }
+
+    /**
+     * "Reservation payment succeeds at expiry" — extends
+     * test_holds_tied_to_a_pending_order_keep_capacity_after_the_original_expiry
+     * (which only proves the sweep leaves the hold alone) through to an
+     * actual late payment success, confirming the order still completes
+     * correctly and the reservation converts rather than staying stuck.
+     */
+    public function test_reservation_held_past_its_nominal_expiry_still_completes_once_payment_confirms(): void
+    {
+        Notification::fake();
+
+        $event = $this->approvedTicketedEvent();
+        $type = TicketType::factory()->for($event)->create(['price' => '200.00', 'quantity' => 1]);
+
+        $this->post(route('events.public.tickets.hold', $event->slug), ['quantities' => [$type->id => 1]]);
+
+        $lenco = Mockery::mock(LencoService::class);
+        $lenco->shouldReceive('initiateMobileMoneyPayment')->once()->andReturn([
+            'success' => true,
+            'transactionId' => 'col_late_success',
+            'status' => 'pending',
+            'rawResponse' => [],
+        ]);
+        $this->app->instance(LencoService::class, $lenco);
+
+        $this->postJson(route('events.public.tickets.checkout.store', $event->slug), [
+            'name' => 'Slow But Paying Buyer',
+            'email' => 'slowpay@example.com',
+            'payment_method' => 'mobile_money',
+            'provider' => 'mtn',
+            'momo_phone' => '0961234567',
+        ])->assertOk();
+
+        $order = TicketOrder::query()->where('event_id', $event->id)->firstOrFail();
+        $reservation = TicketReservation::query()->where('ticket_order_id', $order->id)->firstOrFail();
+
+        // Mobile money approval took longer than the 10-minute hold window.
+        $reservation->forceFill(['expires_at' => now()->subMinutes(20)])->save();
+
+        // The sweep runs mid-checkout (e.g. the scheduler firing) and
+        // correctly leaves this hold alone — it's tied to an in-flight order.
+        $this->artisan('tickets:expire-reservations')->assertSuccessful();
+        $this->assertSame(TicketReservationStatus::Held, $reservation->fresh()->status);
+
+        // The buyer finally approves the prompt, well after the nominal window.
+        $this->app->forgetInstance(LencoService::class);
+        $payload = json_encode([
+            'data' => [
+                'id' => 'col_late_success',
+                'reference' => $order->order_reference,
+                'status' => 'successful',
+                'amount' => (float) $order->buyer_total,
+                'currency' => 'ZMW',
+            ],
+        ]);
+        $this->postSignedWebhook($payload)->assertOk();
+
+        $order->refresh();
+        $this->assertSame(TicketOrderStatus::Paid, $order->status);
+        $this->assertCount(1, $order->tickets);
+        $this->assertSame(TicketReservationStatus::Converted, $reservation->fresh()->status);
+        $this->assertSame(0, $type->fresh()->availableQuantity());
+    }
+
+    /**
+     * "Payment remains pending" — the stable middle state, distinct from
+     * test_poller_max_age_expires_the_ticket_order_and_releases_holds (the
+     * eventual 24h force-fail). A payment that is simply still pending must:
+     * keep occupying its seat (nobody else can take it), issue nothing, stay
+     * untouched by a poll run inside the poller's own 2-minute head start,
+     * and not be misreported as "stuck" by Phase 24's reconciliation check
+     * (that threshold is 2 hours, not "any pending payment").
+     */
+    public function test_payment_left_pending_blocks_capacity_but_issues_nothing(): void
+    {
+        $event = $this->approvedTicketedEvent();
+        $type = TicketType::factory()->for($event)->create(['price' => '150.00', 'quantity' => 1]);
+
+        $this->post(route('events.public.tickets.hold', $event->slug), ['quantities' => [$type->id => 1]]);
+
+        $lenco = Mockery::mock(LencoService::class);
+        $lenco->shouldReceive('initiateMobileMoneyPayment')->once()->andReturn([
+            'success' => true,
+            'transactionId' => 'col_stays_pending',
+            'status' => 'pending',
+            'rawResponse' => [],
+        ]);
+        $this->app->instance(LencoService::class, $lenco);
+
+        $this->postJson(route('events.public.tickets.checkout.store', $event->slug), [
+            'name' => 'Patient Buyer',
+            'email' => 'patient@example.com',
+            'payment_method' => 'mobile_money',
+            'provider' => 'mtn',
+            'momo_phone' => '0961234567',
+        ])->assertOk();
+
+        $order = TicketOrder::query()->where('event_id', $event->id)->firstOrFail();
+        $this->assertSame(TicketOrderStatus::PendingPayment, $order->status);
+        $this->assertSame('pending', $order->payment->status);
+
+        // Still under the poller's 2-minute head start — must not even try
+        // to reach Lenco yet. $lenco only stubs initiateMobileMoneyPayment,
+        // so an unexpected verify call here would fail loudly.
+        $this->artisan('tickets:poll-pending')->assertSuccessful();
+
+        $order->refresh();
+        $this->assertSame(TicketOrderStatus::PendingPayment, $order->status);
+        $this->assertSame('pending', $order->payment->fresh()->status);
+        $this->assertCount(0, $order->tickets);
+        // Still occupying the only seat — nobody else can take it while
+        // it's genuinely undecided.
+        $this->assertSame(0, $type->fresh()->availableQuantity());
+
+        $stuck = app(TicketReconciliationService::class)->stuckInFlightPayments();
+        $this->assertCount(0, $stuck);
+    }
+
+    /**
+     * "Incorrect amount" — TicketPaymentStatusService::applyVerificationResult()
+     * has the exact same settlement-amount check the credit-payment webhook
+     * already has a dedicated test for (PaymentWebhookTest::
+     * test_webhook_fails_payment_on_amount_mismatch), but nothing exercised
+     * it via the ticket webhook path before this test.
+     */
+    public function test_webhook_fails_ticket_order_on_amount_mismatch(): void
+    {
+        $event = $this->approvedTicketedEvent();
+        $type = TicketType::factory()->for($event)->create(['price' => '150.00', 'quantity' => 1]);
+
+        $this->post(route('events.public.tickets.hold', $event->slug), ['quantities' => [$type->id => 1]]);
+
+        $lenco = Mockery::mock(LencoService::class);
+        $lenco->shouldReceive('initiateMobileMoneyPayment')->once()->andReturn([
+            'success' => true,
+            'transactionId' => 'col_ticket_mismatch',
+            'status' => 'pending',
+            'rawResponse' => [],
+        ]);
+        $this->app->instance(LencoService::class, $lenco);
+
+        $this->postJson(route('events.public.tickets.checkout.store', $event->slug), [
+            'name' => 'Mismatch Buyer',
+            'email' => 'mismatch@example.com',
+            'payment_method' => 'mobile_money',
+            'provider' => 'mtn',
+            'momo_phone' => '0961234567',
+        ])->assertOk();
+
+        $order = TicketOrder::query()->where('event_id', $event->id)->firstOrFail();
+        $this->app->forgetInstance(LencoService::class);
+
+        // Order says 150.00 was due; the "provider" reports a completely
+        // different amount was actually settled.
+        $payload = json_encode([
+            'data' => [
+                'id' => 'col_ticket_mismatch',
+                'reference' => $order->order_reference,
+                'status' => 'successful',
+                'amount' => 999.00,
+                'currency' => 'ZMW',
+            ],
+        ]);
+        $this->postSignedWebhook($payload)->assertOk();
+
+        $order->refresh();
+        $this->assertSame(TicketOrderStatus::Failed, $order->status);
+        $this->assertSame('failed', $order->payment->fresh()->status);
+        $this->assertStringContainsString('mismatch', strtolower((string) $order->payment->fresh()->failure_reason));
+        $this->assertCount(0, $order->tickets);
+        $this->assertSame(1, $type->fresh()->availableQuantity());
+    }
+
+    /**
+     * "Payment verification failure" (poller side) — Lenco being unreachable
+     * or erroring mid-poll must not crash the run or corrupt the payment;
+     * it should be skipped this cycle and picked up again next time. Both
+     * PollPendingTicketPayments and PollPendingPayments (credits) wrap each
+     * verify call in a try/catch for exactly this, but neither had a test
+     * that actually made the mock throw before this one.
+     */
+    public function test_ticket_poller_survives_a_lenco_verification_error(): void
+    {
+        $event = $this->approvedTicketedEvent();
+        $type = TicketType::factory()->for($event)->create(['price' => '150.00', 'quantity' => 1]);
+
+        $this->post(route('events.public.tickets.hold', $event->slug), ['quantities' => [$type->id => 1]]);
+
+        $lenco = Mockery::mock(LencoService::class);
+        $lenco->shouldReceive('initiateMobileMoneyPayment')->once()->andReturn([
+            'success' => true,
+            'transactionId' => 'col_verify_error',
+            'status' => 'pending',
+            'rawResponse' => [],
+        ]);
+        $this->app->instance(LencoService::class, $lenco);
+
+        $this->postJson(route('events.public.tickets.checkout.store', $event->slug), [
+            'name' => 'Flaky Network Buyer',
+            'email' => 'flaky@example.com',
+            'payment_method' => 'mobile_money',
+            'provider' => 'mtn',
+            'momo_phone' => '0961234567',
+        ])->assertOk();
+
+        $order = TicketOrder::query()->where('event_id', $event->id)->firstOrFail();
+        $order->payment->forceFill(['created_at' => now()->subMinutes(5)])->save();
+
+        $lenco->shouldReceive('verifyPayment')->once()->with('col_verify_error')
+            ->andThrow(new \RuntimeException('Lenco is unreachable', 503));
+
+        $this->artisan('tickets:poll-pending')->assertSuccessful();
+
+        $order->refresh();
+        $this->assertSame(TicketOrderStatus::PendingPayment, $order->status);
+        $this->assertSame('pending', $order->payment->fresh()->status);
+        $this->assertSame(0, $type->fresh()->availableQuantity());
+    }
+
+    /**
+     * "Payment verification failure" (buyer side) — the order-status page's
+     * "check now" button hits this endpoint. Neither the success path nor
+     * the Lenco-error path had any test before this pair; a buyer clicking
+     * that button during a Lenco outage is exactly the failure mode a
+     * missing api_secret_key (mentioned when this round of testing was
+     * requested) would also produce in production until it's configured.
+     */
+    public function test_buyer_verify_completes_the_order_via_lenco(): void
+    {
+        Notification::fake();
+
+        $event = $this->approvedTicketedEvent();
+        $type = TicketType::factory()->for($event)->create(['price' => '150.00', 'quantity' => 1]);
+
+        $this->post(route('events.public.tickets.hold', $event->slug), ['quantities' => [$type->id => 1]]);
+
+        $lenco = Mockery::mock(LencoService::class);
+        $lenco->shouldReceive('initiateMobileMoneyPayment')->once()->andReturn([
+            'success' => true,
+            'transactionId' => 'col_buyer_verify',
+            'status' => 'pending',
+            'rawResponse' => [],
+        ]);
+        $this->app->instance(LencoService::class, $lenco);
+
+        $this->postJson(route('events.public.tickets.checkout.store', $event->slug), [
+            'name' => 'Impatient Buyer',
+            'email' => 'impatient@example.com',
+            'payment_method' => 'mobile_money',
+            'provider' => 'mtn',
+            'momo_phone' => '0961234567',
+        ])->assertOk();
+
+        $order = TicketOrder::query()->where('event_id', $event->id)->firstOrFail();
+
+        $lenco->shouldReceive('verifyByReference')->once()->with($order->order_reference)->andReturn([
+            'transactionId' => 'col_buyer_verify',
+            'lencoStatus' => 'successful',
+            'status' => 'completed',
+            'amount' => (float) $order->buyer_total,
+            'currency' => 'ZMW',
+            'rawResponse' => [],
+        ]);
+
+        $response = $this->getJson(route('ticket.orders.verify', $order->order_reference));
+
+        $response->assertOk()->assertJsonPath('success', true)->assertJsonPath('status', TicketOrderStatus::Paid->value);
+        $this->assertSame(TicketOrderStatus::Paid, $order->fresh()->status);
+        $this->assertCount(1, $order->fresh()->tickets);
+    }
+
+    public function test_buyer_verify_returns_502_when_lenco_verification_fails(): void
+    {
+        $event = $this->approvedTicketedEvent();
+        $type = TicketType::factory()->for($event)->create(['price' => '150.00', 'quantity' => 1]);
+
+        $this->post(route('events.public.tickets.hold', $event->slug), ['quantities' => [$type->id => 1]]);
+
+        $lenco = Mockery::mock(LencoService::class);
+        $lenco->shouldReceive('initiateMobileMoneyPayment')->once()->andReturn([
+            'success' => true,
+            'transactionId' => 'col_buyer_verify_fail',
+            'status' => 'pending',
+            'rawResponse' => [],
+        ]);
+        $this->app->instance(LencoService::class, $lenco);
+
+        $this->postJson(route('events.public.tickets.checkout.store', $event->slug), [
+            'name' => 'Unlucky Buyer',
+            'email' => 'unlucky@example.com',
+            'payment_method' => 'mobile_money',
+            'provider' => 'mtn',
+            'momo_phone' => '0961234567',
+        ])->assertOk();
+
+        $order = TicketOrder::query()->where('event_id', $event->id)->firstOrFail();
+
+        $lenco->shouldReceive('verifyByReference')->once()->with($order->order_reference)
+            ->andThrow(new \RuntimeException('Lenco API key is not configured.', 500));
+
+        $response = $this->getJson(route('ticket.orders.verify', $order->order_reference));
+
+        $response->assertStatus(502)->assertJsonPath('success', false)->assertJsonPath('message', 'Lenco API key is not configured.');
+        // The buyer sees a clear "try again" error, and nothing about the
+        // order or its seat changed — it's still exactly where it was.
+        $this->assertSame(TicketOrderStatus::PendingPayment, $order->fresh()->status);
+        $this->assertSame('pending', $order->fresh()->payment->status);
+        $this->assertSame(0, $type->fresh()->availableQuantity());
     }
 
     private function postSignedWebhook(string $payload)

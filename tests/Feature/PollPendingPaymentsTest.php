@@ -102,6 +102,34 @@ class PollPendingPaymentsTest extends TestCase
         $this->assertSame('cancelled', $payment->fresh()->status);
     }
 
+    /**
+     * "Payment verification failure" — Lenco being unreachable or erroring
+     * mid-poll must not crash the run or corrupt the payment; it's skipped
+     * this cycle and picked up again next time. The try/catch around this
+     * call already existed; nothing had made the mock actually throw before
+     * this test.
+     */
+    public function test_poller_survives_a_lenco_verification_error_and_leaves_the_payment_pending(): void
+    {
+        $user = User::factory()->withoutCredits()->create();
+        $payment = Payment::factory()->for($user)->withTransactionId('col_poll_error')->create([
+            'status' => 'pending',
+            'plan_key' => 'base',
+        ]);
+        $payment->forceFill(['created_at' => now()->subMinutes(5)])->save();
+
+        $lenco = Mockery::mock(LencoService::class);
+        $lenco->shouldReceive('verifyPayment')->once()->with('col_poll_error')
+            ->andThrow(new \RuntimeException('Lenco is unreachable', 503));
+        $this->app->instance(LencoService::class, $lenco);
+
+        Artisan::call('payments:poll-pending');
+
+        $payment->refresh();
+        $this->assertSame('pending', $payment->status);
+        $this->assertSame(0, $user->fresh()->event_credits);
+    }
+
     public function test_poller_respects_max_api_calls_per_run(): void
     {
         config(['services.lenco.poll_max_per_run' => 1, 'services.lenco.poll_throttle_ms' => 0]);

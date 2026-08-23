@@ -163,4 +163,61 @@ class PaymentInitiationTest extends TestCase
         ])->assertStatus(422)
             ->assertJsonValidationErrors('payment_method');
     }
+
+    /**
+     * "Payment verification failure" — the billing page's "check status"
+     * button hits this endpoint. Neither the success path nor the
+     * Lenco-error path had any test before this pair (the ticket-side
+     * equivalent, EventTicketCheckoutController::verify(), was in the same
+     * state — see TicketPurchaseFlowTest's buyer-verify tests).
+     */
+    public function test_user_can_verify_a_pending_payment_and_it_completes(): void
+    {
+        $user = User::factory()->withoutCredits()->create();
+        $payment = Payment::factory()->for($user)->withTransactionId('col_billing_verify')->create([
+            'amount' => 450.00,
+            'currency' => 'ZMW',
+            'plan_key' => 'base',
+            'status' => 'pending',
+        ]);
+
+        $lenco = Mockery::mock(LencoService::class);
+        $lenco->shouldReceive('verifyPayment')->once()->with('col_billing_verify')->andReturn([
+            'transactionId' => 'col_billing_verify',
+            'lencoStatus' => 'successful',
+            'status' => 'completed',
+            'amount' => 450.00,
+            'currency' => 'ZMW',
+            'rawResponse' => [],
+        ]);
+        $this->app->instance(LencoService::class, $lenco);
+
+        $response = $this->actingAs($user)->getJson(route('payment.verify', 'col_billing_verify'));
+
+        $response->assertOk()->assertJsonPath('success', true)->assertJsonPath('status', 'completed');
+        $this->assertSame('completed', $payment->fresh()->status);
+        $this->assertSame(1, $user->fresh()->event_credits);
+    }
+
+    public function test_verify_returns_502_when_lenco_verification_fails(): void
+    {
+        $user = User::factory()->withoutCredits()->create();
+        $payment = Payment::factory()->for($user)->withTransactionId('col_billing_verify_fail')->create([
+            'amount' => 450.00,
+            'currency' => 'ZMW',
+            'plan_key' => 'base',
+            'status' => 'pending',
+        ]);
+
+        $lenco = Mockery::mock(LencoService::class);
+        $lenco->shouldReceive('verifyPayment')->once()->with('col_billing_verify_fail')
+            ->andThrow(new \RuntimeException('Lenco API key is not configured.', 500));
+        $this->app->instance(LencoService::class, $lenco);
+
+        $response = $this->actingAs($user)->getJson(route('payment.verify', 'col_billing_verify_fail'));
+
+        $response->assertStatus(502)->assertJsonPath('success', false)->assertJsonPath('message', 'Lenco API key is not configured.');
+        $this->assertSame('pending', $payment->fresh()->status);
+        $this->assertSame(0, $user->fresh()->event_credits);
+    }
 }

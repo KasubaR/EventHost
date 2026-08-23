@@ -114,6 +114,24 @@ class TicketCheckInTest extends TestCase
         $this->assertNull($ticket->fresh()->checked_in_at);
     }
 
+    /**
+     * "QR invalid" — a token that doesn't belong to any ticket at all
+     * (garbage, mistyped, or a photo of the wrong QR entirely), distinct
+     * from test_a_token_from_a_different_event_is_rejected below (a *real*
+     * token, just for another event). Same 404 code path, but this is the
+     * more common real-world scanner miss and had no dedicated test.
+     */
+    public function test_an_unknown_qr_token_is_rejected_with_a_clear_message(): void
+    {
+        $owner = User::factory()->pro()->create();
+        $event = $this->ticketedEventOnToday($owner);
+
+        $this->actingAs($owner)
+            ->postJson(route('events.tickets.checkin.confirm-token', ['event' => $event, 'token' => 'totally-made-up-token']))
+            ->assertNotFound()
+            ->assertJsonPath('message', 'No matching ticket for this event.');
+    }
+
     public function test_a_token_from_a_different_event_is_rejected(): void
     {
         $owner = User::factory()->pro()->create();
