@@ -1648,6 +1648,18 @@ body > .evt-more-menu .evt-more-item--danger:hover {
     flex: 1 1 220px;
 }
 
+/* Staff (Phase 18) — role select + Save, inline in a table cell */
+.evt-staff-role-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.evt-staff-role-form .profile-input {
+    min-width: 160px;
+}
+
 /* Event detail analytics */
 .evt-analytics-section .evt-section-body {
     display: flex;

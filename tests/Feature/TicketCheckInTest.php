@@ -16,19 +16,27 @@ class TicketCheckInTest extends TestCase
 
     private function ticketedEventOnToday(User $owner, array $overrides = []): Event
     {
-        return Event::factory()->for($owner)->ticketed()->create(array_merge([
+        return Event::factory()->for($owner)->ticketed()->approved()->create(array_merge([
             'event_date' => now()->toDateString(),
         ], $overrides));
     }
 
-    public function test_base_tier_owner_is_redirected_to_billing_from_scanner(): void
+    /**
+     * The gate is ticketing approval, not subscription tier — a Pro owner is
+     * blocked here exactly as a base-tier one would be, proving tier is
+     * irrelevant once an event is ticketed. Redirects to the ticket-types
+     * (Settings) page, not billing — there's nothing to buy, only approval
+     * to wait for.
+     */
+    public function test_unapproved_ticketed_event_is_redirected_from_the_scanner(): void
     {
-        $owner = User::factory()->create();
+        $owner = User::factory()->pro()->create();
         $event = Event::factory()->for($owner)->ticketed()->create();
 
         $this->actingAs($owner)
             ->get(route('events.tickets.checkin.scan', $event))
-            ->assertRedirect(route('billing.show'));
+            ->assertRedirect(route('events.ticket-types.index', $event))
+            ->assertSessionHas('status', 'checkin-requires-approval');
     }
 
     public function test_a_non_ticketed_event_404s_on_the_ticket_scanner(): void
@@ -177,7 +185,7 @@ class TicketCheckInTest extends TestCase
     public function test_lookup_returns_matching_tickets_by_attendee_name(): void
     {
         $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->ticketed()->create();
+        $event = Event::factory()->for($owner)->ticketed()->approved()->create();
         Ticket::factory()->for($event)->create(['attendee_name' => 'Alice Wonder']);
         Ticket::factory()->for($event)->create(['attendee_name' => 'Bob Builder']);
 
@@ -192,7 +200,7 @@ class TicketCheckInTest extends TestCase
     public function test_lookup_treats_like_wildcards_as_literals(): void
     {
         $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->ticketed()->create();
+        $event = Event::factory()->for($owner)->ticketed()->approved()->create();
         Ticket::factory()->for($event)->create(['attendee_name' => 'Alice Wonder']);
         Ticket::factory()->for($event)->create(['attendee_name' => 'Bob Builder']);
 
@@ -205,7 +213,7 @@ class TicketCheckInTest extends TestCase
     public function test_lookup_rejects_an_empty_or_one_character_query(): void
     {
         $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->ticketed()->create();
+        $event = Event::factory()->for($owner)->ticketed()->approved()->create();
         Ticket::factory()->for($event)->create(['attendee_name' => 'Alice Wonder']);
 
         $this->actingAs($owner)
@@ -222,7 +230,7 @@ class TicketCheckInTest extends TestCase
     public function test_scanner_page_hides_the_camera_when_it_is_not_the_event_date(): void
     {
         $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->ticketed()->create([
+        $event = Event::factory()->for($owner)->ticketed()->approved()->create([
             'event_date' => now()->addWeek()->toDateString(),
         ]);
 

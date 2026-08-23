@@ -35,7 +35,13 @@ class EventTicketingController extends Controller
 
     public function submit(Event $event, TicketingActivationService $activation): RedirectResponse
     {
-        $this->authorize('update', $event);
+        // 'publish', not 'update' — submitting starts the pipeline that ends
+        // in EventHost activating ticket sales, the same billing-adjacent
+        // action EventPolicy::publish() already documents itself as covering
+        // for invitation events. A Manager can otherwise do anything
+        // ticketing-related (EventStaffRole::Manager's own copy: "Cannot
+        // activate sales").
+        $this->authorize('publish', $event);
         abort_unless($event->isTicketed(), 404);
 
         try {

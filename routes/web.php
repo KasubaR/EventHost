@@ -10,6 +10,8 @@ use App\Http\Controllers\EventInvitationDesignController;
 use App\Http\Controllers\EventInvitationMediaController;
 use App\Http\Controllers\EventPhotoController;
 use App\Http\Controllers\EventPreviewController;
+use App\Http\Controllers\EventStaffController;
+use App\Http\Controllers\EventStaffInvitationController;
 use App\Http\Controllers\EventStaffLinkController;
 use App\Http\Controllers\EventTableController;
 use App\Http\Controllers\EventTicketCheckoutController;
@@ -17,6 +19,7 @@ use App\Http\Controllers\EventTicketDashboardController;
 use App\Http\Controllers\EventTicketingController;
 use App\Http\Controllers\EventTicketManagementController;
 use App\Http\Controllers\EventTicketPurchaseController;
+use App\Http\Controllers\EventTicketRevenueController;
 use App\Http\Controllers\EventTicketTypeController;
 use App\Http\Controllers\GuestBulkActionController;
 use App\Http\Controllers\GuestController;
@@ -38,6 +41,7 @@ use App\Http\Controllers\TableUploadController;
 use App\Http\Controllers\TemplateLibraryController;
 use App\Http\Controllers\TicketCheckInController;
 use App\Http\Controllers\TicketController;
+use App\Models\InvitationTemplate;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
 
@@ -51,7 +55,7 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 
 Route::get('/about', function () {
     return view('about', [
-        'activeTemplateCount' => \App\Models\InvitationTemplate::activeCount(),
+        'activeTemplateCount' => InvitationTemplate::activeCount(),
     ]);
 })->name('about');
 
@@ -157,8 +161,22 @@ Route::middleware('throttle:rsvp-submit')->group(function () {
     Route::post('/e/{slug}/rsvp', [RsvpController::class, 'storeOpen'])->name('rsvp.open.store');
 });
 
+// Staff invite accept flow (Phase 18) — twin paths depending on whether the
+// invited email already has an account. Same trust model as the token routes
+// above: the token in the URL is the bearer credential, no login required to
+// view. See EventStaffInvitationController.
+Route::get('/staff/invitations/{token}', [EventStaffInvitationController::class, 'show'])->name('staff-invitations.show');
+Route::post('/staff/invitations/{token}', [EventStaffInvitationController::class, 'store'])->name('staff-invitations.store');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Existing-account branch of the staff accept flow — hitting this while
+    // logged out gets Laravel's normal "log in, then come back" intended-URL
+    // redirect for free, which is the whole reason this route lives in the
+    // auth group instead of the public pair above.
+    Route::get('/staff/invitations/{token}/confirm', [EventStaffInvitationController::class, 'confirm'])
+        ->name('staff-invitations.confirm');
 
     Route::get('/templates', [TemplateLibraryController::class, 'index'])->name('templates.index');
 
@@ -222,6 +240,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Check-in stays on events.tickets.checkin.* below.
     Route::get('/events/{event}/tickets/overview', [EventTicketDashboardController::class, 'overview'])
         ->name('events.tickets.overview');
+    // Revenue/Payouts (Phase 23) — read-only for the host; only an admin can
+    // record a payout, see admin.ticketing.revenue.payouts.store.
+    Route::get('/events/{event}/tickets/revenue', [EventTicketRevenueController::class, 'revenue'])
+        ->name('events.tickets.revenue');
+    Route::get('/events/{event}/tickets/payouts', [EventTicketRevenueController::class, 'payouts'])
+        ->name('events.tickets.payouts');
     Route::get('/events/{event}/tickets', [EventTicketManagementController::class, 'index'])
         ->name('events.tickets.index');
     Route::post('/events/{event}/tickets/{ticket}/resend', [EventTicketManagementController::class, 'resend'])
@@ -243,6 +267,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('events.checkin.links.store');
     Route::delete('/events/{event}/checkin/links/{link}', [EventStaffLinkController::class, 'destroy'])
         ->name('events.checkin.links.destroy');
+
+    // Owner-only staff accounts (Phase 18) — twin of the no-login scanner
+    // links above, for people the host trusts with an actual account. See
+    // plans/staff-access.md.
+    Route::get('/events/{event}/staff', [EventStaffController::class, 'index'])
+        ->name('events.staff.index');
+    Route::post('/events/{event}/staff', [EventStaffController::class, 'store'])
+        ->name('events.staff.store');
+    Route::patch('/events/{event}/staff/{eventStaff}', [EventStaffController::class, 'update'])
+        ->name('events.staff.update');
+    Route::post('/events/{event}/staff/{eventStaff}/resend', [EventStaffController::class, 'resend'])
+        ->name('events.staff.resend');
+    Route::delete('/events/{event}/staff/{eventStaff}', [EventStaffController::class, 'destroy'])
+        ->name('events.staff.destroy');
 
     Route::get('/events/{event}/checkin/lookup', [CheckInController::class, 'lookup'])
         ->name('events.checkin.lookup');

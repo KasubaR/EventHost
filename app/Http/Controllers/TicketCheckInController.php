@@ -22,11 +22,15 @@ class TicketCheckInController extends Controller
 {
     public function scan(Event $event): View|RedirectResponse
     {
-        $this->authorize('update', $event);
+        $this->authorize('checkIn', $event);
         abort_unless($event->isTicketed(), 404);
 
+        // Ticketed events unlock check-in on approval, not subscription tier
+        // (Event::ownerHasPremiumEventTools()) — nothing to buy here, so send
+        // them to where their submission/approval status is visible instead
+        // of billing.
         if (! $event->ownerHasPremiumEventTools()) {
-            return redirect()->route('billing.show')->with('status', 'premium-required-checkin');
+            return redirect()->route('events.ticket-types.index', $event)->with('status', 'checkin-requires-approval');
         }
 
         $stats = [
@@ -47,11 +51,11 @@ class TicketCheckInController extends Controller
      */
     public function confirmToken(Event $event, string $token, TicketCheckInService $checkInService): JsonResponse
     {
-        $this->authorize('update', $event);
+        $this->authorize('checkIn', $event);
         abort_unless($event->isTicketed(), 404);
 
         if (! $event->ownerHasPremiumEventTools()) {
-            return response()->json(['message' => 'This event is not on a premium plan.'], 403);
+            return response()->json(['message' => 'Ticket sales for this event have not been approved yet.'], 403);
         }
 
         $ticket = Ticket::query()
@@ -68,12 +72,12 @@ class TicketCheckInController extends Controller
 
     public function confirmTicket(Event $event, Ticket $ticket, TicketCheckInService $checkInService): JsonResponse
     {
-        $this->authorize('update', $event);
+        $this->authorize('checkIn', $event);
         abort_unless($event->isTicketed(), 404);
         abort_unless($ticket->event_id === $event->id, 404);
 
         if (! $event->ownerHasPremiumEventTools()) {
-            return response()->json(['message' => 'This event is not on a premium plan.'], 403);
+            return response()->json(['message' => 'Ticket sales for this event have not been approved yet.'], 403);
         }
 
         return $this->confirmResponse($checkInService, $ticket);
@@ -81,11 +85,11 @@ class TicketCheckInController extends Controller
 
     public function lookup(Request $request, Event $event): JsonResponse
     {
-        $this->authorize('update', $event);
+        $this->authorize('checkIn', $event);
         abort_unless($event->isTicketed(), 404);
 
         if (! $event->ownerHasPremiumEventTools()) {
-            return response()->json(['message' => 'This event is not on a premium plan.'], 403);
+            return response()->json(['message' => 'Ticket sales for this event have not been approved yet.'], 403);
         }
 
         $term = CheckInLookup::term((string) $request->query('q', ''));

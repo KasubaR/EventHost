@@ -41,8 +41,9 @@
                 @if ($event->isTicketed())
                     <a href="{{ route('events.tickets.checkin.scan', $event) }}" class="evt-btn-outline">
                         <i class="fa-solid fa-qrcode"></i> Check-in scanner
+                        {{-- Ticketed events unlock on approval, not subscription tier. --}}
                         @unless ($event->ownerHasPremiumEventTools())
-                            <span class="evt-credit-badge">Pro</span>
+                            <span class="evt-credit-badge" title="Unlocks once EventHost approves ticket sales">Pending</span>
                         @endunless
                     </a>
                 @else
@@ -59,6 +60,17 @@
                     <a href="{{ route('events.preview', ['event' => $event, 'from' => 'show']) }}" target="_blank" rel="noopener" class="evt-btn-outline"><i class="fa-solid fa-eye"></i> Preview</a>
                 @endif
                 <a href="{{ route('events.edit', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-pen-to-square"></i> Edit</a>
+                @if ($event->isTicketed())
+                @can('manage', [\App\Models\EventStaff::class, $event])
+                    {{-- Ticketed events only (Phase 18 brief) — owner-only, staff management is never delegated to a Manager. --}}
+                    <a href="{{ route('events.staff.index', $event) }}" class="evt-btn-outline">
+                        <i class="fa-solid fa-user-shield"></i> Staff
+                        @unless ($event->ownerHasPremiumEventTools())
+                            <span class="evt-credit-badge" title="Unlocks once EventHost approves ticket sales">Pending</span>
+                        @endunless
+                    </a>
+                @endcan
+                @endif
                 <a href="{{ route('events.index') }}" class="evt-btn-outline"><i class="fa-solid fa-list"></i> All events</a>
             </div>
         </div>

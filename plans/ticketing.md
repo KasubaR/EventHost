@@ -535,7 +535,14 @@ recording:
   **not** an error — same idempotent-rescan behavior as a guest's second
   scan, returned as `already_checked_in: true`.
 - Gated on `Event::isCheckInOpen()` (same-day) and
-  `ownerHasPremiumEventTools()`, identical rules to guest check-in.
+  `ownerHasPremiumEventTools()` — the same method guest check-in calls, but
+  no longer identical rules underneath: as of Phase 23,
+  `ownerHasPremiumEventTools()` unlocks a ticketed event on ticketing
+  approval (`ticketSalesAreApproved()`), not the owner's subscription tier —
+  EventHost already earns a commission on every ticket sold, so a tier gate
+  on top of that would double-charge for the same thing. Guest (invitation)
+  check-in is unaffected and still gates on tier. See §2 and
+  `plans/staff-access.md` §7.
 - **Dashboard scanner only.** No shareable no-login staff-link variant yet
   (`EventStaffLink`'s equivalent for tickets) — a real gap for door staff
   without dashboard accounts, deliberately deferred rather than mirroring

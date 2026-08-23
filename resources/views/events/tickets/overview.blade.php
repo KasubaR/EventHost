@@ -45,13 +45,18 @@
                 <div class="evt-stat-value">{{ \App\Support\TicketingSettings::formatZmw($hostRevenue) }}</div>
                 <div class="evt-stat-label">Host revenue</div>
             </div>
+            <div class="evt-stat-card">
+                <div class="evt-stat-value">{{ \App\Support\TicketingSettings::formatZmw($pendingPayout) }}</div>
+                <div class="evt-stat-label">Pending payout</div>
+            </div>
         </div>
 
         <div class="evt-section">
             <div class="evt-section-body">
                 <p class="evt-muted">
                     Gross sales, fees, and host revenue come from every paid order recorded so far.
-                    See <a href="{{ route('events.tickets.index', $event) }}">Tickets</a> for the full list, or
+                    See <a href="{{ route('events.tickets.index', $event) }}">Tickets</a> for the full list,
+                    <a href="{{ route('events.tickets.revenue', $event) }}">Revenue</a> for a full statement, or
                     <a href="{{ route('events.ticket-types.index', $event) }}">Settings</a> to manage ticket types and commission.
                 </p>
             </div>

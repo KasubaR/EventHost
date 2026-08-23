@@ -688,11 +688,25 @@ class Event extends Model
     }
 
     /**
-     * Whether this event's owner is currently entitled to QR check-in / table photo wall.
-     * Re-checked live (not cached at event-creation time) so a plan change takes effect immediately.
+     * Whether check-in / staff / photo-wall tools are unlocked for this event.
+     *
+     * Ticketed events: unlocked once EventHost approves ticket sales
+     * (ticketSalesAreApproved()), regardless of the owner's subscription
+     * tier — EventHost already earns a commission on every ticket sold, so
+     * there's no separate tier gate once an event is live. Invitation
+     * events: still gated on the owner's subscription tier
+     * (canUsePremiumEventTools()) — those events pay via event credits, not
+     * commission, so the tier gate is how that product is monetized.
+     *
+     * Re-checked live (not cached at event-creation time) so an approval or
+     * plan change takes effect immediately.
      */
     public function ownerHasPremiumEventTools(): bool
     {
+        if ($this->isTicketed()) {
+            return $this->ticketSalesAreApproved();
+        }
+
         return $this->loadMissing('user')->user->canUsePremiumEventTools();
     }
 

@@ -62,4 +62,16 @@ class EventFactory extends Factory
             'event_type' => fake()->randomElement(Event::TICKETED_EVENT_TYPES),
         ]);
     }
+
+    /**
+     * Chain after ->ticketed(): premium tools (check-in, staff) are unlocked
+     * for a ticketed event once EventHost approves it, regardless of the
+     * owner's subscription tier — see Event::ownerHasPremiumEventTools().
+     */
+    public function approved(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'ticketing_status' => TicketingStatus::Approved,
+        ]);
+    }
 }

@@ -112,4 +112,21 @@
             @endif
         </section>
     @endif
+
+    @if ($staffing->total() > 0)
+        <section class="evt-group">
+            <div class="evt-group-head">
+                <h2 class="evt-group-title"><i class="fa-solid fa-user-shield"></i> Events you're staff on</h2>
+                <span class="evt-group-count">{{ $staffing->total() }}</span>
+            </div>
+            <div class="evt-list">
+                @foreach ($staffing as $event)
+                    @include('events.partials.my-event-card', ['event' => $event])
+                @endforeach
+            </div>
+            @if ($staffing->hasPages())
+                <div class="evt-pagination">{{ $staffing->links() }}</div>
+            @endif
+        </section>
+    @endif
 </x-app-layout>

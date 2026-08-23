@@ -96,7 +96,7 @@ class EventTicketManagementController extends Controller
         $this->authorizeTicketBelongsToEvent($event, $ticket);
 
         if (! $event->ownerHasPremiumEventTools()) {
-            return redirect()->route('billing.show')->with('status', 'premium-required-checkin');
+            return redirect()->route('events.ticket-types.index', $event)->with('status', 'checkin-requires-approval');
         }
 
         try {

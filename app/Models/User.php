@@ -110,6 +110,18 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Review::class);
     }
 
+    /**
+     * Events this user has been invited to as staff (Phase 18) — includes
+     * pending invites. Use ->whereNotNull('accepted_at') for events they can
+     * actually access.
+     *
+     * @return HasMany<EventStaff, $this>
+     */
+    public function staffMemberships(): HasMany
+    {
+        return $this->hasMany(EventStaff::class);
+    }
+
     public function getProfilePhotoUrlAttribute(): string
     {
         return $this->profile_photo

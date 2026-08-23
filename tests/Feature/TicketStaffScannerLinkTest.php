@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\TicketingStatus;
 use App\Models\Event;
 use App\Models\EventStaffLink;
 use App\Models\Guest;
@@ -28,8 +29,8 @@ class TicketStaffScannerLinkTest extends TestCase
 
     public function test_owner_can_create_a_staff_scanner_link_for_a_ticketed_event(): void
     {
-        $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->ticketed()->create();
+        $owner = User::factory()->create();
+        $event = Event::factory()->for($owner)->ticketed()->approved()->create();
 
         $this->actingAs($owner)
             ->post(route('events.checkin.links.store', $event), ['label' => 'Front gate'])
@@ -67,8 +68,8 @@ class TicketStaffScannerLinkTest extends TestCase
 
     public function test_public_scan_page_is_active_for_a_valid_ticket_link(): void
     {
-        $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->ticketed()->create();
+        $owner = User::factory()->create();
+        $event = Event::factory()->for($owner)->ticketed()->approved()->create();
         $link = EventStaffLink::factory()->for($event)->create();
 
         $response = $this->get(route('tickets.checkin.public.scan', ['staffToken' => $link->token]));
@@ -95,8 +96,8 @@ class TicketStaffScannerLinkTest extends TestCase
 
     public function test_staff_link_confirms_ticket_check_in_by_token_without_authentication(): void
     {
-        $owner = User::factory()->pro()->create();
-        $event = $this->ticketedEventOnToday($owner);
+        $owner = User::factory()->create();
+        $event = $this->ticketedEventOnToday($owner, ['ticketing_status' => TicketingStatus::Approved]);
         $link = EventStaffLink::factory()->for($event)->create();
         $ticket = Ticket::factory()->for($event)->create();
 
@@ -116,8 +117,8 @@ class TicketStaffScannerLinkTest extends TestCase
 
     public function test_staff_link_confirms_ticket_check_in_by_ticket_id(): void
     {
-        $owner = User::factory()->pro()->create();
-        $event = $this->ticketedEventOnToday($owner);
+        $owner = User::factory()->create();
+        $event = $this->ticketedEventOnToday($owner, ['ticketing_status' => TicketingStatus::Approved]);
         $link = EventStaffLink::factory()->for($event)->create();
         $ticket = Ticket::factory()->for($event)->create();
 
@@ -144,9 +145,14 @@ class TicketStaffScannerLinkTest extends TestCase
         $this->assertNull($ticket->fresh()->checked_in_at);
     }
 
-    public function test_ticket_link_for_a_non_premium_event_cannot_confirm_check_in(): void
+    /**
+     * The gate is ticketing approval, not subscription tier — a Pro owner is
+     * blocked here exactly as a base-tier one would be. ticketedEventOnToday()
+     * defaults to Draft (unapproved).
+     */
+    public function test_ticket_link_for_an_unapproved_event_cannot_confirm_check_in(): void
     {
-        $owner = User::factory()->create();
+        $owner = User::factory()->pro()->create();
         $event = $this->ticketedEventOnToday($owner);
         $link = EventStaffLink::factory()->for($event)->create();
         $ticket = Ticket::factory()->for($event)->create();
@@ -201,8 +207,8 @@ class TicketStaffScannerLinkTest extends TestCase
 
     public function test_lookup_rejects_an_empty_query(): void
     {
-        $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->ticketed()->create();
+        $owner = User::factory()->create();
+        $event = Event::factory()->for($owner)->ticketed()->approved()->create();
         $link = EventStaffLink::factory()->for($event)->create();
         Ticket::factory()->for($event)->create(['attendee_name' => 'Alice Wonder']);
 
@@ -217,8 +223,8 @@ class TicketStaffScannerLinkTest extends TestCase
 
     public function test_lookup_works_via_ticket_staff_link(): void
     {
-        $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->ticketed()->create();
+        $owner = User::factory()->create();
+        $event = Event::factory()->for($owner)->ticketed()->approved()->create();
         $link = EventStaffLink::factory()->for($event)->create();
         Ticket::factory()->for($event)->create(['attendee_name' => 'Alice Wonder']);
 

@@ -24,6 +24,8 @@
         ];
     @endphp
 
+    @include('admin.ticketing.partials.nav', ['active' => 'approvals'])
+
     <div class="admin-panel-card">
         <nav class="admin-filter-row" aria-label="Ticketing status">
             @foreach ($filters as $value => $label)

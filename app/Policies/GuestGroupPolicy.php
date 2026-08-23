@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\GuestGroup;
 use App\Models\User;
+use App\Support\EventAccess;
 
 class GuestGroupPolicy
 {
@@ -11,13 +12,13 @@ class GuestGroupPolicy
     {
         $guestGroup->loadMissing('event');
 
-        return $user->id === $guestGroup->event->user_id;
+        return EventAccess::canManage($user, $guestGroup->event);
     }
 
     public function delete(User $user, GuestGroup $guestGroup): bool
     {
         $guestGroup->loadMissing('event');
 
-        return $user->id === $guestGroup->event->user_id;
+        return EventAccess::canManage($user, $guestGroup->event);
     }
 }

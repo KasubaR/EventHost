@@ -36,6 +36,8 @@
         <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Ticket type removed.</div>
     @elseif (session('status') === 'ticketing-settings-updated')
         <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Ticket sales settings saved.</div>
+    @elseif (session('status') === 'checkin-requires-approval')
+        <div class="evt-flash evt-flash--info"><i class="fa-solid fa-circle-info"></i> Check-in and staff accounts unlock once EventHost approves ticket sales for this event.</div>
     @endif
 
     @if ($errors->any())

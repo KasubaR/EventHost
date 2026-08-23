@@ -73,7 +73,7 @@ class CheckInController extends Controller
     public function confirmGuest(Event $event, Guest $guest, CheckInService $checkInService): JsonResponse
     {
         $guest->loadMissing('event');
-        $this->authorize('update', $guest);
+        $this->authorize('checkIn', $guest);
         abort_unless($guest->event_id === $event->id, 404);
         abort_unless($event->isInvitation(), 404);
 
@@ -123,7 +123,7 @@ class CheckInController extends Controller
 
     private function authorizeInvitation(Event $event): void
     {
-        $this->authorize('update', $event);
+        $this->authorize('checkIn', $event);
 
         abort_unless($event->isInvitation(), 404);
     }

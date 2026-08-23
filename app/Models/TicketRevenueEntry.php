@@ -9,11 +9,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * One movement of an event's ticket revenue. Every change is written by
- * App\Services\TicketRevenueLedgerService, the only place that should ever
- * insert here — same shape and same rule as CreditTransaction/
- * EventCreditService for event credits. Rows are never edited or deleted;
- * a correction is a new row.
+ * One movement of an event's ticket revenue. `sale` rows are written by
+ * App\Services\TicketRevenueLedgerService; `payout` rows (Phase 23) by
+ * App\Services\TicketPayoutService — same shape and same rule as
+ * CreditTransaction/EventCreditService for event credits. Rows are never
+ * edited or deleted; a correction is a new row.
  */
 class TicketRevenueEntry extends Model
 {
@@ -22,16 +22,21 @@ class TicketRevenueEntry extends Model
 
     public const TYPE_SALE = 'sale';
 
+    public const TYPE_PAYOUT = 'payout';
+
     /**
-     * Labels for the admin/host ledger view. Only `sale` has a writer —
-     * payout/adjustment are later phases and are deliberately not listed
-     * here yet (see plans/ticketing.md, "don't build ahead of the phase that
-     * uses it"). Buyer refunds are handled off-platform, not as ledger rows.
+     * Labels for the admin/host ledger view. `sale` is written by
+     * TicketRevenueLedgerService::recordSale(), `payout` by
+     * App\Services\TicketPayoutService::recordPayout() (Phase 23) —
+     * `adjustment` is still a later phase and deliberately not listed here
+     * yet (see plans/ticketing.md, "don't build ahead of the phase that uses
+     * it"). Buyer refunds are handled off-platform, not as ledger rows.
      *
      * @var array<string, string>
      */
     public const TYPES = [
         self::TYPE_SALE => 'Sale',
+        self::TYPE_PAYOUT => 'Payout',
     ];
 
     /**

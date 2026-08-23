@@ -75,8 +75,10 @@ class TicketRevenueLedgerService
 
     /**
      * Running balance for an event right now — SUM(host_amount) over every
-     * entry. Payout rows, if added later, should store host_amount negative
-     * so this stays a plain sum without special-casing type.
+     * entry. Payout rows (Phase 23, App\Services\TicketPayoutService) store
+     * host_amount negative, so once any exist this is the event's current
+     * *pending payable* balance, not lifetime earnings — see summaryFor()
+     * for the lifetime figures.
      */
     public function balanceFor(Event $event): float
     {
@@ -86,8 +88,11 @@ class TicketRevenueLedgerService
     }
 
     /**
-     * Overview dashboard totals — gross sales, EventHost fees, and host
-     * revenue. One query over every entry for the event.
+     * Overview dashboard totals — lifetime gross sales, EventHost fees, and
+     * host revenue. Scoped to `sale` rows explicitly (Phase 23 added
+     * `payout` rows to this table, which must never enter these three sums —
+     * a payout doesn't undo a past sale, it just pays it out; see
+     * balanceFor() for the figure a payout actually moves).
      *
      * @return array{gross_amount: float, platform_fee: float, host_amount: float}
      */
@@ -95,6 +100,7 @@ class TicketRevenueLedgerService
     {
         $row = TicketRevenueEntry::query()
             ->where('event_id', $event->id)
+            ->where('type', TicketRevenueEntry::TYPE_SALE)
             ->selectRaw('COALESCE(SUM(gross_amount), 0) as gross_amount, COALESCE(SUM(platform_fee), 0) as platform_fee, COALESCE(SUM(host_amount), 0) as host_amount')
             ->first();
 

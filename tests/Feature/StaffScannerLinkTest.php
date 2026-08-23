@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Event;
+use App\Models\EventStaff;
 use App\Models\EventStaffLink;
 use App\Models\Guest;
 use App\Models\User;
@@ -65,6 +66,53 @@ class StaffScannerLinkTest extends TestCase
             ->assertForbidden();
 
         $this->assertNotNull(EventStaffLink::find($link->id));
+    }
+
+    /**
+     * Phase 18 — staff accounts only exist on ticketed events (see
+     * plans/staff-access.md §1). An accepted Event Manager gets the same
+     * reach as the owner over these Phase 17 scanner links (which work on
+     * either event kind), via EventAccess::canManage().
+     */
+    public function test_an_event_manager_can_create_and_revoke_a_staff_scanner_link(): void
+    {
+        $owner = User::factory()->create();
+        $event = Event::factory()->for($owner)->ticketed()->approved()->create();
+        $manager = User::factory()->create();
+        EventStaff::factory()->for($event)->manager()->accepted()->create(['user_id' => $manager->id, 'email' => $manager->email]);
+
+        $this->actingAs($manager)
+            ->post(route('events.checkin.links.store', $event), ['label' => 'Side door'])
+            ->assertRedirect(route('events.tickets.checkin.scan', $event));
+
+        $link = EventStaffLink::query()->where('event_id', $event->id)->firstOrFail();
+
+        $this->actingAs($manager)
+            ->delete(route('events.checkin.links.destroy', ['event' => $event, 'link' => $link]))
+            ->assertRedirect(route('events.tickets.checkin.scan', $event));
+
+        $this->assertNull(EventStaffLink::find($link->id));
+    }
+
+    /**
+     * Phase 18 — Check-in Staff can use the scanner but not the ticket
+     * management surface behind it — canCheckIn() reaches further than the
+     * door, but canManage() does not extend to them.
+     */
+    public function test_checkin_only_staff_cannot_reach_ticket_management(): void
+    {
+        $owner = User::factory()->create();
+        $event = Event::factory()->for($owner)->ticketed()->approved()->create();
+        $staffer = User::factory()->create();
+        EventStaff::factory()->for($event)->accepted()->create(['user_id' => $staffer->id, 'email' => $staffer->email]);
+
+        $this->actingAs($staffer)
+            ->get(route('events.ticket-types.index', $event))
+            ->assertForbidden();
+
+        $this->actingAs($staffer)
+            ->get(route('events.tickets.checkin.scan', $event))
+            ->assertOk();
     }
 
     public function test_public_scan_page_is_active_for_a_valid_link(): void

@@ -4,15 +4,20 @@ namespace Tests\Feature;
 
 use App\Enums\CommissionMode;
 use App\Enums\TicketingStatus;
+use App\Exceptions\TicketPayoutExceedsBalanceException;
+use App\Models\Admin;
 use App\Models\Event;
 use App\Models\TicketOrder;
+use App\Models\TicketPayout;
 use App\Models\TicketRevenueEntry;
 use App\Models\TicketType;
 use App\Services\LencoService;
 use App\Services\TicketOrderFulfillmentService;
+use App\Services\TicketPayoutService;
 use App\Services\TicketRevenueLedgerService;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Notification;
 use Mockery;
 use Tests\TestCase;
@@ -264,5 +269,79 @@ class TicketRevenueLedgerTest extends TestCase
         $this->assertSame(200.0, $summary['gross_amount']);
         $this->assertSame(10.0, $summary['platform_fee']);
         $this->assertSame(190.0, $summary['host_amount']);
+    }
+
+    public function test_recording_a_payout_writes_a_negative_entry_and_updates_the_balance(): void
+    {
+        $event = $this->approvedTicketedEvent();
+        $order = TicketOrder::factory()->for($event)->paid()->create([
+            'face_value' => '200.00', 'commission_amount' => '10.00', 'host_amount' => '190.00',
+        ]);
+
+        $ledger = app(TicketRevenueLedgerService::class);
+        $ledger->recordSale($order);
+
+        $admin = Admin::factory()->create();
+        $payout = app(TicketPayoutService::class)->recordPayout($event->fresh(), $admin, 100.00, 'First installment', Carbon::today());
+
+        $this->assertInstanceOf(TicketPayout::class, $payout);
+        $this->assertSame('100.00', (string) $payout->amount);
+        $this->assertSame($admin->id, $payout->paid_by);
+
+        $entry = TicketRevenueEntry::query()->where('id', $payout->ticket_revenue_entry_id)->firstOrFail();
+        $this->assertSame(TicketRevenueEntry::TYPE_PAYOUT, $entry->type);
+        $this->assertSame('-100.00', (string) $entry->host_amount);
+        $this->assertSame('90.00', (string) $entry->balance_after);
+
+        $this->assertSame(90.0, $ledger->balanceFor($event->fresh()));
+    }
+
+    public function test_a_payout_cannot_exceed_the_pending_balance(): void
+    {
+        $event = $this->approvedTicketedEvent();
+        $order = TicketOrder::factory()->for($event)->paid()->create([
+            'face_value' => '200.00', 'commission_amount' => '10.00', 'host_amount' => '190.00',
+        ]);
+        app(TicketRevenueLedgerService::class)->recordSale($order);
+
+        $admin = Admin::factory()->create();
+
+        $this->expectException(TicketPayoutExceedsBalanceException::class);
+        app(TicketPayoutService::class)->recordPayout($event->fresh(), $admin, 190.01, null, Carbon::today());
+    }
+
+    public function test_a_payout_of_zero_or_less_is_rejected(): void
+    {
+        $event = $this->approvedTicketedEvent();
+        $order = TicketOrder::factory()->for($event)->paid()->create([
+            'face_value' => '200.00', 'commission_amount' => '10.00', 'host_amount' => '190.00',
+        ]);
+        app(TicketRevenueLedgerService::class)->recordSale($order);
+
+        $admin = Admin::factory()->create();
+
+        $this->expectException(TicketPayoutExceedsBalanceException::class);
+        app(TicketPayoutService::class)->recordPayout($event->fresh(), $admin, 0.0, null, Carbon::today());
+    }
+
+    public function test_summary_for_is_unaffected_by_a_payout_while_balance_for_drops(): void
+    {
+        $event = $this->approvedTicketedEvent();
+        $order = TicketOrder::factory()->for($event)->paid()->create([
+            'face_value' => '200.00', 'commission_amount' => '10.00', 'host_amount' => '190.00',
+        ]);
+
+        $ledger = app(TicketRevenueLedgerService::class);
+        $ledger->recordSale($order);
+
+        $admin = Admin::factory()->create();
+        app(TicketPayoutService::class)->recordPayout($event->fresh(), $admin, 90.00, null, Carbon::today());
+
+        $summary = $ledger->summaryFor($event->fresh());
+        $this->assertSame(200.0, $summary['gross_amount']);
+        $this->assertSame(10.0, $summary['platform_fee']);
+        $this->assertSame(190.0, $summary['host_amount']);
+
+        $this->assertSame(100.0, $ledger->balanceFor($event->fresh()));
     }
 }

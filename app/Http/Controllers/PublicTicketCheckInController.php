@@ -90,7 +90,7 @@ class PublicTicketCheckInController extends Controller
         abort_if($link === null, 404);
         abort_unless($link->isActive(), 403, 'This scanner link has been revoked.');
         abort_unless($link->event->isTicketed(), 404);
-        abort_unless($link->event->ownerHasPremiumEventTools(), 403, 'This event is not on a premium plan.');
+        abort_unless($link->event->ownerHasPremiumEventTools(), 403, 'Ticket sales for this event have not been approved yet.');
 
         return $link;
     }

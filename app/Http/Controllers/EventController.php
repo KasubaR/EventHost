@@ -54,7 +54,17 @@ class EventController extends Controller
             ->paginate(10, ['*'], 'draft_page')
             ->withQueryString();
 
-        return view('events.index', compact('published', 'drafts', 'kind'));
+        // Events this user has accepted staff access on (Phase 18) — separate
+        // from "mine" above, which is ownership-only.
+        $staffing = Event::query()
+            ->whereHas('staff', fn ($query) => $query
+                ->where('user_id', auth()->id())
+                ->whereNotNull('accepted_at'))
+            ->orderByDesc('event_date')
+            ->paginate(10, ['*'], 'staff_page')
+            ->withQueryString();
+
+        return view('events.index', compact('published', 'drafts', 'staffing', 'kind'));
     }
 
     public function create(Request $request): View|RedirectResponse
@@ -375,7 +385,7 @@ class EventController extends Controller
 
     public function publish(Request $request, Event $event, EventCreditService $credits): RedirectResponse
     {
-        $this->authorize('update', $event);
+        $this->authorize('publish', $event);
 
         if ($event->isTicketed()) {
             return redirect()

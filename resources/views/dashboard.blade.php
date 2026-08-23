@@ -178,4 +178,23 @@
         </div>
     @endif
 
+    @if ($staffing->isNotEmpty())
+        <section class="dash-panel" aria-labelledby="dash-staffing-title">
+            <div class="dash-panel-head">
+                <h2 id="dash-staffing-title" class="dash-panel-title"><i class="fa-solid fa-user-shield"></i> Events you're staff on</h2>
+                <p class="dash-panel-sub">Access someone else granted you</p>
+            </div>
+            <ul class="dash-top-guests">
+                @foreach ($staffing as $staffEvent)
+                    <li class="dash-top-guest">
+                        <a href="{{ route('events.show', $staffEvent) }}" class="dash-top-row">
+                            <span class="dash-top-name">{{ $staffEvent->name }}</span>
+                            <span class="dash-top-seats">{{ $staffEvent->staffRoleFor(auth()->user())?->label() }}</span>
+                        </a>
+                    </li>
+                @endforeach
+            </ul>
+        </section>
+    @endif
+
 </x-app-layout>

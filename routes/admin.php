@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\Admin\RsvpController as AdminRsvpController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\TicketingController as AdminTicketingController;
+use App\Http\Controllers\Admin\TicketRevenueController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use Illuminate\Support\Facades\Route;
 
@@ -121,6 +122,13 @@ Route::prefix('admin')
         });
 
         Route::middleware('permission:ticketing.view,admin')->group(function (): void {
+            // Registered before /ticketing/{event} below — otherwise that
+            // wildcard would swallow /ticketing/revenue by matching "revenue"
+            // as {event}, same reasoning as /checkin/tickets/{staffToken}
+            // needing to precede /checkin/{staffToken} in routes/web.php.
+            Route::get('/ticketing/revenue', [TicketRevenueController::class, 'index'])->name('ticketing.revenue.index');
+            Route::get('/ticketing/revenue/{event}', [TicketRevenueController::class, 'show'])->name('ticketing.revenue.show');
+
             Route::get('/ticketing', [AdminTicketingController::class, 'index'])->name('ticketing.index');
             Route::get('/ticketing/{event}', [AdminTicketingController::class, 'show'])->name('ticketing.show');
         });
@@ -130,6 +138,10 @@ Route::prefix('admin')
             Route::post('/ticketing/{event}/approve', [AdminTicketingController::class, 'approve'])->name('ticketing.approve');
             Route::post('/ticketing/{event}/reject', [AdminTicketingController::class, 'reject'])->name('ticketing.reject');
             Route::patch('/ticketing/{event}/terms', [AdminTicketingController::class, 'updateTerms'])->name('ticketing.terms');
+        });
+
+        Route::middleware(['permission:ticketing.payouts.manage,admin', 'throttle:admin-mutations'])->group(function (): void {
+            Route::post('/ticketing/revenue/{event}/payouts', [TicketRevenueController::class, 'storePayout'])->name('ticketing.revenue.payouts.store');
         });
 
         Route::middleware(['permission:reviews.manage,admin', 'throttle:admin-mutations'])->group(function (): void {

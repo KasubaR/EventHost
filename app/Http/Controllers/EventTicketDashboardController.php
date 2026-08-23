@@ -52,6 +52,11 @@ class EventTicketDashboardController extends Controller
             'grossSales' => $summary['gross_amount'],
             'platformFees' => $summary['platform_fee'],
             'hostRevenue' => $summary['host_amount'],
+            // Lifetime host_amount minus what's already been paid out
+            // (Phase 23) — balanceFor() sums every ledger row, sale and
+            // payout, so this is the current pending figure, not lifetime
+            // earnings (that's hostRevenue above, unaffected by payouts).
+            'pendingPayout' => $ledger->balanceFor($event),
         ]);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\TicketingStatus;
 use App\Enums\TicketStatus;
 use App\Models\Event;
 use App\Models\Ticket;
@@ -107,7 +108,7 @@ class TicketManagementTest extends TestCase
     public function test_confirm_checkin_from_the_management_table_flips_valid_to_used(): void
     {
         $owner = User::factory()->pro()->create();
-        $event = $this->ticketedEvent($owner, ['event_date' => now()->toDateString()]);
+        $event = $this->ticketedEvent($owner, ['event_date' => now()->toDateString(), 'ticketing_status' => TicketingStatus::Approved]);
         $ticket = Ticket::factory()->for($event)->create(['status' => TicketStatus::Valid]);
 
         $this->actingAs($owner)
@@ -120,7 +121,12 @@ class TicketManagementTest extends TestCase
         $this->assertSame($owner->id, $ticket->checked_in_by);
     }
 
-    public function test_base_tier_owner_is_redirected_to_billing_from_table_checkin(): void
+    /**
+     * The gate is ticketing approval, not subscription tier — see
+     * Event::ownerHasPremiumEventTools(). Redirects to the ticket-types
+     * (Settings) page, not billing — there's nothing to buy.
+     */
+    public function test_unapproved_ticketed_event_is_redirected_from_table_checkin(): void
     {
         $owner = User::factory()->create();
         $event = $this->ticketedEvent($owner, ['event_date' => now()->toDateString()]);
@@ -128,7 +134,7 @@ class TicketManagementTest extends TestCase
 
         $this->actingAs($owner)
             ->post(route('events.tickets.confirm-checkin', [$event, $ticket]))
-            ->assertRedirect(route('billing.show'));
+            ->assertRedirect(route('events.ticket-types.index', $event));
 
         $this->assertSame(TicketStatus::Valid, $ticket->fresh()->status);
         $this->assertNull($ticket->fresh()->checked_in_at);
