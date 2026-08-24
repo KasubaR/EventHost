@@ -2,25 +2,24 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Event;
 use App\Models\EventPhoto;
+use App\Services\PublicInvitationResolver;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class EventGalleryController extends Controller
 {
-    public function show(string $slug): View
+    public function show(string $slug, PublicInvitationResolver $resolver): View|RedirectResponse
     {
-        $event = Event::query()
-            ->where('slug', $slug)
-            ->where('is_published', true)
-            ->firstOrFail();
+        $resolved = $resolver->resolveSibling($slug);
 
-        if (! $event->is_public) {
-            abort(403);
+        if ($resolved instanceof RedirectResponse) {
+            return $resolved;
         }
 
+        $event = $resolved;
         $isLive = $event->photoWallIsLive();
 
         $photos = $isLive
@@ -30,13 +29,15 @@ class EventGalleryController extends Controller
         return view('events.gallery.show', compact('event', 'photos', 'isLive'));
     }
 
-    public function feed(Request $request, string $slug): JsonResponse
+    public function feed(Request $request, string $slug, PublicInvitationResolver $resolver): JsonResponse|RedirectResponse
     {
-        $event = Event::query()
-            ->where('slug', $slug)
-            ->where('is_published', true)
-            ->where('is_public', true)
-            ->firstOrFail();
+        $resolved = $resolver->resolveSibling($slug);
+
+        if ($resolved instanceof RedirectResponse) {
+            return $resolved;
+        }
+
+        $event = $resolved;
 
         if (! $event->photoWallIsLive()) {
             return response()->json(['photos' => []]);

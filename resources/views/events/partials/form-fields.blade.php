@@ -90,6 +90,23 @@
                     <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                 @enderror
             </div>
+
+            <div class="profile-field">
+                <label for="slug" class="profile-label">Custom URL <span class="profile-optional">optional</span></label>
+                <div class="evt-slug-input">
+                    <span class="evt-slug-prefix">{{ rtrim(config('app.url'), '/') }}/e/</span>
+                    <input id="slug" name="slug" type="text" maxlength="60"
+                           class="profile-input {{ $errors->has('slug') ? 'profile-input--error' : '' }}"
+                           value="{{ old('slug', $event?->slug ?? '') }}"
+                           placeholder="john-mary"
+                           autocomplete="off"
+                           spellcheck="false">
+                </div>
+                <p class="evt-field-hint">Lowercase letters, numbers, and hyphens. Leave blank on create to generate from the event name. Changing it keeps the old link as a redirect.</p>
+                @error('slug')
+                    <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
+                @enderror
+            </div>
         </div>
     </div>
 
@@ -160,6 +177,7 @@
                         <div id="evt-map" class="evt-map"></div>
                     </div>
                     <p class="evt-map-hint">Click the map or drag the pin to set location. Search or "use my location" auto-fill the pin.</p>
+                    <p id="evt-map-status" class="evt-map-status" role="status" aria-live="polite" hidden></p>
                     <div class="evt-grid-2">
                         <div class="profile-field">
                             <label for="latitude" class="profile-label">Latitude</label>

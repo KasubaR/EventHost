@@ -1,11 +1,20 @@
 <form id="send-verification" method="post" action="{{ route('verification.send') }}">@csrf</form>
 
+@if ($user->profile_photo)
+    <form id="remove-photo" method="post" action="{{ route('settings.profile.photo.destroy') }}">
+        @csrf
+        @method('delete')
+    </form>
+@endif
+
 <form method="post" action="{{ route('settings.profile.update') }}" enctype="multipart/form-data" class="profile-form">
     @csrf
     @method('patch')
 
     @if (session('status') === 'profile-updated')
         <div class="profile-success"><i class="fa-solid fa-circle-check"></i> Profile updated successfully.</div>
+    @elseif (session('status') === 'photo-removed')
+        <div class="profile-success"><i class="fa-solid fa-circle-check"></i> Profile photo removed.</div>
     @endif
 
     {{-- Photo --}}
@@ -16,6 +25,11 @@
                 <i class="fa-solid fa-camera"></i> Change photo
             </label>
             <input id="profile_photo" name="profile_photo" type="file" accept="image/jpeg,image/png,image/webp" class="profile-photo-input" onchange="previewPhoto(this)">
+            @if ($user->profile_photo)
+                <button type="submit" form="remove-photo" class="profile-photo-remove-btn" data-confirm="Remove your profile photo?">
+                    <i class="fa-solid fa-trash"></i> Remove
+                </button>
+            @endif
             <p class="profile-photo-hint">JPG, PNG or WEBP · Max 2MB · Min 100×100px</p>
             @error('profile_photo')
                 <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>

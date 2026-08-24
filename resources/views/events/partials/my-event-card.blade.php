@@ -21,6 +21,11 @@
                 @if ($event->is_published && $event->isLocked())
                     <span class="evt-badge evt-badge--done"><i class="fa-solid fa-flag-checkered"></i> Completed</span>
                 @endif
+                @if ($event->isCancelled())
+                    <span class="evt-badge evt-badge--draft"><i class="fa-solid fa-ban"></i> Cancelled</span>
+                @elseif ($event->isInvitationPaused())
+                    <span class="evt-badge evt-badge--draft"><i class="fa-solid fa-pause"></i> Paused</span>
+                @endif
             </div>
         </div>
     </div>

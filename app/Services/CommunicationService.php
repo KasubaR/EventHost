@@ -64,6 +64,10 @@ class CommunicationService
 
     public function notifyHostNewRsvp(User $host, Event $event, Guest $guest, Rsvp $rsvp): void
     {
+        if (! (bool) ($host->notification_preferences['email_rsvp_updates'] ?? true)) {
+            return;
+        }
+
         $log = $this->startLog($event, $guest, 'email', 'host_new_rsvp', null, ['host_user_id' => $host->id]);
         if ($log === null) {
             return;

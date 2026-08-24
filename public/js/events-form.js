@@ -146,6 +146,22 @@ function initMap() {
         return;
     }
 
+    // A text counterpart to the outline-flash cues below — those are
+    // CSS-only (a border color change), so a screen reader announces
+    // nothing at all when a search or "use my location" attempt fails.
+    const statusEl = document.getElementById('evt-map-status');
+
+    function setMapStatus(message) {
+        if (!statusEl) return;
+        if (!message) {
+            statusEl.hidden = true;
+            statusEl.textContent = '';
+            return;
+        }
+        statusEl.hidden = false;
+        statusEl.textContent = message;
+    }
+
     const existingLat = parseFloat(latInput.value);
     const existingLng = parseFloat(lngInput.value);
     const hasCoords = !isNaN(existingLat) && !isNaN(existingLng);
@@ -185,6 +201,7 @@ function initMap() {
     map.on('click', (e) => {
         placeMarker(e.latlng.lat, e.latlng.lng);
         syncCoords(e.latlng.lat, e.latlng.lng);
+        setMapStatus(null);
     });
 
     // Address search
@@ -198,6 +215,7 @@ function initMap() {
         map.flyTo([lat, lng], 15);
         placeMarker(lat, lng);
         syncCoords(lat, lng);
+        setMapStatus(null);
 
         if (placeName) {
             const locationInput = document.getElementById('location_name');
@@ -210,6 +228,7 @@ function initMap() {
     function flashNoResult() {
         searchInput.classList.add('evt-map-search--no-result');
         setTimeout(() => searchInput.classList.remove('evt-map-search--no-result'), 2000);
+        setMapStatus('No results for that search. Try a different address, or click the map to drop a pin yourself.');
     }
 
     async function doSearch() {
@@ -318,6 +337,7 @@ function initMap() {
     function flashLocateError() {
         locateBtn.classList.add('evt-map-search--no-result');
         setTimeout(() => locateBtn.classList.remove('evt-map-search--no-result'), 2000);
+        setMapStatus('Could not get your location. Try searching instead, or click the map to drop a pin yourself.');
     }
 
     function setLocating(isLocating) {
@@ -335,6 +355,7 @@ function initMap() {
                 map.flyTo([latitude, longitude], 15);
                 placeMarker(latitude, longitude);
                 syncCoords(latitude, longitude);
+                setMapStatus(null);
                 reverseGeocode(latitude, longitude);
                 setLocating(false);
             },

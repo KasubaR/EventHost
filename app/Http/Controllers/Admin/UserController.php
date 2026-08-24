@@ -4,14 +4,17 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\SubscriptionTier;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\UpdateAdminUserEmailRequest;
 use App\Http\Requests\Admin\UpdateAdminUserStatusRequest;
 use App\Models\Admin;
 use App\Models\CreditTransaction;
 use App\Models\User;
+use App\Notifications\EmailChangedNotification;
 use App\Services\EventCreditService;
 use App\Support\AdminActivity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -77,6 +80,45 @@ class UserController extends Controller
         ]);
 
         return redirect()->back()->with('status', 'user-status-updated');
+    }
+
+    /**
+     * A user who lost access to their inbox has no self-service recovery
+     * path — password reset and re-verification both mail the address they
+     * can no longer read. This is the only way an admin can move them onto
+     * one they do control. The old address still gets a heads-up in case
+     * the change wasn't actually requested by the account owner, and the
+     * new address has to be re-verified before the account counts as
+     * verified again — same as a self-service email change in ProfileService.
+     */
+    public function updateEmail(UpdateAdminUserEmailRequest $request, User $user): RedirectResponse
+    {
+        if ($this->adminActsOnLinkedCustomerAccount($request, $user)) {
+            return redirect()->back()->withErrors(['email' => 'You cannot change your own account email here.']);
+        }
+
+        $oldEmail = $user->email;
+        $newEmail = $request->validated()['email'];
+
+        if ($newEmail === $oldEmail) {
+            return redirect()->back()->with('status', 'That is already this user\'s email address.');
+        }
+
+        $user->forceFill([
+            'email' => $newEmail,
+            'email_verified_at' => null,
+        ])->save();
+
+        Notification::route('mail', $oldEmail)->notify(new EmailChangedNotification($user->name, $newEmail));
+        $user->sendEmailVerificationNotification();
+
+        AdminActivity::log('Admin changed user email', [
+            'target_user_id' => $user->id,
+            'old_email' => $oldEmail,
+            'new_email' => $newEmail,
+        ]);
+
+        return redirect()->back()->with('status', 'Email address updated. The old address was notified and the new one must be re-verified.');
     }
 
     public function sendPasswordReset(Request $request, User $user): RedirectResponse

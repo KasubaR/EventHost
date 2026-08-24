@@ -64,6 +64,61 @@
     </div>
 </section>
 
+<!-- TICKETING -->
+<section class="about-ticketing">
+    <div class="about-section">
+        <div class="about-section-header">
+            <span class="about-label">New capability</span>
+            <h2>Now powering ticketed events too</h2>
+            <p>Event Host isn't just invitations anymore. Sell tickets for concerts, conferences, fundraisers and parties — right from the same dashboard you already use.</p>
+        </div>
+        <div class="about-values-grid">
+            <div class="about-value-card">
+                <div class="about-value-icon" style="background:rgba(30,71,187,0.12);color:var(--accent)">
+                    <i class="fa-solid fa-ticket" aria-hidden="true"></i>
+                </div>
+                <h3>Ticket Types & Pricing</h3>
+                <p>Set up General, VIP or custom tiers, each with its own price, quantity and sales window.</p>
+            </div>
+            <div class="about-value-card">
+                <div class="about-value-icon" style="background:rgba(0,206,201,0.12);color:var(--cyan)">
+                    <i class="fa-solid fa-credit-card" aria-hidden="true"></i>
+                </div>
+                <h3>Secure Checkout</h3>
+                <p>Buyers pay by MTN Money, Airtel Money or card through EventHost Payments — no account needed.</p>
+            </div>
+            <div class="about-value-card">
+                <div class="about-value-icon" style="background:rgba(224,14,79,0.12);color:var(--pink)">
+                    <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
+                </div>
+                <h3>Instant QR Tickets</h3>
+                <p>Every paid order issues a QR ticket by email the moment payment clears — nothing to print or design.</p>
+            </div>
+            <div class="about-value-card">
+                <div class="about-value-icon" style="background:rgba(72,199,142,0.12);color:#27ae60">
+                    <i class="fa-solid fa-clipboard-check" aria-hidden="true"></i>
+                </div>
+                <h3>Door Check-In</h3>
+                <p>Scan tickets from any phone at the entrance and watch attendance update live.</p>
+            </div>
+            <div class="about-value-card">
+                <div class="about-value-icon" style="background:rgba(243,156,18,0.12);color:var(--orange)">
+                    <i class="fa-solid fa-chart-line" aria-hidden="true"></i>
+                </div>
+                <h3>Revenue Dashboard</h3>
+                <p>Track sales, orders and payouts for every ticketed event from one reconciliation dashboard.</p>
+            </div>
+            <div class="about-value-card">
+                <div class="about-value-icon" style="background:rgba(79,62,200,0.1);color:var(--purple-mid)">
+                    <i class="fa-solid fa-sliders" aria-hidden="true"></i>
+                </div>
+                <h3>You Set the Terms</h3>
+                <p>Choose whether our commission is absorbed by you or passed on to buyers.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
 <!-- MISSION & VALUES -->
 <section class="about-values-bg">
     <div class="about-section">

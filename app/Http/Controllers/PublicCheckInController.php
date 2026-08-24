@@ -20,15 +20,22 @@ class PublicCheckInController extends Controller
 {
     public function scan(string $staffToken): View
     {
-        $link = EventStaffLink::query()->where('token', $staffToken)->with('event.user')->first();
+        $link = EventStaffLink::query()
+            ->where('token', $staffToken)
+            ->with(['event' => fn ($q) => $q->withTrashed()->with('user')])
+            ->first();
+
+        $event = $link?->event;
 
         return view('events.checkin.public-scan', [
             'link' => $link,
-            'event' => $link?->event,
+            'event' => $event,
             'isActive' => $link !== null
+                && $event !== null
+                && ! $event->trashed()
                 && $link->isActive()
-                && $link->event->isInvitation()
-                && $link->event->ownerHasPremiumEventTools(),
+                && $event->isInvitation()
+                && $event->ownerHasPremiumEventTools(),
         ]);
     }
 
@@ -80,10 +87,17 @@ class PublicCheckInController extends Controller
 
     private function resolveActiveLink(string $staffToken): EventStaffLink
     {
-        $link = EventStaffLink::query()->where('token', $staffToken)->with('event.user')->first();
+        $link = EventStaffLink::query()
+            ->where('token', $staffToken)
+            ->with(['event' => fn ($q) => $q->withTrashed()->with('user')])
+            ->first();
 
         abort_if($link === null, 404);
         abort_unless($link->isActive(), 403, 'This scanner link has been revoked.');
+        // EventStaffLink::event() excludes soft-deleted events by default, so a
+        // deleted event's scanner link would otherwise crash below instead of
+        // 404ing cleanly.
+        abort_if($link->event === null || $link->event->trashed(), 404);
         abort_unless($link->event->isInvitation(), 404);
         abort_unless($link->event->ownerHasPremiumEventTools(), 403, 'This event is not on a premium plan.');
 

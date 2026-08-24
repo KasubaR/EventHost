@@ -14,13 +14,16 @@
   <div class="hero-inner">
     <div class="hero-left">
       <h1 class="hero-headline">
-        Create beautiful digital invitations in minutes
+        Create, Manage and Discover Events
       </h1>
-      <p class="hero-sub">Design stunning invitations, manage RSVPs, and track your guests — all from one elegant platform. Works on WhatsApp too.</p>
+      <p class="hero-sub">From private celebrations to public experiences, Event Host gives you the tools to invite guests, sell tickets, manage attendance and bring every event together.</p>
       <div class="hero-ctas">
         <a href="{{ auth()->check() ? route('events.create') : route('register') }}" class="btn-hero-primary">
           Create Your Event
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+        <a href="{{ auth()->check() ? route('events.create', ['kind' => 'ticketed']) : route('register') }}" class="btn-hero-secondary">
+          Sell Tickets
         </a>
       </div>
     </div>
@@ -66,22 +69,11 @@
           <span class="etc-label">Corporate</span>
         </div>
       </a>
-      <a class="etc-card baby-shower" href="{{ auth()->check() ? url('/dashboard') : route('register') }}">
+      <a class="etc-card etc-card-ticketing" href="{{ auth()->check() ? route('events.create', ['kind' => 'ticketed']) : route('register') }}">
         <div class="etc-inner">
-          <div class="etc-icon"><i class="fa-solid fa-baby" aria-hidden="true"></i></div>
-          <span class="etc-label">Baby Shower</span>
-        </div>
-      </a>
-      <a class="etc-card memorial" href="{{ auth()->check() ? url('/dashboard') : route('register') }}">
-        <div class="etc-inner">
-          <div class="etc-icon"><i class="fa-solid fa-dove" aria-hidden="true"></i></div>
-          <span class="etc-label">Memorial</span>
-        </div>
-      </a>
-      <a class="etc-card church" href="{{ auth()->check() ? url('/dashboard') : route('register') }}">
-        <div class="etc-inner">
-          <div class="etc-icon"><i class="fa-solid fa-church" aria-hidden="true"></i></div>
-          <span class="etc-label">Church</span>
+          <span class="etc-badge">New</span>
+          <div class="etc-icon"><i class="fa-solid fa-ticket" aria-hidden="true"></i></div>
+          <span class="etc-label">Sell Tickets</span>
         </div>
       </a>
     </div>
@@ -94,6 +86,54 @@
     </p>
   </div>
 </section>
+
+<!-- TICKETING -->
+<div id="ticketing">
+  <div class="section">
+    <div class="tix-banner">
+      <div class="tix-banner-header">
+        <span class="tix-eyebrow">Now on Event Host</span>
+        <h2>Selling tickets? We've got that covered too</h2>
+        <p>Turn any event into a ticketed one — set your prices, get paid securely, and deliver tickets instantly.</p>
+      </div>
+      <div class="tix-flow">
+        <div class="tix-flow-step">
+          <span class="tix-flow-num">1</span>
+          <div class="tix-flow-icon" style="color:var(--accent)">
+            <i class="fa-solid fa-ticket" aria-hidden="true"></i>
+          </div>
+          <h3>Set Ticket Types &amp; Pricing</h3>
+          <p>Create General, VIP or custom tiers, each with its own price, quantity and sales window.</p>
+        </div>
+        <div class="tix-flow-arrow"><i class="fa-solid fa-arrow-right" aria-hidden="true"></i></div>
+        <div class="tix-flow-step">
+          <span class="tix-flow-num">2</span>
+          <div class="tix-flow-icon" style="color:var(--cyan)">
+            <i class="fa-solid fa-credit-card" aria-hidden="true"></i>
+          </div>
+          <h3>Buyers Check Out Securely</h3>
+          <p>Guests pay by MTN Money, Airtel Money or card through EventHost Payments — no account required.</p>
+        </div>
+        <div class="tix-flow-arrow"><i class="fa-solid fa-arrow-right" aria-hidden="true"></i></div>
+        <div class="tix-flow-step">
+          <span class="tix-flow-num">3</span>
+          <div class="tix-flow-icon" style="color:var(--pink)">
+            <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
+          </div>
+          <h3>Instant QR Ticket Delivered</h3>
+          <p>Every paid order emails a QR ticket the moment payment clears — nothing to print or design.</p>
+        </div>
+      </div>
+      <div class="tix-banner-cta">
+        @auth
+          <a href="{{ route('events.create', ['kind' => 'ticketed']) }}" class="btn-hero-primary">Create a Ticketed Event</a>
+        @else
+          <a href="{{ route('register') }}" class="btn-hero-primary">Sign Up to Sell Tickets</a>
+        @endauth
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- UPCOMING EVENTS -->
 @if ($upcomingEvents->isNotEmpty())

@@ -17,9 +17,12 @@ class StoreRsvpByTokenRequest extends FormRequest
             abort(404);
         }
 
-        $guest->loadMissing('event');
+        $event = $guest->event;
 
-        if (! $guest->event->isRsvpOpen()) {
+        // Guest::event() excludes soft-deleted events by default, so a guest
+        // whose event was deleted resolves to a null relation here rather than
+        // isRsvpOpen() ever seeing it. Treat that the same as "not open".
+        if ($event === null || ! $event->isRsvpOpen()) {
             abort(403);
         }
 
@@ -46,6 +49,9 @@ class StoreRsvpByTokenRequest extends FormRequest
 
         $guest->loadMissing('event');
         $event = $guest->event;
+        if ($event === null) {
+            return [];
+        }
 
         return $this->rsvpFieldRules($event, $guest->plus_one_allowed);
     }

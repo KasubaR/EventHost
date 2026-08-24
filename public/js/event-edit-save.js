@@ -145,7 +145,16 @@
             return { ok: false, errors: { form: ['Could not save (server returned ' + response.status + ').'] } };
         }
 
-        return { ok: true };
+        // A plain redirect (the common case) is followed transparently by
+        // fetch() and lands here with an empty/HTML body — .json() on that
+        // rejects, which is fine, it just means there is nothing to report.
+        // The one case with something to report — venue/location changed on
+        // a live event with guests already invited/RSVP'd — returns real
+        // JSON directly instead of a redirect specifically so it survives
+        // the fetch, see EventController::update().
+        const payload = await response.json().catch(() => null);
+
+        return { ok: true, notifyGuests: payload && payload.notify_guests ? payload.notify_guests : null };
     }
 
     /**
@@ -203,12 +212,17 @@
         setBusy(true, publish ? 'Publishing…' : 'Saving…');
 
         try {
+            let notifyGuests = null;
+
             for (const form of forms) {
                 const result = await postForm(form);
                 if (!result.ok) {
                     setBusy(false);
                     showErrors(result.errors);
                     return;
+                }
+                if (result.notifyGuests) {
+                    notifyGuests = result.notifyGuests;
                 }
             }
 
@@ -223,6 +237,19 @@
                 document.body.appendChild(publishForm);
                 publishForm.submit();
                 return;
+            }
+
+            if (notifyGuests && notifyGuests.count > 0) {
+                const noun = notifyGuests.count === 1 ? 'guest already has' : 'guests already have';
+                const goToGuests = window.confirm(
+                    'You changed the venue or location. ' + notifyGuests.count + ' ' + noun +
+                    ' an invitation or RSVP for this event and will not be told automatically. ' +
+                    'Go to the guest list to notify them now?'
+                );
+                if (goToGuests) {
+                    window.location.href = notifyGuests.url;
+                    return;
+                }
             }
 
             window.location.reload();

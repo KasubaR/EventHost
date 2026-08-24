@@ -89,6 +89,8 @@ class StoreOpenRsvpRequest extends FormRequest
             ->where('slug', $slug)
             ->where('is_published', true)
             ->where('is_public', true)
+            ->whereNull('cancelled_at')
+            ->whereNull('invitation_paused_at')
             ->first();
 
         if ($event === null || ! $event->isInvitation()) {

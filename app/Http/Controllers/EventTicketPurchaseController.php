@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exceptions\TicketPurchaseException;
 use App\Models\Event;
+use App\Services\PublicInvitationResolver;
 use App\Services\TicketReservationService;
 use App\Support\TicketCart;
 use Illuminate\Http\RedirectResponse;
@@ -16,18 +17,30 @@ use Illuminate\View\View;
  */
 class EventTicketPurchaseController extends Controller
 {
-    public function show(string $slug): View
+    public function show(string $slug, PublicInvitationResolver $resolver): View|RedirectResponse
     {
-        $event = $this->resolveEvent($slug);
+        $event = $this->resolveEvent($slug, $resolver);
+
+        if ($event instanceof RedirectResponse) {
+            return $event;
+        }
 
         $event->load(['ticketTypes' => fn ($q) => $q->where('is_active', true)]);
 
         return view('events.tickets.purchase', ['event' => $event]);
     }
 
-    public function hold(string $slug, Request $request, TicketReservationService $reservations): RedirectResponse
-    {
-        $event = $this->resolveEvent($slug);
+    public function hold(
+        string $slug,
+        Request $request,
+        TicketReservationService $reservations,
+        PublicInvitationResolver $resolver,
+    ): RedirectResponse {
+        $event = $this->resolveEvent($slug, $resolver);
+
+        if ($event instanceof RedirectResponse) {
+            return $event;
+        }
 
         $validated = $request->validate([
             'quantities' => ['required', 'array'],
@@ -47,16 +60,8 @@ class EventTicketPurchaseController extends Controller
         return redirect()->route('events.public.tickets.checkout', $event->slug);
     }
 
-    private function resolveEvent(string $slug): Event
+    private function resolveEvent(string $slug, PublicInvitationResolver $resolver): Event|RedirectResponse
     {
-        $event = Event::query()
-            ->where('slug', $slug)
-            ->where('is_published', true)
-            ->where('is_public', true)
-            ->firstOrFail();
-
-        abort_unless($event->ticketSalesAreApproved(), 404);
-
-        return $event;
+        return $resolver->resolveForTickets($slug);
     }
 }

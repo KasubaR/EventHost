@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\CommissionMode;
 use App\Enums\EventProductKind;
 use App\Enums\EventStaffRole;
+use App\Enums\PublicInvitationStatus;
 use App\Enums\RsvpStatus;
 use App\Enums\TicketingStatus;
 use App\Enums\TicketOrderStatus;
@@ -17,12 +18,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
 class Event extends Model
 {
     /** @use HasFactory<EventFactory> */
-    use HasFactory, Sluggable;
+    use HasFactory, Sluggable, SoftDeletes;
 
     /**
      * The invitation/RSVP flavor of EVENT_TYPES — personal and family events.
@@ -162,6 +164,8 @@ class Event extends Model
         'show_guest_list',
         'slug',
         'is_published',
+        'cancelled_at',
+        'invitation_paused_at',
         'photo_wall_enabled',
         'photo_wall_requires_approval',
     ];
@@ -174,6 +178,18 @@ class Event extends Model
         return [
             'slug' => [
                 'source' => 'name',
+                // Printed / shared URLs must stay stable when the host renames
+                // the event. Custom slug edits go through EventSlugService.
+                'onUpdate' => false,
+                // A soft-deleted event's slug column value is still live in the
+                // unique index, and still reserved by product spec — without this,
+                // Sluggable's own uniqueness scan excludes trashed rows and can
+                // hand out a slug that either collides with one at save time (a raw
+                // DB error) or, worse, matches a value already sitting in
+                // event_slug_redirects for a *different* event, silently hijacking
+                // that event's old URL. EventSlugService covers the custom-slug
+                // path; this covers the auto-generate-from-name path.
+                'includeTrashed' => true,
             ],
         ];
     }
@@ -186,6 +202,14 @@ class Event extends Model
     public function invitationTemplate(): BelongsTo
     {
         return $this->belongsTo(InvitationTemplate::class);
+    }
+
+    /**
+     * @return HasMany<EventSlugRedirect, $this>
+     */
+    public function slugRedirects(): HasMany
+    {
+        return $this->hasMany(EventSlugRedirect::class);
     }
 
     /**
@@ -589,6 +613,8 @@ class Event extends Model
             'allow_plus_one' => 'boolean',
             'show_guest_list' => 'boolean',
             'is_published' => 'boolean',
+            'cancelled_at' => 'datetime',
+            'invitation_paused_at' => 'datetime',
             'photo_wall_enabled' => 'boolean',
             'photo_wall_requires_approval' => 'boolean',
             'invitation_views_count' => 'integer',
@@ -597,6 +623,53 @@ class Event extends Model
             'invitation_customization_previous_captured_at' => 'datetime',
             'invitation_customization_previous_captured_by_user_id' => 'integer',
         ];
+    }
+
+    public function isCancelled(): bool
+    {
+        return $this->cancelled_at !== null;
+    }
+
+    public function isInvitationPaused(): bool
+    {
+        return $this->invitation_paused_at !== null;
+    }
+
+    /**
+     * Guest-facing lifecycle status for a known event row (including soft-deleted).
+     * Null means the invitation may still render (subject to publish/public gates).
+     */
+    public function publicInvitationStatus(): ?PublicInvitationStatus
+    {
+        if ($this->trashed()) {
+            return PublicInvitationStatus::Gone;
+        }
+
+        if ($this->isCancelled()) {
+            return PublicInvitationStatus::Cancelled;
+        }
+
+        if ($this->isInvitationPaused()) {
+            return PublicInvitationStatus::Unavailable;
+        }
+
+        if ($this->is_published && $this->isLocked()) {
+            return PublicInvitationStatus::Ended;
+        }
+
+        return null;
+    }
+
+    /**
+     * Whether guest-facing invitation / ticket / RSVP commerce may proceed.
+     * Past-date "ended" is handled separately by callers that still allow gallery.
+     */
+    public function invitationIsGuestAccessible(): bool
+    {
+        return $this->is_published
+            && ! $this->trashed()
+            && ! $this->isCancelled()
+            && ! $this->isInvitationPaused();
     }
 
     /**
@@ -611,7 +684,11 @@ class Event extends Model
      */
     public function scopePubliclyListed(Builder $query): Builder
     {
-        return $query->where('is_published', true)->where('is_public', true);
+        return $query
+            ->where('is_published', true)
+            ->where('is_public', true)
+            ->whereNull('cancelled_at')
+            ->whereNull('invitation_paused_at');
     }
 
     /**
@@ -676,6 +753,10 @@ class Event extends Model
      */
     public function isRsvpOpen(): bool
     {
+        if ($this->trashed() || $this->isCancelled() || $this->isInvitationPaused()) {
+            return false;
+        }
+
         if ($this->isLocked()) {
             return false;
         }
@@ -717,6 +798,7 @@ class Event extends Model
     {
         return $this->is_public
             && $this->photo_wall_enabled
+            && $this->invitationIsGuestAccessible()
             && $this->ownerHasPremiumEventTools();
     }
 }

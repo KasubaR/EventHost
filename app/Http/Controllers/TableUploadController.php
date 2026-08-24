@@ -6,6 +6,7 @@ use App\Http\Requests\StoreTablePhotoRequest;
 use App\Models\Event;
 use App\Models\EventTable;
 use App\Services\EventPhotoUploadService;
+use App\Services\PublicInvitationResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,9 +14,15 @@ use Illuminate\View\View;
 
 class TableUploadController extends Controller
 {
-    public function show(string $slug, string $code): View
+    public function show(string $slug, string $code, PublicInvitationResolver $resolver): View|RedirectResponse
     {
-        $event = $this->resolveEvent($slug);
+        $resolved = $resolver->resolveSibling($slug);
+
+        if ($resolved instanceof RedirectResponse) {
+            return $resolved;
+        }
+
+        $event = $resolved;
         $table = $this->resolveTable($event, $code);
 
         return view('events.tables.upload', [
@@ -25,9 +32,20 @@ class TableUploadController extends Controller
         ]);
     }
 
-    public function store(StoreTablePhotoRequest $request, string $slug, string $code, EventPhotoUploadService $uploadService): JsonResponse|RedirectResponse
-    {
-        $event = $this->resolveEvent($slug);
+    public function store(
+        StoreTablePhotoRequest $request,
+        string $slug,
+        string $code,
+        EventPhotoUploadService $uploadService,
+        PublicInvitationResolver $resolver,
+    ): JsonResponse|RedirectResponse {
+        $resolved = $resolver->resolveSibling($slug);
+
+        if ($resolved instanceof RedirectResponse) {
+            return $resolved;
+        }
+
+        $event = $resolved;
         $table = $this->resolveTable($event, $code);
 
         if (! $event->photoWallIsLive()) {
@@ -53,15 +71,6 @@ class TableUploadController extends Controller
         }
 
         return back()->with('status', 'photo-uploaded');
-    }
-
-    private function resolveEvent(string $slug): Event
-    {
-        return Event::query()
-            ->where('slug', $slug)
-            ->where('is_published', true)
-            ->where('is_public', true)
-            ->firstOrFail();
     }
 
     private function resolveTable(Event $event, string $code): EventTable

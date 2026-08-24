@@ -76,7 +76,23 @@
                 </div>
             </dl>
 
-            @if ($ev->isTicketed())
+            @if ($ev->trashed())
+                <div class="admin-callout admin-callout--danger admin-mt-md">
+                    <div class="admin-callout-icon" aria-hidden="true"><i class="fa-solid fa-trash"></i></div>
+                    <div>
+                        <p class="admin-callout-kicker">Deleted</p>
+                        <p class="admin-callout-body">Guests see “Invitation no longer available”. The slug <code>/e/{{ $ev->slug }}</code> stays reserved.</p>
+                        @if(auth('admin')->user()?->can('events.delete'))
+                            <div class="admin-callout-actions">
+                                <form method="post" action="{{ route('admin.events.restore', $ev) }}">
+                                    @csrf
+                                    <button type="submit" class="btn-primary"><i class="fa-solid fa-rotate-left"></i> Restore event</button>
+                                </form>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            @elseif ($ev->isTicketed())
                 <div class="admin-callout admin-callout--{{ $ticketingTone }}">
                     <div class="admin-callout-icon" aria-hidden="true">
                         <i class="fa-solid {{ $ev->ticketing_status->icon() }}"></i>
@@ -93,26 +109,40 @@
                         @endif
                     </div>
                 </div>
-            @elseif(auth('admin')->user()?->can('events.publish_toggle'))
-                <form method="post" action="{{ route('admin.events.publish', $ev) }}" class="profile-form admin-mt-md">
-                    @csrf
-                    @method('PATCH')
-                    <fieldset>
-                        <legend class="admin-muted">Public invitation visibility</legend>
-                        <label class="admin-mt-sm">
-                            <input type="hidden" name="is_published" value="0">
-                            <input type="checkbox" name="is_published" value="1" @checked($ev->is_published)>
-                            Published (live invitation)
-                        </label>
-                    </fieldset>
+                @if(auth('admin')->user()?->can('events.publish_toggle') && $ev->is_published)
                     <div class="admin-actions admin-mt-md">
-                        <button type="submit" class="btn-primary">Save publish state</button>
+                        @include('admin.events.partials.lifecycle-actions', ['ev' => $ev])
                     </div>
-                </form>
+                @endif
+            @elseif(auth('admin')->user()?->can('events.publish_toggle'))
+                @if (! $ev->is_published)
+                    <form method="post" action="{{ route('admin.events.publish', $ev) }}" class="profile-form admin-mt-md">
+                        @csrf
+                        @method('PATCH')
+                        <fieldset>
+                            <legend class="admin-muted">Draft — first publish</legend>
+                            <label class="admin-mt-sm">
+                                <input type="hidden" name="is_published" value="0">
+                                <input type="checkbox" name="is_published" value="1" @checked($ev->is_published)>
+                                Published (live invitation)
+                            </label>
+                        </fieldset>
+                        <div class="admin-actions admin-mt-md">
+                            <button type="submit" class="btn-primary">Save publish state</button>
+                        </div>
+                    </form>
+                @else
+                    <div class="admin-mt-md">
+                        <p class="admin-muted">Live invitation — pause or cancel instead of unpublishing.</p>
+                        <div class="admin-actions admin-mt-sm">
+                            @include('admin.events.partials.lifecycle-actions', ['ev' => $ev])
+                        </div>
+                    </div>
+                @endif
             @endif
 
-            @if(auth('admin')->user()?->can('events.delete'))
-                <form method="post" action="{{ route('admin.events.destroy', $ev) }}" class="profile-form admin-danger-row" data-confirm="Permanently delete this event and related guests/RSVPs?">
+            @if(auth('admin')->user()?->can('events.delete') && ! $ev->trashed())
+                <form method="post" action="{{ route('admin.events.destroy', $ev) }}" class="profile-form admin-danger-row" data-confirm="Delete this event? Guests will see that the invitation is no longer available. You can restore it later.">
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="evt-btn-outline evt-btn-danger-outline">Delete event</button>

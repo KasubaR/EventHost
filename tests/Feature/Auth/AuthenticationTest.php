@@ -87,6 +87,22 @@ class AuthenticationTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_suspending_an_already_logged_in_user_ends_their_session_on_the_next_request(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->get('/dashboard')->assertOk();
+
+        // Simulate an admin flipping the status column mid-session — no logout
+        // in between, same as Admin\UserController::updateStatus does.
+        $user->forceFill(['status' => 'suspended'])->save();
+
+        $response = $this->get('/dashboard');
+
+        $this->assertGuest();
+        $response->assertRedirect(route('login', absolute: false));
+    }
+
     public function test_users_can_logout(): void
     {
         $user = User::factory()->create();

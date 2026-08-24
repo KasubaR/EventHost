@@ -7,6 +7,7 @@ use App\Http\Requests\StoreTicketCheckoutRequest;
 use App\Models\Event;
 use App\Models\TicketOrder;
 use App\Services\LencoService;
+use App\Services\PublicInvitationResolver;
 use App\Services\TicketCheckoutService;
 use App\Services\TicketPaymentStatusService;
 use App\Services\TicketReservationService;
@@ -23,9 +24,18 @@ use RuntimeException;
  */
 class EventTicketCheckoutController extends Controller
 {
-    public function show(string $slug, Request $request, TicketReservationService $reservations): View|RedirectResponse
-    {
-        $event = $this->resolveEvent($slug);
+    public function show(
+        string $slug,
+        Request $request,
+        TicketReservationService $reservations,
+        PublicInvitationResolver $resolver,
+    ): View|RedirectResponse {
+        $event = $this->resolveEvent($slug, $resolver);
+
+        if ($event instanceof RedirectResponse) {
+            return $event;
+        }
+
         $cartId = TicketCart::idFor($request, $event);
 
         $held = $cartId !== null ? $reservations->activeForCart($event, $cartId) : collect();
@@ -44,9 +54,18 @@ class EventTicketCheckoutController extends Controller
         ]);
     }
 
-    public function store(string $slug, StoreTicketCheckoutRequest $request, TicketCheckoutService $checkout): JsonResponse
-    {
-        $event = $this->resolveEvent($slug);
+    public function store(
+        string $slug,
+        StoreTicketCheckoutRequest $request,
+        TicketCheckoutService $checkout,
+        PublicInvitationResolver $resolver,
+    ): JsonResponse|RedirectResponse {
+        $event = $this->resolveEvent($slug, $resolver);
+
+        if ($event instanceof RedirectResponse) {
+            return $event;
+        }
+
         $cartId = TicketCart::idFor($request, $event);
 
         if ($cartId === null) {
@@ -143,16 +162,8 @@ class EventTicketCheckoutController extends Controller
         ]);
     }
 
-    private function resolveEvent(string $slug): Event
+    private function resolveEvent(string $slug, PublicInvitationResolver $resolver): Event|RedirectResponse
     {
-        $event = Event::query()
-            ->where('slug', $slug)
-            ->where('is_published', true)
-            ->where('is_public', true)
-            ->firstOrFail();
-
-        abort_unless($event->ticketSalesAreApproved(), 404);
-
-        return $event;
+        return $resolver->resolveForTickets($slug);
     }
 }

@@ -135,7 +135,7 @@ class RsvpFlowTest extends TestCase
         ]);
 
         $this->get(route('rsvp.open.show', ['slug' => $event->slug]))
-            ->assertNotFound();
+            ->assertForbidden();
     }
 
     public function test_token_rsvp_works_when_event_is_private(): void

@@ -56,4 +56,24 @@ class EmailVerificationTest extends TestCase
 
         $this->assertFalse($user->fresh()->hasVerifiedEmail());
     }
+
+    public function test_settings_profile_is_reachable_while_unverified(): void
+    {
+        // ProfileService nulls email_verified_at the moment a user changes
+        // their email. Without this carve-out, a user who mistyped the new
+        // address would be bounced to /verify-email by the 'verified'
+        // middleware with no way back into the one page that can fix it.
+        $user = User::factory()->unverified()->create();
+
+        $this->actingAs($user)->get('/settings/profile')->assertOk();
+
+        $this->actingAs($user)->patch('/settings/profile', [
+            'name' => $user->name,
+            'email' => $user->email,
+        ])->assertSessionHasNoErrors()->assertRedirect('/settings/profile');
+
+        // Everything else in Settings stays gated, same as before.
+        $this->actingAs($user)->get('/settings/security')
+            ->assertRedirect(route('verification.notice', absolute: false));
+    }
 }

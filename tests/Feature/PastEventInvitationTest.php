@@ -37,14 +37,15 @@ class PastEventInvitationTest extends TestCase
         $this->assertTrue($today->isRsvpOpen(), 'RSVPs stay open on the day of the event.');
     }
 
-    public function test_the_invitation_page_stays_viewable_after_the_event(): void
+    public function test_the_invitation_page_shows_ended_status_after_the_event(): void
     {
         $event = $this->pastEvent();
 
         $this->get(route('events.public', $event->slug))
             ->assertOk()
+            ->assertSee('Event has ended', escape: false)
             ->assertSee($event->name, escape: false)
-            ->assertSee('already taken place', escape: false);
+            ->assertDontSee('already taken place', escape: false);
     }
 
     public function test_the_open_rsvp_page_is_closed_after_the_event(): void

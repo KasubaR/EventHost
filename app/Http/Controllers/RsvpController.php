@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\PublicInvitationStatus;
 use App\Http\Requests\StoreOpenRsvpRequest;
 use App\Http\Requests\StoreRsvpByTokenRequest;
 use App\Models\Event;
@@ -9,6 +10,7 @@ use App\Models\Guest;
 use App\Models\Rsvp;
 use App\Services\CommunicationService;
 use App\Services\InvitationCustomizationService;
+use App\Services\PublicInvitationResolver;
 use App\Services\QrCodeService;
 use App\Services\RsvpSubmissionService;
 use App\Support\EventCalendarLinks;
@@ -22,15 +24,31 @@ use Illuminate\View\View;
 
 class RsvpController extends Controller
 {
-    public function showByToken(string $token, InvitationCustomizationService $customizationService): View
-    {
+    public function showByToken(
+        string $token,
+        InvitationCustomizationService $customizationService,
+        PublicInvitationResolver $resolver,
+    ): View {
         $guest = Guest::query()
             ->where('invitation_token', $token)
-            ->with(['event', 'event.invitationTemplate', 'rsvp', 'eventTable'])
+            ->with([
+                'event' => fn ($q) => $q->withTrashed(),
+                'event.invitationTemplate',
+                'rsvp',
+                'eventTable',
+            ])
             ->firstOrFail();
 
         $event = $guest->event;
+        abort_if($event === null, 404);
         abort_unless($event->isInvitation(), 404);
+
+        $lifecycle = $resolver->statusForLoadedEvent($event);
+        if ($lifecycle !== null && $lifecycle !== PublicInvitationStatus::Ended) {
+            // Cancelled / paused / gone — dedicated status page, not the designed invite.
+            // Ended still uses rsvp.closed so accepted guests keep the familiar closed copy.
+            return $resolver->statusView($event, $lifecycle);
+        }
 
         $showEntryPass = $this->guestHasEntryPass($guest, $event);
 
@@ -76,10 +94,12 @@ class RsvpController extends Controller
     {
         $guest = Guest::query()
             ->where('invitation_token', $token)
-            ->with(['event', 'rsvp'])
+            ->with(['event' => fn ($q) => $q->withTrashed(), 'rsvp'])
             ->first();
 
-        abort_if($guest === null || ! $guest->event->isInvitation() || ! $this->guestHasEntryPass($guest, $guest->event), 404);
+        $event = $guest?->event;
+
+        abort_if($guest === null || $event === null || ! $event->isInvitation() || ! $this->guestHasEntryPass($guest, $event), 404);
 
         $url = $guest->checkInQrUrl();
         abort_if($url === null, 404);
@@ -123,11 +143,14 @@ class RsvpController extends Controller
     ): RedirectResponse {
         $guest = Guest::query()
             ->where('invitation_token', $token)
-            ->with('event')
+            ->with(['event' => fn ($q) => $q->withTrashed()])
             ->firstOrFail();
 
         $event = $guest->event;
-        abort_unless($event->isInvitation(), 404);
+        // StoreRsvpByTokenRequest::authorize() already refuses a null/closed
+        // event before this runs — this guard is defense in depth, not the
+        // primary gate.
+        abort_if($event === null || ! $event->isInvitation(), 404);
 
         $payload = $request->validatedRsvpPayload();
 
@@ -138,16 +161,26 @@ class RsvpController extends Controller
         return $this->redirectThanks($event, $guest, $rsvp);
     }
 
-    public function showOpen(string $slug, InvitationCustomizationService $customizationService): View
+    public function showOpen(string $slug, InvitationCustomizationService $customizationService, PublicInvitationResolver $resolver): View|RedirectResponse
     {
-        $event = Event::query()
-            ->where('slug', $slug)
-            ->where('is_published', true)
-            ->where('is_public', true)
-            ->with('invitationTemplate')
-            ->firstOrFail();
+        $resolved = $resolver->resolveOpenRsvp($slug);
 
-        abort_unless($event->isInvitation(), 404);
+        if ($resolved instanceof RedirectResponse) {
+            return $resolved;
+        }
+
+        $event = $resolved['event'];
+        $status = $resolved['status'];
+
+        if ($status !== null) {
+            if ($status === PublicInvitationStatus::Ended) {
+                return view('rsvp.closed', ['event' => $event, 'guest' => null]);
+            }
+
+            return $resolver->statusView($event, $status);
+        }
+
+        $event->loadMissing('invitationTemplate');
 
         if (! $event->isRsvpOpen()) {
             return view('rsvp.closed', ['event' => $event, 'guest' => null]);
@@ -236,12 +269,15 @@ class RsvpController extends Controller
      * the link (or "Change RSVP" → resubmit → back) always shows the current
      * response, not whatever was true at the moment of the original submit.
      */
-    public function thanksByToken(string $token): View|RedirectResponse
+    public function thanksByToken(string $token, PublicInvitationResolver $resolver): View|RedirectResponse
     {
         $guest = Guest::query()
             ->where('invitation_token', $token)
-            ->with(['event', 'rsvp'])
+            ->with(['event' => fn ($q) => $q->withTrashed(), 'rsvp'])
             ->firstOrFail();
+
+        $event = $guest->event;
+        abort_if($event === null, 404);
 
         $rsvp = $guest->rsvp;
 
@@ -251,7 +287,15 @@ class RsvpController extends Controller
             return redirect()->route('rsvp.token.show', ['token' => $token]);
         }
 
-        return view('rsvp.thank-you', $this->confirmationViewData($guest->event, $guest, $rsvp, refreshable: true));
+        // Cancelled / paused / gone since they RSVP'd — same dedicated status page
+        // showByToken() shows. Ended still renders their receipt below: it's a
+        // record of what they already submitted, not the invitation itself.
+        $lifecycle = $resolver->statusForLoadedEvent($event);
+        if ($lifecycle !== null && $lifecycle !== PublicInvitationStatus::Ended) {
+            return $resolver->statusView($event, $lifecycle);
+        }
+
+        return view('rsvp.thank-you', $this->confirmationViewData($event, $guest, $rsvp, refreshable: true));
     }
 
     private function redirectThanks(Event $event, Guest $guest, Rsvp $rsvp): RedirectResponse

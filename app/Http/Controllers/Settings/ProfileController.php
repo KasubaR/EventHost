@@ -26,4 +26,13 @@ class ProfileController extends Controller
             ->route('settings.profile.edit')
             ->with('status', 'profile-updated');
     }
+
+    public function destroyPhoto(Request $request, ProfileService $profileService): RedirectResponse
+    {
+        $profileService->removePhoto($request->user());
+
+        return redirect()
+            ->route('settings.profile.edit')
+            ->with('status', 'photo-removed');
+    }
 }

@@ -45,6 +45,17 @@
 
     @if (session('status') === 'event-updated')
         <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Event updated.</div>
+
+        @if (session('notify_guests_count', 0) > 0)
+            @php $notifyCount = session('notify_guests_count'); @endphp
+            <div class="evt-flash evt-flash--warn">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                You changed the venue or location. {{ $notifyCount }} {{ $notifyCount === 1 ? 'guest' : 'guests' }}
+                already {{ $notifyCount === 1 ? 'has' : 'have' }} an invitation or RSVP for this event and
+                will not be told automatically —
+                <a href="{{ route('events.guests.index', $event) }}">notify them from the guest list</a>.
+            </div>
+        @endif
     @endif
 
     @if (session('status') === 'invitation-design-saved')
@@ -196,11 +207,11 @@
                 <div class="profile-card-icon" aria-hidden="true"><i class="fa-solid fa-trash"></i></div>
                 <div>
                     <h3>Delete Event</h3>
-                    <p>This permanently removes the event and its cover image.</p>
+                    <p>Removes the event from your list. Guests see “Invitation no longer available”. You can restore it later.</p>
                 </div>
             </div>
             <div class="profile-form">
-                <form method="post" action="{{ route('events.destroy', $event) }}" data-confirm="Delete this event permanently?">
+                <form method="post" action="{{ route('events.destroy', $event) }}" data-confirm="Delete this event? Guests will see that the invitation is no longer available. You can restore it from My Events.">
                     @csrf
                     @method('delete')
                     <button type="submit" class="evt-btn-outline evt-btn-danger-outline">

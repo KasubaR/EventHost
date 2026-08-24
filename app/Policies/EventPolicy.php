@@ -63,4 +63,25 @@ class EventPolicy
     {
         return EventAccess::isOwner($user, $event);
     }
+
+    public function restore(User $user, Event $event): bool
+    {
+        return EventAccess::isOwner($user, $event);
+    }
+
+    /**
+     * Temporarily hide the public invitation without cancelling the event.
+     */
+    public function pause(User $user, Event $event): bool
+    {
+        return EventAccess::isOwner($user, $event);
+    }
+
+    /**
+     * Permanently mark the occurrence cancelled (can be reopened).
+     */
+    public function cancel(User $user, Event $event): bool
+    {
+        return EventAccess::isOwner($user, $event);
+    }
 }

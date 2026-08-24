@@ -15,9 +15,9 @@ use App\Models\InvitationTemplate;
 use App\Models\StagedMedia;
 use App\Services\DashboardAnalyticsService;
 use App\Services\EventCreditService;
+use App\Services\EventSlugService;
 use App\Services\InvitationCustomizationService;
 use App\Support\InvitationMediaStager;
-use App\Support\InvitationVideoBackground;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -54,6 +54,13 @@ class EventController extends Controller
             ->paginate(10, ['*'], 'draft_page')
             ->withQueryString();
 
+        $deleted = Event::onlyTrashed()
+            ->where('user_id', auth()->id())
+            ->when($kind, fn ($query) => $query->where('product_kind', $kind))
+            ->orderByDesc('deleted_at')
+            ->paginate(10, ['*'], 'deleted_page')
+            ->withQueryString();
+
         // Events this user has accepted staff access on (Phase 18) — separate
         // from "mine" above, which is ownership-only.
         $staffing = Event::query()
@@ -64,7 +71,7 @@ class EventController extends Controller
             ->paginate(10, ['*'], 'staff_page')
             ->withQueryString();
 
-        return view('events.index', compact('published', 'drafts', 'staffing', 'kind'));
+        return view('events.index', compact('published', 'drafts', 'deleted', 'staffing', 'kind'));
     }
 
     public function create(Request $request): View|RedirectResponse
@@ -130,10 +137,30 @@ class EventController extends Controller
                 $data['commission_mode'] = null;
             }
 
-            $event = Event::create($data);
+            $customSlug = $data['slug'] ?? null;
+            unset($data['slug']);
+
+            $event = new Event($data);
+            $slugService = app(EventSlugService::class);
+            $slugService->apply(is_string($customSlug) ? $customSlug : null, $event);
+            $event->save();
+            // Only bites when no custom slug was given above — that path already
+            // checked event_slug_redirects. The auto-generated (from name) path
+            // goes through Sluggable, which has no idea that table exists.
+            $slugService->resolveAutoSlugCollision($event);
         } catch (\Throwable $e) {
             if ($newPath) {
                 Storage::disk('public')->delete($newPath);
+            }
+
+            // A concurrent request can win the same custom slug between apply()'s
+            // check and this save() — the unique index still stops the duplicate
+            // row, but as a raw QueryException. Surface it the same way apply()
+            // does when it catches the collision itself.
+            if (EventSlugService::isSlugUniqueViolation($e)) {
+                throw ValidationException::withMessages([
+                    'slug' => 'That custom URL is already taken.',
+                ]);
             }
 
             throw $e;
@@ -233,6 +260,7 @@ class EventController extends Controller
         $shouldPublish = $request->boolean('publish');
         $needsPublishCredit = false;
         $chargeable = false;
+        $notifyGuestsCount = 0;
 
         try {
             if ($acceptHostCover && $stagedCover !== null) {
@@ -244,12 +272,16 @@ class EventController extends Controller
                 $coverIsRollbackable = true;
             }
 
-            DB::transaction(function () use ($request, &$event, $newCoverPath, $stagedCover, $shouldPublish, $credits, &$previousCover, &$needsPublishCredit, &$chargeable): void {
+            DB::transaction(function () use ($request, &$event, $newCoverPath, $stagedCover, $shouldPublish, $credits, &$previousCover, &$needsPublishCredit, &$chargeable, &$notifyGuestsCount): void {
                 $event = Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
+                $wasPublished = $event->is_published;
                 $data = $request->validated();
 
                 // Never a column — it is the receipt for an upload that already happened.
                 unset($data['staged_media'], $data['cover_image']);
+
+                $customSlug = array_key_exists('slug', $data) ? $data['slug'] : null;
+                unset($data['slug']);
 
                 if ($event->isTicketed()) {
                     unset(
@@ -293,6 +325,24 @@ class EventController extends Controller
                 }
 
                 $event->fill($data);
+
+                // A guest who already has this event's invitation link or has
+                // already RSVP'd was never told the venue/location changed —
+                // nothing pushes an update to them automatically. Surface a
+                // count here so the host can be prompted to send one instead
+                // of the change going out silently. Scoped to an event that
+                // was *already* live: a draft becoming published in this same
+                // save has no guests relying on a version of the page they
+                // have already seen.
+                if ($wasPublished && $event->isDirty(['venue', 'location_name', 'latitude', 'longitude'])) {
+                    $notifyGuestsCount = $event->guests()
+                        ->where(function ($query): void {
+                            $query->where('invitation_sent', true)->orWhereHas('rsvp');
+                        })
+                        ->count();
+                }
+
+                app(EventSlugService::class)->apply(is_string($customSlug) ? $customSlug : null, $event);
                 $event->save();
 
                 // Inside the transaction: a rollback must leave the row in place so
@@ -324,11 +374,44 @@ class EventController extends Controller
                     ->with('status', $status);
             }
 
+            // A concurrent request can win the same custom slug between apply()'s
+            // check and save() inside the transaction above — the unique index
+            // still stops the duplicate row, but as a raw QueryException. Surface
+            // it the same way apply() does when it catches the collision itself.
+            if (EventSlugService::isSlugUniqueViolation($e)) {
+                throw ValidationException::withMessages([
+                    'slug' => 'That custom URL is already taken.',
+                ]);
+            }
+
             throw $e;
         }
 
         if ($shouldPublish) {
             return redirect()->route('events.public', $event->slug)->with('status', 'published');
+        }
+
+        if ($notifyGuestsCount > 0) {
+            // The edit page saves over fetch() and reloads on success rather than
+            // following a redirect — a flashed session value would already be
+            // consumed (and aged out) by the fetch's own redirect hop before that
+            // reload's request ever sees it. Return it directly in the body instead
+            // so event-edit-save.js can act on it. The plain-form fallback (no JS)
+            // has no such hop, so the flash still works there.
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'status' => 'event-updated',
+                    'notify_guests' => [
+                        'count' => $notifyGuestsCount,
+                        'url' => route('events.guests.index', $event),
+                    ],
+                ]);
+            }
+
+            return back()->with([
+                'status' => 'event-updated',
+                'notify_guests_count' => $notifyGuestsCount,
+            ]);
         }
 
         return back()->with('status', 'event-updated');
@@ -344,43 +427,73 @@ class EventController extends Controller
             ]);
         }
 
-        $cover = $event->cover_image;
-        $customization = $event->invitation_customization;
-
-        DB::transaction(function () use ($event): void {
-            $event->delete();
-        });
-
-        DB::afterCommit(function () use ($cover, $customization): void {
-            if ($cover) {
-                Storage::disk('public')->delete($cover);
-            }
-
-            if (is_array($customization)) {
-                foreach ($customization['media']['gallery'] ?? [] as $path) {
-                    Storage::disk('public')->delete($path);
-                }
-                $hero = $customization['media']['hero_portrait'] ?? null;
-                if (is_string($hero) && $hero !== '') {
-                    Storage::disk('public')->delete($hero);
-                }
-                foreach ($customization['media']['couple_photos'] ?? [] as $path) {
-                    if (is_string($path) && $path !== '') {
-                        Storage::disk('public')->delete($path);
-                    }
-                }
-                $video = $customization['effects']['video_background'] ?? null;
-                $audio = $customization['effects']['audio_track'] ?? null;
-                if (is_string($video) && $video !== '' && ! InvitationVideoBackground::isYoutube($video)) {
-                    Storage::disk('public')->delete($video);
-                }
-                if (is_string($audio) && $audio !== '') {
-                    Storage::disk('public')->delete($audio);
-                }
-            }
-        });
+        // Soft-delete only — keep cover/invitation media so restore works.
+        // A later prune job can hard-delete after a retention window.
+        $event->delete();
 
         return redirect()->route('events.index')->with('status', 'event-deleted');
+    }
+
+    public function restore(Event $event): RedirectResponse
+    {
+        $this->authorize('restore', $event);
+
+        if (! $event->trashed()) {
+            return redirect()->route('events.show', $event);
+        }
+
+        $event->restore();
+
+        return redirect()->route('events.show', $event)->with('status', 'event-restored');
+    }
+
+    public function pause(Event $event): RedirectResponse
+    {
+        $this->authorize('pause', $event);
+
+        if (! $event->is_published || $event->trashed() || $event->isCancelled()) {
+            return back()->withErrors(['event' => 'Only a live invitation can be paused.']);
+        }
+
+        $event->invitation_paused_at = now();
+        $event->save();
+
+        return back()->with('status', 'invitation-paused');
+    }
+
+    public function resume(Event $event): RedirectResponse
+    {
+        $this->authorize('pause', $event);
+
+        $event->invitation_paused_at = null;
+        $event->save();
+
+        return back()->with('status', 'invitation-resumed');
+    }
+
+    public function cancel(Event $event): RedirectResponse
+    {
+        $this->authorize('cancel', $event);
+
+        if ($event->trashed() || ! $event->is_published) {
+            return back()->withErrors(['event' => 'Only a published event can be cancelled.']);
+        }
+
+        $event->cancelled_at = now();
+        $event->invitation_paused_at = null;
+        $event->save();
+
+        return back()->with('status', 'event-cancelled');
+    }
+
+    public function uncancel(Event $event): RedirectResponse
+    {
+        $this->authorize('cancel', $event);
+
+        $event->cancelled_at = null;
+        $event->save();
+
+        return back()->with('status', 'event-reopened');
     }
 
     public function publish(Request $request, Event $event, EventCreditService $credits): RedirectResponse

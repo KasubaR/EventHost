@@ -9,6 +9,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Intervention\Image\ImageManager;
 
 class ProfileService
@@ -62,6 +63,27 @@ class ProfileService
     }
 
     /**
+     * There is no way back to the default avatar once a photo is uploaded —
+     * "Change photo" only ever replaces. This clears the column and drops
+     * the stored file, same cleanup ProfileService::update() already does
+     * for a replaced photo.
+     */
+    public function removePhoto(User $user): User
+    {
+        $currentPhoto = $user->profile_photo;
+
+        if ($currentPhoto === null) {
+            return $user;
+        }
+
+        $user->forceFill(['profile_photo' => null])->save();
+
+        Storage::disk('public')->delete($currentPhoto);
+
+        return $user;
+    }
+
+    /**
      * Merge submitted toggles over the stored set. Only keys actually present
      * are overwritten, so a preference added to the defaults later keeps its
      * default for existing users instead of silently becoming false.
@@ -89,9 +111,22 @@ class ProfileService
         $manager = extension_loaded('imagick')
             ? ImageManager::imagick()
             : ImageManager::gd();
-        $image = $manager->read($file->getRealPath());
-        $image->cover(400, 400);
-        $webp = $image->toWebp(85);
+
+        // The 'image'/'mimes'/'dimensions' rules on profile_photo only check
+        // the declared mime type and header dimensions — a file that passes
+        // those can still be corrupt, truncated, or use a codec the current
+        // driver can't decode (e.g. GD without WebP support). Without this,
+        // that failure was an uncaught RuntimeException bubbling into a bare
+        // 500 instead of a normal, field-level validation error.
+        try {
+            $image = $manager->read($file->getRealPath());
+            $image->cover(400, 400);
+            $webp = $image->toWebp(85);
+        } catch (\RuntimeException $e) {
+            throw ValidationException::withMessages([
+                'profile_photo' => 'We couldn\'t process that image. Please try a different file.',
+            ]);
+        }
 
         $path = 'profile-photos/'.$user->id.'-'.time().'.webp';
         Storage::disk('public')->put($path, $webp->toString());

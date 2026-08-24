@@ -168,7 +168,7 @@ Route::middleware('throttle:rsvp-submit')->group(function () {
 Route::get('/staff/invitations/{token}', [EventStaffInvitationController::class, 'show'])->name('staff-invitations.show');
 Route::post('/staff/invitations/{token}', [EventStaffInvitationController::class, 'store'])->name('staff-invitations.store');
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'account.active', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Existing-account branch of the staff accept flow — hitting this while
@@ -308,6 +308,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('events.photos.index');
 
     Route::patch('/events/{event}/publish', [EventController::class, 'publish'])->name('events.publish');
+    Route::patch('/events/{event}/pause', [EventController::class, 'pause'])->name('events.pause');
+    Route::patch('/events/{event}/resume', [EventController::class, 'resume'])->name('events.resume');
+    Route::patch('/events/{event}/cancel', [EventController::class, 'cancel'])->name('events.cancel');
+    Route::patch('/events/{event}/uncancel', [EventController::class, 'uncancel'])->name('events.uncancel');
+    Route::post('/events/{event}/restore', [EventController::class, 'restore'])
+        ->withTrashed()
+        ->name('events.restore');
     Route::patch('/events/{event}/invitation-design', [EventInvitationDesignController::class, 'update'])
         ->middleware('throttle:invitation-design')
         ->name('events.invitation-design.update');
@@ -351,9 +358,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('settings')->name('settings.')->group(function (): void {
         Route::redirect('/', '/settings/profile')->name('index');
 
-        Route::get('/profile', [SettingsProfileController::class, 'edit'])->name('profile.edit');
-        Route::patch('/profile', [SettingsProfileController::class, 'update'])->name('profile.update');
-
         Route::get('/security', [SettingsSecurityController::class, 'edit'])->name('security.edit');
 
         Route::get('/notifications', [SettingsNotificationController::class, 'edit'])->name('notifications.edit');
@@ -365,6 +369,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Kept for bookmarks and any older link that still points at /profile.
     Route::redirect('/profile', '/settings/profile', 301)->name('profile.edit');
+});
+
+// Deliberately outside the `verified` gate above: ProfileService nulls
+// email_verified_at the moment the email changes, so a user who mistypes
+// the new address (or enters one they don't control) would otherwise lose
+// access to the only page that can fix or revert it — a self-inflicted,
+// unrecoverable lockout. auth + account.active still apply.
+Route::middleware(['auth', 'account.active'])->prefix('settings')->name('settings.')->group(function (): void {
+    Route::get('/profile', [SettingsProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [SettingsProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile/photo', [SettingsProfileController::class, 'destroyPhoto'])->name('profile.photo.destroy');
 });
 
 require __DIR__.'/auth.php';

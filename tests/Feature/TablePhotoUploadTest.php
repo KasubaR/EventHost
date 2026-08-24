@@ -91,16 +91,18 @@ class TablePhotoUploadTest extends TestCase
         $this->assertSame(0, EventPhoto::query()->count());
     }
 
-    public function test_upload_route_404s_for_a_non_public_event(): void
+    public function test_upload_route_is_forbidden_for_a_non_public_event(): void
     {
         $owner = User::factory()->pro()->create();
         $event = Event::factory()->for($owner)->create(['is_public' => false, 'is_published' => true]);
         $table = EventTable::factory()->for($event)->create();
 
+        // Private is a 403 (invite-only, existence not hidden) — see
+        // PublicInvitationResolver::resolveSibling().
         $this->postJson(
             route('table.upload.store', ['slug' => $event->slug, 'code' => $table->code]),
             ['photo' => UploadedFile::fake()->image('photo.jpg')]
-        )->assertNotFound();
+        )->assertForbidden();
     }
 
     public function test_upload_requires_a_valid_image_file(): void

@@ -85,6 +85,58 @@
             </div>
         @endunless
 
+        @if (session('status') === 'invitation-paused')
+            <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Invitation paused — guests see “Invitation unavailable”.</div>
+        @elseif (session('status') === 'invitation-resumed')
+            <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Invitation is live again.</div>
+        @elseif (session('status') === 'event-cancelled')
+            <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Event marked cancelled.</div>
+        @elseif (session('status') === 'event-reopened')
+            <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Event reopened.</div>
+        @endif
+
+        @can('pause', $event)
+            @if ($event->is_published)
+                <section class="evt-section">
+                    <div class="evt-section-head">
+                        <h2>Invitation link</h2>
+                        <p>Pause, cancel, or share the public URL <code>/e/{{ $event->slug }}</code>.</p>
+                    </div>
+                    <div class="evt-section-body evt-card-actions">
+                        @if ($event->isCancelled())
+                            <form method="post" action="{{ route('events.uncancel', $event) }}">
+                                @csrf
+                                @method('PATCH')
+                                <button type="submit" class="btn-primary"><i class="fa-solid fa-rotate-left"></i> Reopen event</button>
+                            </form>
+                        @else
+                            @if ($event->isInvitationPaused())
+                                <form method="post" action="{{ route('events.resume', $event) }}">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button type="submit" class="btn-primary"><i class="fa-solid fa-play"></i> Resume invitation</button>
+                                </form>
+                            @else
+                                <form method="post" action="{{ route('events.pause', $event) }}" data-confirm="Pause this invitation? Guests will see “Invitation unavailable” until you resume.">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button type="submit" class="evt-btn-outline"><i class="fa-solid fa-pause"></i> Pause invitation</button>
+                                </form>
+                            @endif
+                            <form method="post" action="{{ route('events.cancel', $event) }}" data-confirm="Cancel this event? Guests will see “Event cancelled”. You can reopen it later.">
+                                @csrf
+                                @method('PATCH')
+                                <button type="submit" class="evt-btn-outline evt-btn-danger-outline"><i class="fa-solid fa-ban"></i> Cancel event</button>
+                            </form>
+                        @endif
+                        @if ($event->is_public && ! $event->isCancelled() && ! $event->isInvitationPaused() && ! $event->isLocked())
+                            <a href="{{ route('events.public', $event->slug) }}" class="evt-btn-outline" target="_blank" rel="noopener"><i class="fa-solid fa-link"></i> Open public page</a>
+                        @endif
+                    </div>
+                </section>
+            @endif
+        @endcan
+
         @if ($event->isTicketed())
             <div class="evt-grid-2 evt-rsvp-summary-grid">
                 <div class="evt-stat-card">

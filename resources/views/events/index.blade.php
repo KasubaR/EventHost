@@ -19,7 +19,9 @@
     </x-slot>
 
     @if (session('status') === 'event-deleted')
-        <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Event deleted.</div>
+        <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Event deleted. You can restore it from Recently deleted below.</div>
+    @elseif (session('status') === 'event-restored')
+        <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Event restored.</div>
     @elseif (session('status') === 'ticketing-submitted')
         <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Submitted for EventHost review. Ticket sales stay off until we approve.</div>
     @elseif (session('status') === 'no-event-credits')
@@ -50,7 +52,7 @@
         </a>
     </nav>
 
-    @if ($published->total() === 0 && $drafts->total() === 0)
+    @if ($published->total() === 0 && $drafts->total() === 0 && $deleted->total() === 0)
         @if (request('from') === 'guests')
             <div class="dash-empty">
                 <div class="dash-empty-icon"><i class="fa-solid fa-users"></i></div>
@@ -111,6 +113,40 @@
                 @endif
             @endif
         </section>
+
+        @if ($deleted->total() > 0)
+            <section class="evt-group">
+                <div class="evt-group-head">
+                    <h2 class="evt-group-title"><i class="fa-solid fa-trash-can"></i> Recently deleted</h2>
+                    <span class="evt-group-count">{{ $deleted->total() }}</span>
+                </div>
+                <div class="evt-list">
+                    @foreach ($deleted as $event)
+                        <article class="evt-card">
+                            <div class="evt-card-main">
+                                <img src="{{ $event->cover_image_url }}" alt="" class="evt-card-cover" width="96" height="54">
+                                <div class="evt-card-body">
+                                    <h3>{{ $event->name }}</h3>
+                                    <p class="evt-card-meta">
+                                        Deleted {{ $event->deleted_at?->diffForHumans() }}
+                                        · <code>/e/{{ $event->slug }}</code>
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="evt-card-actions">
+                                <form method="post" action="{{ route('events.restore', $event) }}">
+                                    @csrf
+                                    <button type="submit" class="btn-primary"><i class="fa-solid fa-rotate-left"></i> Restore</button>
+                                </form>
+                            </div>
+                        </article>
+                    @endforeach
+                </div>
+                @if ($deleted->hasPages())
+                    <div class="evt-pagination">{{ $deleted->links() }}</div>
+                @endif
+            </section>
+        @endif
     @endif
 
     @if ($staffing->total() > 0)

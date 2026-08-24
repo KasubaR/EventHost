@@ -9,11 +9,9 @@ use App\Models\Event;
 use App\Models\User;
 use App\Services\EventCreditService;
 use App\Support\AdminActivity;
-use App\Support\InvitationVideoBackground;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class EventController extends Controller
@@ -22,7 +20,7 @@ class EventController extends Controller
     {
         $search = trim((string) $request->query('q', ''));
 
-        $events = Event::query()
+        $events = Event::withTrashed()
             ->with(['user:id,name,email'])
             ->withCount(['rsvps', 'guests'])
             ->when($search !== '', function ($query) use ($search): void {
@@ -67,6 +65,14 @@ class EventController extends Controller
 
         $published = (bool) $request->validated()['is_published'];
 
+        // Live invitations are taken down with Pause / Cancel — unpublishing
+        // would 404 and look like the event never existed.
+        if ($event->is_published && ! $published) {
+            return redirect()->back()->withErrors([
+                'is_published' => 'To hide a live invitation, pause or cancel it instead of unpublishing.',
+            ]);
+        }
+
         try {
             DB::transaction(function () use ($event, $published, $credits): void {
                 $locked = Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
@@ -93,54 +99,86 @@ class EventController extends Controller
         return redirect()->back()->with('status', 'event-publish-updated');
     }
 
+    public function pause(Event $event): RedirectResponse
+    {
+        if (! $event->is_published || $event->trashed() || $event->isCancelled()) {
+            return redirect()->back()->withErrors(['event' => 'Only a live invitation can be paused.']);
+        }
+
+        $event->invitation_paused_at = now();
+        $event->save();
+
+        AdminActivity::log('Admin paused invitation', ['event_id' => $event->id]);
+
+        return redirect()->back()->with('status', 'invitation-paused');
+    }
+
+    public function resume(Event $event): RedirectResponse
+    {
+        $event->invitation_paused_at = null;
+        $event->save();
+
+        AdminActivity::log('Admin resumed invitation', ['event_id' => $event->id]);
+
+        return redirect()->back()->with('status', 'invitation-resumed');
+    }
+
+    public function cancel(Event $event): RedirectResponse
+    {
+        if ($event->trashed() || ! $event->is_published) {
+            return redirect()->back()->withErrors(['event' => 'Only a published event can be cancelled.']);
+        }
+
+        $event->cancelled_at = now();
+        $event->invitation_paused_at = null;
+        $event->save();
+
+        AdminActivity::log('Admin cancelled event', ['event_id' => $event->id]);
+
+        return redirect()->back()->with('status', 'event-cancelled');
+    }
+
+    public function uncancel(Event $event): RedirectResponse
+    {
+        $event->cancelled_at = null;
+        $event->save();
+
+        AdminActivity::log('Admin reopened event', ['event_id' => $event->id]);
+
+        return redirect()->back()->with('status', 'event-reopened');
+    }
+
+    public function restore(Event $event): RedirectResponse
+    {
+        if (! $event->trashed()) {
+            return redirect()->route('admin.events.show', $event);
+        }
+
+        $event->restore();
+
+        AdminActivity::log('Admin restored event', ['event_id' => $event->id]);
+
+        return redirect()->route('admin.events.show', $event)->with('status', 'event-restored');
+    }
+
     public function destroy(Event $event): RedirectResponse
     {
+        if ($event->hasBlockingTicketCommerce()) {
+            return redirect()->back()->withErrors([
+                'event' => 'This event has ticket holds or orders in progress and cannot be deleted.',
+            ]);
+        }
+
         $eventId = $event->id;
         $eventName = $event->name;
-        $cover = $event->cover_image;
-        $customization = $event->invitation_customization;
-        $customizationPrevious = $event->invitation_customization_previous;
 
-        DB::transaction(function () use ($event): void {
-            $event->delete();
-        });
+        // Soft-delete only — keep media so restore works.
+        $event->delete();
 
         AdminActivity::log('Admin deleted event', [
             'event_id' => $eventId,
             'event_name' => $eventName,
         ]);
-
-        DB::afterCommit(function () use ($cover, $customization, $customizationPrevious): void {
-            if ($cover) {
-                Storage::disk('public')->delete($cover);
-            }
-
-            foreach ([$customization, $customizationPrevious] as $custom) {
-                if (! is_array($custom)) {
-                    continue;
-                }
-                foreach ($custom['media']['gallery'] ?? [] as $path) {
-                    Storage::disk('public')->delete($path);
-                }
-                $hero = $custom['media']['hero_portrait'] ?? null;
-                if (is_string($hero) && $hero !== '') {
-                    Storage::disk('public')->delete($hero);
-                }
-                foreach ($custom['media']['couple_photos'] ?? [] as $path) {
-                    if (is_string($path) && $path !== '') {
-                        Storage::disk('public')->delete($path);
-                    }
-                }
-                $video = $custom['effects']['video_background'] ?? null;
-                $audio = $custom['effects']['audio_track'] ?? null;
-                if (is_string($video) && $video !== '' && ! InvitationVideoBackground::isYoutube($video)) {
-                    Storage::disk('public')->delete($video);
-                }
-                if (is_string($audio) && $audio !== '') {
-                    Storage::disk('public')->delete($audio);
-                }
-            }
-        });
 
         return redirect()->route('admin.events.index')->with('status', 'event-deleted');
     }

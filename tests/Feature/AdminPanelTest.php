@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Support\TicketingSettings;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class AdminPanelTest extends TestCase
@@ -92,6 +93,35 @@ class AdminPanelTest extends TestCase
         $this->assertSame('suspended', $target->fresh()->status);
     }
 
+    public function test_super_admin_can_change_a_user_email_and_it_requires_reverification(): void
+    {
+        Notification::fake();
+
+        $admin = $this->superAdmin();
+        $target = User::factory()->create(['email' => 'old@example.com']);
+
+        $this->actingAs($admin, 'admin')
+            ->patch(route('admin.users.update-email', $target), ['email' => 'New@Example.com'])
+            ->assertSessionHasNoErrors();
+
+        $target->refresh();
+        $this->assertSame('new@example.com', $target->email);
+        $this->assertNull($target->email_verified_at);
+    }
+
+    public function test_admin_email_change_is_rejected_when_already_taken(): void
+    {
+        $admin = $this->superAdmin();
+        $target = User::factory()->create();
+        $other = User::factory()->create();
+
+        $this->actingAs($admin, 'admin')
+            ->patch(route('admin.users.update-email', $target), ['email' => $other->email])
+            ->assertSessionHasErrors(['email']);
+
+        $this->assertNotSame($other->email, $target->fresh()->email);
+    }
+
     public function test_super_admin_cannot_suspend_self_via_admin_form(): void
     {
         $customer = User::factory()->create(['status' => 'active']);
@@ -158,7 +188,7 @@ class AdminPanelTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_admin_can_toggle_event_publish_state(): void
+    public function test_admin_cannot_unpublish_a_live_event_and_must_pause_instead(): void
     {
         $operator = Admin::factory()->create();
         $operator->assignRole('admin');
@@ -167,10 +197,18 @@ class AdminPanelTest extends TestCase
         $event = Event::factory()->for($owner)->published()->create();
 
         $this->actingAs($operator, 'admin')
+            ->from(route('admin.events.show', $event))
             ->patch(route('admin.events.publish', $event), ['is_published' => false])
+            ->assertRedirect(route('admin.events.show', $event))
+            ->assertSessionHasErrors('is_published');
+
+        $this->assertTrue($event->fresh()->is_published);
+
+        $this->actingAs($operator, 'admin')
+            ->patch(route('admin.events.pause', $event))
             ->assertRedirect();
 
-        $this->assertFalse($event->fresh()->is_published);
+        $this->assertNotNull($event->fresh()->invitation_paused_at);
     }
 
     public function test_admin_first_publish_of_an_unpaid_draft_spends_the_owner_credit(): void

@@ -50,6 +50,7 @@ Route::prefix('admin')
             Route::patch('/users/{user}/status', [AdminUserController::class, 'updateStatus'])->name('users.status');
             Route::post('/users/{user}/credits', [AdminUserController::class, 'addCredits'])->name('users.add-credits');
             Route::patch('/users/{user}/tier', [AdminUserController::class, 'updateTier'])->name('users.update-tier');
+            Route::patch('/users/{user}/email', [AdminUserController::class, 'updateEmail'])->name('users.update-email');
         });
 
         Route::middleware(['permission:users.password_reset,admin', 'throttle:admin-mutations'])->group(function (): void {
@@ -62,23 +63,36 @@ Route::prefix('admin')
 
         Route::middleware('permission:events.view,admin')->group(function (): void {
             Route::get('/events', [AdminEventController::class, 'index'])->name('events.index');
-            Route::get('/events/{event}', [AdminEventController::class, 'show'])->name('events.show');
+            Route::get('/events/{event}', [AdminEventController::class, 'show'])
+                ->withTrashed()
+                ->name('events.show');
         });
 
         Route::middleware(['permission:events.publish_toggle,admin', 'throttle:admin-mutations'])->group(function (): void {
             Route::patch('/events/{event}/publish', [AdminEventController::class, 'updatePublish'])->name('events.publish');
+            Route::patch('/events/{event}/pause', [AdminEventController::class, 'pause'])->name('events.pause');
+            Route::patch('/events/{event}/resume', [AdminEventController::class, 'resume'])->name('events.resume');
+            Route::patch('/events/{event}/cancel', [AdminEventController::class, 'cancel'])->name('events.cancel');
+            Route::patch('/events/{event}/uncancel', [AdminEventController::class, 'uncancel'])->name('events.uncancel');
         });
 
         Route::middleware(['permission:events.delete,admin', 'throttle:admin-mutations'])->group(function (): void {
             Route::delete('/events/{event}', [AdminEventController::class, 'destroy'])->name('events.destroy');
+            Route::post('/events/{event}/restore', [AdminEventController::class, 'restore'])
+                ->withTrashed()
+                ->name('events.restore');
         });
 
         Route::middleware('permission:guests.view,admin')->group(function (): void {
-            Route::get('/events/{event}/guests', [AdminGuestController::class, 'index'])->name('events.guests');
+            Route::get('/events/{event}/guests', [AdminGuestController::class, 'index'])
+                ->withTrashed()
+                ->name('events.guests');
         });
 
         Route::middleware('permission:rsvps.view,admin')->group(function (): void {
-            Route::get('/events/{event}/rsvps', [AdminRsvpController::class, 'index'])->name('events.rsvps');
+            Route::get('/events/{event}/rsvps', [AdminRsvpController::class, 'index'])
+                ->withTrashed()
+                ->name('events.rsvps');
         });
 
         Route::middleware('permission:notifications.view,admin')->group(function (): void {

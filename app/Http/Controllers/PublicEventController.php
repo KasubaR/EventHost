@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Services\InvitationCustomizationService;
+use App\Services\PublicInvitationResolver;
 use App\Support\EventIcsDocument;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
 use Illuminate\View\View;
 
@@ -26,16 +28,18 @@ class PublicEventController extends Controller
         return view('events.discover', compact('events'));
     }
 
-    public function show(string $slug, InvitationCustomizationService $customizationService): View
-    {
-        $event = Event::query()
-            ->where('slug', $slug)
-            ->where('is_published', true)
-            ->firstOrFail();
+    public function show(
+        string $slug,
+        InvitationCustomizationService $customizationService,
+        PublicInvitationResolver $resolver,
+    ): View|RedirectResponse {
+        $resolved = $resolver->resolveInvitationPage($slug);
 
-        if (! $event->is_public) {
-            abort(403);
+        if ($resolved instanceof RedirectResponse || $resolved instanceof View) {
+            return $resolved;
         }
+
+        $event = $resolved;
 
         // Ticketed events skip the invitation-template system entirely and
         // render the one fixed public template — no theme merge needed.
@@ -56,16 +60,20 @@ class PublicEventController extends Controller
         return view('events.public', compact('event', 'rsvpOpen', 'rsvpPublicAvailable', 'invitation'));
     }
 
-    public function ics(string $slug): Response
+    public function ics(string $slug, PublicInvitationResolver $resolver): Response|RedirectResponse
     {
-        $event = Event::query()
-            ->where('slug', $slug)
-            ->where('is_published', true)
-            ->firstOrFail();
+        $resolved = $resolver->resolveInvitationPage($slug);
 
-        if (! $event->is_public) {
-            abort(403);
+        if ($resolved instanceof RedirectResponse) {
+            return $resolved;
         }
+
+        // Status pages and drafts have no calendar attachment.
+        if ($resolved instanceof View) {
+            abort(404);
+        }
+
+        $event = $resolved;
 
         $body = EventIcsDocument::build($event);
         if ($body === null) {

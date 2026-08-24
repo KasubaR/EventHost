@@ -305,3 +305,89 @@
     box-shadow: none;
     padding: 8px 0 16px;
 }
+
+/* Lifecycle status pages (ended / unavailable / cancelled / gone) */
+.evt-status-page {
+    min-height: calc(100vh - 52px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 20px;
+    background: #f7f7fb;
+    font-family: 'DM Sans', sans-serif;
+}
+.evt-status-card {
+    width: 100%;
+    max-width: 440px;
+    text-align: center;
+    padding: 40px 32px;
+    border-radius: 16px;
+    background: #fff;
+    border: 1px solid #e8e8f0;
+    box-shadow: 0 8px 28px rgba(15, 23, 42, 0.06);
+}
+.evt-status-icon {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #f1f5f9;
+    color: #64748b;
+    font-size: 22px;
+}
+.evt-status-card--ended .evt-status-icon {
+    background: #ecfdf5;
+    color: #059669;
+}
+.evt-status-card--cancelled .evt-status-icon {
+    background: #fef2f2;
+    color: #dc2626;
+}
+.evt-status-card--unavailable .evt-status-icon {
+    background: #fff7ed;
+    color: #ea580c;
+}
+.evt-status-card--gone .evt-status-icon {
+    background: #f1f5f9;
+    color: #64748b;
+}
+.evt-status-title {
+    margin: 0 0 10px;
+    font-size: 22px;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+}
+.evt-status-message {
+    margin: 0 0 20px;
+    font-size: 15px;
+    line-height: 1.5;
+    color: #64748b;
+}
+.evt-status-event {
+    margin: 0 0 4px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+}
+.evt-status-date {
+    margin: 0 0 24px;
+    font-size: 14px;
+    color: #94a3b8;
+}
+.evt-status-home {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #4f46e5;
+    text-decoration: none;
+}
+.evt-status-home:hover {
+    text-decoration: underline;
+}
+

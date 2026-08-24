@@ -17,6 +17,12 @@
             <p>This will permanently delete all your events, invitations, guests and data. Enter your password to confirm.</p>
         </div>
 
+        @if ($errors->userDeletion->has('blocked'))
+            <p class="profile-field-error" role="alert" style="margin:0 24px 16px;">
+                <i class="fa-solid fa-circle-exclamation"></i> {{ $errors->userDeletion->first('blocked') }}
+            </p>
+        @endif
+
         <form method="post" action="{{ route('settings.account.destroy') }}" class="profile-modal-form">
             @csrf
             @method('delete')

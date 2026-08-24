@@ -311,12 +311,14 @@ class TicketPurchaseFlowTest extends TestCase
         $this->assertCount(1, $order->tickets);
     }
 
-    public function test_picker_404s_when_event_is_not_public(): void
+    public function test_picker_is_forbidden_when_event_is_not_public(): void
     {
         $event = $this->approvedTicketedEvent(['is_public' => false]);
         TicketType::factory()->for($event)->create(['price' => '200.00']);
 
-        $this->get(route('events.public.tickets', $event->slug))->assertNotFound();
+        // Private is a 403 (invite-only, existence not hidden), same as the
+        // main invitation and open-RSVP routes — see PublicInvitationResolver.
+        $this->get(route('events.public.tickets', $event->slug))->assertForbidden();
     }
 
     public function test_holds_tied_to_a_pending_order_keep_capacity_after_the_original_expiry(): void

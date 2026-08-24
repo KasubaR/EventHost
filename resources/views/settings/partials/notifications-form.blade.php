@@ -1,11 +1,14 @@
 @php
     $prefs = old('notification_preferences', $user->notification_preferences ?? []);
+    // 'soon' entries are stored and will be honoured the day the feature
+    // behind them ships, but nothing sends against them yet — flagging that
+    // here instead of presenting a toggle that silently does nothing.
     $prefLabels = [
         'email_rsvp_updates'    => ['label' => 'RSVP updates', 'desc' => 'Get notified when guests respond to your invitations', 'icon' => 'fa-envelope'],
-        'email_event_reminders' => ['label' => 'Event reminders', 'desc' => 'Receive reminders before your events go live', 'icon' => 'fa-calendar-days'],
+        'email_event_reminders' => ['label' => 'Event reminders', 'desc' => 'Receive reminders before your events go live', 'icon' => 'fa-calendar-days', 'soon' => true],
         'email_payment_receipts'=> ['label' => 'Payment receipts', 'desc' => 'Email confirmation for every payment made', 'icon' => 'fa-receipt'],
-        'email_marketing'       => ['label' => 'Tips & announcements', 'desc' => 'Occasional product updates and event hosting tips', 'icon' => 'fa-bullhorn'],
-        'sms_reminders'         => ['label' => 'SMS reminders', 'desc' => 'Text message reminders sent to your phone', 'icon' => 'fa-mobile-screen-button'],
+        'email_marketing'       => ['label' => 'Tips & announcements', 'desc' => 'Occasional product updates and event hosting tips', 'icon' => 'fa-bullhorn', 'soon' => true],
+        'sms_reminders'         => ['label' => 'SMS reminders', 'desc' => 'Text message reminders sent to your phone', 'icon' => 'fa-mobile-screen-button', 'soon' => true],
     ];
 @endphp
 
@@ -23,7 +26,12 @@
             <div class="pref-row">
                 <div class="pref-icon"><i class="fa-solid {{ $meta['icon'] }}"></i></div>
                 <div class="pref-text">
-                    <strong>{{ $meta['label'] }}</strong>
+                    <strong>
+                        {{ $meta['label'] }}
+                        @if (! empty($meta['soon']))
+                            <span class="profile-status-badge pref-badge-soon">Coming soon</span>
+                        @endif
+                    </strong>
                     <span>{{ $meta['desc'] }}</span>
                 </div>
                 <label class="pref-toggle" aria-label="{{ $meta['label'] }}">

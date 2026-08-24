@@ -54,4 +54,34 @@ class RegistrationTest extends TestCase
             'password_confirmation' => 'Password123!',
         ])->assertSessionHasErrors('email');
     }
+
+    public function test_invalid_zambian_phone_number_is_rejected(): void
+    {
+        $this->post('/register', [
+            'account_type' => 'individual',
+            'name' => 'Test User',
+            'email' => 'phonetest@example.com',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
+            'phone' => '12345',
+        ])->assertSessionHasErrors('phone');
+
+        $this->assertNull(User::where('email', 'phonetest@example.com')->first());
+    }
+
+    public function test_valid_zambian_phone_number_is_accepted(): void
+    {
+        Notification::fake();
+
+        $this->post('/register', [
+            'account_type' => 'individual',
+            'name' => 'Test User',
+            'email' => 'phoneok@example.com',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
+            'phone' => '+260 97 000 0000',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertNotNull(User::where('email', 'phoneok@example.com')->first());
+    }
 }

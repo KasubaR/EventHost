@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Event;
+use App\Models\TicketOrder;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -146,6 +148,74 @@ class SettingsTest extends TestCase
         Storage::disk('public')->assertExists($user->profile_photo);
     }
 
+    public function test_profile_photo_can_be_removed(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->create();
+        $path = 'profile-photos/'.$user->id.'-111.webp';
+        Storage::disk('public')->put($path, 'fake-webp-bytes');
+        $user->forceFill(['profile_photo' => $path])->save();
+
+        $this->actingAs($user)->get('/settings/profile')->assertSee('Remove');
+
+        $response = $this->actingAs($user)->delete('/settings/profile/photo');
+
+        $response->assertSessionHasNoErrors()->assertRedirect('/settings/profile');
+
+        Storage::disk('public')->assertMissing($path);
+        $this->assertNull($user->fresh()->profile_photo);
+    }
+
+    public function test_removing_photo_when_none_exists_is_a_noop(): void
+    {
+        $user = User::factory()->create(['profile_photo' => null]);
+
+        $this->actingAs($user)->get('/settings/profile')->assertDontSee('Remove');
+
+        $this->actingAs($user)->delete('/settings/profile/photo')
+            ->assertSessionHasNoErrors()
+            ->assertRedirect('/settings/profile');
+
+        $this->assertNull($user->fresh()->profile_photo);
+    }
+
+    public function test_inert_notification_preferences_are_labelled_coming_soon(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->get('/settings/notifications');
+
+        $response->assertSee('Coming soon');
+        $response->assertSeeInOrder(['RSVP updates', 'Event reminders', 'Coming soon']);
+    }
+
+    public function test_invalid_zambian_phone_number_is_rejected_on_profile_update(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->patch('/settings/profile', [
+            'name' => $user->name,
+            'email' => $user->email,
+            'phone' => '12345',
+        ])->assertSessionHasErrors('phone');
+
+        $this->assertNull($user->fresh()->phone);
+    }
+
+    public function test_valid_zambian_phone_number_is_accepted_on_profile_update(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->patch('/settings/profile', [
+            'name' => $user->name,
+            'email' => $user->email,
+            'phone' => '0977123456',
+        ])->assertSessionHasNoErrors()->assertRedirect('/settings/profile');
+
+        $this->assertSame('0977123456', $user->fresh()->phone);
+    }
+
     public function test_notification_preferences_can_be_updated(): void
     {
         $user = User::factory()->create();
@@ -280,6 +350,27 @@ class SettingsTest extends TestCase
 
         $this->assertGuest();
         $this->assertNull($user->fresh());
+    }
+
+    public function test_account_deletion_is_blocked_while_a_ticketed_event_has_paid_orders(): void
+    {
+        $user = User::factory()->create();
+        $event = Event::factory()->for($user)->ticketed()->create();
+        TicketOrder::factory()->for($event)->paid()->create();
+
+        $response = $this
+            ->actingAs($user)
+            ->from('/settings/account')
+            ->delete('/settings/account', [
+                'password' => 'password',
+            ]);
+
+        $response
+            ->assertSessionHasErrorsIn('userDeletion', 'blocked')
+            ->assertRedirect('/settings/account');
+
+        $this->assertNotNull($user->fresh());
+        $this->assertAuthenticated();
     }
 
     public function test_correct_password_must_be_provided_to_delete_account(): void

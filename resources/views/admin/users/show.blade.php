@@ -71,6 +71,19 @@
                     <p class="admin-muted admin-mt-md">You cannot change your own status here.</p>
                 @endif
 
+                @if (! auth('admin')->user()->is($u))
+                    <form method="post" action="{{ route('admin.users.update-email', $u) }}" class="profile-form admin-mt-md">
+                        @csrf
+                        @method('PATCH')
+                        <label for="user-email">Account email</label>
+                        <input id="user-email" type="email" name="email" value="{{ old('email', $u->email) }}" class="profile-input">
+                        <p class="admin-muted" style="margin-top:6px;">Use this if the user lost access to their inbox — password reset and re-verification both go to whatever address is on file. The old address is notified, and the new one has to be re-verified.</p>
+                        <div class="admin-actions admin-mt-md">
+                            <button type="submit" class="btn-primary">Update email</button>
+                        </div>
+                    </form>
+                @endif
+
                 <form method="post" action="{{ route('admin.users.update-tier', $u) }}" class="profile-form admin-mt-md">
                     @csrf
                     @method('PATCH')
