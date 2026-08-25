@@ -91,25 +91,58 @@
                     </label>
                 @endforeach
 
-                {{-- Enterprise is Contact Sales only — custom templates, multi-page sites and bespoke
-                     event builds aren't priced or checked out here. Not a <label>/radio like the plans
-                     above, and deliberately excluded from billing-checkout.js's card-select binding. --}}
-                <div class="billing-plan-card is-static">
-                    <div class="billing-plan-icon">
-                        <i class="fa-solid fa-gem" aria-hidden="true"></i>
+                {{-- Enterprise: Contact Sales by default. When this account has a
+                     pending custom quote, the card becomes selectable and shows
+                     the quote amount (never shown on the public homepage). --}}
+                @if ($pendingCustomQuote)
+                    @php
+                        $enterprisePriceLabel = $pendingCustomQuote->formattedAmount();
+                        $isEnterpriseSelected = ($selectedPlan ?? null) === 'enterprise';
+                    @endphp
+                    <label class="billing-plan-card {{ $isEnterpriseSelected ? 'is-selected' : '' }}"
+                           data-plan-label="Enterprise"
+                           data-plan-price="{{ $enterprisePriceLabel }}">
+                        <input type="radio" name="plan_key" value="enterprise" class="billing-plan-input"
+                               data-quote-id="{{ $pendingCustomQuote->id }}"
+                               {{ $isEnterpriseSelected ? 'checked' : '' }}>
+                        <div class="billing-plan-icon">
+                            <i class="fa-solid fa-gem" aria-hidden="true"></i>
+                        </div>
+                        <div class="billing-plan-name">Enterprise</div>
+                        <div class="billing-plan-price">{{ $enterprisePriceLabel }}</div>
+                        <div class="billing-plan-period">Custom quote for your account</div>
+                        @if ($pendingCustomQuote->note)
+                            <p class="billing-plan-quote-note">{{ $pendingCustomQuote->note }}</p>
+                        @endif
+                        <ul class="billing-plan-features">
+                            <li><i class="fa-solid fa-check" aria-hidden="true"></i> Everything in Pro+</li>
+                            <li><i class="fa-solid fa-check" aria-hidden="true"></i> Custom-designed templates</li>
+                            <li><i class="fa-solid fa-check" aria-hidden="true"></i> Multi-page invitation sites</li>
+                            <li><i class="fa-solid fa-check" aria-hidden="true"></i> Fully custom event builds</li>
+                            <li><i class="fa-solid fa-check" aria-hidden="true"></i> {{ $pendingCustomQuote->credits_granted }} event credit{{ $pendingCustomQuote->credits_granted === 1 ? '' : 's' }} included</li>
+                        </ul>
+                        <div class="billing-plan-select-indicator">
+                            <i class="fa-solid fa-circle-check" aria-hidden="true"></i> Selected
+                        </div>
+                    </label>
+                @else
+                    <div class="billing-plan-card is-static">
+                        <div class="billing-plan-icon">
+                            <i class="fa-solid fa-gem" aria-hidden="true"></i>
+                        </div>
+                        <div class="billing-plan-name">Enterprise</div>
+                        <div class="billing-plan-price">Custom</div>
+                        <div class="billing-plan-period">Custom templates &amp; events</div>
+                        <ul class="billing-plan-features">
+                            <li><i class="fa-solid fa-check" aria-hidden="true"></i> Everything in Pro+</li>
+                            <li><i class="fa-solid fa-check" aria-hidden="true"></i> Custom-designed templates</li>
+                            <li><i class="fa-solid fa-check" aria-hidden="true"></i> Multi-page invitation sites</li>
+                            <li><i class="fa-solid fa-check" aria-hidden="true"></i> Fully custom event builds</li>
+                            <li><i class="fa-solid fa-check" aria-hidden="true"></i> Dedicated designer</li>
+                        </ul>
+                        <a href="{{ route('contact') }}" class="billing-plan-contact-btn">Contact Sales</a>
                     </div>
-                    <div class="billing-plan-name">Enterprise</div>
-                    <div class="billing-plan-price">Custom</div>
-                    <div class="billing-plan-period">Custom templates &amp; events</div>
-                    <ul class="billing-plan-features">
-                        <li><i class="fa-solid fa-check" aria-hidden="true"></i> Everything in Pro+</li>
-                        <li><i class="fa-solid fa-check" aria-hidden="true"></i> Custom-designed templates</li>
-                        <li><i class="fa-solid fa-check" aria-hidden="true"></i> Multi-page invitation sites</li>
-                        <li><i class="fa-solid fa-check" aria-hidden="true"></i> Fully custom event builds</li>
-                        <li><i class="fa-solid fa-check" aria-hidden="true"></i> Dedicated designer</li>
-                    </ul>
-                    <a href="{{ route('contact') }}" class="billing-plan-contact-btn">Contact Sales</a>
-                </div>
+                @endif
             </div>
         </section>
 
@@ -188,12 +221,15 @@
             <div class="billing-summary-card">
                 <div class="billing-summary-header">Order summary</div>
                 <div class="billing-summary-plan">
+                    @php
+                        $summaryIsEnterprise = ($selectedPlan ?? null) === 'enterprise' && $pendingCustomQuote;
+                        $defaultPlan = $summaryIsEnterprise ? null : ($plans[$selectedPlan ?? 'pro'] ?? reset($plans));
+                    @endphp
                     <span class="billing-summary-plan-name" id="billingSummaryPlan">
-                        @php $defaultPlan = $plans[$selectedPlan ?? 'pro'] ?? reset($plans); @endphp
-                        {{ $defaultPlan['label'] }}
+                        {{ $summaryIsEnterprise ? 'Enterprise' : $defaultPlan['label'] }}
                     </span>
                     <span class="billing-summary-plan-price" id="billingSummaryPrice">
-                        {{ $currency === 'ZMW' ? 'K' : $currency }}{{ number_format($defaultPlan['amount'], 0) }}
+                        {{ $summaryIsEnterprise ? $pendingCustomQuote->formattedAmount() : ($currency === 'ZMW' ? 'K' : $currency) . number_format($defaultPlan['amount'], 0) }}
                     </span>
                 </div>
                 <div class="billing-summary-item">

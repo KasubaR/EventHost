@@ -11,6 +11,10 @@ composer dev
 # First-time setup
 composer setup
 
+# Post-deploy: migrate, cache config/routes/views, restart queue workers
+# (run `composer install --no-dev --optimize-autoloader` first — see docs/deployment.md)
+composer deploy
+
 # Run tests
 composer test
 

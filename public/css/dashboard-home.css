@@ -2,6 +2,48 @@
  * Dashboard overview (stats + empty state). Loaded from dashboard.blade.php only.
  */
 
+.dash-quote-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--pink);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  margin-bottom: 20px;
+  box-shadow: var(--card-shadow);
+}
+
+.dash-quote-banner-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.dash-quote-banner-body > i {
+  color: var(--pink);
+  font-size: 18px;
+  margin-top: 2px;
+}
+
+.dash-quote-banner-body strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.dash-quote-banner-body p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--gray-mid);
+  font-weight: 500;
+}
+
 /* ── DASHBOARD HOME ── */
 .dash-stats {
   display: grid;

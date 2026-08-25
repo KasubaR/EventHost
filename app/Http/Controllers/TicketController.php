@@ -7,6 +7,7 @@ use App\Services\QrCodeService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 /**
@@ -46,6 +47,12 @@ class TicketController extends Controller
      *
      * Cached like tickets.qr so a shared /download URL cannot burn CPU on
      * every hit; throttle:ticket-download caps uncached first-renders per IP.
+     *
+     * Cached to the private local disk, not the `cache` table: a rendered PDF
+     * with an embedded raster QR is a binary blob that can run well past what
+     * the database cache store handles safely — MySQL rejects raw binary in a
+     * text column outright, and even base64-wrapped it can trip row/packet
+     * limits the `cache` table isn't sized for. A file has no such ceiling.
      */
     public function download(string $token, QrCodeService $qrCodeService): Response
     {
@@ -54,19 +61,20 @@ class TicketController extends Controller
             ->with(['event', 'ticketType', 'order'])
             ->firstOrFail();
 
-        $pdfBinary = Cache::remember(
-            'ticket-pdf:'.$token,
-            now()->addWeek(),
-            function () use ($ticket, $qrCodeService): string {
-                $qrDataUri = 'data:image/png;base64,'.base64_encode($qrCodeService->png($ticket->publicUrl(), 260));
+        $disk = Storage::disk('local');
+        $path = 'ticket-pdfs/'.$token.'.pdf';
 
-                return (string) Pdf::loadView('tickets.pdf', compact('ticket', 'qrDataUri'))
-                    ->setPaper('a5', 'portrait')
-                    ->output();
-            }
-        );
+        if (! $disk->exists($path)) {
+            $qrDataUri = 'data:image/png;base64,'.base64_encode($qrCodeService->png($ticket->publicUrl(), 260));
 
-        return response($pdfBinary, 200, [
+            $binary = (string) Pdf::loadView('tickets.pdf', compact('ticket', 'qrDataUri'))
+                ->setPaper('a5', 'portrait')
+                ->output();
+
+            $disk->put($path, $binary);
+        }
+
+        return response($disk->get($path), 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'attachment; filename="ticket-'.$ticket->id.'.pdf"',
         ]);

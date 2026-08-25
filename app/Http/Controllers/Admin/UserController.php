@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\UpdateAdminUserEmailRequest;
 use App\Http\Requests\Admin\UpdateAdminUserStatusRequest;
 use App\Models\Admin;
 use App\Models\CreditTransaction;
+use App\Models\CustomQuote;
 use App\Models\User;
 use App\Notifications\EmailChangedNotification;
 use App\Services\EventCreditService;
@@ -61,6 +62,7 @@ class UserController extends Controller
         return view('admin.users.show', [
             'adminUser' => $user,
             'creditHistory' => $creditHistory,
+            'pendingCustomQuote' => CustomQuote::pendingFor($user),
         ]);
     }
 

@@ -31,7 +31,13 @@
         </div>
     </x-slot>
 
-    @if (session('status'))
+    @if (session('status') === 'custom-quote-created')
+        <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Custom quote sent. The customer was emailed and will see it on Billing and their dashboard.</div>
+    @elseif (session('status') === 'custom-quote-updated')
+        <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Custom quote updated. The customer was emailed again.</div>
+    @elseif (session('status') === 'custom-quote-cancelled')
+        <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Custom quote cancelled.</div>
+    @elseif (session('status'))
         <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> {{ session('status') }}</div>
     @endif
 
@@ -100,11 +106,87 @@
                             <option value="{{ $tierOption->value }}" @selected($u->subscriptionTier() === $tierOption)>{{ $tierOption->label() }}</option>
                         @endforeach
                     </select>
-                    <p class="admin-muted" style="margin-top:6px;">Enterprise is Contact Sales only — assign it here once a custom deal is agreed off-platform.</p>
+                    <p class="admin-muted" style="margin-top:6px;">Enterprise can also be unlocked when the customer pays a custom Lenco quote below.</p>
                     <div class="admin-actions admin-mt-md">
                         <button type="submit" class="btn-primary">Update tier</button>
                     </div>
                 </form>
+
+                <div class="admin-mt-md">
+                    <h3 style="font-size:14px;font-weight:600;margin-bottom:8px;">Custom Enterprise quote</h3>
+                    <p class="admin-muted" style="margin-bottom:10px;">
+                        After a Contact Sales deal, set the amount this user should pay. It appears only on their billing Custom card — never on the public homepage.
+                    </p>
+
+                    @if ($pendingCustomQuote)
+                        <p class="admin-muted" style="margin-bottom:10px;">
+                            Current pending quote:
+                            <strong>{{ $pendingCustomQuote->formattedAmount() }}</strong>
+                            · {{ $pendingCustomQuote->credits_granted }} credit{{ $pendingCustomQuote->credits_granted === 1 ? '' : 's' }}
+                            @if ($pendingCustomQuote->note)
+                                · {{ $pendingCustomQuote->note }}
+                            @endif
+                        </p>
+                        <form method="post" action="{{ route('admin.users.custom-quote.update', [$u, $pendingCustomQuote]) }}" class="profile-form">
+                            @csrf
+                            @method('PATCH')
+                            <label for="quote-amount">Amount (ZMW)</label>
+                            <input id="quote-amount" type="number" name="amount" min="0.01" step="0.01" required
+                                   class="profile-input" value="{{ old('amount', $pendingCustomQuote->amount) }}">
+                            @error('amount')
+                                <p class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
+                            @enderror
+                            <label for="quote-credits" class="admin-mt-sm">Credits included</label>
+                            <input id="quote-credits" type="number" name="credits_granted" min="1" max="100" required
+                                   class="profile-input" value="{{ old('credits_granted', $pendingCustomQuote->credits_granted) }}">
+                            @error('credits_granted')
+                                <p class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
+                            @enderror
+                            <label for="quote-note" class="admin-mt-sm">Note <span class="profile-optional">optional</span></label>
+                            <input id="quote-note" type="text" name="note" maxlength="500"
+                                   class="profile-input" value="{{ old('note', $pendingCustomQuote->note) }}">
+                            @error('note')
+                                <p class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
+                            @enderror
+                            <div class="admin-actions admin-mt-md">
+                                <button type="submit" class="btn-primary">Update quote</button>
+                            </div>
+                        </form>
+                        <form method="post" action="{{ route('admin.users.custom-quote.destroy', [$u, $pendingCustomQuote]) }}" class="profile-form admin-mt-sm" data-confirm="Cancel this pending quote?">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="evt-btn-outline evt-btn-danger-outline">Cancel quote</button>
+                        </form>
+                    @else
+                        <form method="post" action="{{ route('admin.users.custom-quote.store', $u) }}" class="profile-form">
+                            @csrf
+                            <label for="quote-amount">Amount (ZMW)</label>
+                            <input id="quote-amount" type="number" name="amount" min="0.01" step="0.01" required
+                                   class="profile-input" value="{{ old('amount') }}" placeholder="12500">
+                            @error('amount')
+                                <p class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
+                            @enderror
+                            <label for="quote-credits" class="admin-mt-sm">Credits included</label>
+                            <input id="quote-credits" type="number" name="credits_granted" min="1" max="100" required
+                                   class="profile-input" value="{{ old('credits_granted', 1) }}">
+                            @error('credits_granted')
+                                <p class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
+                            @enderror
+                            <label for="quote-note" class="admin-mt-sm">Note <span class="profile-optional">optional</span></label>
+                            <input id="quote-note" type="text" name="note" maxlength="500"
+                                   class="profile-input" value="{{ old('note') }}" placeholder="Custom wedding site + templates">
+                            @error('note')
+                                <p class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
+                            @enderror
+                            @error('custom_quote')
+                                <p class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
+                            @enderror
+                            <div class="admin-actions admin-mt-md">
+                                <button type="submit" class="btn-primary">Send quote to customer</button>
+                            </div>
+                        </form>
+                    @endif
+                </div>
             @endif
 
             @if(auth('admin')->user()?->can('users.password_reset'))

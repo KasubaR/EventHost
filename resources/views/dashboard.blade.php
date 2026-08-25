@@ -28,6 +28,24 @@
         </div>
     </x-slot>
 
+    @if ($pendingCustomQuote)
+        <div class="dash-quote-banner" role="status">
+            <div class="dash-quote-banner-body">
+                <i class="fa-solid fa-gem" aria-hidden="true"></i>
+                <div>
+                    <strong>Your custom Enterprise quote is ready</strong>
+                    <p>
+                        Amount due: {{ $pendingCustomQuote->formattedAmount() }}
+                        @if ($pendingCustomQuote->note)
+                            — {{ $pendingCustomQuote->note }}
+                        @endif
+                    </p>
+                </div>
+            </div>
+            <a href="{{ route('billing.show', ['plan' => 'enterprise']) }}" class="btn-primary">Pay on Billing</a>
+        </div>
+    @endif
+
     <div class="dash-stats dash-stats--six">
         <div class="dash-stat-card">
             <div class="dsc-icon dsc-icon--accent"><i class="fa-solid fa-envelope-open-text" aria-hidden="true"></i></div>

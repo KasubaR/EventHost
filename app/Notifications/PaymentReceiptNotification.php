@@ -30,14 +30,11 @@ class PaymentReceiptNotification extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
-        $plan = BillingPlan::get($this->payment->plan_key);
-        $planLabel = is_array($plan) ? ($plan['label'] ?? $this->payment->plan_key) : $this->payment->plan_key;
-
         return (new MailMessage)
             ->subject('Payment received — '.config('app.name'))
             ->greeting('Hello, '.$notifiable->name.'!')
             ->line('Your payment has been confirmed.')
-            ->line('Plan: '.$planLabel)
+            ->line('Plan: '.BillingPlan::labelForPlanKey($this->payment->plan_key))
             ->line('Amount: '.$this->payment->currency.' '.number_format((float) $this->payment->amount, 2))
             ->line('Reference: '.$this->payment->payment_reference)
             ->line('You now have '.$notifiable->fresh()->event_credits.' event credit(s).')

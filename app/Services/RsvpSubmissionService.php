@@ -6,7 +6,7 @@ use App\Enums\RsvpStatus;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Models\Rsvp;
-use Illuminate\Database\QueryException;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -69,9 +69,14 @@ class RsvpSubmissionService
                     ['guest_id' => $guest->id],
                     $rsvpData,
                 );
-            } catch (QueryException) {
+            } catch (UniqueConstraintViolationException) {
                 // Concurrent request won the INSERT race on the unique(guest_id) constraint.
                 // The row now exists — update it directly.
+                //
+                // Deliberately narrower than catching QueryException: a broad catch here would
+                // also swallow unrelated write failures (a too-long column value, a deadlock, a
+                // dropped connection) and retry them with the same doomed data, turning a clear
+                // error into a confusing double failure. Only the actual race gets this fallback.
                 Rsvp::query()
                     ->where('guest_id', $guest->id)
                     ->update($rsvpData);

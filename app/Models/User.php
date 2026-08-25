@@ -103,6 +103,14 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * @return HasMany<CustomQuote, $this>
+     */
+    public function customQuotes(): HasMany
+    {
+        return $this->hasMany(CustomQuote::class);
+    }
+
+    /**
      * @return HasMany<Review, $this>
      */
     public function reviews(): HasMany

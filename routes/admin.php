@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Admin\AnalyticsController;
+use App\Http\Controllers\Admin\CustomQuoteController as AdminCustomQuoteController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EventController as AdminEventController;
 use App\Http\Controllers\Admin\FaqController as AdminFaqController;
@@ -52,6 +53,9 @@ Route::prefix('admin')
             Route::post('/users/{user}/credits', [AdminUserController::class, 'addCredits'])->name('users.add-credits');
             Route::patch('/users/{user}/tier', [AdminUserController::class, 'updateTier'])->name('users.update-tier');
             Route::patch('/users/{user}/email', [AdminUserController::class, 'updateEmail'])->name('users.update-email');
+            Route::post('/users/{user}/custom-quote', [AdminCustomQuoteController::class, 'store'])->name('users.custom-quote.store');
+            Route::patch('/users/{user}/custom-quote/{customQuote}', [AdminCustomQuoteController::class, 'update'])->name('users.custom-quote.update');
+            Route::delete('/users/{user}/custom-quote/{customQuote}', [AdminCustomQuoteController::class, 'destroy'])->name('users.custom-quote.destroy');
         });
 
         Route::middleware(['permission:users.password_reset,admin', 'throttle:admin-mutations'])->group(function (): void {

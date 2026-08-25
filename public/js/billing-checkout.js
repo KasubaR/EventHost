@@ -101,6 +101,10 @@
                 payment_method: method,
             };
 
+            if (planInput && planInput.value === 'enterprise' && planInput.dataset.quoteId) {
+                payload.quote_id = Number(planInput.dataset.quoteId);
+            }
+
             if (method === 'mobile_money') {
                 const providerInput = root.querySelector('input[name="provider"]:checked');
                 const phoneInput = document.getElementById('billing-phone');

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CustomQuote;
 use App\Models\Event;
 use App\Services\DashboardAnalyticsService;
 use Illuminate\Http\Request;
@@ -29,6 +30,7 @@ class DashboardController extends Controller
             'user' => $user,
             'analytics' => $analyticsService->forUser($user),
             'staffing' => $staffing,
+            'pendingCustomQuote' => CustomQuote::pendingFor($user),
         ]);
     }
 }

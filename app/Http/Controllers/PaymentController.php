@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\InitiatePaymentRequest;
 use App\Jobs\RetryLencoPayment;
+use App\Models\CustomQuote;
 use App\Models\InvitationTemplate;
 use App\Models\Payment;
 use App\Models\TicketPayment;
@@ -54,6 +55,7 @@ class PaymentController extends Controller
             'bankTransferEnabled' => (bool) config('services.lenco.bank_transfer_enabled', true),
             'activeTemplateCount' => InvitationTemplate::activeCount(),
             'popularPlanKey' => $popularPlans->resolve(),
+            'pendingCustomQuote' => CustomQuote::pendingFor($user),
         ]);
     }
 
@@ -64,24 +66,60 @@ class PaymentController extends Controller
             return response()->json(['success' => false, 'message' => 'Account is not active.'], 403);
         }
 
-        $plan = BillingPlan::get($request->string('plan_key')->toString());
-        if ($plan === null) {
-            return response()->json(['success' => false, 'message' => 'Invalid plan.'], 422);
+        $planKey = $request->string('plan_key')->toString();
+        $quote = null;
+
+        if ($planKey === 'enterprise') {
+            $quote = CustomQuote::query()
+                ->whereKey((int) $request->input('quote_id'))
+                ->where('user_id', $user->id)
+                ->pending()
+                ->first();
+
+            if ($quote === null) {
+                return response()->json(['success' => false, 'message' => 'Custom quote is not available.'], 422);
+            }
+
+            $amount = (float) $quote->amount;
+            $creditsGranted = (int) $quote->credits_granted;
+            $planLabel = 'Enterprise';
+            $plan = [
+                'label' => $planLabel,
+                'amount' => $amount,
+                'credits' => $creditsGranted,
+            ];
+        } else {
+            $plan = BillingPlan::get($planKey);
+            if ($plan === null) {
+                return response()->json(['success' => false, 'message' => 'Invalid plan.'], 422);
+            }
+
+            $amount = (float) $plan['amount'];
+            $creditsGranted = (int) ($plan['credits'] ?? 1);
+            $planLabel = (string) ($plan['label'] ?? $planKey);
         }
 
-        $amount = (float) $plan['amount'];
         if ($amount <= 0) {
             return response()->json(['success' => false, 'message' => 'Invalid plan amount.'], 422);
         }
 
         $method = $request->string('payment_method')->toString();
         $userRef = 'USR-'.$user->id;
-        $planLabel = (string) ($plan['label'] ?? $request->string('plan_key'));
         $description = "Event Host — {$planLabel} event credit";
 
         try {
-            return DB::transaction(function () use ($request, $lenco, $user, $plan, $amount, $method, $userRef, $planLabel, $description): JsonResponse {
+            return DB::transaction(function () use ($request, $lenco, $user, $plan, $planKey, $quote, $amount, $creditsGranted, $method, $userRef, $planLabel, $description): JsonResponse {
                 $lockedUser = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+
+                if ($quote !== null) {
+                    $lockedQuote = CustomQuote::query()->whereKey($quote->id)->lockForUpdate()->first();
+                    if ($lockedQuote === null || ! $lockedQuote->isPending() || (int) $lockedQuote->user_id !== (int) $lockedUser->id) {
+                        return response()->json(['success' => false, 'message' => 'Custom quote is not available.'], 422);
+                    }
+                    $amount = (float) $lockedQuote->amount;
+                    $creditsGranted = (int) $lockedQuote->credits_granted;
+                    $quote = $lockedQuote;
+                }
 
                 $inProgress = Payment::query()
                     ->forUser($lockedUser->id)
@@ -109,6 +147,15 @@ class PaymentController extends Controller
                     'reference' => $reference,
                 ];
 
+                $metadata = [
+                    'phone' => $request->input('phone'),
+                    'provider' => $request->input('provider'),
+                    'bank_name' => $request->input('bank_name'),
+                ];
+                if ($quote !== null) {
+                    $metadata['quote_id'] = $quote->id;
+                }
+
                 try {
                     $result = $method === 'mobile_money'
                         ? $lenco->initiateMobileMoneyPayment(
@@ -122,12 +169,9 @@ class PaymentController extends Controller
                 } catch (RuntimeException $e) {
                     $code = (int) $e->getCode();
                     if ($code === 0 || $code >= 500) {
-                        $payment = $this->createPendingPayment($lockedUser, $request, $plan, $reference, $userRef, $amount, $method, [
-                            'phone' => $request->input('phone'),
-                            'provider' => $request->input('provider'),
-                            'bank_name' => $request->input('bank_name'),
+                        $payment = $this->createPendingPayment($lockedUser, $request, $plan, $reference, $userRef, $amount, $method, array_merge($metadata, [
                             'queued_reason' => $e->getMessage(),
-                        ]);
+                        ]), $creditsGranted);
 
                         RetryLencoPayment::dispatch($payment)->afterCommit();
 
@@ -150,8 +194,8 @@ class PaymentController extends Controller
 
                 $payment = Payment::query()->create([
                     'user_id' => $lockedUser->id,
-                    'plan_key' => $request->string('plan_key')->toString(),
-                    'credits_granted' => (int) ($plan['credits'] ?? 1),
+                    'plan_key' => $planKey,
+                    'credits_granted' => $creditsGranted,
                     'user_ref' => $userRef,
                     'payment_method' => $method,
                     'provider' => $result['provider'] ?? $request->input('provider'),
@@ -167,10 +211,7 @@ class PaymentController extends Controller
                     'bank_details' => $result['bankDetails'] ?? null,
                     'payment_url' => $result['paymentUrl'] ?? null,
                     'expires_at' => now()->addHours(24),
-                    'metadata' => [
-                        'phone' => $request->input('phone'),
-                        'bank_name' => $request->input('bank_name'),
-                    ],
+                    'metadata' => $metadata,
                 ]);
 
                 if ($payment->status === 'completed') {
@@ -410,11 +451,12 @@ class PaymentController extends Controller
         float $amount,
         string $method,
         array $metadata = [],
+        ?int $creditsGranted = null,
     ): Payment {
         return Payment::query()->create([
             'user_id' => $user->id,
             'plan_key' => $request->string('plan_key')->toString(),
-            'credits_granted' => (int) ($plan['credits'] ?? 1),
+            'credits_granted' => $creditsGranted ?? (int) ($plan['credits'] ?? 1),
             'user_ref' => $userRef,
             'payment_method' => $method,
             'provider' => $request->input('provider'),

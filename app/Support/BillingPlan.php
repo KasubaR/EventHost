@@ -41,6 +41,10 @@ class BillingPlan
 
     public static function tierForPlan(string $key): SubscriptionTier
     {
+        if ($key === 'enterprise') {
+            return SubscriptionTier::Enterprise;
+        }
+
         $plan = self::get($key);
 
         if ($plan === null || ! isset($plan['tier'])) {
@@ -48,6 +52,17 @@ class BillingPlan
         }
 
         return SubscriptionTier::from($plan['tier']);
+    }
+
+    public static function labelForPlanKey(string $key): string
+    {
+        if ($key === 'enterprise') {
+            return 'Enterprise';
+        }
+
+        $plan = self::get($key);
+
+        return is_array($plan) ? (string) ($plan['label'] ?? $key) : $key;
     }
 
     public static function currency(): string

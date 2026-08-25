@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Enums\CustomQuoteStatus;
 use App\Models\CreditTransaction;
+use App\Models\CustomQuote;
 use App\Models\Payment;
 use App\Models\User;
 use App\Notifications\PaymentReceiptNotification;
@@ -44,6 +46,16 @@ class PaymentCompletionService
             $user = User::query()->whereKey($locked->user_id)->lockForUpdate()->firstOrFail();
 
             if ($locked->credits_fulfilled_at === null) {
+                $quote = $this->resolvePendingQuoteForPayment($locked);
+
+                if ($locked->plan_key === 'enterprise' && $quote === null) {
+                    // Quote vanished or was cancelled after initiate — do not
+                    // grant Enterprise or credits for an orphan payment.
+                    PaymentLog::forPayment($locked, 'complete.skipped_missing_quote');
+
+                    return null;
+                }
+
                 $this->credits->grant(
                     $user,
                     (int) $locked->credits_granted,
@@ -57,6 +69,13 @@ class PaymentCompletionService
                 if ($purchasedTier->rank() > $user->subscriptionTierRank()) {
                     $user->subscription_tier = $purchasedTier;
                     $user->save();
+                }
+
+                if ($quote !== null) {
+                    $quote->forceFill([
+                        'status' => CustomQuoteStatus::Paid,
+                        'payment_id' => $locked->id,
+                    ])->save();
                 }
 
                 $locked->credits_fulfilled_at = now();
@@ -90,6 +109,30 @@ class PaymentCompletionService
         $freshPayment->save();
     }
 
+    private function resolvePendingQuoteForPayment(Payment $payment): ?CustomQuote
+    {
+        $quoteId = data_get($payment->metadata, 'quote_id');
+        if (! is_numeric($quoteId)) {
+            return null;
+        }
+
+        $quote = CustomQuote::query()->whereKey((int) $quoteId)->lockForUpdate()->first();
+
+        if ($quote === null || (int) $quote->user_id !== (int) $payment->user_id) {
+            return null;
+        }
+
+        if ($quote->status === CustomQuoteStatus::Paid && (int) $quote->payment_id === (int) $payment->id) {
+            return $quote;
+        }
+
+        if ($quote->status !== CustomQuoteStatus::Pending) {
+            return null;
+        }
+
+        return $quote;
+    }
+
     public function reverse(Payment $payment, string $incomingStatus): Payment
     {
         return DB::transaction(function () use ($payment, $incomingStatus): Payment {
@@ -115,6 +158,23 @@ class PaymentCompletionService
             $locked->credits_reversed_at = now();
             $locked->failure_reason = 'Provider reported '.$incomingStatus;
             $locked->save();
+
+            // A reversed Enterprise payment must not leave its quote stuck on
+            // "paid" — that reads as settled in the admin UI even though the
+            // money came back. Cancel it rather than reopening it as pending:
+            // the original custom deal is void, and an admin who wants to
+            // re-offer it can issue a fresh quote.
+            if ($locked->plan_key === 'enterprise') {
+                $quote = CustomQuote::query()
+                    ->where('payment_id', $locked->id)
+                    ->where('status', CustomQuoteStatus::Paid)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($quote !== null) {
+                    $quote->forceFill(['status' => CustomQuoteStatus::Cancelled])->save();
+                }
+            }
 
             PaymentLog::forPayment($locked, 'complete.reversed', [
                 'incoming_status' => $incomingStatus,
