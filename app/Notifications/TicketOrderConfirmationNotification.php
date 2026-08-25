@@ -3,7 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\TicketOrder;
-use App\Services\QrCodeService;
+use App\Services\TicketPdfService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -57,15 +57,15 @@ class TicketOrderConfirmationNotification extends Notification implements Should
             $mail->action('View ticket', $ticket->publicUrl());
         }
 
-        $mail->line('Keep this email. Each ticket link shows the QR code to scan at the door.')
+        $mail->line('Your ticket PDFs are attached. Each includes the QR code to scan at the door.')
             ->salutation('The '.config('app.name').' Team');
 
-        $qrService = app(QrCodeService::class);
+        $ticketPdfService = app(TicketPdfService::class);
         foreach ($order->tickets as $ticket) {
             $mail->attachData(
-                $qrService->png($ticket->publicUrl()),
-                'ticket-'.Str::slug((string) $ticket->id).'.png',
-                ['mime' => 'image/png']
+                $ticketPdfService->render($ticket),
+                'ticket-'.$order->order_reference.'-'.$ticket->id.'.pdf',
+                ['mime' => 'application/pdf']
             );
         }
 

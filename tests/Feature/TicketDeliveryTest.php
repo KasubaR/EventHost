@@ -7,7 +7,9 @@ use App\Models\Ticket;
 use App\Models\TicketOrder;
 use App\Models\TicketType;
 use App\Notifications\TicketOrderConfirmationNotification;
+use App\Services\TicketPdfService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class TicketDeliveryTest extends TestCase
@@ -98,6 +100,48 @@ class TicketDeliveryTest extends TestCase
         $response->assertHeader('Content-Disposition', 'attachment; filename="ticket-'.$ticket->id.'.pdf"');
     }
 
+    public function test_ticket_pdf_blade_includes_ticket_framing_and_event_details(): void
+    {
+        [, $order, $ticket] = $this->paidOrderWithTicket();
+        $ticket->loadMissing(['event', 'ticketType', 'order']);
+
+        $html = view('tickets.pdf', [
+            'ticket' => $ticket,
+            'qrDataUri' => 'data:image/png;base64,abc',
+            'logoDataUri' => 'data:image/png;base64,logo',
+        ])->render();
+
+        $this->assertStringContainsString('class="ticket"', $html);
+        $this->assertStringContainsString('Admit one', $html);
+        $this->assertStringContainsString($ticket->event->name, $html);
+        $this->assertStringContainsString('John Banda', $html);
+        $this->assertStringContainsString('Lusaka', $html);
+        $this->assertStringContainsString($order->order_reference, $html);
+        $this->assertStringContainsString('VIP', $html);
+        $this->assertStringContainsString('class="stub"', $html);
+        $this->assertStringContainsString('class="perforation"', $html);
+        $this->assertStringNotContainsString('—', $html);
+    }
+
+    public function test_ticket_pdf_service_caches_under_v2_path(): void
+    {
+        Storage::fake('local');
+
+        [, , $ticket] = $this->paidOrderWithTicket();
+        $service = app(TicketPdfService::class);
+
+        $this->assertSame(
+            'ticket-pdfs/v2/'.$ticket->public_token.'.pdf',
+            $service->cachePath($ticket)
+        );
+
+        $binary = $service->render($ticket);
+
+        $this->assertNotSame('', $binary);
+        $this->assertTrue(Storage::disk('local')->exists($service->cachePath($ticket)));
+        $this->assertSame($binary, $service->render($ticket));
+    }
+
     public function test_download_is_throttled_per_ip(): void
     {
         $unknown = str_repeat('a', 48);
@@ -120,5 +164,28 @@ class TicketDeliveryTest extends TestCase
         $this->assertTrue($lines->contains(fn ($line) => str_contains($line, $order->order_reference)));
         $this->assertTrue($lines->contains(fn ($line) => str_contains($line, 'Lusaka')));
         $this->assertTrue($lines->contains(fn ($line) => str_contains($line, 'September')));
+    }
+
+    public function test_confirmation_email_attaches_ticket_pdfs_not_bare_qr_pngs(): void
+    {
+        [, $order, $ticket] = $this->paidOrderWithTicket();
+        $order->loadMissing(['event', 'tickets.ticketType']);
+
+        $mail = (new TicketOrderConfirmationNotification($order))->toMail($order);
+
+        $this->assertCount(1, $mail->rawAttachments);
+        $attachment = $mail->rawAttachments[0];
+
+        $this->assertSame(
+            'ticket-'.$order->order_reference.'-'.$ticket->id.'.pdf',
+            $attachment['name']
+        );
+        $this->assertSame('application/pdf', $attachment['options']['mime']);
+        $this->assertStringStartsWith('%PDF', $attachment['data']);
+        $this->assertTrue(
+            collect($mail->outroLines)->contains(
+                fn ($line) => str_contains($line, 'ticket PDFs are attached')
+            )
+        );
     }
 }
