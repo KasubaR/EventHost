@@ -23,7 +23,7 @@ class TicketDeliveryTest extends TestCase
             'event_time' => '18:00:00',
             'venue' => 'Lusaka',
         ], $eventOverrides));
-        $type = TicketType::factory()->for($event)->create(['name' => 'VIP']);
+        $type = TicketType::factory()->for($event)->create(['name' => 'VIP', 'badge_color' => 'vip']);
         $order = TicketOrder::factory()->for($event)->paid()->create();
         $ticket = Ticket::factory()->create(array_merge([
             'event_id' => $event->id,
@@ -112,7 +112,7 @@ class TicketDeliveryTest extends TestCase
         ])->render();
 
         $this->assertStringContainsString('class="ticket"', $html);
-        $this->assertStringContainsString('Admit one', $html);
+        $this->assertStringContainsString('type-badge--vip', $html);
         $this->assertStringContainsString($ticket->event->name, $html);
         $this->assertStringContainsString('John Banda', $html);
         $this->assertStringContainsString('Lusaka', $html);

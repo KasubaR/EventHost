@@ -3,7 +3,9 @@
 namespace App\Http\Requests;
 
 use App\Models\Event;
+use App\Models\TicketType;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreTicketTypeRequest extends FormRequest
 {
@@ -23,6 +25,9 @@ class StoreTicketTypeRequest extends FormRequest
             'sales_ends_at' => $this->sales_ends_at === '' ? null : $this->sales_ends_at,
             'terms' => $this->terms === '' ? null : $this->terms,
             'sort_order' => $this->sort_order === '' || $this->sort_order === null ? 0 : $this->sort_order,
+            'badge_color' => $this->badge_color === '' || $this->badge_color === null
+                ? TicketType::DEFAULT_BADGE_COLOR
+                : $this->badge_color,
         ]);
     }
 
@@ -33,6 +38,7 @@ class StoreTicketTypeRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:120'],
+            'badge_color' => ['required', Rule::in(array_keys(TicketType::BADGE_COLORS))],
             'description' => ['nullable', 'string', 'max:5000'],
             'price' => ['required', 'numeric', 'min:0.01', 'max:999999.99'],
             'quantity' => ['nullable', 'integer', 'min:1', 'max:1000000'],

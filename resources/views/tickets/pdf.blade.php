@@ -43,25 +43,26 @@
             font-weight: bold;
             color: #1e47bb;
         }
-        .admit {
+        .type-badge-cell {
             text-align: right;
-            font-size: 11px;
-            font-weight: bold;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            color: #e00e4f;
         }
-        .ticket-body {
-            padding: 18px 18px 14px;
-        }
-        .badge {
+        .type-badge {
             display: inline-block;
             font-size: 10px;
             font-weight: bold;
-            text-transform: uppercase;
             letter-spacing: 1px;
-            color: #e00e4f;
-            margin: 0 0 8px;
+            text-transform: uppercase;
+            padding: 5px 12px;
+            border-radius: 999px;
+            border: 1px solid transparent;
+        }
+        .type-badge--standard { background-color: #eef1fb; color: #1e47bb; border-color: #c7d2f5; }
+        .type-badge--vip { background-color: #fdf3d9; color: #92650c; border-color: #f0d68a; }
+        .type-badge--premium { background-color: #f1e8fb; color: #5b2a99; border-color: #d9c3f0; }
+        .type-badge--early { background-color: #e3f6f2; color: #0e766e; border-color: #a8e0d4; }
+        .type-badge--group { background-color: #fdeaf0; color: #a8104a; border-color: #f3b8cf; }
+        .ticket-body {
+            padding: 18px 18px 14px;
         }
         h1 {
             font-size: 20px;
@@ -146,6 +147,13 @@
         }
     </style>
 </head>
+    @php
+        $ticketTypeName = $ticket->ticketType?->name ?? 'General';
+        $ticketTypeBadgeVariant = $ticket->ticketType?->badge_color ?? \App\Models\TicketType::DEFAULT_BADGE_COLOR;
+        if (! array_key_exists($ticketTypeBadgeVariant, \App\Models\TicketType::BADGE_COLORS)) {
+            $ticketTypeBadgeVariant = \App\Models\TicketType::DEFAULT_BADGE_COLOR;
+        }
+    @endphp
 <body>
     <div class="ticket">
         <div class="ticket-accent"></div>
@@ -159,13 +167,14 @@
                             <span class="brand-fallback">{{ config('app.name') }}</span>
                         @endif
                     </td>
-                    <td class="admit">Admit one</td>
+                    <td class="type-badge-cell">
+                        <span class="type-badge type-badge--{{ $ticketTypeBadgeVariant }}">{{ $ticketTypeName }}</span>
+                    </td>
                 </tr>
             </table>
         </div>
 
         <div class="ticket-body">
-            <p class="badge">{{ $ticket->ticketType?->name ?? 'Ticket' }}</p>
             <h1>{{ $ticket->event->name }}</h1>
             <p class="meta">{{ $ticket->event->event_date->format('l, F j, Y') }}
                 @if ($ticket->event->event_time)

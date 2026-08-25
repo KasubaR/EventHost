@@ -19,6 +19,7 @@ class TicketTypeFactory extends Factory
         return [
             'event_id' => Event::factory()->ticketed(),
             'name' => fake()->randomElement(['General Admission', 'VIP', 'Early Bird', 'Student']),
+            'badge_color' => TicketType::DEFAULT_BADGE_COLOR,
             'description' => fake()->optional()->sentence(),
             'price' => fake()->randomElement(['50.00', '100.00', '200.00', '350.00']),
             'quantity' => fake()->optional(0.7)->numberBetween(20, 500),

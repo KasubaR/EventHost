@@ -17,6 +17,21 @@
     </div>
 
     <div class="profile-field">
+        <label for="ticket_badge_color" class="profile-label">Badge color <span class="profile-optional">shown on the ticket PDF</span></label>
+        <select id="ticket_badge_color" name="badge_color" required data-cs data-cs-icon="fa-solid fa-tag"
+                class="profile-input {{ $errors->has('badge_color') ? 'profile-input--error' : '' }}">
+            @foreach (\App\Models\TicketType::BADGE_COLORS as $value => $label)
+                <option value="{{ $value }}" @selected(old('badge_color', $ticketType?->badge_color ?? \App\Models\TicketType::DEFAULT_BADGE_COLOR) === $value)>
+                    {{ $label }}
+                </option>
+            @endforeach
+        </select>
+        @error('badge_color')
+            <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
+        @enderror
+    </div>
+
+    <div class="profile-field">
         <label for="ticket_description" class="profile-label">Description <span class="profile-optional">optional</span></label>
         <textarea id="ticket_description" name="description" rows="3"
                   class="profile-input {{ $errors->has('description') ? 'profile-input--error' : '' }}">{{ old('description', $ticketType?->description ?? '') }}</textarea>

@@ -15,11 +15,30 @@ class TicketType extends Model
     use HasFactory;
 
     /**
+     * Options for the badge shown on the ticket PDF, keyed by the value stored
+     * in `badge_color`. The host picks one on the ticket type form; the PDF
+     * ({@see resources/views/tickets/pdf.blade.php}) just reads it back —
+     * it no longer guesses a color from the ticket type name.
+     *
+     * @var array<string, string>
+     */
+    public const BADGE_COLORS = [
+        'standard' => 'Standard (blue)',
+        'vip' => 'VIP (gold)',
+        'premium' => 'Premium / VVIP (purple)',
+        'early' => 'Early bird (teal)',
+        'group' => 'Group / family (pink)',
+    ];
+
+    public const DEFAULT_BADGE_COLOR = 'standard';
+
+    /**
      * @var list<string>
      */
     protected $fillable = [
         'event_id',
         'name',
+        'badge_color',
         'description',
         'price',
         'quantity',
