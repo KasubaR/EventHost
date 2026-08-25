@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\CommissionMode;
 use App\Enums\EventProductKind;
 use App\Enums\RsvpStatus;
 use App\Enums\TicketingStatus;
@@ -17,6 +16,7 @@ use App\Services\DashboardAnalyticsService;
 use App\Services\EventCreditService;
 use App\Services\EventSlugService;
 use App\Services\InvitationCustomizationService;
+use App\Services\TicketedEventCreator;
 use App\Support\InvitationMediaStager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -102,7 +102,7 @@ class EventController extends Controller
         return view('events.create', compact('prefTemplateId', 'templateSlug', 'productKind'));
     }
 
-    public function store(StoreEventRequest $request): RedirectResponse
+    public function store(StoreEventRequest $request, TicketedEventCreator $ticketedCreator): RedirectResponse
     {
         if (Event::openDraftCountFor((int) $request->user()->id) >= Event::MAX_OPEN_DRAFTS) {
             return redirect()->route('events.index')->with('status', 'draft-limit');
@@ -110,32 +110,32 @@ class EventController extends Controller
 
         $data = $request->validated();
         $preferredTemplateId = $data['preferred_invitation_template_id'] ?? null;
-        unset($data['preferred_invitation_template_id'], $data['cover_image']);
-
         $productKind = EventProductKind::from((string) $data['product_kind']);
+
+        // Ticketed events have no invitation layout to pick — they render the
+        // one fixed public template (events/tickets/landing.blade.php), so
+        // skip the preferred-template shortcut and the choose-template step
+        // entirely. They land on the Tickets step (wizard step 3) instead of
+        // back on the details form — see plans/ticketing.md's wizard reorder.
+        if ($productKind === EventProductKind::Ticketed) {
+            $event = $ticketedCreator->create((int) $request->user()->id, $data);
+
+            return redirect()->route('events.ticket-types.index', $event)->with('status', 'draft-saved');
+        }
+
+        unset($data['preferred_invitation_template_id'], $data['cover_image']);
         $newPath = null;
 
         try {
-            // Ticketed events have no host cover — EventHost uploads the public
-            // hero on the ticketing review page. Ignore a file that arrived
-            // because the host switched product kind after picking one.
-            if ($productKind !== EventProductKind::Ticketed && $request->hasFile('cover_image')) {
+            if ($request->hasFile('cover_image')) {
                 $newPath = $this->storeCoverImage($request->file('cover_image'));
                 $data['cover_image'] = $newPath;
             }
 
             $data['user_id'] = (int) $request->user()->id;
             $data['is_published'] = false;
-
-            if ($productKind === EventProductKind::Ticketed) {
-                unset($data['rsvp_deadline'], $data['guest_limit'], $data['allow_plus_one'], $data['show_guest_list']);
-                $data['ticketing_status'] = TicketingStatus::Draft;
-                $data['commission_mode'] = CommissionMode::Absorb;
-                $data['is_public'] = true;
-            } else {
-                $data['ticketing_status'] = TicketingStatus::NotApplicable;
-                $data['commission_mode'] = null;
-            }
+            $data['ticketing_status'] = TicketingStatus::NotApplicable;
+            $data['commission_mode'] = null;
 
             $customSlug = $data['slug'] ?? null;
             unset($data['slug']);
@@ -164,15 +164,6 @@ class EventController extends Controller
             }
 
             throw $e;
-        }
-
-        // Ticketed events have no invitation layout to pick — they render the
-        // one fixed public template (events/tickets/landing.blade.php), so
-        // skip the preferred-template shortcut and the choose-template step
-        // entirely. They land on the Tickets step (wizard step 3) instead of
-        // back on the details form — see plans/ticketing.md's wizard reorder.
-        if ($event->isTicketed()) {
-            return redirect()->route('events.ticket-types.index', $event)->with('status', 'draft-saved');
         }
 
         if ($preferredTemplateId !== null) {

@@ -60,7 +60,7 @@
                     @php
                         $icons    = ['base' => 'fa-bolt', 'pro' => 'fa-rocket', 'pro_plus' => 'fa-crown'];
                         $icon     = $icons[$key] ?? 'fa-star';
-                        $isPopular  = $key === 'pro';
+                        $isPopular  = $popularPlanKey !== null && $key === $popularPlanKey;
                         $isSelected = ($selectedPlan ?? 'pro') === $key;
                         $priceLabel = ($currency === 'ZMW' ? 'K' : $currency) . number_format($plan['amount'], 0);
                     @endphp

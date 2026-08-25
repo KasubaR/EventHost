@@ -59,7 +59,11 @@
             @if (! empty($prefTemplateId) && $productKind === \App\Enums\EventProductKind::Invitation)
                 <input type="hidden" name="preferred_invitation_template_id" value="{{ $prefTemplateId }}">
             @endif
-            @include('events.partials.form-fields', ['event' => null, 'selectedProductKind' => $productKind])
+            @include('events.partials.form-fields', [
+                'event' => null,
+                'selectedProductKind' => $productKind,
+                'kindChangeUrl' => route('events.create'),
+            ])
 
             <div class="evt-section-body evt-actions-bar">
                 @if ($productKind === \App\Enums\EventProductKind::Ticketed)

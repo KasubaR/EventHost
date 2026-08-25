@@ -75,8 +75,8 @@
                     {{ $event?->product_kind?->label() ?? \App\Enums\EventProductKind::from($productKind)->label() }}
                     @if ($event)
                         — this is set when the event is created and cannot be changed.
-                    @else
-                        <a href="{{ route('events.create') }}" class="evt-kind-change">Change</a>
+                    @elseif (! empty($kindChangeUrl))
+                        <a href="{{ $kindChangeUrl }}" class="evt-kind-change">Change</a>
                     @endif
                 </p>
             </div>

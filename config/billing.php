@@ -54,6 +54,18 @@ return [
     ],
 
     /*
+    | Homepage / checkout "Most Popular" badge. Driven by completed plan
+    | purchases over a rolling window. When no plan meets min_sales, no card
+    | gets the badge (there is no hardcoded fallback plan).
+    */
+    'popular' => [
+        'window_days' => 30,
+        'min_sales' => 3,
+        'lead_margin' => 0.20,
+        'cache_ttl_hours' => 24,
+    ],
+
+    /*
     | Used when the Lenco /banks API is unavailable or returns no Zambia banks.
     | Names should match what Lenco expects in bankName on bank-transfer initiate.
     */

@@ -45,6 +45,13 @@
       <p>From intimate gatherings to grand celebrations — beautifully crafted for any event.</p>
     </div>
     <div class="event-types-grid">
+      <a class="etc-card etc-card-ticketing" href="{{ auth()->check() ? route('events.create', ['kind' => 'ticketed']) : route('register') }}">
+        <div class="etc-inner">
+          <span class="etc-badge">New</span>
+          <div class="etc-icon"><i class="fa-solid fa-ticket" aria-hidden="true"></i></div>
+          <span class="etc-label">Sell Tickets</span>
+        </div>
+      </a>
       <a class="etc-card weddings" href="{{ auth()->check() ? url('/dashboard') : route('register') }}">
         <div class="etc-inner">
           <div class="etc-icon"><i class="fa-solid fa-ring" aria-hidden="true"></i></div>
@@ -69,13 +76,6 @@
           <span class="etc-label">Corporate</span>
         </div>
       </a>
-      <a class="etc-card etc-card-ticketing" href="{{ auth()->check() ? route('events.create', ['kind' => 'ticketed']) : route('register') }}">
-        <div class="etc-inner">
-          <span class="etc-badge">New</span>
-          <div class="etc-icon"><i class="fa-solid fa-ticket" aria-hidden="true"></i></div>
-          <span class="etc-label">Sell Tickets</span>
-        </div>
-      </a>
     </div>
     <p class="event-types-note">
       @auth
@@ -91,10 +91,15 @@
 <div id="ticketing">
   <div class="section">
     <div class="tix-banner">
-      <div class="tix-banner-header">
-        <span class="tix-eyebrow">Now on Event Host</span>
-        <h2>Selling tickets? We've got that covered too</h2>
-        <p>Turn any event into a ticketed one — set your prices, get paid securely, and deliver tickets instantly.</p>
+      <div class="tix-banner-top">
+        <div class="tix-banner-header">
+          <span class="tix-eyebrow">Now on Event Host</span>
+          <h2>Selling tickets? We've got that covered too</h2>
+          <p>Turn any event into a ticketed one — set your prices, get paid securely, and deliver tickets instantly.</p>
+        </div>
+        <div class="tix-banner-visual">
+          <img src="{{ asset('images/ticket-sells-mockup.webp') }}" alt="A phone displaying an Event Host digital QR ticket" width="240" height="120" loading="lazy" decoding="async">
+        </div>
       </div>
       <div class="tix-flow">
         <div class="tix-flow-step">
@@ -203,7 +208,7 @@
     <div class="steps">
       <div class="step">
         <div class="step-photo">
-          <img src="https://images.unsplash.com/photo-1586281380349-632531db7ed4?auto=format&fit=crop&w=440&h=330&q=80" alt="Designer selecting colors and stationery" width="220" height="165" loading="lazy" decoding="async">
+          <img src="{{ asset('images/how-it-works-choose-template.webp') }}" alt="Choosing an Event Host invitation template" width="220" height="120" loading="lazy" decoding="async">
         </div>
         <div class="step-num">1</div>
         <div class="step-icon"><i class="fa-solid fa-palette" aria-hidden="true"></i></div>
@@ -212,7 +217,7 @@
       </div>
       <div class="step">
         <div class="step-photo">
-          <img src="https://images.unsplash.com/photo-1499951360447-b19be8fe80f5?auto=format&fit=crop&w=440&h=330&q=80" alt="Working on creative layout at a desk" width="220" height="165" loading="lazy" decoding="async">
+          <img src="{{ asset('images/how-it-works-customize.webp') }}" alt="Customizing colors on an Event Host invitation" width="220" height="120" loading="lazy" decoding="async">
         </div>
         <div class="step-num">2</div>
         <div class="step-icon"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i></div>
@@ -221,7 +226,7 @@
       </div>
       <div class="step">
         <div class="step-photo">
-          <img src="https://images.unsplash.com/photo-1526498460520-4c246339dccb?auto=format&fit=crop&w=440&h=330&q=80" alt="Sharing from a laptop and phone" width="220" height="165" loading="lazy" decoding="async">
+          <img src="{{ asset('images/how-it-works-send-rsvp.webp') }}" alt="Guests viewing an RSVP on a phone" width="220" height="120" loading="lazy" decoding="async">
         </div>
         <div class="step-num">3</div>
         <div class="step-icon"><i class="fa-solid fa-paper-plane" aria-hidden="true"></i></div>
@@ -287,7 +292,10 @@
       <p style="margin:0 auto">Start with Base. Upgrade when you need more power.</p>
     </div>
     <div class="pricing-grid">
-      <div class="price-card">
+      <div @class(['price-card', 'popular' => $popularPlanKey === 'base'])>
+        @if ($popularPlanKey === 'base')
+          <span class="popular-badge">Most Popular</span>
+        @endif
         <div class="price-plan">Base</div>
         <div class="price-amount"><sup>K</sup>450<span class="period"> / event</span></div>
         <div class="price-desc">Perfect for trying things out</div>
@@ -298,10 +306,13 @@
           <li>Basic RSVP tracking</li>
           <li>WhatsApp sharing</li>
         </ul>
-        <a href="{{ auth()->check() ? route('billing.show', ['plan' => 'base']) : route('register') }}" class="btn-price btn-price-outline">Get Started</a>
+        <a href="{{ auth()->check() ? route('billing.show', ['plan' => 'base']) : route('register') }}"
+           class="btn-price {{ $popularPlanKey === 'base' ? 'btn-price-fill' : 'btn-price-outline' }}">Get Started</a>
       </div>
-      <div class="price-card popular">
-        <span class="popular-badge">Most Popular</span>
+      <div @class(['price-card', 'popular' => $popularPlanKey === 'pro'])>
+        @if ($popularPlanKey === 'pro')
+          <span class="popular-badge">Most Popular</span>
+        @endif
         <div class="price-plan">Pro</div>
         <div class="price-amount"><sup>K</sup>750<span class="period"> / event</span></div>
         <div class="price-desc">For serious hosts who want everything</div>
@@ -313,9 +324,13 @@
           <li>Countdown timer</li>
           <li>Analytics & exports</li>
         </ul>
-        <a href="{{ auth()->check() ? route('billing.show', ['plan' => 'pro']) : route('register') }}" class="btn-price btn-price-fill">Get Pro</a>
+        <a href="{{ auth()->check() ? route('billing.show', ['plan' => 'pro']) : route('register') }}"
+           class="btn-price {{ $popularPlanKey === 'pro' ? 'btn-price-fill' : 'btn-price-outline' }}">Get Pro</a>
       </div>
-      <div class="price-card">
+      <div @class(['price-card', 'popular' => $popularPlanKey === 'pro_plus'])>
+        @if ($popularPlanKey === 'pro_plus')
+          <span class="popular-badge">Most Popular</span>
+        @endif
         <div class="price-plan">Pro+</div>
         <div class="price-amount"><sup>K</sup>1500<span class="period"> / event</span></div>
         <div class="price-desc">For event planners & agencies</div>
@@ -328,7 +343,8 @@
           <li>Priority support</li>
           <li>Dedicated account manager</li>
         </ul>
-        <a href="{{ auth()->check() ? route('billing.show', ['plan' => 'pro_plus']) : route('register') }}" class="btn-price btn-price-outline">Get Pro+</a>
+        <a href="{{ auth()->check() ? route('billing.show', ['plan' => 'pro_plus']) : route('register') }}"
+           class="btn-price {{ $popularPlanKey === 'pro_plus' ? 'btn-price-fill' : 'btn-price-outline' }}">Get Pro+</a>
       </div>
       <div class="price-card">
         <div class="price-plan">Enterprise</div>

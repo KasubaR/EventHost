@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\RsvpController as AdminRsvpController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\TicketingController as AdminTicketingController;
 use App\Http\Controllers\Admin\TicketRevenueController;
+use App\Http\Controllers\Admin\TicketTypeController as AdminTicketTypeController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use Illuminate\Support\Facades\Route;
 
@@ -136,6 +137,11 @@ Route::prefix('admin')
             Route::get('/reviews', [AdminReviewController::class, 'index'])->name('reviews.index');
         });
 
+        Route::middleware(['permission:ticketing.approve,admin'])->group(function (): void {
+            // Must precede /ticketing/{event} so "create" is not treated as an event id.
+            Route::get('/ticketing/create', [AdminTicketingController::class, 'create'])->name('ticketing.create');
+        });
+
         Route::middleware('permission:ticketing.view,admin')->group(function (): void {
             // Registered before /ticketing/{event} below — otherwise that
             // wildcard would swallow /ticketing/revenue by matching "revenue"
@@ -154,10 +160,19 @@ Route::prefix('admin')
         });
 
         Route::middleware(['permission:ticketing.approve,admin', 'throttle:admin-mutations'])->group(function (): void {
+            Route::post('/ticketing/create', [AdminTicketingController::class, 'store'])->name('ticketing.store');
+
             Route::post('/ticketing/{event}/hero', [AdminTicketingController::class, 'updateHero'])->name('ticketing.hero');
             Route::post('/ticketing/{event}/approve', [AdminTicketingController::class, 'approve'])->name('ticketing.approve');
             Route::post('/ticketing/{event}/reject', [AdminTicketingController::class, 'reject'])->name('ticketing.reject');
             Route::patch('/ticketing/{event}/terms', [AdminTicketingController::class, 'updateTerms'])->name('ticketing.terms');
+            Route::patch('/ticketing/{event}/commission', [AdminTicketingController::class, 'updateCommission'])->name('ticketing.commission');
+
+            Route::get('/ticketing/{event}/ticket-types/create', [AdminTicketTypeController::class, 'create'])->name('ticketing.ticket-types.create');
+            Route::post('/ticketing/{event}/ticket-types', [AdminTicketTypeController::class, 'store'])->name('ticketing.ticket-types.store');
+            Route::get('/ticketing/{event}/ticket-types/{ticketType}/edit', [AdminTicketTypeController::class, 'edit'])->name('ticketing.ticket-types.edit');
+            Route::patch('/ticketing/{event}/ticket-types/{ticketType}', [AdminTicketTypeController::class, 'update'])->name('ticketing.ticket-types.update');
+            Route::delete('/ticketing/{event}/ticket-types/{ticketType}', [AdminTicketTypeController::class, 'destroy'])->name('ticketing.ticket-types.destroy');
         });
 
         Route::middleware(['permission:ticketing.payouts.manage,admin', 'throttle:admin-mutations'])->group(function (): void {

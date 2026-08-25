@@ -8,10 +8,20 @@
         <script src="{{ asset('js/datetime-picker.js') }}" defer></script>
         <script src="{{ asset('js/media-uploader.js') }}" defer></script>
         <script src="{{ asset('js/admin-hero-upload.js') }}" defer></script>
+        <script src="{{ asset('js/events-form.js') }}" defer></script>
     @endpush
 
     @php
         $ev = $adminEvent;
+        $canApprove = auth('admin')->user()?->can('ticketing.approve');
+        $activatableStatuses = [
+            \App\Enums\TicketingStatus::Draft,
+            \App\Enums\TicketingStatus::Rejected,
+            \App\Enums\TicketingStatus::PendingReview,
+        ];
+        $canActivate = $canApprove && in_array($ev->ticketing_status, $activatableStatuses, true);
+        $hasActiveType = $ev->ticketTypes->contains(fn ($type) => $type->is_active);
+        $commissionPercent = $commissionPercent ?? $ev->commissionPercent();
     @endphp
 
     <x-slot name="title">Ticketing — {{ $ev->name }}</x-slot>
@@ -32,13 +42,23 @@
     </x-slot>
 
     @if (session('status') === 'ticketing-approved')
-        <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Ticket sales approved. The public page is live — checkout ships in a later phase.</div>
+        <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Ticket sales approved. The public page is live.</div>
     @elseif (session('status') === 'ticketing-rejected')
         <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Activation declined. The organizer can edit and resubmit.</div>
     @elseif (session('status') === 'ticketing-hero-updated')
         <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Hero image saved. It is the banner on the public ticket page.</div>
     @elseif (session('status') === 'ticketing-terms-updated')
         <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Negotiated terms saved.</div>
+    @elseif (session('status') === 'ticketing-commission-updated')
+        <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Commission mode saved.</div>
+    @elseif (session('status') === 'ticketed-event-created')
+        <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Ticketed draft created for the client. Add ticket types and a hero, then activate sales.</div>
+    @elseif (session('status') === 'ticket-type-created')
+        <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Ticket type added.</div>
+    @elseif (session('status') === 'ticket-type-updated')
+        <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Ticket type saved.</div>
+    @elseif (session('status') === 'ticket-type-deleted')
+        <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Ticket type removed.</div>
     @endif
 
     @if ($errors->any())
@@ -53,7 +73,7 @@
             <p class="admin-muted admin-mt-sm" data-hero-empty>No hero image yet. Upload one before approving ticket sales.</p>
         @endunless
 
-        @if (auth('admin')->user()?->can('ticketing.approve'))
+        @if ($canApprove)
             <form method="post" action="{{ route('admin.ticketing.hero', $ev) }}" enctype="multipart/form-data" class="profile-form admin-mt-md">
                 @csrf
                 <div class="admin-hero-upload" data-upload-queue>
@@ -121,7 +141,44 @@
                 </div>
             </dl>
 
-            @if(auth('admin')->user()?->can('ticketing.approve'))
+            @if ($canApprove && $ev->canEditCommissionMode())
+                <form method="post" action="{{ route('admin.ticketing.commission', $ev) }}" class="profile-form admin-mt-md">
+                    @csrf
+                    @method('PATCH')
+                    <div class="profile-field">
+                        <div class="tkt-commission-heading">
+                            <h3>Who pays the commission</h3>
+                            <p class="admin-muted">{{ rtrim(rtrim((string) $commissionPercent, '0'), '.') }}% EventHost commission.</p>
+                        </div>
+                        <div class="evt-product-choice">
+                            <label class="evt-product-choice-card">
+                                <input type="radio" name="commission_mode" value="absorb" class="evt-check-input"
+                                       @checked(old('commission_mode', $ev->commission_mode?->value) === 'absorb')>
+                                <span>
+                                    <strong>Deducted from host earnings</strong>
+                                    <span class="evt-product-choice-hint">Buyers pay the listed price.</span>
+                                </span>
+                            </label>
+                            <label class="evt-product-choice-card">
+                                <input type="radio" name="commission_mode" value="pass_through" class="evt-check-input"
+                                       @checked(old('commission_mode', $ev->commission_mode?->value) === 'pass_through')>
+                                <span>
+                                    <strong>Added to the buyer’s price</strong>
+                                    <span class="evt-product-choice-hint">Host receives the listed price.</span>
+                                </span>
+                            </label>
+                        </div>
+                        @error('commission_mode')
+                            <p class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
+                        @enderror
+                    </div>
+                    <div class="admin-actions admin-mt-md">
+                        <button type="submit" class="btn-primary">Save commission mode</button>
+                    </div>
+                </form>
+            @endif
+
+            @if ($canApprove)
                 <form method="post" action="{{ route('admin.ticketing.terms', $ev) }}" class="profile-form admin-mt-md">
                     @csrf
                     @method('PATCH')
@@ -163,7 +220,7 @@
                 </div>
             @endif
 
-            @if ($ev->ticketing_status === \App\Enums\TicketingStatus::PendingReview && auth('admin')->user()?->can('ticketing.approve'))
+            @if ($canActivate)
                 <form method="post" action="{{ route('admin.ticketing.approve', $ev) }}" class="profile-form admin-mt-md">
                     @csrf
                     <label for="agreed_payout_on">Agreed payout date <span class="profile-optional">optional</span></label>
@@ -171,10 +228,18 @@
                            class="profile-input" value="{{ old('agreed_payout_on') }}"
                            min="{{ $ev->event_date?->format('Y-m-d') }}">
                     <div class="admin-actions admin-mt-md">
-                        <button type="submit" class="btn-primary" data-hero-approve @disabled(! $ev->cover_image)>Approve ticket sales</button>
+                        <button type="submit" class="btn-primary" data-hero-approve
+                                @disabled(! $ev->cover_image || ! $hasActiveType)>
+                            Approve ticket sales
+                        </button>
                     </div>
+                    @unless ($hasActiveType)
+                        <p class="admin-muted admin-mt-sm">Add at least one active ticket type before activating.</p>
+                    @endunless
                 </form>
+            @endif
 
+            @if ($ev->ticketing_status === \App\Enums\TicketingStatus::PendingReview && $canApprove)
                 <form method="post" action="{{ route('admin.ticketing.reject', $ev) }}" class="profile-form admin-mt-md">
                     @csrf
                     <label for="ticketing_rejection_note">Decline reason</label>
@@ -187,7 +252,16 @@
         </div>
 
         <div class="admin-panel-card">
-            <h2>Ticket types</h2>
+            <div class="evt-section-head evt-section-head--with-action">
+                <div>
+                    <h2>Ticket types</h2>
+                </div>
+                @if ($canApprove)
+                    <a href="{{ route('admin.ticketing.ticket-types.create', $ev) }}" class="evt-btn-outline evt-btn-tiny">
+                        <i class="fa-solid fa-plus"></i> Add type
+                    </a>
+                @endif
+            </div>
             @if ($ev->ticketTypes->isEmpty())
                 <p class="admin-muted admin-mt-sm">No ticket types.</p>
             @else
@@ -201,9 +275,20 @@
                                     · {{ $type->quantity === null ? 'Unlimited' : number_format($type->quantity).' available' }}
                                 </p>
                             </div>
-                            <span class="tkt-sales-status {{ $type->is_active ? 'tkt-sales-status--on' : 'tkt-sales-status--off' }}">
-                                {{ $type->is_active ? 'Active' : 'Hidden' }}
-                            </span>
+                            <div class="evt-card-actions">
+                                <span class="tkt-sales-status {{ $type->is_active ? 'tkt-sales-status--on' : 'tkt-sales-status--off' }}">
+                                    {{ $type->is_active ? 'Active' : 'Hidden' }}
+                                </span>
+                                @if ($canApprove)
+                                    <a href="{{ route('admin.ticketing.ticket-types.edit', [$ev, $type]) }}" class="evt-btn-outline evt-btn-tiny">Edit</a>
+                                    <form method="post" action="{{ route('admin.ticketing.ticket-types.destroy', [$ev, $type]) }}"
+                                          data-confirm="Remove this ticket type?">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="evt-btn-outline evt-btn-tiny evt-btn-danger-outline">Delete</button>
+                                    </form>
+                                @endif
+                            </div>
                         </li>
                     @endforeach
                 </ul>

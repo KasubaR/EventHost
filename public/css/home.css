@@ -337,13 +337,10 @@
   text-shadow: 0 1px 4px rgba(0,0,0,0.6);
 }
 
-/* Ticketing feature tile — a gradient CTA, not a photo, so it reads as a
-   capability rather than another occasion type in the row. */
+/* Ticketing feature tile — same photo-card treatment as the occasion
+   types, showing what a sold ticket actually looks like. */
 .etc-card-ticketing {
-  background-image: linear-gradient(135deg, var(--pink) 0%, var(--purple-mid) 55%, var(--accent) 100%);
-}
-.etc-card-ticketing:hover .etc-icon {
-  background: rgba(255, 255, 255, 0.3);
+  background-image: url('/images/ticket-sells-mockup.webp');
 }
 .etc-badge {
   position: absolute;
@@ -838,10 +835,28 @@
   position: relative;
   overflow: hidden;
 }
+.tix-banner-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  margin-bottom: 44px;
+}
 .tix-banner-header {
   max-width: 560px;
-  margin: 0 auto 44px;
+  margin: 0;
+  text-align: left;
   position: relative;
+}
+.tix-banner-visual {
+  flex-shrink: 0;
+  position: relative;
+}
+.tix-banner-visual img {
+  width: 240px;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 16px 30px rgba(0, 0, 0, 0.35));
 }
 .tix-eyebrow {
   display: inline-flex;
@@ -943,6 +958,7 @@
   .event-types-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .etc-label { font-size: 11px; }
   .tix-banner { padding: 44px 28px; }
+  .tix-banner-visual img { width: 180px; }
 }
 
 @media (max-width: 768px) {
@@ -959,6 +975,9 @@
   .steps::before { display: none; }
   .hero-mockup-main { max-width: 420px; }
   .tix-banner { padding: 36px 20px; border-radius: 16px; }
+  .tix-banner-top { flex-direction: column; }
+  .tix-banner-header { text-align: center; }
+  .tix-banner-visual img { width: 150px; }
   .tix-flow { grid-template-columns: 1fr; }
   .tix-flow-arrow { transform: rotate(90deg); margin-top: 0; height: 24px; }
 }

@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\Faq;
 use App\Models\InvitationTemplate;
 use App\Models\Review;
+use App\Services\PopularBillingPlanResolver;
 use Illuminate\View\View;
 
 class HomeController extends Controller
@@ -16,7 +17,7 @@ class HomeController extends Controller
      */
     private const HOMEPAGE_LIMIT = 6;
 
-    public function index(): View
+    public function index(PopularBillingPlanResolver $popularPlans): View
     {
         $upcomingEvents = Event::query()
             ->publiclyListed()
@@ -48,6 +49,15 @@ class HomeController extends Controller
         // Backs the "N premium templates" pricing-card copy — see home.blade.php.
         $activeTemplateCount = InvitationTemplate::activeCount();
 
-        return view('home', compact('upcomingEvents', 'featuredTemplates', 'homepageFaqs', 'featuredReviews', 'activeTemplateCount'));
+        $popularPlanKey = $popularPlans->resolve();
+
+        return view('home', compact(
+            'upcomingEvents',
+            'featuredTemplates',
+            'homepageFaqs',
+            'featuredReviews',
+            'activeTemplateCount',
+            'popularPlanKey',
+        ));
     }
 }

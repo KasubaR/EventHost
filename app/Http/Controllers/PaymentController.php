@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\LencoService;
 use App\Services\PaymentCompletionService;
 use App\Services\PaymentStatusService;
+use App\Services\PopularBillingPlanResolver;
 use App\Services\TicketPaymentStatusService;
 use App\Support\BillingPlan;
 use App\Support\PaymentLog;
@@ -23,7 +24,7 @@ use RuntimeException;
 
 class PaymentController extends Controller
 {
-    public function show(Request $request): View
+    public function show(Request $request, PopularBillingPlanResolver $popularPlans): View
     {
         $user = $request->user();
         $environment = (string) config('services.lenco.environment', 'sandbox');
@@ -52,6 +53,7 @@ class PaymentController extends Controller
             'selectedPlan' => $request->query('plan'),
             'bankTransferEnabled' => (bool) config('services.lenco.bank_transfer_enabled', true),
             'activeTemplateCount' => InvitationTemplate::activeCount(),
+            'popularPlanKey' => $popularPlans->resolve(),
         ]);
     }
 

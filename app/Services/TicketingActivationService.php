@@ -39,8 +39,21 @@ class TicketingActivationService
         $locked = DB::transaction(function () use ($event, $admin, $agreedPayoutOn): Event {
             $locked = Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
 
-            if ($locked->ticketing_status !== TicketingStatus::PendingReview) {
-                throw new TicketingActivationException('Only events awaiting review can be approved.');
+            // White-glove admin create can activate from draft/rejected without
+            // a host submit; the host-submitted path still arrives as pending_review.
+            $activatable = [
+                TicketingStatus::PendingReview,
+                TicketingStatus::Draft,
+                TicketingStatus::Rejected,
+            ];
+
+            if (! in_array($locked->ticketing_status, $activatable, true)) {
+                throw new TicketingActivationException('Only draft, declined, or awaiting-review events can be approved.');
+            }
+
+            $activeTypes = $locked->ticketTypes()->where('is_active', true)->count();
+            if ($activeTypes < 1) {
+                throw new TicketingActivationException('Add at least one active ticket type before approving ticket sales.');
             }
 
             if (! filled($locked->cover_image)) {
@@ -49,6 +62,7 @@ class TicketingActivationService
 
             $locked->forceFill([
                 'ticketing_status' => TicketingStatus::Approved,
+                'ticketing_submitted_at' => $locked->ticketing_submitted_at ?? now(),
                 'ticketing_reviewed_at' => now(),
                 'ticketing_reviewed_by' => $admin->id,
                 'ticketing_rejection_note' => null,

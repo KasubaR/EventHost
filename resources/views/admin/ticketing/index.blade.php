@@ -11,6 +11,11 @@
                 <h1 class="dph-title">Ticket sales</h1>
                 <p class="dph-sub">Review ticketed events before buyers can pay through EventHost.</p>
             </div>
+            @if (auth('admin')->user()?->can('ticketing.approve'))
+                <a href="{{ route('admin.ticketing.create') }}" class="btn-primary dash-header-cta">
+                    <i class="fa-solid fa-plus"></i> Create ticketed event
+                </a>
+            @endif
         </div>
     </x-slot>
 

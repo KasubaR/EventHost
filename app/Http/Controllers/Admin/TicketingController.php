@@ -2,15 +2,21 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\CommissionMode;
+use App\Enums\EventProductKind;
 use App\Enums\TicketingStatus;
 use App\Exceptions\TicketingActivationException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ApproveTicketingRequest;
 use App\Http\Requests\Admin\RejectTicketingRequest;
+use App\Http\Requests\Admin\StoreAdminTicketedEventRequest;
+use App\Http\Requests\Admin\UpdateAdminEventCommissionRequest;
 use App\Http\Requests\Admin\UpdateEventTicketingTermsRequest;
 use App\Http\Requests\Admin\UpdateTicketedHeroRequest;
 use App\Models\Admin;
 use App\Models\Event;
+use App\Models\User;
+use App\Services\TicketedEventCreator;
 use App\Services\TicketingActivationService;
 use App\Support\AdminActivity;
 use App\Support\InvitationMediaStager;
@@ -50,6 +56,46 @@ class TicketingController extends Controller
         ]);
     }
 
+    public function create(Request $request): View
+    {
+        $preselectedUserId = (int) $request->query('user', 0);
+        $clients = User::query()
+            ->where('status', '!=', 'suspended')
+            ->orderBy('name')
+            ->orderBy('email')
+            ->get(['id', 'name', 'email', 'status']);
+
+        if ($preselectedUserId > 0 && ! $clients->contains('id', $preselectedUserId)) {
+            $preselectedUserId = 0;
+        }
+
+        return view('admin.ticketing.create', [
+            'clients' => $clients,
+            'preselectedUserId' => $preselectedUserId > 0 ? $preselectedUserId : (int) old('user_id', 0),
+            'productKind' => EventProductKind::Ticketed,
+        ]);
+    }
+
+    public function store(
+        StoreAdminTicketedEventRequest $request,
+        TicketedEventCreator $creator
+    ): RedirectResponse {
+        $data = $request->validated();
+        $ownerId = (int) $data['user_id'];
+        unset($data['user_id']);
+
+        $event = $creator->create($ownerId, $data);
+
+        AdminActivity::log('Admin created ticketed event for client', [
+            'event_id' => $event->id,
+            'user_id' => $ownerId,
+        ]);
+
+        return redirect()
+            ->route('admin.ticketing.show', $event)
+            ->with('status', 'ticketed-event-created');
+    }
+
     public function show(Event $event): View
     {
         abort_unless($event->isTicketed(), 404);
@@ -58,7 +104,34 @@ class TicketingController extends Controller
 
         return view('admin.ticketing.show', [
             'adminEvent' => $event,
+            'commissionPercent' => $event->commissionPercent(),
         ]);
+    }
+
+    public function updateCommission(UpdateAdminEventCommissionRequest $request, Event $event): RedirectResponse
+    {
+        abort_unless($event->isTicketed(), 404);
+
+        if (! $event->canEditCommissionMode()) {
+            return redirect()
+                ->route('admin.ticketing.show', $event)
+                ->withErrors([
+                    'commission_mode' => 'Commission settings are locked after ticket sales are approved.',
+                ]);
+        }
+
+        $event->forceFill([
+            'commission_mode' => CommissionMode::from($request->validated('commission_mode')),
+        ])->save();
+
+        AdminActivity::log('Admin updated ticketed event commission mode', [
+            'event_id' => $event->id,
+            'commission_mode' => $event->commission_mode?->value,
+        ]);
+
+        return redirect()
+            ->route('admin.ticketing.show', $event)
+            ->with('status', 'ticketing-commission-updated');
     }
 
     public function updateHero(UpdateTicketedHeroRequest $request, Event $event): RedirectResponse|JsonResponse
