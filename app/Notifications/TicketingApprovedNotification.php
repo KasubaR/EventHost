@@ -47,6 +47,6 @@ class TicketingApprovedNotification extends Notification implements ShouldQueue
             route('events.public', ['slug' => $this->event->slug], absolute: true)
         );
 
-        return $mail->salutation(config('app.name'));
+        return $mail->salutation('The '.config('app.name').' Team');
     }
 }

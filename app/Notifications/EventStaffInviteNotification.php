@@ -45,7 +45,7 @@ class EventStaffInviteNotification extends Notification implements ShouldQueue
             ->subject('You\'ve been added as staff on '.$event->name)
             ->greeting('Hello'.($this->eventStaff->name ? ', '.$this->eventStaff->name : '').'!')
             ->line(($inviter->name ?? 'The host').' has invited you to help run "'.$event->name.'" on '.config('app.name').'.')
-            ->line('Your role: '.$this->eventStaff->role->label().' — '.$this->eventStaff->role->description())
+            ->line('Your role: '.$this->eventStaff->role->label().': '.$this->eventStaff->role->description())
             ->action('Accept invite', route('staff-invitations.show', $this->eventStaff->invite_token, absolute: true))
             ->line('This invite link expires in 7 days.')
             ->salutation('The '.config('app.name').' Team');

@@ -37,7 +37,7 @@ class RsvpConfirmationNotification extends Notification implements ShouldQueue
         $statusLabel = $this->rsvp->status->attendanceLabel();
 
         $message = (new MailMessage)
-            ->subject('RSVP recorded — '.$this->event->name)
+            ->subject('RSVP recorded: '.$this->event->name)
             ->greeting('Hello, '.$this->guest->name.'!')
             ->line('Thanks for letting us know about '.$this->event->name.'.')
             ->line('Your response: '.$statusLabel.'.')
@@ -65,7 +65,7 @@ class RsvpConfirmationNotification extends Notification implements ShouldQueue
 
             if ($qrUrl !== null) {
                 $message
-                    ->line('Your entry QR code is attached — show it at the door.')
+                    ->line('Your entry QR code is attached. Show it at the door.')
                     ->attachData(
                         app(QrCodeService::class)->png($qrUrl),
                         Str::slug($this->guest->name).'-entry-pass.png',
@@ -74,6 +74,6 @@ class RsvpConfirmationNotification extends Notification implements ShouldQueue
             }
         }
 
-        return $message->salutation(config('app.name'));
+        return $message->salutation('The '.config('app.name').' Team');
     }
 }

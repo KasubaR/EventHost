@@ -42,22 +42,22 @@ class TicketOrderConfirmationNotification extends Notification implements Should
             $eventLine .= ' at '.Str::substr($order->event->event_time, 0, 5);
         }
         if ($order->event->venue) {
-            $eventLine .= ' — '.$order->event->venue;
+            $eventLine .= ', '.$order->event->venue;
         }
 
         $mail = (new MailMessage)
             ->subject('Your tickets for '.$order->event->name)
             ->greeting('Hi '.$order->buyer_name.',')
-            ->line('Your payment was successful — here are your tickets for '.$order->event->name.'.')
+            ->line('Your payment was successful. Here are your tickets for '.$order->event->name.'.')
             ->line('Order reference: '.$order->order_reference)
             ->line($eventLine);
 
         foreach ($order->tickets as $ticket) {
-            $mail->line($ticket->ticketType?->name.' — '.$order->currency.' '.number_format((float) $ticket->price_paid, 2));
+            $mail->line($ticket->ticketType?->name.': '.$order->currency.' '.number_format((float) $ticket->price_paid, 2));
             $mail->action('View ticket', $ticket->publicUrl());
         }
 
-        $mail->line('Keep this email — each ticket link shows the QR code to scan at the door.')
+        $mail->line('Keep this email. Each ticket link shows the QR code to scan at the door.')
             ->salutation('The '.config('app.name').' Team');
 
         $qrService = app(QrCodeService::class);

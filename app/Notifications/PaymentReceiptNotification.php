@@ -31,7 +31,7 @@ class PaymentReceiptNotification extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Payment received — '.config('app.name'))
+            ->subject('Payment received: '.config('app.name'))
             ->greeting('Hello, '.$notifiable->name.'!')
             ->line('Your payment has been confirmed.')
             ->line('Plan: '.BillingPlan::labelForPlanKey($this->payment->plan_key))

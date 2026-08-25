@@ -33,7 +33,7 @@ class CustomQuoteReadyNotification extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         $mail = (new MailMessage)
-            ->subject('Your custom Enterprise quote is ready — '.config('app.name'))
+            ->subject('Your custom Enterprise quote is ready: '.config('app.name'))
             ->greeting('Hello, '.$notifiable->name.'!')
             ->line('EventHost has prepared a custom Enterprise quote for your account.')
             ->line('Amount due: '.$this->quote->formattedAmount().'.')

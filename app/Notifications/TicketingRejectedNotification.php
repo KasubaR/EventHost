@@ -43,6 +43,6 @@ class TicketingRejectedNotification extends Notification implements ShouldQueue
                 'Review and resubmit',
                 route('events.ticket-types.index', $this->event, absolute: true)
             )
-            ->salutation(config('app.name'));
+            ->salutation('The '.config('app.name').' Team');
     }
 }

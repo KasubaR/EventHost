@@ -53,6 +53,6 @@ class EventUpdatedNotification extends Notification implements ShouldQueue
             );
         }
 
-        return $mail->salutation(config('app.name'));
+        return $mail->salutation('The '.config('app.name').' Team');
     }
 }

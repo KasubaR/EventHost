@@ -35,7 +35,7 @@ class NewRsvpReceivedNotification extends Notification implements ShouldQueue
         $statusLabel = $this->rsvp->status->label();
 
         return (new MailMessage)
-            ->subject('New RSVP: '.$this->guest->name.' — '.$this->event->name)
+            ->subject('New RSVP from '.$this->guest->name.': '.$this->event->name)
             ->greeting('Hello, '.$notifiable->name.'!')
             ->line($this->guest->name.' just responded to '.$this->event->name.'.')
             ->line('Response: '.$statusLabel.'.')
@@ -45,6 +45,6 @@ class NewRsvpReceivedNotification extends Notification implements ShouldQueue
             )
             ->action('View event', route('events.show', ['event' => $this->event], absolute: true))
             ->line('You can track responses from your event dashboard.')
-            ->salutation(config('app.name'));
+            ->salutation('The '.config('app.name').' Team');
     }
 }

@@ -40,15 +40,15 @@ class ContactMessageNotification extends Notification implements ShouldQueue
             ->greeting('New contact form submission')
             ->line('**From:** '.$this->senderName.' <'.$this->senderEmail.'>')
             ->line('**Topic:** '.$this->subject)
-            ->line('---');
+            ->line('**Message**');
 
-        // Preserve the sender's paragraph breaks — MailMessage renders one line per call.
+        // Preserve the sender's paragraph breaks. MailMessage renders one line per call.
         foreach (preg_split('/\R{2,}/', trim($this->body)) ?: [] as $paragraph) {
             $message->line(trim($paragraph));
         }
 
         return $message
-            ->line('---')
+            ->line('**Reply**')
             ->line('Reply directly to this email to respond to '.$this->senderName.'.')
             ->salutation('The '.config('app.name').' Team');
     }
