@@ -20,19 +20,25 @@ class TicketCheckInService
      *         id: int, attendee_name: ?string, attendee_email: ?string,
      *         attendee_phone: ?string, ticket_type: ?string,
      *         order_reference: ?string, checked_in_at: ?string,
+     *         checked_in_by: ?string,
      *     },
      *     already_checked_in: bool,
      * }
+     *
+     * $viaLabel identifies a no-login staff-link door (EventStaffLink::scanLabel()).
+     * It is the only attribution those scans have — $staffUserId is null for
+     * them, since there is no account behind the link.
      */
-    public function confirm(Ticket $ticket, ?int $staffUserId): array
+    public function confirm(Ticket $ticket, ?int $staffUserId, ?string $viaLabel = null): array
     {
-        return DB::transaction(function () use ($ticket, $staffUserId): array {
+        return DB::transaction(function () use ($ticket, $staffUserId, $viaLabel): array {
             /** @var Ticket $locked */
             $locked = Ticket::query()->whereKey($ticket->id)->lockForUpdate()->firstOrFail();
-            $locked->loadMissing(['event', 'ticketType', 'order']);
+            $locked->loadMissing(['event', 'ticketType', 'order', 'checkedInBy']);
 
             if ($locked->event === null || ! $locked->event->isCheckInOpen()) {
-                throw new TicketCheckInException('Check-in is only available on the event date.');
+                throw new TicketCheckInException($locked->event?->checkInClosedReason()
+                    ?? 'Check-in is not open for this event yet, or has already closed.');
             }
 
             if ($locked->status === TicketStatus::Cancelled || $locked->status === TicketStatus::Refunded) {
@@ -50,6 +56,7 @@ class TicketCheckInService
                     'status' => TicketStatus::Used,
                     'checked_in_at' => now(),
                     'checked_in_by' => $staffUserId,
+                    'checked_in_via_label' => $viaLabel,
                 ])->save();
             }
 
@@ -62,6 +69,10 @@ class TicketCheckInService
                     'ticket_type' => $locked->ticketType?->name,
                     'order_reference' => $locked->order?->order_reference,
                     'checked_in_at' => $locked->checked_in_at?->toIso8601String(),
+                    // Which door took it the first time — the scanner shows this
+                    // on a repeat so staff can tell a re-entry at their own gate
+                    // from a copy surfacing at a different one.
+                    'checked_in_by' => $locked->checkedInByLabel(),
                 ],
                 'already_checked_in' => $alreadyIn,
             ];

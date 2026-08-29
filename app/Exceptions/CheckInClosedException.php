@@ -5,12 +5,12 @@ namespace App\Exceptions;
 use RuntimeException;
 
 /**
- * Door check-in is only for the calendar day of the event. Thrown when a
- * confirm is attempted before or after that date.
+ * Door check-in runs for a window around the event's start, not its calendar
+ * day — see Event::isCheckInOpen(). Thrown when a confirm lands outside it.
  */
 class CheckInClosedException extends RuntimeException
 {
-    public function __construct(string $message = 'Check-in is only available on the event date.')
+    public function __construct(string $message = 'Check-in is not open for this event yet, or has already closed.')
     {
         parent::__construct($message);
     }

@@ -143,10 +143,25 @@ class StaffScannerLinkTest extends TestCase
             ->assertSee("isn't active", false);
     }
 
+    /**
+     * Starting now, on the venue's clock, puts the event squarely inside the
+     * check-in window whatever wall-clock time the suite runs at. The factory's
+     * random event_time made this flaky once the window gained a 12-hour tail.
+     */
+    private function eventOnToday(User $owner): Event
+    {
+        $localNow = now()->timezone(config('events.timezone'));
+
+        return Event::factory()->for($owner)->create([
+            'event_date' => $localNow->toDateString(),
+            'event_time' => $localNow->format('H:i:s'),
+        ]);
+    }
+
     public function test_staff_link_confirms_check_in_by_token_without_authentication(): void
     {
         $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->create(['event_date' => now()->toDateString()]);
+        $event = $this->eventOnToday($owner);
         $link = EventStaffLink::factory()->for($event)->create();
         $guest = Guest::factory()->for($event)->create();
 
@@ -167,7 +182,7 @@ class StaffScannerLinkTest extends TestCase
     public function test_staff_link_confirms_check_in_by_guest_id(): void
     {
         $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->create(['event_date' => now()->toDateString()]);
+        $event = $this->eventOnToday($owner);
         $link = EventStaffLink::factory()->for($event)->create();
         $guest = Guest::factory()->for($event)->create();
 

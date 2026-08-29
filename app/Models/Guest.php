@@ -97,6 +97,16 @@ class Guest extends Model
         return $this->belongsTo(User::class, 'checked_in_by');
     }
 
+    /**
+     * Who to credit a check-in to, whichever door it came through: a dashboard
+     * scan has a real user, a staff-link scan only has the label its link was
+     * snapshotted under. Null means nobody has scanned this guest in yet.
+     */
+    public function checkedInByLabel(): ?string
+    {
+        return $this->checkedInBy?->name ?? $this->checked_in_via_label;
+    }
+
     public function hasResponded(): bool
     {
         return $this->rsvp()->exists();

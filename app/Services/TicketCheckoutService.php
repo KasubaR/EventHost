@@ -31,7 +31,7 @@ class TicketCheckoutService
     ) {}
 
     /**
-     * @param  array{name: string, email: string, phone?: ?string}  $buyer
+     * @param  array{name: string, email: string, phone: string}  $buyer
      * @param  array{method: string, provider?: ?string, phone?: ?string, bank_name?: ?string}  $payment
      * @return array{order: TicketOrder, result: array<string, mixed>}
      */
@@ -86,7 +86,7 @@ class TicketCheckoutService
                 'cart_id' => $cartId,
                 'buyer_name' => $buyer['name'],
                 'buyer_email' => $buyer['email'],
-                'buyer_phone' => $buyer['phone'] ?? null,
+                'buyer_phone' => $buyer['phone'],
                 'status' => TicketOrderStatus::PendingPayment,
                 'currency' => 'ZMW',
                 'expires_at' => $paymentExpiresAt,

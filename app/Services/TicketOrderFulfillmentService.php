@@ -12,7 +12,6 @@ use App\Notifications\TicketOrderConfirmationNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Str;
 
 /**
  * Issues tickets once a TicketOrder's payment is confirmed. Parallel to
@@ -70,7 +69,7 @@ class TicketOrderFulfillmentService
                         'ticket_order_item_id' => $item->id,
                         'event_id' => $locked->event_id,
                         'ticket_type_id' => $item->ticket_type_id,
-                        'public_token' => $this->uniquePublicToken(),
+                        'public_token' => Ticket::generateUniqueToken(),
                         'attendee_name' => $locked->buyer_name,
                         'attendee_email' => $locked->buyer_email,
                         'attendee_phone' => $locked->buyer_phone,
@@ -183,18 +182,6 @@ class TicketOrderFulfillmentService
 
             return $locked;
         });
-    }
-
-    private function uniquePublicToken(): string
-    {
-        for ($attempt = 0; $attempt < 3; $attempt++) {
-            $token = Str::random(48);
-            if (! Ticket::query()->where('public_token', $token)->exists()) {
-                return $token;
-            }
-        }
-
-        return Str::random(48);
     }
 
     private function sendConfirmation(TicketOrder $order): void

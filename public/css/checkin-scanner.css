@@ -112,6 +112,41 @@
   color: #8a5a00;
 }
 
+/* A duplicate ticket scan. Paid entry, so this differs from a success in size
+   and weight as well as colour — a tinted panel the same shape as the green
+   one is exactly what gets tapped through on a busy door, and colour alone
+   also fails a colour-blind scanner. Guests keep the quieter --warn above:
+   re-presenting a wedding badge is expected, not a refusal. */
+.ckin-result--deny {
+  background: var(--pink, #e00e4f);
+  color: #fff;
+  padding: 16px 14px;
+  box-shadow: 0 0 0 4px rgba(224, 14, 79, 0.22);
+}
+
+.ckin-result-headline {
+  display: block;
+}
+
+.ckin-result--deny .ckin-result-headline {
+  font-size: 20px;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ckin-result-sub {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.ckin-result--deny .ckin-result-sub {
+  color: rgba(255, 255, 255, 0.92);
+}
+
 .ckin-result--error {
   background: color-mix(in srgb, var(--pink, #e00e4f) 12%, transparent);
   color: var(--pink, #e00e4f);

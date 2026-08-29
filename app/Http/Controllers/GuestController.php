@@ -113,11 +113,12 @@ class GuestController extends Controller
                         $guest->invitation_sent ? 'Yes' : 'No',
                         $guest->invitation_sent_at?->format('Y-m-d H:i') ?? '',
                         $guest->checked_in_at?->timezone(config('app.timezone'))->format('Y-m-d H:i') ?? '',
-                        // Blank rather than "—": a door-staff-link check-in has no
-                        // attributable user (CheckInService::confirm() takes a
-                        // nullable staff id), so blank here means "checked in,
-                        // scanned via a staff link" — not "data missing".
-                        $guest->checkedInBy?->name ?? '',
+                        // A dashboard scan resolves to the staff member's name; a
+                        // door-staff-link scan has no user behind it, so it falls
+                        // back to that link's snapshotted label. Blank only when
+                        // nobody scanned this guest in — including rows checked in
+                        // before links were recorded.
+                        $guest->checkedInByLabel() ?? '',
                     ]);
                 }
             });

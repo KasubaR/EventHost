@@ -19,7 +19,19 @@ class TicketPdfService
 
     public function cachePath(Ticket $ticket): string
     {
-        return 'ticket-pdfs/v2/'.$ticket->public_token.'.pdf';
+        return $this->cachePathForToken($ticket->public_token);
+    }
+
+    /**
+     * Keyed on the token rather than the ticket id so a reissue can delete the
+     * *old* file after the ticket in memory has already moved on to its new
+     * token (EventTicketManagementController::reissue()).
+     */
+    public function cachePathForToken(string $token): string
+    {
+        // v3: the embedded QR moved to high error correction, so PDFs cached
+        // under v2 hold a code the "Used" badge could obscure past recovery.
+        return 'ticket-pdfs/v3/'.$token.'.pdf';
     }
 
     public function render(Ticket $ticket): string
@@ -42,7 +54,7 @@ class TicketPdfService
     private function generate(Ticket $ticket): string
     {
         $qrDataUri = 'data:image/png;base64,'.base64_encode(
-            $this->qrCodeService->png($ticket->publicUrl(), 260)
+            $this->qrCodeService->png($ticket->publicUrl(), 260, QrCodeService::ECC_HIGH)
         );
 
         $logoPath = public_path('images/logo/eventhost-mail.png');

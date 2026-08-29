@@ -42,6 +42,7 @@
 
             <div class="tkc-checkout-grid">
                 <section class="tkc-form-section">
+                    <form id="tkcCheckoutForm" class="tkc-checkout-form">
                     <h2 class="tkc-section-title">Your details</h2>
                     <div class="tkc-field">
                         <label class="tkc-label" for="tkc-name">Full name</label>
@@ -53,8 +54,8 @@
                         <p class="tkc-field-note">Your tickets and QR codes are sent here.</p>
                     </div>
                     <div class="tkc-field">
-                        <label class="tkc-label" for="tkc-phone">Phone (optional)</label>
-                        <input id="tkc-phone" type="tel" class="tkc-input" name="phone" autocomplete="tel" value="{{ old('phone', $buyer->phone ?? '') }}">
+                        <label class="tkc-label" for="tkc-phone">Phone</label>
+                        <input id="tkc-phone" type="tel" class="tkc-input" name="phone" required autocomplete="tel" placeholder="097 123 4567" value="{{ old('phone', $buyer->phone ?? '') }}">
                     </div>
 
                     <h2 class="tkc-section-title">Payment method</h2>
@@ -99,9 +100,10 @@
                         </div>
                     @endif
 
-                    <button type="button" class="btn-primary tkc-pay-btn" id="tkcPayBtn">
+                    <button type="submit" class="btn-primary tkc-pay-btn" id="tkcPayBtn">
                         <i class="fa-solid fa-lock" aria-hidden="true"></i> Pay securely
                     </button>
+                    </form>
                 </section>
 
                 <aside class="tkc-summary-card">

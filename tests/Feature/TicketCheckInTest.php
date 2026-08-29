@@ -14,10 +14,18 @@ class TicketCheckInTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * Starting now, on the venue's clock, puts the event squarely inside the
+     * check-in window whatever wall-clock time the suite runs at. The factory's
+     * random event_time made this flaky once the window gained a 12-hour tail.
+     */
     private function ticketedEventOnToday(User $owner, array $overrides = []): Event
     {
+        $localNow = now()->timezone(config('events.timezone'));
+
         return Event::factory()->for($owner)->ticketed()->approved()->create(array_merge([
-            'event_date' => now()->toDateString(),
+            'event_date' => $localNow->toDateString(),
+            'event_time' => $localNow->format('H:i:s'),
         ], $overrides));
     }
 
@@ -70,13 +78,22 @@ class TicketCheckInTest extends TestCase
         $this->assertSame(TicketStatus::Used, $ticket->status);
     }
 
+    /**
+     * The returned checked_in_at must stay the ORIGINAL arrival, not be
+     * refreshed to now() — checkin-scanner.js renders it in the re-scan
+     * warning ("already checked in at 7:42 PM (5 minutes ago)"), which is how
+     * door staff tell a guest walking back in from a second person holding a
+     * copy of the same QR. Bumping it would make every re-scan read "moments
+     * ago" and hide exactly the case the warning exists to catch.
+     */
     public function test_confirming_an_already_used_ticket_is_idempotent_and_not_an_error(): void
     {
         $owner = User::factory()->pro()->create();
         $event = $this->ticketedEventOnToday($owner);
+        $firstCheckIn = now()->subMinutes(5);
         $ticket = Ticket::factory()->for($event)->create([
             'status' => TicketStatus::Used,
-            'checked_in_at' => now()->subMinutes(5),
+            'checked_in_at' => $firstCheckIn,
         ]);
 
         $response = $this->actingAs($owner)
@@ -84,6 +101,12 @@ class TicketCheckInTest extends TestCase
 
         $response->assertOk();
         $response->assertJson(['already_checked_in' => true]);
+        $response->assertJsonPath('ticket.checked_in_at', $firstCheckIn->toIso8601String());
+
+        $this->assertSame(
+            $firstCheckIn->toIso8601String(),
+            $ticket->fresh()->checked_in_at->toIso8601String(),
+        );
     }
 
     public function test_a_cancelled_ticket_is_refused(): void
@@ -172,16 +195,17 @@ class TicketCheckInTest extends TestCase
         $this->assertNull($ticket->fresh()->checked_in_at);
     }
 
-    public function test_check_in_is_refused_before_the_event_date(): void
+    public function test_check_in_is_refused_before_the_window_opens(): void
     {
         $owner = User::factory()->pro()->create();
-        $event = $this->ticketedEventOnToday($owner, ['event_date' => now()->addDay()->toDateString()]);
+        $event = $this->ticketedEventOnToday($owner, ['event_date' => now()->addDays(3)->toDateString()]);
         $ticket = Ticket::factory()->for($event)->create();
 
-        $this->actingAs($owner)
-            ->postJson(route('events.tickets.checkin.confirm-token', ['event' => $event, 'token' => $ticket->public_token]))
-            ->assertForbidden()
-            ->assertJsonPath('message', 'Check-in is only available on the event date.');
+        $response = $this->actingAs($owner)
+            ->postJson(route('events.tickets.checkin.confirm-token', ['event' => $event, 'token' => $ticket->public_token]));
+
+        $response->assertForbidden();
+        $this->assertStringContainsString('Check-in opens', (string) $response->json('message'));
 
         $this->assertNull($ticket->fresh()->checked_in_at);
     }
@@ -245,7 +269,7 @@ class TicketCheckInTest extends TestCase
             ->assertJsonCount(0, 'tickets');
     }
 
-    public function test_scanner_page_hides_the_camera_when_it_is_not_the_event_date(): void
+    public function test_scanner_page_hides_the_camera_outside_the_window(): void
     {
         $owner = User::factory()->pro()->create();
         $event = Event::factory()->for($owner)->ticketed()->approved()->create([
@@ -255,11 +279,11 @@ class TicketCheckInTest extends TestCase
         $this->actingAs($owner)
             ->get(route('events.tickets.checkin.scan', $event))
             ->assertOk()
-            ->assertSee('Check-in is only available on the event date', escape: false)
+            ->assertSee('Check-in opens', escape: false)
             ->assertDontSee('ckinVideo', escape: false);
     }
 
-    public function test_scanner_page_shows_the_camera_on_the_event_date(): void
+    public function test_scanner_page_shows_the_camera_inside_the_window(): void
     {
         $owner = User::factory()->pro()->create();
         $event = $this->ticketedEventOnToday($owner);

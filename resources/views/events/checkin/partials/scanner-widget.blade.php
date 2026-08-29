@@ -19,16 +19,15 @@
     and $checkinBase are the same value; on the staff-link scanner they
     differ — the QR is only ever used to recognize a token, never dialled
     directly, so the confirm POST always lands on this page's own endpoint.
-    $checkInOpen / $checkInDateLabel come from Event::isCheckInOpen() — the
-    camera stays off on any day that is not the event date.
+    $checkInOpen / $checkInClosedCopy come from Event::isCheckInOpen() and
+    Event::checkInClosedReason() — the camera stays off outside the window
+    around the event's start, and the copy names the boundary that was missed
+    (in the venue's timezone) rather than just the event's date.
 --}}
 @php
     $kind = $kind ?? 'guest';
     $checkInOpen = $checkInOpen ?? false;
-    $checkInDateLabel = $checkInDateLabel ?? null;
-    $checkInClosedCopy = 'Check-in is only available on the event date'
-        .($checkInDateLabel ? ' ('.$checkInDateLabel.')' : '')
-        .'.';
+    $checkInClosedCopy = $checkInClosedCopy ?? 'Check-in is not open for this event.';
     $cameraHint = $kind === 'ticket' ? "Point the camera at a ticket's QR code." : "Point the camera at a guest's invitation QR code.";
     $lookupLabel = $kind === 'ticket' ? 'Search ticket by attendee name' : 'Search guest by name';
     $lookupPlaceholder = $kind === 'ticket' ? "Can't scan? Search attendee by name" : "Can't scan? Search guest by name";

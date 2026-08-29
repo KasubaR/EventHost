@@ -465,12 +465,104 @@ class Event extends Model
     }
 
     /**
-     * Staff may scan badges only on the event's calendar day, not at a
-     * rehearsal beforehand or after everyone has gone home.
+     * The clock a door runs on. Stored timestamps stay UTC; this is only for
+     * venue-facing rules. See config('events.timezone') for why it is a single
+     * platform value rather than a per-event column.
+     */
+    public function venueTimezone(): string
+    {
+        return (string) config('events.timezone', 'Africa/Lusaka');
+    }
+
+    public function hasStartTime(): bool
+    {
+        return is_string($this->event_time) && $this->event_time !== '';
+    }
+
+    /**
+     * The event's start as a real instant in the venue's timezone, rather than
+     * the bare calendar date. event_date is a date cast (midnight UTC), so it
+     * is read back as a Y-m-d string and recombined locally — shifting the
+     * Carbon instance itself would move the date across the UTC+2 boundary.
+     */
+    public function startsAt(): ?Carbon
+    {
+        if ($this->event_date === null) {
+            return null;
+        }
+
+        $date = $this->event_date->format('Y-m-d');
+        $time = $this->hasStartTime() ? $this->event_time : '00:00:00';
+
+        try {
+            return Carbon::parse($date.' '.$time, $this->venueTimezone());
+        } catch (\Throwable) {
+            return Carbon::parse($date.' 00:00:00', $this->venueTimezone());
+        }
+    }
+
+    public function checkInOpensAt(): ?Carbon
+    {
+        return $this->startsAt()?->subHours(
+            (int) config('events.check_in.opens_hours_before', 24)
+        );
+    }
+
+    public function checkInClosesAt(): ?Carbon
+    {
+        $start = $this->startsAt();
+
+        if ($start === null) {
+            return null;
+        }
+
+        $tail = (int) config('events.check_in.closes_hours_after', 12);
+
+        // With no start time there is nothing to measure a tail from, and
+        // startsAt() has already fallen back to local midnight — so the whole
+        // event day counts as the session before the tail is added, rather than
+        // closing the door at noon on an evening event.
+        return $this->hasStartTime()
+            ? $start->addHours($tail)
+            : $start->endOfDay()->addHours($tail);
+    }
+
+    /**
+     * Staff may scan within a window around the event's start, not on its
+     * calendar day: a same-day rule blocked early entry the evening before and
+     * cut off a session that ran past midnight onto a new date, both of which
+     * are ordinary at a real door. The window still exists to stop rehearsal
+     * scans and scans long after everyone has gone home — widening it is also
+     * widening how long a leaked ticket stays usable.
      */
     public function isCheckInOpen(): bool
     {
-        return $this->event_date !== null && $this->event_date->isSameDay(today());
+        $opens = $this->checkInOpensAt();
+        $closes = $this->checkInClosesAt();
+
+        if ($opens === null || $closes === null) {
+            return false;
+        }
+
+        return now()->greaterThanOrEqualTo($opens) && now()->lessThanOrEqualTo($closes);
+    }
+
+    /**
+     * Why the door is shut, for the scanner's closed state. Formatted in the
+     * venue's timezone, since that is the clock the staff reading it are on.
+     */
+    public function checkInClosedReason(): string
+    {
+        $opens = $this->checkInOpensAt();
+        $closes = $this->checkInClosesAt();
+
+        if ($opens === null || $closes === null) {
+            return 'Check-in opens once this event has a date.';
+        }
+
+        return now()->lessThan($opens)
+            ? 'Check-in opens '.$opens->format('j M Y, g:i A').'.'
+            : 'Check-in closed '.$closes->format('j M Y, g:i A').'.';
     }
 
     /**

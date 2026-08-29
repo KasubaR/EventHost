@@ -65,6 +65,7 @@ class TicketRevenueLedgerTest extends TestCase
         $this->postJson(route('events.public.tickets.checkout.store', $event->slug), [
             'name' => 'Ledger Buyer',
             'email' => 'ledger@example.com',
+            'phone' => '0961234567',
             'payment_method' => 'mobile_money',
             'provider' => 'mtn',
             'momo_phone' => '0961234567',

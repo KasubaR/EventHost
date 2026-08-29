@@ -36,7 +36,7 @@
                     'selfQrBase' => url('/t'),
                     'lookupUrl' => url('/checkin/tickets/'.$link->token.'/lookup'),
                     'checkInOpen' => $event->isCheckInOpen(),
-                    'checkInDateLabel' => $event->event_date?->timezone(config('app.timezone'))->format('j M Y'),
+                    'checkInClosedCopy' => $event->checkInClosedReason(),
                 ])
             @endif
         </div>

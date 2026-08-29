@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use BaconQrCode\Common\ErrorCorrectionLevel;
 use BaconQrCode\Renderer\GDLibRenderer;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
@@ -14,14 +15,25 @@ use BaconQrCode\Writer;
  */
 class QrCodeService
 {
-    public function svg(string $content, int $size = 320): string
+    /** bacon-qr-code's own default — ~7% of the code can be lost and still decode. */
+    public const ECC_STANDARD = 'L';
+
+    /**
+     * ~30% recovery. Costs a denser code for the same payload, and buys the
+     * room to lay something over the modules without breaking the decode —
+     * which is why ticket QRs use it (see tickets/show.blade.php's "Used"
+     * badge). Don't lower it for tickets without removing that badge first.
+     */
+    public const ECC_HIGH = 'H';
+
+    public function svg(string $content, int $size = 320, string $ecLevel = self::ECC_STANDARD): string
     {
         $renderer = new ImageRenderer(
             new RendererStyle($size),
             new SvgImageBackEnd,
         );
 
-        return (new Writer($renderer))->writeString($content);
+        return (new Writer($renderer))->writeString($content, ecLevel: $this->level($ecLevel));
     }
 
     /**
@@ -31,8 +43,15 @@ class QrCodeService
      * is this app's one guaranteed image extension (see CLAUDE.md "PHP
      * Extensions Required"), Imagick is only optional.
      */
-    public function png(string $content, int $size = 320): string
+    public function png(string $content, int $size = 320, string $ecLevel = self::ECC_STANDARD): string
     {
-        return (new Writer(new GDLibRenderer($size)))->writeString($content);
+        return (new Writer(new GDLibRenderer($size)))->writeString($content, ecLevel: $this->level($ecLevel));
+    }
+
+    private function level(string $ecLevel): ErrorCorrectionLevel
+    {
+        return $ecLevel === self::ECC_HIGH
+            ? ErrorCorrectionLevel::H()
+            : ErrorCorrectionLevel::L();
     }
 }

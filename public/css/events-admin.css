@@ -2245,6 +2245,16 @@ nav.tkt-tabs {
     margin-top: 16px;
 }
 
+/* Which door took the scan, under the Yes/No in the Check-in column. Secondary
+   to the answer itself — a host scanning the column wants "was it used", and
+   only drops to "by whom" when something looks wrong. */
+.tkt-checkin-by {
+    display: block;
+    margin-top: 2px;
+    font-size: 0.78rem;
+    color: var(--muted, #6b7280);
+}
+
 /* It's a bare <nav>, so global.css's site-header nav {} rule (sticky navy
    bar, fixed height) applies unless overridden here — same gotcha as
    .dash-nav, nav.set-tabs, .tkt-tabs and .evt-kind-filter. */

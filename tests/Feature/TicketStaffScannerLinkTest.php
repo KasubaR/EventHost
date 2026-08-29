@@ -20,10 +20,18 @@ class TicketStaffScannerLinkTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * Starting now, on the venue's clock, puts the event squarely inside the
+     * check-in window whatever wall-clock time the suite runs at. The factory's
+     * random event_time made this flaky once the window gained a 12-hour tail.
+     */
     private function ticketedEventOnToday(User $owner, array $overrides = []): Event
     {
+        $localNow = now()->timezone(config('events.timezone'));
+
         return Event::factory()->for($owner)->ticketed()->create(array_merge([
-            'event_date' => now()->toDateString(),
+            'event_date' => $localNow->toDateString(),
+            'event_time' => $localNow->format('H:i:s'),
         ], $overrides));
     }
 
@@ -111,8 +119,110 @@ class TicketStaffScannerLinkTest extends TestCase
 
         $ticket->refresh();
         $this->assertNotNull($ticket->checked_in_at);
+        // No account sits behind a staff link, so checked_in_by stays null and
+        // the link's label carries the attribution instead.
         $this->assertNull($ticket->checked_in_by);
         $this->assertNotNull($link->fresh()->last_used_at);
+    }
+
+    public function test_a_staff_link_scan_records_which_door_it_came_through(): void
+    {
+        $owner = User::factory()->create();
+        $event = $this->ticketedEventOnToday($owner, ['ticketing_status' => TicketingStatus::Approved]);
+        $link = EventStaffLink::factory()->for($event)->create(['label' => 'Front gate']);
+        $ticket = Ticket::factory()->for($event)->create();
+
+        $this->postJson(route('tickets.checkin.public.confirm-token', [
+            'staffToken' => $link->token,
+            'token' => $ticket->public_token,
+        ]))->assertOk();
+
+        $this->assertSame('Front gate', $ticket->fresh()->checked_in_via_label);
+    }
+
+    public function test_an_unlabelled_staff_link_still_identifies_itself(): void
+    {
+        $owner = User::factory()->create();
+        $event = $this->ticketedEventOnToday($owner, ['ticketing_status' => TicketingStatus::Approved]);
+        $link = EventStaffLink::factory()->for($event)->create(['label' => null]);
+        $ticket = Ticket::factory()->for($event)->create();
+
+        $this->postJson(route('tickets.checkin.public.confirm-token', [
+            'staffToken' => $link->token,
+            'token' => $ticket->public_token,
+        ]))->assertOk();
+
+        // Two unlabelled links at two gates have to stay distinguishable.
+        $this->assertSame('Staff link #'.$link->id, $ticket->fresh()->checked_in_via_label);
+    }
+
+    /**
+     * Revoking hard-deletes the link (EventStaffLinkController::destroy), which
+     * is exactly what a host does on discovering a leak — the attribution has
+     * to outlive it or the investigation has nothing to go on.
+     */
+    public function test_attribution_survives_the_link_being_revoked(): void
+    {
+        $owner = User::factory()->create();
+        $event = $this->ticketedEventOnToday($owner, ['ticketing_status' => TicketingStatus::Approved]);
+        $link = EventStaffLink::factory()->for($event)->create(['label' => 'Side door']);
+        $ticket = Ticket::factory()->for($event)->create();
+
+        $this->postJson(route('tickets.checkin.public.confirm-token', [
+            'staffToken' => $link->token,
+            'token' => $ticket->public_token,
+        ]))->assertOk();
+
+        $this->actingAs($owner)->delete(route('events.checkin.links.destroy', [$event, $link]));
+
+        $this->assertSame('Side door', $ticket->fresh()->checked_in_via_label);
+    }
+
+    public function test_a_repeat_scan_reports_which_door_took_it_first(): void
+    {
+        $owner = User::factory()->create();
+        $event = $this->ticketedEventOnToday($owner, ['ticketing_status' => TicketingStatus::Approved]);
+        $first = EventStaffLink::factory()->for($event)->create(['label' => 'Front gate']);
+        $second = EventStaffLink::factory()->for($event)->create(['label' => 'Side door']);
+        $ticket = Ticket::factory()->for($event)->create();
+
+        $this->postJson(route('tickets.checkin.public.confirm-token', [
+            'staffToken' => $first->token,
+            'token' => $ticket->public_token,
+        ]))->assertOk();
+
+        // A copy of the same QR surfacing at a different door: the scanner has
+        // to name the first one, not the one holding the phone.
+        $this->postJson(route('tickets.checkin.public.confirm-token', [
+            'staffToken' => $second->token,
+            'token' => $ticket->public_token,
+        ]))
+            ->assertOk()
+            ->assertJson(['already_checked_in' => true])
+            ->assertJsonPath('ticket.checked_in_by', 'Front gate');
+
+        $this->assertSame('Front gate', $ticket->fresh()->checked_in_via_label);
+    }
+
+    public function test_the_ticket_csv_credits_the_staff_link_that_scanned(): void
+    {
+        $owner = User::factory()->create();
+        $event = $this->ticketedEventOnToday($owner, ['ticketing_status' => TicketingStatus::Approved]);
+        $link = EventStaffLink::factory()->for($event)->create(['label' => 'Front gate']);
+        $ticket = Ticket::factory()->for($event)->create();
+
+        $this->postJson(route('tickets.checkin.public.confirm-token', [
+            'staffToken' => $link->token,
+            'token' => $ticket->public_token,
+        ]))->assertOk();
+
+        $csv = $this->actingAs($owner)
+            ->get(route('events.tickets.export', $event))
+            ->assertOk()
+            ->streamedContent();
+
+        $this->assertStringContainsString('Checked In By', $csv);
+        $this->assertStringContainsString('Front gate', $csv);
     }
 
     public function test_staff_link_confirms_ticket_check_in_by_ticket_id(): void

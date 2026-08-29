@@ -78,6 +78,17 @@ class EventStaffLink extends Model
         $this->forceFill(['last_used_at' => now()])->save();
     }
 
+    /**
+     * What a scan through this link is recorded as. Snapshotted onto the
+     * ticket/guest at check-in time, so it has to identify the door even when
+     * the organizer never labelled the link — two unlabelled links at two
+     * gates would otherwise be indistinguishable in an audit.
+     */
+    public function scanLabel(): string
+    {
+        return $this->label ?: 'Staff link #'.$this->id;
+    }
+
     public static function generateUniqueToken(): string
     {
         do {

@@ -12,6 +12,11 @@
             lookupKey: 'guests',
             lookupIdSegment: 'guest',
             notFoundMessage: 'Could not check in this guest.',
+            // A guest re-presenting their badge is expected and harmless, so a
+            // repeat stays advisory. Tickets are paid entry, where a repeat is
+            // the signature of a shared QR — see the ticket config below.
+            duplicateResult: 'warn',
+            duplicateNote: null,
             nameOf: function (record) {
                 return record.name;
             },
@@ -28,6 +33,8 @@
             lookupKey: 'tickets',
             lookupIdSegment: 'ticket',
             notFoundMessage: 'Could not check in this ticket.',
+            duplicateResult: 'deny',
+            duplicateNote: 'Check before admitting.',
             nameOf: function (record) {
                 return record.attendee_name || 'Ticket #' + record.id;
             },
@@ -79,12 +86,47 @@
             }
         }
 
-        function showResult(kind, message) {
+        function showResult(kind, message, subMessage) {
             if (!resultBox) {
                 return;
             }
+
             resultBox.className = 'ckin-result ckin-result--' + kind;
-            resultBox.textContent = message;
+            // A refusal has to interrupt a screen reader rather than wait for a
+            // pause, the same way the red panel interrupts a sighted scanner.
+            resultBox.setAttribute('aria-live', kind === 'deny' ? 'assertive' : 'polite');
+            resultBox.textContent = '';
+
+            if (!message) {
+                return;
+            }
+
+            var headline = document.createElement('span');
+            headline.className = 'ckin-result-headline';
+            headline.textContent = message;
+            resultBox.appendChild(headline);
+
+            if (subMessage) {
+                var sub = document.createElement('span');
+                sub.className = 'ckin-result-sub';
+                sub.textContent = subMessage;
+                resultBox.appendChild(sub);
+            }
+        }
+
+        // Door staff are looking at the person, not the phone. A buzz that is
+        // plainly longer than the single tick a successful scan gets means a
+        // repeat registers even before the screen is read.
+        function pulse(pattern) {
+            if (!navigator.vibrate) {
+                return;
+            }
+            try {
+                navigator.vibrate(pattern);
+            } catch (e) {
+                // Blocked without a prior user gesture on some browsers — the
+                // visual state is the real signal, so this is best-effort only.
+            }
         }
 
         function showResultPane() {
@@ -113,10 +155,54 @@
             showResultDetails(null);
         }
 
+        // Rendered from the device's own clock rather than a server-formatted
+        // string: config('app.timezone') is UTC, and the phone at the door is
+        // already set to the venue's timezone.
+        function formatCheckedInAt(iso) {
+            if (!iso) {
+                return null;
+            }
+
+            var when = new Date(iso);
+            if (isNaN(when.getTime())) {
+                return null;
+            }
+
+            var clock = when.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+            var elapsed = describeElapsed(Date.now() - when.getTime());
+
+            return elapsed ? clock + ' (' + elapsed + ')' : clock;
+        }
+
+        function describeElapsed(ms) {
+            if (ms < 0) {
+                return null;
+            }
+
+            var minutes = Math.floor(ms / 60000);
+            if (minutes < 1) {
+                return 'moments ago';
+            }
+            if (minutes < 60) {
+                return minutes === 1 ? '1 minute ago' : minutes + ' minutes ago';
+            }
+
+            var hours = Math.floor(minutes / 60);
+            if (hours < 24) {
+                return hours === 1 ? '1 hour ago' : hours + ' hours ago';
+            }
+
+            // Check-in only opens on the event date, so anything older than a
+            // day is unexpected — show the bare clock time instead of guessing.
+            return null;
+        }
+
         // Built with createElement/textContent, not innerHTML — guest/attendee
         // entered fields (name, notes, meal preference…) are untrusted strings
-        // and must never be parsed as markup.
-        function showResultDetails(record) {
+        // and must never be parsed as markup. extraRows are rendered above the
+        // configured fields, so a re-scan leads with when the credential was
+        // first used rather than burying it under the contact details.
+        function showResultDetails(record, extraRows) {
             if (!resultDetails) {
                 return;
             }
@@ -125,22 +211,25 @@
                 return;
             }
 
-            config.detailFields.forEach(function (row) {
-                var label = row[0];
-                var value = record[row[1]];
-                if (!value) {
-                    return;
-                }
+            var rows = (extraRows || []).slice();
 
+            config.detailFields.forEach(function (row) {
+                var value = record[row[1]];
+                if (value) {
+                    rows.push([row[0], value]);
+                }
+            });
+
+            rows.forEach(function (row) {
                 var wrap = document.createElement('div');
                 wrap.className = 'ckin-detail-row';
 
                 var dt = document.createElement('dt');
-                dt.textContent = label;
+                dt.textContent = row[0];
                 wrap.appendChild(dt);
 
                 var dd = document.createElement('dd');
-                dd.textContent = value;
+                dd.textContent = row[1];
                 wrap.appendChild(dd);
 
                 resultDetails.appendChild(wrap);
@@ -175,13 +264,41 @@
 
                     var record = payload.data[config.resultKey];
                     var name = config.nameOf(record);
+
                     if (payload.data.already_checked_in) {
-                        showResult('warn', name + ' already checked in.');
+                        // The time is what tells door staff whether this is the
+                        // same person walking back in or a second person holding
+                        // a copy of the same QR, so it leads the panel rather
+                        // than sitting in the details below it.
+                        var when = formatCheckedInAt(record.checked_in_at);
+                        var sub = when ? name + ' · first scanned ' + when : name;
+                        if (record.checked_in_by) {
+                            sub += ' at ' + record.checked_in_by;
+                        }
+                        if (config.duplicateNote) {
+                            sub += ' — ' + config.duplicateNote;
+                        }
+
+                        var extras = [];
+                        if (when) {
+                            extras.push(['Checked in', when]);
+                        }
+                        // Naming the first door separates "same person re-entering
+                        // at my gate" from "a copy of this QR surfacing at another
+                        // one" — the whole reason a repeat is worth stopping for.
+                        if (record.checked_in_by) {
+                            extras.push(['Scanned by', record.checked_in_by]);
+                        }
+
+                        showResult(config.duplicateResult, 'Already checked in', sub);
+                        showResultDetails(record, extras);
+                        pulse([140, 70, 140, 70, 140]);
                     } else {
                         showResult('success', name + ' checked in ✓');
                         bumpArrivedCount();
+                        showResultDetails(record);
+                        pulse(40);
                     }
-                    showResultDetails(record);
                 })
                 .catch(function () {
                     showResult('error', 'Network error — try again.');

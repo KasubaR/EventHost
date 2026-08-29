@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
 class Ticket extends Model
 {
@@ -69,6 +70,50 @@ class Ticket extends Model
     public function checkedInBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'checked_in_by');
+    }
+
+    /**
+     * Who to credit a check-in to, whichever door it came through: a dashboard
+     * scan has a real user, a staff-link scan only has the label its link was
+     * snapshotted under. Null means nobody has scanned this ticket yet.
+     */
+    public function checkedInByLabel(): ?string
+    {
+        return $this->checkedInBy?->name ?? $this->checked_in_via_label;
+    }
+
+    public function qrCacheKey(): string
+    {
+        return self::qrCacheKeyForToken($this->public_token);
+    }
+
+    /**
+     * Versioned so raising the QR's error-correction level rolls out to
+     * tickets already holding a week-long cached SVG at the old level. Takes a
+     * token rather than a model so a reissue can evict the *old* key after the
+     * ticket in memory has moved on to its new token.
+     */
+    public static function qrCacheKeyForToken(string $token): string
+    {
+        return 'ticket-qr:v2:'.$token;
+    }
+
+    /**
+     * Retry-on-collision around the unique constraint, which remains the real
+     * guard. Shared by issuance (TicketOrderFulfillmentService) and reissue
+     * (EventTicketManagementController), so a rotated token is generated
+     * exactly the same way as an original one.
+     */
+    public static function generateUniqueToken(): string
+    {
+        for ($attempt = 0; $attempt < 3; $attempt++) {
+            $token = Str::random(48);
+            if (! self::query()->where('public_token', $token)->exists()) {
+                return $token;
+            }
+        }
+
+        return Str::random(48);
     }
 
     public function isValid(): bool

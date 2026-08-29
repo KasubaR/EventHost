@@ -246,11 +246,18 @@ Route::middleware(['auth', 'account.active', 'verified'])->group(function () {
         ->name('events.tickets.revenue');
     Route::get('/events/{event}/tickets/payouts', [EventTicketRevenueController::class, 'payouts'])
         ->name('events.tickets.payouts');
+    Route::get('/events/{event}/tickets/export', [EventTicketManagementController::class, 'export'])
+        ->name('events.tickets.export');
     Route::get('/events/{event}/tickets', [EventTicketManagementController::class, 'index'])
         ->name('events.tickets.index');
     Route::post('/events/{event}/tickets/{ticket}/resend', [EventTicketManagementController::class, 'resend'])
         ->middleware('throttle:ticket-resend')
         ->name('events.tickets.resend');
+    // Shares throttle:ticket-resend because it sends the same confirmation
+    // email — the token rotation is cheap, the mail is what needs limiting.
+    Route::post('/events/{event}/tickets/{ticket}/reissue', [EventTicketManagementController::class, 'reissue'])
+        ->middleware('throttle:ticket-resend')
+        ->name('events.tickets.reissue');
     Route::post('/events/{event}/tickets/{ticket}/cancel', [EventTicketManagementController::class, 'cancel'])
         ->name('events.tickets.cancel');
     Route::post('/events/{event}/tickets/{ticket}/confirm-checkin', [EventTicketManagementController::class, 'confirmCheckIn'])

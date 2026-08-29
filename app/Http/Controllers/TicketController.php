@@ -30,9 +30,9 @@ class TicketController extends Controller
         $ticket = Ticket::query()->where('public_token', $token)->firstOrFail();
 
         $svg = Cache::remember(
-            'ticket-qr:'.$token,
+            Ticket::qrCacheKeyForToken($token),
             now()->addWeek(),
-            fn () => $qrCodeService->svg($ticket->publicUrl())
+            fn () => $qrCodeService->svg($ticket->publicUrl(), ecLevel: QrCodeService::ECC_HIGH)
         );
 
         return response($svg, 200, ['Content-Type' => 'image/svg+xml']);

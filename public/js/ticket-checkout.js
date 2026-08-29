@@ -59,8 +59,12 @@
             statusEl.className = 'tkc-status tkc-status--' + type;
         }
 
-        if (payBtn) {
-            payBtn.addEventListener('click', submitCheckout);
+        const form = document.getElementById('tkcCheckoutForm');
+        if (form) {
+            form.addEventListener('submit', (event) => {
+                event.preventDefault();
+                submitCheckout();
+            });
         }
 
         async function submitCheckout() {
@@ -68,8 +72,8 @@
             const email = document.getElementById('tkc-email')?.value.trim();
             const phone = document.getElementById('tkc-phone')?.value.trim();
 
-            if (!name || !email) {
-                showStatus('Please enter your name and email.', 'error');
+            if (!name || !email || !phone) {
+                showStatus('Please enter your name, email and phone number.', 'error');
                 return;
             }
 
@@ -108,7 +112,10 @@
                 const data = await response.json();
 
                 if (!response.ok || !data.success) {
-                    showStatus(data.message || 'Could not start payment. Please try again.', 'error');
+                    const firstError = data.errors
+                        ? Object.values(data.errors).flat()[0]
+                        : null;
+                    showStatus(firstError || data.message || 'Could not start payment. Please try again.', 'error');
                     payBtn.disabled = false;
                     return;
                 }

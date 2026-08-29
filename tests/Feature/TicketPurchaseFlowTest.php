@@ -131,6 +131,7 @@ class TicketPurchaseFlowTest extends TestCase
         $this->assertSame('400.00', (string) $order->total_paid);
         $this->assertCount(2, $order->tickets);
         $this->assertSame(2, $type->fresh()->soldQuantity());
+        $this->assertSame('0961234567', $order->buyer_phone);
     }
 
     public function test_checkout_uses_the_events_negotiated_commission_override_not_the_platform_default(): void
@@ -200,6 +201,7 @@ class TicketPurchaseFlowTest extends TestCase
         $response = $this->postJson(route('events.public.tickets.checkout.store', $event->slug), [
             'name' => 'Pass Through Buyer',
             'email' => 'pt@example.com',
+            'phone' => '0961234567',
             'payment_method' => 'mobile_money',
             'provider' => 'mtn',
             'momo_phone' => '0961234567',
@@ -214,6 +216,39 @@ class TicketPurchaseFlowTest extends TestCase
         $this->assertSame('210.00', (string) $order->buyer_total);
         $this->assertSame('200.00', (string) $order->host_amount);
         $this->assertSame(CommissionMode::PassThrough, $order->commission_mode);
+    }
+
+    public function test_checkout_requires_a_valid_phone_number(): void
+    {
+        $event = $this->approvedTicketedEvent();
+        $type = TicketType::factory()->for($event)->create(['price' => '200.00', 'quantity' => 10]);
+
+        $this->post(route('events.public.tickets.hold', $event->slug), ['quantities' => [$type->id => 1]])
+            ->assertRedirect(route('events.public.tickets.checkout', $event->slug));
+
+        $this->get(route('events.public.tickets.checkout', $event->slug))
+            ->assertOk()
+            ->assertSee('for="tkc-phone"', false)
+            ->assertDontSee('Phone (optional)', false);
+
+        $this->postJson(route('events.public.tickets.checkout.store', $event->slug), [
+            'name' => 'No Phone Buyer',
+            'email' => 'nophone@example.com',
+            'payment_method' => 'mobile_money',
+            'provider' => 'mtn',
+            'momo_phone' => '0961234567',
+        ])->assertStatus(422)->assertJsonValidationErrors(['phone']);
+
+        $this->postJson(route('events.public.tickets.checkout.store', $event->slug), [
+            'name' => 'Bad Phone Buyer',
+            'email' => 'badphone@example.com',
+            'phone' => '12345',
+            'payment_method' => 'mobile_money',
+            'provider' => 'mtn',
+            'momo_phone' => '0961234567',
+        ])->assertStatus(422)->assertJsonValidationErrors(['phone']);
+
+        $this->assertDatabaseCount('ticket_orders', 0);
     }
 
     public function test_hold_rejects_when_quantity_exceeds_capacity(): void
@@ -279,6 +314,7 @@ class TicketPurchaseFlowTest extends TestCase
         $this->postJson(route('events.public.tickets.checkout.store', $event->slug), [
             'name' => 'Webhook Buyer',
             'email' => 'webhook@example.com',
+            'phone' => '0961234567',
             'payment_method' => 'mobile_money',
             'provider' => 'mtn',
             'momo_phone' => '0961234567',
@@ -342,6 +378,7 @@ class TicketPurchaseFlowTest extends TestCase
         $this->postJson(route('events.public.tickets.checkout.store', $event->slug), [
             'name' => 'Slow Buyer',
             'email' => 'slow@example.com',
+            'phone' => '0961234567',
             'payment_method' => 'mobile_money',
             'provider' => 'mtn',
             'momo_phone' => '0961234567',
@@ -403,6 +440,7 @@ class TicketPurchaseFlowTest extends TestCase
         $this->postJson(route('events.public.tickets.checkout.store', $event->slug), [
             'name' => 'Queued Buyer',
             'email' => 'queued@example.com',
+            'phone' => '0961234567',
             'payment_method' => 'mobile_money',
             'provider' => 'mtn',
             'momo_phone' => '0961234567',
@@ -439,6 +477,7 @@ class TicketPurchaseFlowTest extends TestCase
         $this->postJson(route('events.public.tickets.checkout.store', $event->slug), [
             'name' => 'Retry Buyer',
             'email' => 'retry@example.com',
+            'phone' => '0961234567',
             'payment_method' => 'mobile_money',
             'provider' => 'mtn',
             'momo_phone' => '0961234567',
@@ -492,6 +531,7 @@ class TicketPurchaseFlowTest extends TestCase
         $this->postJson(route('events.public.tickets.checkout.store', $event->slug), [
             'name' => 'Processing Buyer',
             'email' => 'processing@example.com',
+            'phone' => '0961234567',
             'payment_method' => 'mobile_money',
             'provider' => 'mtn',
             'momo_phone' => '0961234567',
@@ -547,6 +587,7 @@ class TicketPurchaseFlowTest extends TestCase
         $this->postJson(route('events.public.tickets.checkout.store', $event->slug), [
             'name' => 'Failing Buyer',
             'email' => 'failing@example.com',
+            'phone' => '0961234567',
             'payment_method' => 'mobile_money',
             'provider' => 'mtn',
             'momo_phone' => '0961234567',
@@ -593,6 +634,7 @@ class TicketPurchaseFlowTest extends TestCase
         $this->postJson(route('events.public.tickets.checkout.store', $event->slug), [
             'name' => 'Cancelling Buyer',
             'email' => 'cancelling@example.com',
+            'phone' => '0961234567',
             'payment_method' => 'mobile_money',
             'provider' => 'mtn',
             'momo_phone' => '0961234567',
@@ -633,6 +675,7 @@ class TicketPurchaseFlowTest extends TestCase
         $this->postJson(route('events.public.tickets.checkout.store', $event->slug), [
             'name' => 'Initiate Fail Buyer',
             'email' => 'initiate-fail@example.com',
+            'phone' => '0961234567',
             'payment_method' => 'mobile_money',
             'provider' => 'mtn',
             'momo_phone' => '0961234567',
@@ -662,6 +705,7 @@ class TicketPurchaseFlowTest extends TestCase
         $this->postJson(route('events.public.tickets.checkout.store', $event->slug), [
             'name' => 'Client Error Buyer',
             'email' => 'client-error@example.com',
+            'phone' => '0961234567',
             'payment_method' => 'mobile_money',
             'provider' => 'mtn',
             'momo_phone' => '0961234567',
@@ -692,6 +736,7 @@ class TicketPurchaseFlowTest extends TestCase
         $this->postJson(route('events.public.tickets.checkout.store', $event->slug), [
             'name' => 'Retry Exhaust Buyer',
             'email' => 'retry-exhaust@example.com',
+            'phone' => '0961234567',
             'payment_method' => 'mobile_money',
             'provider' => 'mtn',
             'momo_phone' => '0961234567',
@@ -744,6 +789,7 @@ class TicketPurchaseFlowTest extends TestCase
         $this->postJson(route('events.public.tickets.checkout.store', $event->slug), [
             'name' => 'Poll Expire Buyer',
             'email' => 'poll-expire@example.com',
+            'phone' => '0961234567',
             'payment_method' => 'mobile_money',
             'provider' => 'mtn',
             'momo_phone' => '0961234567',
@@ -790,6 +836,7 @@ class TicketPurchaseFlowTest extends TestCase
         $this->postJson(route('events.public.tickets.checkout.store', $event->slug), [
             'name' => 'Recover Buyer',
             'email' => 'recover@example.com',
+            'phone' => '0961234567',
             'payment_method' => 'mobile_money',
             'provider' => 'mtn',
             'momo_phone' => '0961234567',
@@ -890,6 +937,7 @@ class TicketPurchaseFlowTest extends TestCase
         $this->postJson(route('events.public.tickets.checkout.store', $event->slug), [
             'name' => 'Last Buyer',
             'email' => 'last@example.com',
+            'phone' => '0961234567',
             'payment_method' => 'mobile_money',
             'provider' => 'mtn',
             'momo_phone' => '0961234567',
@@ -993,6 +1041,7 @@ class TicketPurchaseFlowTest extends TestCase
         $this->postJson(route('events.public.tickets.checkout.store', $event->slug), [
             'name' => 'Slow But Paying Buyer',
             'email' => 'slowpay@example.com',
+            'phone' => '0961234567',
             'payment_method' => 'mobile_money',
             'provider' => 'mtn',
             'momo_phone' => '0961234567',
@@ -1057,6 +1106,7 @@ class TicketPurchaseFlowTest extends TestCase
         $this->postJson(route('events.public.tickets.checkout.store', $event->slug), [
             'name' => 'Patient Buyer',
             'email' => 'patient@example.com',
+            'phone' => '0961234567',
             'payment_method' => 'mobile_money',
             'provider' => 'mtn',
             'momo_phone' => '0961234567',
@@ -1109,6 +1159,7 @@ class TicketPurchaseFlowTest extends TestCase
         $this->postJson(route('events.public.tickets.checkout.store', $event->slug), [
             'name' => 'Mismatch Buyer',
             'email' => 'mismatch@example.com',
+            'phone' => '0961234567',
             'payment_method' => 'mobile_money',
             'provider' => 'mtn',
             'momo_phone' => '0961234567',
@@ -1165,6 +1216,7 @@ class TicketPurchaseFlowTest extends TestCase
         $this->postJson(route('events.public.tickets.checkout.store', $event->slug), [
             'name' => 'Flaky Network Buyer',
             'email' => 'flaky@example.com',
+            'phone' => '0961234567',
             'payment_method' => 'mobile_money',
             'provider' => 'mtn',
             'momo_phone' => '0961234567',
@@ -1213,6 +1265,7 @@ class TicketPurchaseFlowTest extends TestCase
         $this->postJson(route('events.public.tickets.checkout.store', $event->slug), [
             'name' => 'Impatient Buyer',
             'email' => 'impatient@example.com',
+            'phone' => '0961234567',
             'payment_method' => 'mobile_money',
             'provider' => 'mtn',
             'momo_phone' => '0961234567',
@@ -1255,6 +1308,7 @@ class TicketPurchaseFlowTest extends TestCase
         $this->postJson(route('events.public.tickets.checkout.store', $event->slug), [
             'name' => 'Unlucky Buyer',
             'email' => 'unlucky@example.com',
+            'phone' => '0961234567',
             'payment_method' => 'mobile_money',
             'provider' => 'mtn',
             'momo_phone' => '0961234567',

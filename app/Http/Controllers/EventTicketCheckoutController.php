@@ -79,7 +79,7 @@ class EventTicketCheckoutController extends Controller
                 [
                     'name' => $request->string('name')->toString(),
                     'email' => $request->string('email')->toString(),
-                    'phone' => $request->input('phone'),
+                    'phone' => $request->string('phone')->toString(),
                 ],
                 [
                     'method' => $request->string('payment_method')->toString(),

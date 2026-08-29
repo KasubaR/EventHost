@@ -112,7 +112,9 @@ class PublicTicketCheckInController extends Controller
     private function confirmResponse(TicketCheckInService $checkInService, Ticket $ticket, EventStaffLink $link): JsonResponse
     {
         try {
-            $payload = $checkInService->confirm($ticket, null);
+            // No user id to record — the link is the credential. Its label is
+            // the only thing that says which door this scan came through.
+            $payload = $checkInService->confirm($ticket, null, $link->scanLabel());
         } catch (TicketCheckInException $e) {
             return response()->json(['message' => $e->getMessage()], 403);
         }

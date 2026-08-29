@@ -7,6 +7,19 @@
 @section('title', 'Your ticket | '.$ticket->event->name)
 
 @section('content')
+    @php
+        // Cancelled/refunded are refused at the door outright; a used ticket can
+        // still legitimately be re-scanned (someone stepping out and returning),
+        // so the two states are marked differently rather than lumped together.
+        $isVoid = in_array($ticket->status, [\App\Enums\TicketStatus::Cancelled, \App\Enums\TicketStatus::Refunded], true);
+        $isCheckedIn = ! $isVoid && $ticket->isCheckedIn();
+        $qrAlt = match (true) {
+            $isVoid => 'Ticket QR code — '.$ticket->status->label(),
+            $isCheckedIn => 'Ticket QR code — already checked in',
+            default => 'Ticket QR code',
+        };
+    @endphp
+
     <article class="tkc-page">
         <div class="tkc-card tkc-card--narrow tkc-ticket-card">
             <header class="tkc-header">
@@ -27,7 +40,30 @@
             </header>
 
             <div class="tkc-qr-wrap">
-                <img src="{{ route('tickets.qr', $ticket->public_token) }}" alt="Ticket QR code" class="tkc-qr-img">
+                <div class="tkc-qr-frame @if ($isVoid) tkc-qr-frame--void @elseif ($isCheckedIn) tkc-qr-frame--used @endif">
+                    @if ($isVoid)
+                        <p class="tkc-qr-stamp">
+                            <i class="fa-solid fa-ban" aria-hidden="true"></i>
+                            {{ $ticket->status->label() }} — not valid for entry
+                        </p>
+                    @elseif ($isCheckedIn)
+                        <p class="tkc-qr-stamp">
+                            <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+                            Checked in {{ $ticket->checked_in_at->timezone(config('app.timezone'))->format('j M, g:i A') }}
+                        </p>
+                    @endif
+                    <div class="tkc-qr-code">
+                        <img src="{{ route('tickets.qr', $ticket->public_token) }}" alt="{{ $qrAlt }}" class="tkc-qr-img">
+                        {{-- Laid over the modules themselves, so the state survives a
+                             crop of just the code. Safe because ticket QRs render at
+                             high error correction — see QrCodeService::ECC_HIGH. --}}
+                        @if ($isVoid)
+                            <span class="tkc-qr-badge tkc-qr-badge--void" aria-hidden="true">{{ $ticket->status->label() }}</span>
+                        @elseif ($isCheckedIn)
+                            <span class="tkc-qr-badge tkc-qr-badge--used" aria-hidden="true">Used</span>
+                        @endif
+                    </div>
+                </div>
             </div>
 
             <dl class="tkc-ticket-details">
@@ -49,7 +85,15 @@
                 </div>
             </dl>
 
-            <p class="tkc-muted">Show this QR code at the door. Save this page or the email it was sent to.</p>
+            <p class="tkc-muted">
+                @if ($isVoid)
+                    This ticket is no longer valid for entry. Contact the organiser if you think this is wrong.
+                @elseif ($isCheckedIn)
+                    This ticket has already been used for entry. Scanning it again will show door staff that it was already checked in.
+                @else
+                    Show this QR code at the door. Save this page or the email it was sent to.
+                @endif
+            </p>
 
             @php
                 $waUrl = $ticket->attendee_phone

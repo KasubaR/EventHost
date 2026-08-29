@@ -21,6 +21,7 @@
                 <p class="dph-sub">{{ $event->name }} · {{ number_format($tickets->total()) }} issued</p>
             </div>
             <div class="evt-card-actions">
+                <a href="{{ route('events.tickets.export', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-download"></i> Export CSV</a>
                 <a href="{{ route('events.show', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-arrow-left"></i> Event</a>
             </div>
         </div>
@@ -30,6 +31,8 @@
 
     @if (session('status') === 'ticket-resent')
         <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Confirmation email resent.</div>
+    @elseif (session('status') === 'ticket-reissued')
+        <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> New QR issued and emailed to the buyer. The old one no longer works.</div>
     @elseif (session('status') === 'ticket-cancelled')
         <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Ticket cancelled.</div>
     @elseif (session('status') === 'ticket-checked-in')
@@ -72,7 +75,12 @@
                                     <td>{{ $ticketRow->ticketType?->name ?? '—' }}</td>
                                     <td>{{ $buyer ?: '—' }}</td>
                                     <td><span class="evt-pill evt-pill--{{ $ticketRow->status->value }}">{{ $ticketRow->status->label() }}</span></td>
-                                    <td>{{ $checkInLabel }}</td>
+                                    <td>
+                                        {{ $checkInLabel }}
+                                        @if ($checkInLabel === 'Yes' && $ticketRow->checkedInByLabel())
+                                            <span class="tkt-checkin-by">{{ $ticketRow->checkedInByLabel() }}</span>
+                                        @endif
+                                    </td>
                                     <td class="evt-table-actions">
                                         <div class="evt-more" data-evt-more>
                                             <button type="button" class="evt-icon-btn evt-more-toggle" data-evt-more-toggle hidden aria-expanded="false" aria-haspopup="true" aria-label="More actions for {{ $buyer ?: 'this ticket' }}">
@@ -99,6 +107,13 @@
                                                             </button>
                                                         </form>
                                                     @endif
+
+                                                    <form method="post" action="{{ route('events.tickets.reissue', [$event, $ticketRow]) }}" class="evt-inline-form" data-confirm="Issue a new QR for this ticket? Any copy already shared stops working, and the buyer is emailed a replacement.">
+                                                        @csrf
+                                                        <button type="submit" class="evt-more-item" role="menuitem">
+                                                            <i class="fa-solid fa-rotate" aria-hidden="true"></i> <span>Reissue QR</span>
+                                                        </button>
+                                                    </form>
 
                                                     <form method="post" action="{{ route('events.tickets.cancel', [$event, $ticketRow]) }}" class="evt-inline-form" data-confirm="Cancel this ticket? The buyer will no longer be able to use it.">
                                                         @csrf

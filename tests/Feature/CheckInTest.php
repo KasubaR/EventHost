@@ -15,10 +15,18 @@ class CheckInTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * Starting now, on the venue's clock, puts the event squarely inside the
+     * check-in window whatever wall-clock time the suite runs at. The factory's
+     * random event_time made this flaky once the window gained a 12-hour tail.
+     */
     private function eventOnToday(User $owner, array $overrides = []): Event
     {
+        $localNow = now()->timezone(config('events.timezone'));
+
         return Event::factory()->for($owner)->create(array_merge([
-            'event_date' => now()->toDateString(),
+            'event_date' => $localNow->toDateString(),
+            'event_time' => $localNow->format('H:i:s'),
         ], $overrides));
     }
 
@@ -94,17 +102,25 @@ class CheckInTest extends TestCase
         $response->assertJsonPath('guest.rsvp_note', null);
     }
 
+    /**
+     * checked_in_at must keep the ORIGINAL arrival rather than being refreshed
+     * to now(), for the same reason as the ticket scanner's twin test —
+     * checkin-scanner.js puts it in the re-scan warning so door staff can see
+     * how long ago the credential was first used.
+     */
     public function test_confirming_an_already_checked_in_guest_is_idempotent(): void
     {
         $owner = User::factory()->pro()->create();
         $event = $this->eventOnToday($owner);
-        $guest = Guest::factory()->for($event)->create(['checked_in_at' => now()->subMinutes(5)]);
+        $firstCheckIn = now()->subMinutes(5);
+        $guest = Guest::factory()->for($event)->create(['checked_in_at' => $firstCheckIn]);
 
         $response = $this->actingAs($owner)
             ->postJson(route('events.checkin.confirm-token', ['event' => $event, 'token' => $guest->invitation_token]));
 
         $response->assertOk();
         $response->assertJson(['already_checked_in' => true]);
+        $response->assertJsonPath('guest.checked_in_at', $firstCheckIn->toIso8601String());
     }
 
     public function test_token_from_a_different_event_is_rejected(): void
@@ -186,34 +202,37 @@ class CheckInTest extends TestCase
             ->assertJsonCount(0, 'guests');
     }
 
-    public function test_check_in_is_refused_before_the_event_date(): void
+    public function test_check_in_is_refused_before_the_window_opens(): void
     {
         $owner = User::factory()->pro()->create();
-        $event = $this->eventOnToday($owner, ['event_date' => now()->addDay()->toDateString()]);
+        $event = $this->eventOnToday($owner, ['event_date' => now()->addDays(3)->toDateString()]);
         $guest = Guest::factory()->for($event)->create();
 
-        $this->actingAs($owner)
-            ->postJson(route('events.checkin.confirm-token', ['event' => $event, 'token' => $guest->invitation_token]))
-            ->assertForbidden()
-            ->assertJsonPath('message', 'Check-in is only available on the event date.');
+        $response = $this->actingAs($owner)
+            ->postJson(route('events.checkin.confirm-token', ['event' => $event, 'token' => $guest->invitation_token]));
+
+        $response->assertForbidden();
+        $this->assertStringContainsString('Check-in opens', (string) $response->json('message'));
 
         $this->assertNull($guest->fresh()->checked_in_at);
     }
 
-    public function test_check_in_is_refused_after_the_event_date(): void
+    public function test_check_in_is_refused_after_the_window_closes(): void
     {
         $owner = User::factory()->pro()->create();
-        $event = $this->eventOnToday($owner, ['event_date' => now()->subDay()->toDateString()]);
+        $event = $this->eventOnToday($owner, ['event_date' => now()->subDays(3)->toDateString()]);
         $guest = Guest::factory()->for($event)->create();
 
-        $this->actingAs($owner)
-            ->postJson(route('events.checkin.confirm-token', ['event' => $event, 'token' => $guest->invitation_token]))
-            ->assertForbidden();
+        $response = $this->actingAs($owner)
+            ->postJson(route('events.checkin.confirm-token', ['event' => $event, 'token' => $guest->invitation_token]));
+
+        $response->assertForbidden();
+        $this->assertStringContainsString('Check-in closed', (string) $response->json('message'));
 
         $this->assertNull($guest->fresh()->checked_in_at);
     }
 
-    public function test_scanner_page_hides_the_camera_when_it_is_not_the_event_date(): void
+    public function test_scanner_page_hides_the_camera_outside_the_window(): void
     {
         $owner = User::factory()->pro()->create();
         $event = Event::factory()->for($owner)->create([
@@ -223,11 +242,11 @@ class CheckInTest extends TestCase
         $this->actingAs($owner)
             ->get(route('events.checkin.scan', $event))
             ->assertOk()
-            ->assertSee('Check-in is only available on the event date', escape: false)
+            ->assertSee('Check-in opens', escape: false)
             ->assertDontSee('ckinVideo', escape: false);
     }
 
-    public function test_scanner_page_shows_the_camera_on_the_event_date(): void
+    public function test_scanner_page_shows_the_camera_inside_the_window(): void
     {
         $owner = User::factory()->pro()->create();
         $event = $this->eventOnToday($owner);

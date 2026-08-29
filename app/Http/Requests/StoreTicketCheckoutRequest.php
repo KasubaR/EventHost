@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Rules\ZambiaMobileMoneyPhone;
+use App\Rules\ZambianPhoneNumber;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -26,7 +27,7 @@ class StoreTicketCheckoutRequest extends FormRequest
         $rules = [
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email:rfc', 'max:191'],
-            'phone' => ['nullable', 'string', 'max:20'],
+            'phone' => ['required', 'string', 'max:20', new ZambianPhoneNumber],
             'payment_method' => ['required', 'string', Rule::in($allowedMethods)],
             'provider' => ['required_if:payment_method,mobile_money', 'nullable', 'string', Rule::in(['mtn', 'airtel'])],
             'momo_phone' => ['required_if:payment_method,mobile_money', 'nullable', 'string', 'max:20'],

@@ -10,8 +10,11 @@ use App\Models\TicketOrder;
 use App\Models\TicketType;
 use App\Models\User;
 use App\Notifications\TicketOrderConfirmationNotification;
+use App\Services\TicketPdfService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
@@ -77,6 +80,100 @@ class TicketManagementTest extends TestCase
             TicketOrderConfirmationNotification::class,
             fn ($notification, $channels, $notifiable) => $notifiable->routes['mail'] === 'buyer@example.com'
         );
+    }
+
+    public function test_reissue_rotates_the_public_token_and_leaves_the_ticket_valid(): void
+    {
+        Notification::fake();
+
+        $owner = User::factory()->create();
+        $event = $this->ticketedEvent($owner);
+        $order = TicketOrder::factory()->for($event)->paid()->create(['buyer_email' => 'buyer@example.com']);
+        $ticket = Ticket::factory()->for($event)->for($order, 'order')->create(['status' => TicketStatus::Valid]);
+        $oldToken = $ticket->public_token;
+
+        $this->actingAs($owner)
+            ->post(route('events.tickets.reissue', [$event, $ticket]))
+            ->assertRedirect()
+            ->assertSessionHas('status', 'ticket-reissued');
+
+        $ticket->refresh();
+        $this->assertNotSame($oldToken, $ticket->public_token);
+        // The whole point of reissue over cancel: the seat and the buyer's
+        // entitlement survive, only the credential changes.
+        $this->assertSame(TicketStatus::Valid, $ticket->status);
+
+        Notification::assertSentOnDemand(
+            TicketOrderConfirmationNotification::class,
+            fn ($notification, $channels, $notifiable) => $notifiable->routes['mail'] === 'buyer@example.com'
+        );
+    }
+
+    public function test_a_reissued_tickets_old_link_stops_resolving(): void
+    {
+        Notification::fake();
+
+        $owner = User::factory()->create();
+        $event = $this->ticketedEvent($owner);
+        $ticket = Ticket::factory()->for($event)->create(['status' => TicketStatus::Valid]);
+        $oldToken = $ticket->public_token;
+
+        $this->actingAs($owner)->post(route('events.tickets.reissue', [$event, $ticket]));
+
+        // A screenshot already in circulation points here.
+        $this->get(route('tickets.show', ['token' => $oldToken]))->assertNotFound();
+        $this->get(route('tickets.show', ['token' => $ticket->fresh()->public_token]))->assertOk();
+    }
+
+    public function test_reissue_drops_the_old_tokens_cached_qr_and_pdf(): void
+    {
+        Notification::fake();
+        Storage::fake('local');
+
+        $owner = User::factory()->create();
+        $event = $this->ticketedEvent($owner);
+        $ticket = Ticket::factory()->for($event)->create(['status' => TicketStatus::Valid]);
+        $oldToken = $ticket->public_token;
+
+        $oldPdfPath = app(TicketPdfService::class)->cachePathForToken($oldToken);
+        $oldQrKey = Ticket::qrCacheKeyForToken($oldToken);
+
+        Storage::disk('local')->put($oldPdfPath, 'cached-pdf');
+        Cache::put($oldQrKey, '<svg></svg>', now()->addWeek());
+
+        $this->actingAs($owner)->post(route('events.tickets.reissue', [$event, $ticket]));
+
+        Storage::disk('local')->assertMissing($oldPdfPath);
+        $this->assertNull(Cache::get($oldQrKey));
+    }
+
+    public function test_reissue_is_refused_for_a_ticket_that_is_not_valid(): void
+    {
+        $owner = User::factory()->create();
+        $event = $this->ticketedEvent($owner);
+        $ticket = Ticket::factory()->for($event)->create(['status' => TicketStatus::Used]);
+        $oldToken = $ticket->public_token;
+
+        $this->actingAs($owner)
+            ->post(route('events.tickets.reissue', [$event, $ticket]))
+            ->assertSessionHasErrors('ticket');
+
+        $this->assertSame($oldToken, $ticket->fresh()->public_token);
+    }
+
+    public function test_reissue_is_refused_for_someone_elses_event(): void
+    {
+        $owner = User::factory()->create();
+        $stranger = User::factory()->create();
+        $event = $this->ticketedEvent($owner);
+        $ticket = Ticket::factory()->for($event)->create(['status' => TicketStatus::Valid]);
+        $oldToken = $ticket->public_token;
+
+        $this->actingAs($stranger)
+            ->post(route('events.tickets.reissue', [$event, $ticket]))
+            ->assertForbidden();
+
+        $this->assertSame($oldToken, $ticket->fresh()->public_token);
     }
 
     public function test_cancel_flips_a_valid_ticket_to_cancelled(): void
@@ -172,6 +269,100 @@ class TicketManagementTest extends TestCase
 
         $this->actingAs($owner)
             ->post(route('events.tickets.cancel', ['event' => $eventA, 'ticket' => $ticket]))
+            ->assertNotFound();
+    }
+
+    public function test_owner_can_export_tickets_csv_with_contact_fields_and_ticket_numbers(): void
+    {
+        $owner = User::factory()->create();
+        $event = $this->ticketedEvent($owner, ['name' => 'Sunset Concert']);
+        $type = TicketType::factory()->for($event)->create(['name' => 'VIP']);
+        $order = TicketOrder::factory()->for($event)->paid()->create([
+            'order_reference' => 'ORD-TEST-001',
+            'buyer_name' => 'Buyer Name',
+            'buyer_email' => 'buyer@example.com',
+            'buyer_phone' => '0961234567',
+        ]);
+        Ticket::factory()->for($event)->for($type, 'ticketType')->for($order, 'order')->create([
+            'attendee_name' => 'John Banda',
+            'attendee_email' => 'john@example.com',
+            'attendee_phone' => '0977654321',
+            'status' => TicketStatus::Valid,
+        ]);
+        Ticket::factory()->for($event)->for($type, 'ticketType')->for($order, 'order')->create([
+            'attendee_name' => 'Mary Phiri',
+            'attendee_email' => 'mary@example.com',
+            'attendee_phone' => '0955555555',
+            'status' => TicketStatus::Valid,
+        ]);
+
+        $response = $this->actingAs($owner)->get(route('events.tickets.export', $event));
+
+        $response->assertOk();
+        $response->assertHeader('content-type', 'text/csv; charset=UTF-8');
+
+        $rows = array_map('str_getcsv', array_filter(explode("\n", trim($response->streamedContent()))));
+
+        $this->assertSame(
+            ['Ticket Number', 'Name', 'Email', 'Phone', 'Ticket Type', 'Order Reference', 'Status', 'Checked In', 'Checked In By'],
+            $rows[0]
+        );
+        // Checked In By is blank for an unscanned ticket, the same way Checked
+        // In reads "No" — see the staff-link tests for the populated case.
+        $this->assertSame(
+            ['EH-001', 'John Banda', 'john@example.com', '0977654321', 'VIP', 'ORD-TEST-001', 'Valid', 'No', ''],
+            $rows[1]
+        );
+        $this->assertSame(
+            ['EH-002', 'Mary Phiri', 'mary@example.com', '0955555555', 'VIP', 'ORD-TEST-001', 'Valid', 'No', ''],
+            $rows[2]
+        );
+    }
+
+    public function test_export_includes_cancelled_tickets_with_blank_checked_in(): void
+    {
+        $owner = User::factory()->create();
+        $event = $this->ticketedEvent($owner);
+        $order = TicketOrder::factory()->for($event)->paid()->create(['order_reference' => 'ORD-CXL']);
+        Ticket::factory()->for($event)->for($order, 'order')->create([
+            'attendee_name' => 'Cancelled Guest',
+            'attendee_email' => 'cxl@example.com',
+            'attendee_phone' => null,
+            'status' => TicketStatus::Cancelled,
+        ]);
+
+        $rows = array_map(
+            'str_getcsv',
+            array_filter(explode("\n", trim(
+                $this->actingAs($owner)->get(route('events.tickets.export', $event))->streamedContent()
+            )))
+        );
+
+        $this->assertSame('EH-001', $rows[1][0]);
+        $this->assertSame('Cancelled Guest', $rows[1][1]);
+        $this->assertSame('cxl@example.com', $rows[1][2]);
+        $this->assertSame('Cancelled', $rows[1][6]);
+        $this->assertSame('', $rows[1][7]);
+    }
+
+    public function test_a_non_owner_cannot_export_tickets(): void
+    {
+        $owner = User::factory()->create();
+        $intruder = User::factory()->create();
+        $event = $this->ticketedEvent($owner);
+
+        $this->actingAs($intruder)
+            ->get(route('events.tickets.export', $event))
+            ->assertForbidden();
+    }
+
+    public function test_export_404s_for_an_invitation_event(): void
+    {
+        $owner = User::factory()->create();
+        $event = Event::factory()->for($owner)->create();
+
+        $this->actingAs($owner)
+            ->get(route('events.tickets.export', $event))
             ->assertNotFound();
     }
 }

@@ -2,13 +2,17 @@
 
 namespace Tests\Feature;
 
+use App\Enums\TicketStatus;
 use App\Models\Event;
 use App\Models\Ticket;
 use App\Models\TicketOrder;
 use App\Models\TicketType;
 use App\Notifications\TicketOrderConfirmationNotification;
+use App\Services\QrCodeService;
 use App\Services\TicketPdfService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -55,6 +59,58 @@ class TicketDeliveryTest extends TestCase
             ->assertOk()
             ->assertSee(route('tickets.download', $ticket->public_token), escape: false)
             ->assertSee('Download ticket');
+    }
+
+    public function test_ticket_page_leaves_a_valid_ticket_unmarked(): void
+    {
+        [, , $ticket] = $this->paidOrderWithTicket([], [
+            'status' => TicketStatus::Valid,
+            'checked_in_at' => null,
+        ]);
+
+        $this->get(route('tickets.show', $ticket->public_token))
+            ->assertOk()
+            ->assertSee('Show this QR code at the door')
+            ->assertDontSee('tkc-qr-frame--used', escape: false)
+            ->assertDontSee('tkc-qr-frame--void', escape: false)
+            ->assertDontSee('tkc-qr-badge', escape: false)
+            ->assertDontSee('Checked in');
+    }
+
+    /**
+     * The status has to be visible right at the code, not only in the details
+     * list below it — a screenshot cropped to the QR was otherwise
+     * indistinguishable from an unused ticket. The code itself stays rendered
+     * and scannable: re-presenting a used ticket is a normal door event, and
+     * the scanner answering "already checked in" is what catches a shared copy.
+     */
+    public function test_ticket_page_marks_the_qr_once_the_ticket_has_been_checked_in(): void
+    {
+        [, , $ticket] = $this->paidOrderWithTicket([], [
+            'status' => TicketStatus::Used,
+            'checked_in_at' => Carbon::parse('2026-09-20 19:42:00'),
+        ]);
+
+        $this->get(route('tickets.show', $ticket->public_token))
+            ->assertOk()
+            ->assertSee('tkc-qr-frame--used', escape: false)
+            ->assertSee('tkc-qr-badge--used', escape: false)
+            ->assertSee('Checked in 20 Sep, 7:42 PM')
+            ->assertSee('already been used for entry')
+            ->assertSee(route('tickets.qr', $ticket->public_token), escape: false)
+            ->assertDontSee('Show this QR code at the door');
+    }
+
+    public function test_ticket_page_marks_a_cancelled_ticket_as_not_valid_for_entry(): void
+    {
+        [, , $ticket] = $this->paidOrderWithTicket([], ['status' => TicketStatus::Cancelled]);
+
+        $this->get(route('tickets.show', $ticket->public_token))
+            ->assertOk()
+            ->assertSee('tkc-qr-frame--void', escape: false)
+            ->assertSee('tkc-qr-badge--void', escape: false)
+            ->assertSee('Cancelled — not valid for entry', escape: false)
+            ->assertSee('no longer valid for entry');
     }
 
     public function test_ticket_page_offers_a_whatsapp_link_when_attendee_has_a_phone(): void
@@ -123,7 +179,43 @@ class TicketDeliveryTest extends TestCase
         $this->assertStringNotContainsString('—', $html);
     }
 
-    public function test_ticket_pdf_service_caches_under_v2_path(): void
+    /**
+     * The "Used" badge is laid over the modules, so it is only safe while the
+     * ticket QR carries ~30% error correction. A denser code for the same
+     * payload is the signature of the higher level.
+     */
+    public function test_ticket_qr_is_rendered_at_high_error_correction(): void
+    {
+        $service = app(QrCodeService::class);
+        $url = 'https://example.test/t/'.str_repeat('a', 48);
+
+        $standard = $service->svg($url);
+        $high = $service->svg($url, ecLevel: QrCodeService::ECC_HIGH);
+
+        // The whole code renders as one <path>, so its size stands in for the
+        // module count — a higher level needs more modules for the same payload.
+        $this->assertNotSame($standard, $high);
+        $this->assertGreaterThan(strlen($standard), strlen($high));
+    }
+
+    public function test_ticket_qr_route_serves_the_high_error_correction_code(): void
+    {
+        Cache::flush();
+
+        [, , $ticket] = $this->paidOrderWithTicket();
+
+        $served = $this->get(route('tickets.qr', $ticket->public_token))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertSame(
+            app(QrCodeService::class)->svg($ticket->publicUrl(), ecLevel: QrCodeService::ECC_HIGH),
+            $served
+        );
+        $this->assertNotNull(Cache::get($ticket->qrCacheKey()));
+    }
+
+    public function test_ticket_pdf_service_caches_under_v3_path(): void
     {
         Storage::fake('local');
 
@@ -131,7 +223,7 @@ class TicketDeliveryTest extends TestCase
         $service = app(TicketPdfService::class);
 
         $this->assertSame(
-            'ticket-pdfs/v2/'.$ticket->public_token.'.pdf',
+            'ticket-pdfs/v3/'.$ticket->public_token.'.pdf',
             $service->cachePath($ticket)
         );
 
