@@ -184,6 +184,35 @@
             </div>
         </div>
 
+        @if ($event->acceptsContributions())
+            <section class="evt-section" aria-labelledby="evt-contributions-title">
+                <div class="evt-section-head">
+                    <h2 id="evt-contributions-title">Contributions</h2>
+                    <p>Set by EventHost admin — you can't change whether this is on or the amount.</p>
+                </div>
+                <div class="evt-section-body">
+                    <div class="evt-grid-2 evt-rsvp-summary-grid">
+                        <div class="evt-stat-card">
+                            <div class="evt-stat-value">K{{ number_format((float) $event->contribution_amount, 2) }}</div>
+                            <div class="evt-stat-label">Requested per guest</div>
+                        </div>
+                        <div class="evt-stat-card">
+                            <div class="evt-stat-value">{{ number_format($contributionSummary['pledges']) }}</div>
+                            <div class="evt-stat-label">Pledges</div>
+                        </div>
+                        <div class="evt-stat-card">
+                            <div class="evt-stat-value">{{ number_format($contributionSummary['completed']) }}</div>
+                            <div class="evt-stat-label">Paid in full</div>
+                        </div>
+                        <div class="evt-stat-card evt-stat-card--accent">
+                            <div class="evt-stat-value">K{{ number_format($contributionSummary['collected'], 2) }}</div>
+                            <div class="evt-stat-label">Collected so far</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        @endif
+
         <script type="application/json" id="evt-analytics-json">@json($evtAnalyticsChartPayload)</script>
 
         <section class="evt-section evt-analytics-section" aria-labelledby="evt-analytics-title">

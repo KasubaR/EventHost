@@ -4,11 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\InitiatePaymentRequest;
 use App\Jobs\RetryLencoPayment;
+use App\Models\ContributionPayment;
 use App\Models\CustomQuote;
 use App\Models\InvitationTemplate;
 use App\Models\Payment;
 use App\Models\TicketPayment;
 use App\Models\User;
+use App\Services\ContributionPaymentStatusService;
 use App\Services\LencoService;
 use App\Services\PaymentCompletionService;
 use App\Services\PaymentStatusService;
@@ -337,6 +339,7 @@ class PaymentController extends Controller
         LencoService $lenco,
         PaymentStatusService $statusService,
         TicketPaymentStatusService $ticketStatusService,
+        ContributionPaymentStatusService $contributionStatusService,
     ): JsonResponse {
         $rawBody = $request->getContent();
         $signature = (string) $request->header('X-Lenco-Signature', '');
@@ -365,13 +368,20 @@ class PaymentController extends Controller
             return $this->processPaymentWebhook($payment, $webhook, $statusService);
         }
 
-        // Ticket buyers share the same Lenco account/webhook URL as event
-        // credit purchases — see plans/ticketing.md §5.3 on why this is one
-        // endpoint trying two tables rather than two registered webhook URLs.
+        // Ticket buyers and contributors share the same Lenco account/webhook
+        // URL as event credit purchases — see plans/ticketing.md §5.3 on why
+        // this is one endpoint trying multiple tables rather than one
+        // registered webhook URL per domain.
         $ticketPayment = TicketPayment::findForLencoWebhook($reference, $transactionId, $lencoReference);
 
         if ($ticketPayment !== null) {
             return $this->processTicketPaymentWebhook($ticketPayment, $webhook, $ticketStatusService);
+        }
+
+        $contributionPayment = ContributionPayment::findForLencoWebhook($reference, $transactionId, $lencoReference);
+
+        if ($contributionPayment !== null) {
+            return $this->processContributionPaymentWebhook($contributionPayment, $webhook, $contributionStatusService);
         }
 
         PaymentLog::info('webhook.acknowledged_unmatched', [
@@ -434,6 +444,32 @@ class PaymentController extends Controller
         ]);
 
         $ticketStatusService->applyWebhook($ticketPayment->fresh(), $webhook);
+
+        return response()->json(['success' => true, 'message' => 'processed']);
+    }
+
+    /**
+     * @param  array<string, mixed>  $webhook
+     */
+    private function processContributionPaymentWebhook(
+        ContributionPayment $contributionPayment,
+        array $webhook,
+        ContributionPaymentStatusService $contributionStatusService,
+    ): JsonResponse {
+        $mappedStatus = LencoService::mapStatus((string) ($webhook['lencoStatus'] ?? 'pending'));
+        $recovering = $mappedStatus === 'completed' && $contributionPayment->canRecoverToCompleted();
+
+        if ($contributionPayment->isTerminal() && ! $recovering) {
+            return response()->json(['success' => true, 'message' => 'already processed']);
+        }
+
+        $contributionPayment->update([
+            'webhook_received' => true,
+            'webhook_payload' => $webhook['raw'] ?? null,
+            'webhook_received_at' => now(),
+        ]);
+
+        $contributionStatusService->applyWebhook($contributionPayment->fresh(), $webhook);
 
         return response()->json(['success' => true, 'message' => 'processed']);
     }

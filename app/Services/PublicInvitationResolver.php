@@ -106,6 +106,36 @@ class PublicInvitationResolver
     }
 
     /**
+     * Resolve the contribute / pay-an-installment pages — same posture as
+     * resolveForTickets: refuses past events, private events, and events the
+     * admin hasn't enabled for contributions.
+     */
+    public function resolveForContributions(string $slug): Event|RedirectResponse
+    {
+        $lookup = $this->lookup($slug);
+
+        if ($lookup instanceof RedirectResponse) {
+            return $lookup;
+        }
+
+        if ($lookup === null || ! $lookup->invitationIsGuestAccessible()) {
+            abort(404);
+        }
+
+        if (! $lookup->is_public) {
+            abort(403);
+        }
+
+        if ($lookup->isLocked()) {
+            abort(404);
+        }
+
+        abort_unless($lookup->acceptsContributions(), 404);
+
+        return $lookup;
+    }
+
+    /**
      * Resolve open RSVP page — returns status/closed views when the window is shut.
      *
      * @return array{event: Event, status: ?PublicInvitationStatus}|RedirectResponse

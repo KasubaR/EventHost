@@ -67,6 +67,7 @@ Laravel 12 application. Auth via Laravel Breeze (Blade stack). No Alpine.js — 
 | `public/css/media-uploader.css` | Upload-on-pick tiles (`.mup-*`) — pair with `js/media-uploader.js`; pushed by `events/edit.blade.php` |
 | `public/css/ticket-checkout.css` | Buyer-facing ticket flow (`.tkc-*`) — picker, checkout, order status, `/t/{token}` ticket page |
 | `public/css/ticket-event-public.css` | Fixed public landing page for ticketed events (`.tev-*`) — hero/about/location layout only; ticket-row text and card chrome reuse `.tkc-*` from `ticket-checkout.css` (loaded alongside) and the generic `.evt-public-*` shell from `events-public.css`. Pushed by `events/tickets/landing.blade.php` and `events/preview.blade.php` when the event is ticketed |
+| `public/css/contributions.css` | Contribute page, pay-installment status page (`.ctb-*`) and the invitation-page contribute banner — pairs with `ticket-checkout.css` (loaded alongside), which supplies the shared `.tkc-*` form/checkout chrome. Pushed by `events/contribute.blade.php`, `events/contribution-status.blade.php`, and by `events/public.blade.php` when the event accepts contributions |
 
 Layouts: `layouts/site.blade.php` loads `global.css` + `account-components.css` + Vite; `layouts/app.blade.php` adds `dashboard-shell.css` + `forms-app.css`. Tailwind ships via Vite (`resources/css/app.css`) alongside these files.
 
@@ -224,6 +225,61 @@ This app requires the **GD** extension (or Imagick) for image processing (profil
 Users have an `event_credits` column. Publishing an event costs 1 credit (`User::canCreateEvent()` checks `event_credits > 0`; `EventController` spends inside the publish transaction). Drafts are free. Admins assign credits manually via the user show page in the admin panel.
 
 When payments are implemented, call `$user->increment('event_credits')` in the payment webhook and it will plug straight in.
+
+### Event Contributions
+
+Some invitation-type events (weddings, funerals, baby showers) ask guests to contribute a fixed
+amount. This is **admin-only, per event** — the host never turns it on or sets the amount. Plan and
+phased rollout: `plans/contributions.md` (Phases 1–3, all described below, are built).
+
+- `events.contribution_enabled` / `events.contribution_amount` are set from `admin/events/{event}`
+  (`Admin\EventContributionController`, permission `events.contribution_manage`) — `support` does
+  not have this permission, same posture as `ticketing.payouts.manage`. `Event::acceptsContributions()`
+  is the single gate every caller should read (invitation kind, enabled, amount set and positive)
+- Scoped to **invitation-kind events only** (`Event::isInvitation()`) — ticketed events already have
+  their own paid-entry commerce path and are excluded even for `event_type` values (`corporate`)
+  shared between both kinds
+- Guests pledge and pay from `/e/{slug}/contribute` — no login, no cart/hold step (contributions
+  aren't inventory-limited, unlike tickets). One `EventContribution` row per contributor "pledge"
+  holds a `target_amount` **snapshotted** from the event at creation, so an admin changing the
+  amount later never rewrites a pledge already in progress
+- The amount is **fixed, not guest-adjustable** — but payable in **installments**: each is a
+  `ContributionPayment` row (structurally a copy of `TicketPayment`, so it drops straight into the
+  existing `LencoService` / webhook plumbing). `EventContribution.amount_paid` only ever moves
+  inside `ContributionPaymentStatusService::creditContribution()`, under a row lock, called exactly
+  once per payment (guarded by `ContributionPayment::isTerminal()` on every re-entry) — never assign
+  it directly
+- A contributor returning to pay another installment is matched to their existing pledge by
+  **normalized phone** (`EventContribution::normalizePhone()`) within the same event, not by an
+  account — there is no login. The bookmarkable `/contributions/{reference}` status page is the
+  other way back in
+- `PaymentController::webhook()` now tries three tables against the one shared Lenco webhook URL —
+  `Payment`, then `TicketPayment`, then `ContributionPayment` — see the comment above that dispatch
+  for why it's one endpoint instead of a registered URL per domain
+- No platform commission — the host gets the gross of every completed installment
+- **Payouts (Phase 2, built):** Lenco settlement lands in the platform's merchant account, same as
+  ticket sales, so an admin manually records disbursements at `admin/contributions/revenue`
+  (`Admin\ContributionRevenueController`, permission `contributions.payouts.manage` for recording,
+  `events.contribution_manage` for viewing — twin of `ticketing.payouts.manage`/`ticketing.view`).
+  Unlike ticketing there is **no separate ledger table**: with no commission split,
+  `contribution_payments` (status `completed`) already *is* the append-only "money in" record, so
+  `ContributionRevenueAnalyticsService` derives every total live from it plus `contribution_payouts`
+  ("money out") rather than maintaining a `balance_after`-style running total.
+  `ContributionPayoutService::recordPayout()` re-checks the balance under a row lock on the event
+  and throws `ContributionPayoutExceedsBalanceException` if the amount is <= 0 or exceeds it. The
+  per-event show page also has a CSV export of completed payments
+  (`admin.contributions.revenue.export`), same streaming pattern as the host-facing
+  `events.tickets.export`
+- **Notifications (Phase 3, built):** every completed installment fires two on-demand
+  notifications from `ContributionPaymentStatusService::creditContribution()`, deferred via
+  `DB::afterCommit()` (same reasoning as ticket fulfillment) and sent through
+  `CommunicationService` (`sendContributionReceipt()` / `notifyHostNewContribution()`), wrapped in
+  a try/catch that reports but never rethrows — a notification failure must never surface as a
+  failed payment. `ContributionReceiptNotification` goes to the contributor (skipped silently if
+  they gave no email — that field is optional) and repeats per installment, not just the final one.
+  `NewContributionReceivedNotification` goes to the host, gated by a new
+  `email_contribution_updates` key in `User::DEFAULT_NOTIFICATION_PREFERENCES` (defaults `true`,
+  toggle lives on `/settings/notifications` alongside the other four)
 
 ### Subscription Tiers
 

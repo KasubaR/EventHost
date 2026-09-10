@@ -2,8 +2,10 @@
 
 use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Admin\AnalyticsController;
+use App\Http\Controllers\Admin\ContributionRevenueController;
 use App\Http\Controllers\Admin\CustomQuoteController as AdminCustomQuoteController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\EventContributionController as AdminEventContributionController;
 use App\Http\Controllers\Admin\EventController as AdminEventController;
 use App\Http\Controllers\Admin\FaqController as AdminFaqController;
 use App\Http\Controllers\Admin\GuestController as AdminGuestController;
@@ -86,6 +88,28 @@ Route::prefix('admin')
             Route::post('/events/{event}/restore', [AdminEventController::class, 'restore'])
                 ->withTrashed()
                 ->name('events.restore');
+        });
+
+        Route::middleware(['permission:events.contribution_manage,admin', 'throttle:admin-mutations'])->group(function (): void {
+            Route::patch('/events/{event}/contribution', [AdminEventContributionController::class, 'update'])
+                ->name('events.contribution.update');
+        });
+
+        Route::middleware('permission:events.contribution_manage,admin')->group(function (): void {
+            // Registered before any /contributions/{event}-shaped route would
+            // exist — same early-registration reasoning as
+            // /ticketing/revenue preceding /ticketing/{event}.
+            Route::get('/contributions/revenue', [ContributionRevenueController::class, 'index'])
+                ->name('contributions.revenue.index');
+            Route::get('/contributions/revenue/{event}', [ContributionRevenueController::class, 'show'])
+                ->name('contributions.revenue.show');
+            Route::get('/contributions/revenue/{event}/export', [ContributionRevenueController::class, 'export'])
+                ->name('contributions.revenue.export');
+        });
+
+        Route::middleware(['permission:contributions.payouts.manage,admin', 'throttle:admin-mutations'])->group(function (): void {
+            Route::post('/contributions/revenue/{event}/payouts', [ContributionRevenueController::class, 'storePayout'])
+                ->name('contributions.revenue.payouts.store');
         });
 
         Route::middleware('permission:guests.view,admin')->group(function (): void {

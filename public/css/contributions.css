@@ -1,0 +1,139 @@
+/*
+ * Contributions — pair with ticket-checkout.css (loaded alongside), which
+ * supplies the .tkc-* page chrome, form fields and payment-method picker.
+ * This file only covers what's unique to the contribute / status pages, plus
+ * the public-invitation banner that links to them. See plans/contributions.md.
+ */
+
+.ctb-amount-banner {
+  background: var(--gray-light);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.ctb-amount-banner span {
+  display: block;
+  font-size: 13px;
+  color: var(--gray-mid);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ctb-amount-banner strong {
+  display: block;
+  font-size: 28px;
+  color: var(--text-dark);
+  margin-top: 4px;
+}
+
+.ctb-amount-note {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--gray-mid);
+}
+
+.ctb-progress {
+  margin-bottom: 20px;
+}
+
+.ctb-progress-track {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--gray-light);
+  overflow: hidden;
+}
+
+.ctb-progress-fill {
+  height: 100%;
+  background: var(--green);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.ctb-progress-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--gray-mid);
+}
+
+.ctb-mt-sm {
+  margin-top: 8px;
+}
+
+.ctb-mt-md {
+  margin-top: 24px;
+}
+
+.ctb-history {
+  margin-top: 28px;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+
+.ctb-history-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 12px;
+  padding: 8px 0;
+  font-size: 14px;
+  color: var(--text-dark);
+  border-bottom: 1px solid var(--line);
+}
+
+.ctb-history-row:last-child {
+  border-bottom: none;
+}
+
+.ctb-history-status {
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.ctb-history-status--completed {
+  color: var(--green);
+}
+
+.ctb-history-status--failed,
+.ctb-history-status--cancelled {
+  color: var(--pink);
+}
+
+.ctb-history-status--pending,
+.ctb-history-status--processing {
+  color: var(--orange);
+}
+
+/* Banner on the public invitation page linking to /e/{slug}/contribute */
+.ctb-invite-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: var(--navy);
+  color: var(--white);
+  padding: 12px 20px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.ctb-invite-banner-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--cyan);
+  color: var(--navy);
+  font-weight: 600;
+  padding: 6px 16px;
+  border-radius: 999px;
+  text-decoration: none;
+}
+
+.ctb-invite-banner-cta:hover {
+  opacity: 0.9;
+}

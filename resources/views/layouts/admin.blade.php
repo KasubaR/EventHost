@@ -101,6 +101,11 @@
                         <i class="fa-solid fa-ticket"></i> Ticketing
                     </a>
                 @endif
+                @if(auth('admin')->user()?->can('events.contribution_manage'))
+                    <a href="{{ route('admin.contributions.revenue.index') }}" class="dash-nav-link {{ request()->routeIs('admin.contributions.*') ? 'is-active' : '' }}">
+                        <i class="fa-solid fa-hand-holding-dollar"></i> Contributions
+                    </a>
+                @endif
                 @if(auth('admin')->user()?->can('settings.manage'))
                     <a href="{{ route('admin.settings.edit') }}" class="dash-nav-link {{ request()->routeIs('admin.settings.*') ? 'is-active' : '' }}">
                         <i class="fa-solid fa-sliders"></i> Settings

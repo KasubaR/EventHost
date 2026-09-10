@@ -17,6 +17,9 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/glightbox/dist/css/glightbox.min.css">
     <link rel="stylesheet" href="{{ asset('css/events-public.css') }}">
     <link rel="stylesheet" href="{{ asset('css/events-invitation.css') }}">
+    @if ($event->acceptsContributions())
+        <link rel="stylesheet" href="{{ asset('css/contributions.css') }}">
+    @endif
     @php $layoutCss = \App\Support\InvitationLayoutVariant::cssFile($invitation['layout_variant'] ?? \App\Support\InvitationLayoutVariant::STANDARD); @endphp
     @if ($layoutCss)
         <link rel="stylesheet" href="{{ asset('css/'.$layoutCss) }}">
@@ -47,6 +50,13 @@
     @if (session('status') === 'published')
         <div class="evt-session-banner">
             <i class="fa-solid fa-circle-check"></i> Your event is now live.
+        </div>
+    @endif
+
+    @if ($event->acceptsContributions())
+        <div class="ctb-invite-banner">
+            <span><i class="fa-solid fa-hand-holding-dollar" aria-hidden="true"></i> This event is accepting contributions of K{{ number_format((float) $event->contribution_amount, 2) }}.</span>
+            <a href="{{ route('events.public.contribute', $event->slug) }}" class="ctb-invite-banner-cta">Contribute</a>
         </div>
     @endif
 

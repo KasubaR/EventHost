@@ -150,6 +150,58 @@
             @endif
         </div>
 
+        @if ($ev->isInvitation() && auth('admin')->user()?->can('events.contribution_manage'))
+            <div class="admin-panel-card">
+                <h2>Contribution</h2>
+                <p class="admin-muted admin-mt-sm">Admin-only — the host cannot turn this on or set the amount. When enabled, guests can pledge and pay this fixed amount, in installments, from the event's public page.</p>
+
+                @if ($ev->contribution_enabled)
+                    <div class="admin-callout admin-callout--ok admin-mt-md">
+                        <div class="admin-callout-icon" aria-hidden="true"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+                        <div>
+                            <p class="admin-callout-kicker">Enabled</p>
+                            <p class="admin-callout-body">
+                                Guests pledge K{{ number_format((float) $ev->contribution_amount, 2) }} each ·
+                                {{ number_format($ev->eventContributions()->count()) }} pledge(s) ·
+                                K{{ number_format((float) $ev->eventContributions()->sum('amount_paid'), 2) }} collected
+                            </p>
+                            @if(auth('admin')->user()?->can('contributions.payouts.manage'))
+                                <div class="admin-callout-actions">
+                                    <a href="{{ route('admin.contributions.revenue.show', $ev) }}" class="btn-primary">
+                                        <i class="fa-solid fa-sack-dollar" aria-hidden="true"></i> View revenue &amp; payouts
+                                    </a>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                @endif
+
+                <form method="post" action="{{ route('admin.events.contribution.update', $ev) }}" class="profile-form admin-mt-md">
+                    @csrf
+                    @method('PATCH')
+                    <fieldset>
+                        <legend class="admin-muted">Contribution settings</legend>
+                        <label class="admin-mt-sm">
+                            <input type="hidden" name="contribution_enabled" value="0">
+                            <input type="checkbox" name="contribution_enabled" value="1" @checked(old('contribution_enabled', $ev->contribution_enabled))>
+                            Accept contributions for this event
+                        </label>
+
+                        <label for="contribution_amount" class="admin-mt-sm">Fixed amount (ZMW)</label>
+                        <input id="contribution_amount" name="contribution_amount" type="number" step="0.01" min="1" max="999999.99"
+                               class="profile-input {{ $errors->has('contribution_amount') ? 'profile-input--error' : '' }}"
+                               value="{{ old('contribution_amount', $ev->contribution_amount) }}">
+                        @error('contribution_amount')
+                            <p class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
+                        @enderror
+                    </fieldset>
+                    <div class="admin-actions admin-mt-md">
+                        <button type="submit" class="btn-primary">Save contribution settings</button>
+                    </div>
+                </form>
+            </div>
+        @endif
+
         <div class="admin-panel-card">
             <h2>Owner account</h2>
             <p class="admin-muted admin-mt-sm">{{ $ev->user?->name ?? '—' }}</p>

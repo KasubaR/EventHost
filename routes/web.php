@@ -4,6 +4,7 @@ use App\Http\Controllers\CheckInController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EventChooseTemplateController;
+use App\Http\Controllers\EventContributionController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventGalleryController;
 use App\Http\Controllers\EventInvitationDesignController;
@@ -112,6 +113,25 @@ Route::get('/t/{token}/download', [TicketController::class, 'download'])
     ->middleware('throttle:ticket-download')
     ->where('token', '[A-Za-z0-9]{16,64}')
     ->name('tickets.download');
+
+// Public contribute flow — no login, no cart/hold step (contributions aren't
+// inventory-limited). See plans/contributions.md.
+Route::get('/e/{slug}/contribute', [EventContributionController::class, 'show'])->name('events.public.contribute');
+Route::post('/e/{slug}/contribute', [EventContributionController::class, 'store'])
+    ->middleware('throttle:contribution-checkout')
+    ->name('events.public.contribute.store');
+
+Route::get('/contributions/{reference}', [EventContributionController::class, 'status'])
+    ->where('reference', '[A-Za-z0-9_\-]{1,128}')
+    ->name('contributions.show');
+Route::post('/contributions/{reference}/pay', [EventContributionController::class, 'pay'])
+    ->middleware('throttle:contribution-checkout')
+    ->where('reference', '[A-Za-z0-9_\-]{1,128}')
+    ->name('contributions.pay');
+Route::get('/contributions/{reference}/verify', [EventContributionController::class, 'verify'])
+    ->middleware('throttle:contribution-verify')
+    ->where('reference', '[A-Za-z0-9_\-]{1,128}')
+    ->name('contributions.verify');
 
 Route::get('/e/{slug}/table/{code}', [TableUploadController::class, 'show'])->name('table.upload.show');
 Route::post('/e/{slug}/table/{code}/photos', [TableUploadController::class, 'store'])

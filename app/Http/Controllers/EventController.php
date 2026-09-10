@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ContributionStatus;
 use App\Enums\EventProductKind;
 use App\Enums\RsvpStatus;
 use App\Enums\TicketingStatus;
@@ -191,7 +192,13 @@ class EventController extends Controller
 
         $eventAnalytics = $analyticsService->forEvent($event);
 
-        return view('events.show', compact('event', 'rsvpSummary', 'eventAnalytics'));
+        $contributionSummary = $event->acceptsContributions() ? [
+            'pledges' => $event->eventContributions()->count(),
+            'completed' => $event->eventContributions()->where('status', ContributionStatus::Completed)->count(),
+            'collected' => (float) $event->eventContributions()->sum('amount_paid'),
+        ] : null;
+
+        return view('events.show', compact('event', 'rsvpSummary', 'eventAnalytics', 'contributionSummary'));
     }
 
     public function edit(Event $event, InvitationCustomizationService $customizationService): View

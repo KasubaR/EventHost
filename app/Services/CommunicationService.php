@@ -2,12 +2,16 @@
 
 namespace App\Services;
 
+use App\Models\ContributionPayment;
 use App\Models\Event;
+use App\Models\EventContribution;
 use App\Models\Guest;
 use App\Models\NotificationLog;
 use App\Models\Rsvp;
 use App\Models\User;
+use App\Notifications\ContributionReceiptNotification;
 use App\Notifications\EventUpdatedNotification;
+use App\Notifications\NewContributionReceivedNotification;
 use App\Notifications\NewRsvpReceivedNotification;
 use App\Notifications\RsvpConfirmationNotification;
 use App\Notifications\RsvpReminderNotification;
@@ -75,6 +79,64 @@ class CommunicationService
 
         try {
             $host->notify(new NewRsvpReceivedNotification($event, $guest, $rsvp));
+            $this->markSent($log);
+        } catch (\Throwable $e) {
+            $this->markFailed($log, $e);
+            throw $e;
+        }
+    }
+
+    /**
+     * One receipt per completed installment, not just the final one — a
+     * contributor paying in parts gets a receipt each time. No-op when the
+     * contributor didn't give an email (that field is optional).
+     */
+    public function sendContributionReceipt(EventContribution $contribution, ContributionPayment $payment): void
+    {
+        if (! is_string($contribution->contributor_email) || trim($contribution->contributor_email) === '') {
+            return;
+        }
+
+        $event = $contribution->event()->firstOrFail();
+        $log = $this->startLog($event, $contribution->guest, 'email', 'contribution_receipt', null, [
+            'event_contribution_id' => $contribution->id,
+            'contribution_payment_id' => $payment->id,
+        ]);
+        if ($log === null) {
+            return;
+        }
+
+        try {
+            Notification::route('mail', $contribution->contributor_email)
+                ->notify(new ContributionReceiptNotification($contribution, $payment));
+            $this->markSent($log);
+        } catch (\Throwable $e) {
+            $this->markFailed($log, $e);
+            throw $e;
+        }
+    }
+
+    /**
+     * Same trigger point as sendContributionReceipt() — every completed
+     * installment, not just the final one.
+     */
+    public function notifyHostNewContribution(User $host, EventContribution $contribution, ContributionPayment $payment): void
+    {
+        if (! $host->wantsEmailContributionUpdates()) {
+            return;
+        }
+
+        $event = $contribution->event()->firstOrFail();
+        $log = $this->startLog($event, $contribution->guest, 'email', 'host_new_contribution', null, [
+            'host_user_id' => $host->id,
+            'event_contribution_id' => $contribution->id,
+        ]);
+        if ($log === null) {
+            return;
+        }
+
+        try {
+            $host->notify(new NewContributionReceivedNotification($contribution, $payment));
             $this->markSent($log);
         } catch (\Throwable $e) {
             $this->markFailed($log, $e);

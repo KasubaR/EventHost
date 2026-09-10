@@ -23,6 +23,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'email_marketing' => false,
         'email_payment_receipts' => true,
         'sms_reminders' => false,
+        'email_contribution_updates' => true,
     ];
 
     /**
@@ -159,6 +160,11 @@ class User extends Authenticatable implements MustVerifyEmail
     public function wantsEmailRsvpUpdates(): bool
     {
         return (bool) ($this->notification_preferences['email_rsvp_updates'] ?? true);
+    }
+
+    public function wantsEmailContributionUpdates(): bool
+    {
+        return (bool) ($this->notification_preferences['email_contribution_updates'] ?? true);
     }
 
     /**

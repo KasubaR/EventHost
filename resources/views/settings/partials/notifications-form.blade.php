@@ -9,6 +9,7 @@
         'email_payment_receipts'=> ['label' => 'Payment receipts', 'desc' => 'Email confirmation for every payment made', 'icon' => 'fa-receipt'],
         'email_marketing'       => ['label' => 'Tips & announcements', 'desc' => 'Occasional product updates and event hosting tips', 'icon' => 'fa-bullhorn', 'soon' => true],
         'sms_reminders'         => ['label' => 'SMS reminders', 'desc' => 'Text message reminders sent to your phone', 'icon' => 'fa-mobile-screen-button', 'soon' => true],
+        'email_contribution_updates' => ['label' => 'Contribution updates', 'desc' => 'Get notified when a guest contributes to your event', 'icon' => 'fa-hand-holding-dollar'],
     ];
 @endphp
 
@@ -36,7 +37,14 @@
                 </div>
                 <label class="pref-toggle" aria-label="{{ $meta['label'] }}">
                     <input type="hidden" name="notification_preferences[{{ $key }}]" value="0">
-                    <input type="checkbox" name="notification_preferences[{{ $key }}]" value="1" @checked(!empty($prefs[$key]))>
+                    {{-- A key missing from the stored JSON (added to
+                    DEFAULT_NOTIFICATION_PREFERENCES after this user's account
+                    was created) falls back to that preference's own default
+                    rather than always reading as off — otherwise an existing
+                    user sees a brand-new toggle unchecked even though sends
+                    already treat it as on until they touch it. --}}
+                    <input type="checkbox" name="notification_preferences[{{ $key }}]" value="1"
+                           @checked(array_key_exists($key, $prefs) ? ! empty($prefs[$key]) : $_default)>
                     <span class="pref-toggle-track"><span class="pref-toggle-thumb"></span></span>
                 </label>
             </div>

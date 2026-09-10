@@ -168,6 +168,8 @@ class Event extends Model
         'invitation_paused_at',
         'photo_wall_enabled',
         'photo_wall_requires_approval',
+        'contribution_enabled',
+        'contribution_amount',
     ];
 
     /**
@@ -276,6 +278,28 @@ class Event extends Model
     public function isInvitation(): bool
     {
         return $this->product_kind === EventProductKind::Invitation;
+    }
+
+    /**
+     * @return HasMany<EventContribution, $this>
+     */
+    public function eventContributions(): HasMany
+    {
+        return $this->hasMany(EventContribution::class);
+    }
+
+    /**
+     * Whether guests may pledge/pay a contribution on this event. Admin-only
+     * controls (see plans/contributions.md) — the host never sets either
+     * flag, so there is deliberately no "host enabled but admin amount
+     * missing" state to reason about: both fields move together.
+     */
+    public function acceptsContributions(): bool
+    {
+        return $this->isInvitation()
+            && $this->contribution_enabled
+            && $this->contribution_amount !== null
+            && (float) $this->contribution_amount > 0;
     }
 
     /**
@@ -709,6 +733,8 @@ class Event extends Model
             'invitation_paused_at' => 'datetime',
             'photo_wall_enabled' => 'boolean',
             'photo_wall_requires_approval' => 'boolean',
+            'contribution_enabled' => 'boolean',
+            'contribution_amount' => 'decimal:2',
             'invitation_views_count' => 'integer',
             'invitation_customization' => 'array',
             'invitation_customization_previous' => 'array',
