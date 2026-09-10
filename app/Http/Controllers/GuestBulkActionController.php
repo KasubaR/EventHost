@@ -23,6 +23,17 @@ class GuestBulkActionController extends Controller
         $action = $validated['action'];
         $bulkCount = 0;
 
+        // CommunicationService::sendRsvpReminder() silently no-ops below this
+        // event's plan, which is right for the scheduled command (nothing to
+        // tell) but wrong here — this is a host clicking a button, and
+        // recording rsvp_reminders_sent for a send that never happened would
+        // permanently swallow that reminder bucket even after an upgrade.
+        if ($action === 'send_reminder_email' && ! $event->ownerCanSendAutomatedReminders()) {
+            return back()->withErrors([
+                'action' => 'Reminder emails require the Pro+ plan. Upgrade to send them.',
+            ]);
+        }
+
         DB::transaction(function () use ($event, $ids, $action, $validated, $communicationService, &$bulkCount): void {
             $builder = Guest::query()
                 ->where('event_id', $event->id)

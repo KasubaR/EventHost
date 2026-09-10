@@ -1186,6 +1186,12 @@
     color: var(--navy, #1a2a4a);
 }
 
+.evt-stat-value-of {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gray-mid, #8e8ea8);
+}
+
 .evt-stat-label {
     margin-top: 4px;
     font-size: 12px;

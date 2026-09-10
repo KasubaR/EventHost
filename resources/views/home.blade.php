@@ -301,7 +301,7 @@
         <div class="price-desc">Perfect for trying things out</div>
         <ul class="price-features">
           <li>1 active event</li>
-          <li>Up to 50 guests</li>
+          <li>Up to 150 guests</li>
           <li>1 free template</li>
           <li>Basic RSVP tracking</li>
           <li>WhatsApp sharing</li>
@@ -317,7 +317,7 @@
         <div class="price-amount"><sup>K</sup>750<span class="period"> / event</span></div>
         <div class="price-desc">For serious hosts who want everything</div>
         <ul class="price-features">
-          <li>Up to 150 guests</li>
+          <li>Up to 300 guests</li>
           <li>{{ $activeTemplateCount }} premium templates</li>
           <li>Advanced RSVP dashboard</li>
           <li>Photo gallery</li>
@@ -336,9 +336,9 @@
         <div class="price-desc">For event planners & agencies</div>
         <ul class="price-features">
           <li>Everything in Pro</li>
+          <li>Unlimited guests</li>
           <li>Custom branding</li>
           <li>Email + WhatsApp reminders</li>
-          <li>Multiple team members</li>
           <li>White-label invitations</li>
           <li>Priority support</li>
           <li>Dedicated account manager</li>

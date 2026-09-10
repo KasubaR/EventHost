@@ -26,7 +26,13 @@
                         <span class="evt-credit-badge">Pro</span>
                     @endunless
                 </a>
-                <a href="{{ route('events.guests.create', $event) }}" class="btn-primary"><i class="fa-solid fa-user-plus"></i> Add guest</a>
+                @php $guestCapacityReached = $event->hasReachedGuestCapacity(); @endphp
+                <a href="{{ $guestCapacityReached ? \App\Support\BillingPlan::checkoutUrlForTier($event->nextGuestCapacityTier()) : route('events.guests.create', $event) }}" class="btn-primary">
+                    <i class="fa-solid fa-user-plus"></i> Add guest
+                    @if ($guestCapacityReached)
+                        <span class="evt-credit-badge">{{ $event->nextGuestCapacityTier()->label() }}</span>
+                    @endif
+                </a>
                 <a href="{{ route('events.guest-groups.index', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-layer-group"></i> Groups</a>
                 <a href="{{ route('events.show', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-arrow-left"></i> Event</a>
             </div>
@@ -44,6 +50,9 @@
     @elseif (session('status') === 'guests-imported')
         <div class="evt-admin-flash">
             Import finished. Added {{ session('import_created', 0) }}, skipped {{ session('import_skipped', 0) }}.
+            @if (session('import_capped', 0) > 0)
+                {{ session('import_capped') }} more {{ Str::plural('guest', session('import_capped')) }} weren't added — this event is at its plan's guest limit.
+            @endif
         </div>
     @elseif (session('status') === 'guests-bulk-group')
         <div class="evt-admin-flash">Selected guests updated.</div>
@@ -64,7 +73,9 @@
     <div class="evt-stack">
         <div class="evt-grid-2 evt-rsvp-summary-grid">
             <div class="evt-stat-card">
-                <div class="evt-stat-value">{{ $stats['total'] }}</div>
+                <div class="evt-stat-value">
+                    {{ $stats['total'] }}@if ($event->guestCapacity() !== null)<span class="evt-stat-value-of"> / {{ $event->guestCapacity() }}</span>@endif
+                </div>
                 <div class="evt-stat-label">Total guests</div>
             </div>
             <div class="evt-stat-card">
@@ -163,13 +174,14 @@
                 @endif
             @endforeach
 
+            @php $canSendReminders = $event->ownerCanSendAutomatedReminders(); @endphp
             <label class="evt-sr-only" for="bulk_action_select">Bulk action</label>
             <select id="bulk_action_select" name="action" class="profile-input evt-guest-filter-select" required aria-label="Bulk action">
                 <option value="" disabled selected>Bulk action…</option>
                 <option value="assign_group">Assign group</option>
                 <option value="assign_table">Assign table</option>
                 <option value="mark_sent">Mark invitation sent</option>
-                <option value="send_reminder_email">Send reminder email</option>
+                <option value="send_reminder_email">Send reminder email{{ $canSendReminders ? '' : ' (Pro+)' }}</option>
                 <option value="send_update_email">Send event update email</option>
                 <option value="prepare_whatsapp_share">Prepare WhatsApp share</option>
                 <option value="delete">Remove guests</option>

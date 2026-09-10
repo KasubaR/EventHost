@@ -17,12 +17,23 @@ class EventGuestsImport implements ToCollection, WithHeadingRow
 
     public int $skippedCount = 0;
 
+    /**
+     * Rows that would have been created but the event's plan-driven guest
+     * capacity (Event::guestCapacity()) was already full — reported to the
+     * host separately from ordinary duplicate-skips so "why weren't all my
+     * guests imported" has a clear answer.
+     */
+    public int $cappedCount = 0;
+
     public function __construct(
         protected Event $event,
     ) {}
 
     public function collection(Collection $rows): void
     {
+        $capacity = $this->event->guestCapacity();
+        $currentCount = $capacity !== null ? $this->event->guests()->count() : 0;
+
         $phonesSeenThisFile = [];
 
         // Unlike Group, a table label is matched against tables the host already
@@ -98,6 +109,12 @@ class EventGuestsImport implements ToCollection, WithHeadingRow
                 }
             }
 
+            if ($capacity !== null && $currentCount >= $capacity) {
+                $this->cappedCount++;
+
+                continue;
+            }
+
             Guest::query()->create([
                 'event_id' => $this->event->id,
                 'guest_group_id' => $guestGroupId,
@@ -112,6 +129,7 @@ class EventGuestsImport implements ToCollection, WithHeadingRow
             ]);
 
             $this->createdCount++;
+            $currentCount++;
         }
     }
 }

@@ -20,7 +20,8 @@ class CommunicationFeaturesTest extends TestCase
     {
         Notification::fake();
 
-        $owner = User::factory()->create();
+        // Automated reminders are Pro+ only — see Event::ownerCanSendAutomatedReminders().
+        $owner = User::factory()->proPlus()->create();
         $event = Event::factory()->for($owner)->published()->create([
             'is_public' => true,
             'rsvp_deadline' => now()->addDays(3),
@@ -57,7 +58,8 @@ class CommunicationFeaturesTest extends TestCase
     {
         Notification::fake();
 
-        $owner = User::factory()->create();
+        // Automated reminders are Pro+ only — see Event::ownerCanSendAutomatedReminders().
+        $owner = User::factory()->proPlus()->create();
         $event = Event::factory()->for($owner)->create();
         $guest = Guest::factory()->for($event)->create([
             'email' => 'bulk@example.test',

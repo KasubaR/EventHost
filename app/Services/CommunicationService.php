@@ -25,6 +25,10 @@ class CommunicationService
 
     public function sendRsvpReminder(Event $event, Guest $guest, int $daysUntilDeadline, ?string $idempotencyKey = null): void
     {
+        if (! $event->ownerCanSendAutomatedReminders()) {
+            return;
+        }
+
         if (! is_string($guest->email) || $guest->email === '') {
             return;
         }

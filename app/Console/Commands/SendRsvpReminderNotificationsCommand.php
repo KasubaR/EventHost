@@ -29,6 +29,14 @@ class SendRsvpReminderNotificationsCommand extends Command
                         continue;
                     }
 
+                    // Pro+ only — see Event::ownerCanSendAutomatedReminders().
+                    // Skipped before querying guests so a Base/Pro event with
+                    // a large guest list doesn't do any of that work for
+                    // nothing.
+                    if (! $event->ownerCanSendAutomatedReminders()) {
+                        continue;
+                    }
+
                     $deadlineDay = $event->rsvp_deadline->copy()->startOfDay();
                     $daysUntil = (int) $today->diffInDays($deadlineDay, false);
 

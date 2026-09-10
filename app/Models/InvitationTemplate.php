@@ -4,12 +4,14 @@ namespace App\Models;
 
 use App\Enums\SubscriptionTier;
 use App\Services\InvitationCustomizationService;
+use App\Support\InvitationLayoutVariant;
 use Database\Factories\InvitationTemplateFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use RuntimeException;
 
 class InvitationTemplate extends Model
 {
@@ -21,6 +23,42 @@ class InvitationTemplate extends Model
      * hidden entirely when nothing qualifies — see home.blade.php.
      */
     public const HOMEPAGE_FEATURED_LIMIT = 4;
+
+    /**
+     * The homepage markets "countdown timer" as a Pro-exclusive feature, but
+     * countdown has no standalone gate anywhere — a host gets one only
+     * because the template they picked happens to render that section
+     * (InvitationLayoutVariant::hasCountdownSection()). This is the only
+     * thing keeping that promise true, so it's an invariant, not a soft
+     * validation message — same posture as User's event_credits guard.
+     * There is currently no admin form that edits layout_variant or
+     * min_subscription_tier (templates are seeded/developer-managed), but a
+     * model-level guard protects the invariant regardless of how a row gets
+     * written.
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (InvitationTemplate $template): void {
+            if (! $template->isDirty(['layout_variant', 'min_subscription_tier'])) {
+                return;
+            }
+
+            if (! InvitationLayoutVariant::hasCountdownSection((string) $template->layout_variant)) {
+                return;
+            }
+
+            $tier = $template->min_subscription_tier instanceof SubscriptionTier
+                ? $template->min_subscription_tier
+                : SubscriptionTier::normalize($template->min_subscription_tier);
+
+            if ($tier->rank() < SubscriptionTier::Pro->rank()) {
+                throw new RuntimeException(
+                    "Template \"{$template->name}\" uses layout \"{$template->layout_variant}\", which renders a countdown section — ".
+                    'min_subscription_tier must be at least Pro, or the homepage\'s "countdown timer" promise silently breaks.'
+                );
+            }
+        });
+    }
 
     public function getRouteKeyName(): string
     {

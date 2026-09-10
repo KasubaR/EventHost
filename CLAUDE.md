@@ -284,10 +284,25 @@ phased rollout: `plans/contributions.md` (Phases 1–3, all described below, are
 ### Subscription Tiers
 
 `App\Enums\SubscriptionTier` ranks accounts `none < base < pro < pro_plus < enterprise` and gates
-features via `User::subscriptionTierRank()` (e.g. `canUsePremiumEventTools()` is Pro+, `canChooseInvitationPalette()`
-is Pro+ tier ProPlus). `base`, `pro` and `pro_plus` each have a matching entry in `config('billing.plans')`
+features via `User::subscriptionTierRank()`. Three gates exist, at two different floors — mind which
+one a feature actually needs, the names alone don't say:
+- `canUsePremiumEventTools()` — **Pro and above** (Pro, Pro+, Enterprise all qualify): check-in, table
+  assignment and the photo wall, for invitation events. `Event::ownerHasPremiumEventTools()` is the
+  live, event-aware wrapper — ticketed events unlock via `ticketSalesAreApproved()` instead, regardless
+  of tier, since those already pay commission
+- `canChooseInvitationPalette()` and `canSendAutomatedReminders()` — **Pro+ specifically** (`Event::ownerCanSendAutomatedReminders()`
+  is the live wrapper for the second one)
+
+`base`, `pro` and `pro_plus` each have a matching entry in `config('billing.plans')`
 with a fixed ZMW price, self-checkout through the Lenco flow (`billing/checkout.blade.php` renders one
 card per config key), and `PaymentCompletionService` raises the buyer's `subscription_tier` on success.
+
+**Event staff accounts are not part of this ladder at all.** `App\Models\EventStaff` /
+`EventStaffController` are **ticketed-events only** — every action 404s for an invitation event,
+regardless of tier, per that controller's own docblock. They unlock on ticket-sales approval, the
+same commission-based gate as the premium tools above, not on Base/Pro/Pro+. The homepage
+deliberately does **not** promise "team members" on any invitation-plan card for this reason — it
+would be a promise no invitation-plan subscriber could ever redeem.
 
 `enterprise` is deliberately **not** in `config('billing.plans')` — it's a Contact Sales tier for custom
 templates, multi-page invitation sites and fully bespoke event builds, which are hand-built off-platform,

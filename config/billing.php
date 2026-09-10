@@ -10,10 +10,15 @@ return [
             'amount' => 450.00,
             'credits' => 1,
             'tier' => 'base',
-            'guest_limit_default' => 50,
+            // Guest-list size ceiling, enforced live by Event::guestCapacity()
+            // against every Guest row added (single add + CSV import) —
+            // separate from the per-event `guest_limit` field a host can set
+            // to cap *accepted* attendees. See plans/contributions.md-style
+            // rationale in Event::guestCapacity()'s docblock.
+            'guest_limit_default' => 150,
             'features' => [
                 '1 active event',
-                'Up to 50 guests',
+                'Up to 150 guests',
                 '1 free template',
                 'Basic RSVP tracking',
                 'WhatsApp sharing',
@@ -24,9 +29,9 @@ return [
             'amount' => 750.00,
             'credits' => 1,
             'tier' => 'pro',
-            'guest_limit_default' => null,
+            'guest_limit_default' => 300,
             'features' => [
-                'Up to 150 guests',
+                'Up to 300 guests',
                 // {template_count} is resolved at render time — see
                 // billing/checkout.blade.php — from InvitationTemplate::activeCount().
                 '{template_count} premium templates',
@@ -41,12 +46,15 @@ return [
             'amount' => 1500.00,
             'credits' => 1,
             'tier' => 'pro_plus',
+            // null = unlimited. Enterprise (not sold through this config —
+            // see below) is unlimited too, via Event::guestCapacity()'s own
+            // rank check.
             'guest_limit_default' => null,
             'features' => [
                 'Everything in Pro',
+                'Unlimited guests',
                 'Custom branding',
                 'Email + WhatsApp reminders',
-                'Multiple team members',
                 'White-label invitations',
                 'Priority support',
             ],

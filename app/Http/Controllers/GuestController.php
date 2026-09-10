@@ -178,6 +178,12 @@ class GuestController extends Controller
     {
         abort_unless($event->isInvitation(), 404);
 
+        if ($event->hasReachedGuestCapacity()) {
+            return back()->withErrors([
+                'name' => 'This event has reached the '.$event->guestCapacity().'-guest limit for its plan. Upgrade to add more.',
+            ])->withInput();
+        }
+
         $validated = $request->validated();
 
         $markSent = $validated['mark_invitation_sent'] ?? false;

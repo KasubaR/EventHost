@@ -57,6 +57,19 @@ final class InvitationLayoutVariant
     }
 
     /**
+     * Whether this layout renders a countdown section at all. The homepage
+     * markets "countdown timer" as a Pro feature, but countdown isn't a
+     * standalone gate anywhere in code — it only ever appears because a
+     * template's layout happens to include the section. See
+     * InvitationTemplate's saving guard, which is what actually keeps that
+     * promise true: any layout this returns true for requires at least Pro.
+     */
+    public static function hasCountdownSection(string $variant): bool
+    {
+        return ! in_array('countdown', self::blockedSections($variant), true);
+    }
+
+    /**
      * Layout-specific CSS filename to push into the <head>, or null for the standard layout.
      * Add one entry here when introducing a new layout variant — no view changes needed.
      */

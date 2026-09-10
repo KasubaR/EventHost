@@ -7,6 +7,7 @@ use App\Enums\EventProductKind;
 use App\Enums\EventStaffRole;
 use App\Enums\PublicInvitationStatus;
 use App\Enums\RsvpStatus;
+use App\Enums\SubscriptionTier;
 use App\Enums\TicketingStatus;
 use App\Enums\TicketOrderStatus;
 use App\Support\TicketingSettings;
@@ -910,6 +911,18 @@ class Event extends Model
     }
 
     /**
+     * Whether this event's owner gets automated RSVP reminder emails — Pro+
+     * only. Re-checked live (not cached at send time) so a plan change takes
+     * effect on the very next scheduled run, same pattern as
+     * ownerHasPremiumEventTools(). Ticketed events have no Guest/RSVP
+     * reminders to send in the first place.
+     */
+    public function ownerCanSendAutomatedReminders(): bool
+    {
+        return $this->isInvitation() && $this->loadMissing('user')->user->canSendAutomatedReminders();
+    }
+
+    /**
      * Whether the table photo wall should currently accept uploads and show a public gallery.
      */
     public function photoWallIsLive(): bool
@@ -918,5 +931,74 @@ class Event extends Model
             && $this->photo_wall_enabled
             && $this->invitationIsGuestAccessible()
             && $this->ownerHasPremiumEventTools();
+    }
+
+    /**
+     * Guest-*list* size ceiling from the owner's subscription plan — Base
+     * 150, Pro 300, Pro+ and Enterprise unlimited (null). Distinct from
+     * `guest_limit`, an optional per-event field the host sets to cap
+     * *accepted* attendees (venue capacity) — this instead limits how many
+     * Guest rows the event may hold at all, regardless of RSVP status.
+     *
+     * Ticketed events have no guest list in this sense (buyers are Tickets,
+     * not Guests), so this always returns null for them. Re-checked live
+     * (not cached at event-creation time) so a plan change takes effect
+     * immediately, same pattern as ownerHasPremiumEventTools().
+     */
+    public function guestCapacity(): ?int
+    {
+        if (! $this->isInvitation()) {
+            return null;
+        }
+
+        $tier = $this->loadMissing('user')->user->subscriptionTier();
+
+        if ($tier->rank() >= SubscriptionTier::ProPlus->rank()) {
+            return null;
+        }
+
+        $planKey = $tier->rank() >= SubscriptionTier::Pro->rank() ? 'pro' : 'base';
+        $limit = config("billing.plans.{$planKey}.guest_limit_default");
+
+        return is_int($limit) ? $limit : null;
+    }
+
+    /**
+     * How many more Guest rows may be added right now — null means
+     * unlimited. Never negative: an event that already exceeds its plan's
+     * capacity (e.g. after a downgrade) simply can't accept more, rather
+     * than reporting a negative number.
+     */
+    public function remainingGuestCapacity(): ?int
+    {
+        $capacity = $this->guestCapacity();
+
+        if ($capacity === null) {
+            return null;
+        }
+
+        return max(0, $capacity - $this->guests()->count());
+    }
+
+    public function hasReachedGuestCapacity(): bool
+    {
+        return $this->remainingGuestCapacity() === 0;
+    }
+
+    /**
+     * The tier that would raise or remove this event's guest cap — for the
+     * upgrade nudge on the guest list page. Null once already unlimited.
+     */
+    public function nextGuestCapacityTier(): ?SubscriptionTier
+    {
+        if ($this->guestCapacity() === null) {
+            return null;
+        }
+
+        $currentRank = $this->loadMissing('user')->user->subscriptionTier()->rank();
+
+        return $currentRank >= SubscriptionTier::Pro->rank()
+            ? SubscriptionTier::ProPlus
+            : SubscriptionTier::Pro;
     }
 }

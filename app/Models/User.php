@@ -199,6 +199,18 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Automated RSVP reminder emails — Pro+ only, matching the "Email +
+     * WhatsApp reminders" homepage bullet. The WhatsApp half of that promise
+     * has no automated-send mechanism at all yet (WhatsAppService only
+     * builds a manual wa.me share link a host clicks themselves), so
+     * there's nothing to gate there — only the email side is enforced here.
+     */
+    public function canSendAutomatedReminders(): bool
+    {
+        return $this->isActive() && $this->subscriptionTierRank() >= SubscriptionTier::ProPlus->rank();
+    }
+
+    /**
      * @return array<string, bool>
      */
     public static function defaultNotificationPreferences(): array
