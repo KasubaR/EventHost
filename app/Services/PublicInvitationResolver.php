@@ -55,6 +55,56 @@ class PublicInvitationResolver
     }
 
     /**
+     * JSON-friendly sibling of resolveInvitationPage() for GET /api/v1/events/{slug} — same gate
+     * order and outcomes, just returns the PublicInvitationStatus enum instead of building a
+     * Blade status view. resolveInvitationPage() itself is left untouched (byte-for-byte) rather
+     * than refactored to share a private helper, matching this class's existing idiom of one
+     * independent method per route/use-case (see resolveSibling/resolveForTickets/
+     * resolveForContributions/resolveOpenRsvp below, each restating its own short gate chain).
+     * abort(404)/abort(403) already render correct JSON for a request that expectsJson().
+     */
+    public function resolveInvitationPageForApi(string $slug): Event|PublicInvitationStatus|RedirectResponse
+    {
+        $lookup = $this->lookup($slug);
+
+        if ($lookup instanceof RedirectResponse) {
+            return $lookup;
+        }
+
+        if ($lookup === null) {
+            abort(404);
+        }
+
+        $event = $lookup;
+
+        if ($event->trashed()) {
+            return PublicInvitationStatus::Gone;
+        }
+
+        if ($event->isCancelled()) {
+            return PublicInvitationStatus::Cancelled;
+        }
+
+        if ($event->isInvitationPaused()) {
+            return PublicInvitationStatus::Unavailable;
+        }
+
+        if (! $event->is_published) {
+            abort(404);
+        }
+
+        if (! $event->is_public) {
+            abort(403);
+        }
+
+        if ($event->isLocked()) {
+            return PublicInvitationStatus::Ended;
+        }
+
+        return $event;
+    }
+
+    /**
      * Resolve slug routes that stay open after the event date (gallery, table upload).
      * Still blocks deleted / cancelled / paused / draft / private.
      */

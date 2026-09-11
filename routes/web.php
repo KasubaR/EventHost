@@ -32,6 +32,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PublicCheckInController;
 use App\Http\Controllers\PublicEventController;
 use App\Http\Controllers\PublicTicketCheckInController;
+use App\Http\Controllers\RemoveBrandingController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\RsvpController;
 use App\Http\Controllers\Settings\AccountController as SettingsAccountController;
@@ -65,6 +66,35 @@ Route::get('/about', function () {
 Route::view('/privacy', 'legal.privacy')->name('legal.privacy');
 Route::view('/terms', 'legal.terms')->name('legal.terms');
 Route::view('/cookies', 'legal.cookies')->name('legal.cookies');
+
+// Android App Links verification (Digital Asset Links). Must be this exact literal path on the
+// app's domain — unprefixed (not under /api), never redirected — so it lives here rather than
+// under routes/api.php. Served from a route instead of a static public/.well-known/ file because
+// some shared/cPanel hosts block dot-prefixed folders by default, which would silently break a
+// static file but not a normal route. Fingerprints are env-driven (config/android.php) so a
+// placeholder can ship now and the debug/release keystore fingerprints can be added later
+// without a code change. See plans/android-app.md.
+Route::get('/.well-known/assetlinks.json', function () {
+    $fingerprints = config('android.sha256_fingerprints');
+
+    if ($fingerprints === []) {
+        // Placeholder until a real debug/release keystore fingerprint is configured — keeps the
+        // route shape and response valid JSON rather than an empty array.
+        $fingerprints = ['00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00'];
+    }
+
+    return response()->json(array_map(
+        fn (string $fingerprint): array => [
+            'relation' => ['delegate_permission/common.handle_all_urls'],
+            'target' => [
+                'namespace' => 'android_app',
+                'package_name' => config('android.package_name'),
+                'sha256_cert_fingerprints' => [$fingerprint],
+            ],
+        ],
+        $fingerprints
+    ));
+})->name('android.asset-links');
 
 Route::get('/contact', [ContactController::class, 'show'])->name('contact');
 Route::post('/contact', [ContactController::class, 'store'])->name('contact.store')->middleware('throttle:5,1');
@@ -294,6 +324,9 @@ Route::middleware(['auth', 'account.active', 'verified'])->group(function () {
         ->name('events.checkin.links.store');
     Route::delete('/events/{event}/checkin/links/{link}', [EventStaffLinkController::class, 'destroy'])
         ->name('events.checkin.links.destroy');
+
+    Route::get('/events/{event}/remove-branding', [RemoveBrandingController::class, 'show'])
+        ->name('events.remove-branding');
 
     // Owner-only staff accounts (Phase 18) — twin of the no-login scanner
     // links above, for people the host trusts with an actual account. See

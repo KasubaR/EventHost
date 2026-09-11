@@ -28,6 +28,16 @@
         \App\Enums\EventProductKind::from($productKind),
         $event?->event_type
     );
+
+    // Public (discoverable / open-RSVP) invitation events are Base and
+    // above — see User::canMakeEventsPublic(). A brand-new event defaults
+    // to invite-only regardless of tier; an existing private event stays
+    // private if the host has since lost access (e.g. an admin downgrade).
+    // This partial is also reused by the admin's "create ticketed event on
+    // behalf of a user" page, where auth()->user() is an Admin, not a User
+    // — the invitation panel this feeds is hidden for ticketed events, but
+    // the guard here still needs to survive that call rather than error.
+    $canMakePublic = auth()->user() instanceof \App\Models\User && auth()->user()->canMakeEventsPublic();
 @endphp
 
 @unless ($isTicketed)
@@ -263,9 +273,19 @@
         <div class="evt-section-body profile-fields">
             <label class="profile-label evt-check-label">
                 <input type="checkbox" name="is_public" value="1" class="profile-input evt-check-input"
-                       @checked((string) old('is_public', ($event?->is_public ?? true) ? '1' : '0') === '1')>
+                       @checked($canMakePublic && (string) old('is_public', ($event?->is_public ?? false) ? '1' : '0') === '1')
+                       @disabled(! $canMakePublic)>
                 Public invitation (listed on our Discover page and shareable by link)
+                @unless ($canMakePublic)
+                    <span class="evt-credit-badge">Base</span>
+                @endunless
             </label>
+            @unless ($canMakePublic)
+                <p class="evt-muted">
+                    Invite-only is free on every plan. Making an event public requires the Base plan or higher —
+                    <a href="{{ \App\Support\BillingPlan::checkoutUrlForTier(\App\Enums\SubscriptionTier::Base) }}">upgrade to unlock it</a>.
+                </p>
+            @endunless
 
             <div class="profile-field">
                 <label for="rsvp_deadline" class="profile-label">RSVP deadline <span class="profile-optional">optional</span></label>

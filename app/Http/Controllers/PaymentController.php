@@ -6,6 +6,7 @@ use App\Http\Requests\InitiatePaymentRequest;
 use App\Jobs\RetryLencoPayment;
 use App\Models\ContributionPayment;
 use App\Models\CustomQuote;
+use App\Models\Event;
 use App\Models\InvitationTemplate;
 use App\Models\Payment;
 use App\Models\TicketPayment;
@@ -70,8 +71,25 @@ class PaymentController extends Controller
 
         $planKey = $request->string('plan_key')->toString();
         $quote = null;
+        $brandingEvent = null;
 
-        if ($planKey === 'enterprise') {
+        if ($planKey === 'remove_branding') {
+            $brandingEvent = Event::query()
+                ->where('id', (int) $request->input('event_id'))
+                ->where('user_id', $user->id)
+                ->where('branding_removed', false)
+                ->first();
+
+            if ($brandingEvent === null) {
+                return response()->json(['success' => false, 'message' => 'That event is not available for this purchase.'], 422);
+            }
+
+            $addon = BillingPlan::getAddon('remove_branding');
+            $amount = (float) ($addon['amount'] ?? 0);
+            $creditsGranted = 0;
+            $planLabel = (string) ($addon['label'] ?? 'Remove Branding');
+            $plan = ['label' => $planLabel, 'amount' => $amount, 'credits' => 0];
+        } elseif ($planKey === 'enterprise') {
             $quote = CustomQuote::query()
                 ->whereKey((int) $request->input('quote_id'))
                 ->where('user_id', $user->id)
@@ -107,10 +125,12 @@ class PaymentController extends Controller
 
         $method = $request->string('payment_method')->toString();
         $userRef = 'USR-'.$user->id;
-        $description = "Event Host — {$planLabel} event credit";
+        $description = $planKey === 'remove_branding'
+            ? "Event Host — {$planLabel}"
+            : "Event Host — {$planLabel} event credit";
 
         try {
-            return DB::transaction(function () use ($request, $lenco, $user, $plan, $planKey, $quote, $amount, $creditsGranted, $method, $userRef, $planLabel, $description): JsonResponse {
+            return DB::transaction(function () use ($request, $lenco, $user, $plan, $planKey, $quote, $brandingEvent, $amount, $creditsGranted, $method, $userRef, $planLabel, $description): JsonResponse {
                 $lockedUser = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
 
                 if ($quote !== null) {
@@ -121,6 +141,14 @@ class PaymentController extends Controller
                     $amount = (float) $lockedQuote->amount;
                     $creditsGranted = (int) $lockedQuote->credits_granted;
                     $quote = $lockedQuote;
+                }
+
+                if ($brandingEvent !== null) {
+                    $lockedEvent = Event::query()->whereKey($brandingEvent->id)->lockForUpdate()->first();
+                    if ($lockedEvent === null || (int) $lockedEvent->user_id !== (int) $lockedUser->id || $lockedEvent->branding_removed) {
+                        return response()->json(['success' => false, 'message' => 'That event is not available for this purchase.'], 422);
+                    }
+                    $brandingEvent = $lockedEvent;
                 }
 
                 $inProgress = Payment::query()
@@ -156,6 +184,9 @@ class PaymentController extends Controller
                 ];
                 if ($quote !== null) {
                     $metadata['quote_id'] = $quote->id;
+                }
+                if ($brandingEvent !== null) {
+                    $metadata['event_id'] = $brandingEvent->id;
                 }
 
                 try {
@@ -513,7 +544,26 @@ class PaymentController extends Controller
             'transaction_id' => $payment->lenco_transaction_id,
             'payment_reference' => $payment->payment_reference,
             'failure_reason' => $payment->failure_reason,
-            'redirect_url' => $payment->status === 'completed' ? route('events.create') : null,
+            'redirect_url' => $payment->status === 'completed' ? $this->postPaymentRedirectUrl($payment) : null,
         ]);
+    }
+
+    /**
+     * "Buy a credit" lands on the create-event wizard; "remove branding for
+     * event X" needs to land back on that event, not a wizard with nothing
+     * to do with it.
+     */
+    private function postPaymentRedirectUrl(Payment $payment): string
+    {
+        if ($payment->plan_key === 'remove_branding') {
+            $eventId = data_get($payment->metadata, 'event_id');
+            $event = is_numeric($eventId) ? Event::query()->find((int) $eventId) : null;
+
+            if ($event !== null) {
+                return route('events.show', $event);
+            }
+        }
+
+        return route('events.create');
     }
 }

@@ -31,6 +31,20 @@ class BillingPlan
     }
 
     /**
+     * A one-time, non-tier purchase — e.g. `remove_branding`. Distinct from
+     * `get()`/`plans`: an addon has no `credits`/`tier`/`guest_limit_default`
+     * and never raises the buyer's subscription_tier.
+     *
+     * @return array<string, mixed>|null
+     */
+    public static function getAddon(string $key): ?array
+    {
+        $addon = config("billing.addons.{$key}");
+
+        return is_array($addon) ? $addon : null;
+    }
+
+    /**
      * In-portal checkout link for an upgrade prompt, with the plan the user
      * needs preselected when a plan matches the tier.
      */
@@ -39,6 +53,13 @@ class BillingPlan
         return route('billing.show', self::exists($tier->value) ? ['plan' => $tier->value] : []);
     }
 
+    /**
+     * Not meaningful for `remove_branding` — it's an addon, not a tier, and
+     * never reaches this call in practice (PaymentCompletionService::complete()
+     * branches on that plan_key before ever calling tierForPlan()). Kept
+     * throwing here rather than returning something misleading like
+     * SubscriptionTier::None.
+     */
     public static function tierForPlan(string $key): SubscriptionTier
     {
         if ($key === 'enterprise') {
@@ -58,6 +79,11 @@ class BillingPlan
     {
         if ($key === 'enterprise') {
             return 'Enterprise';
+        }
+
+        $addon = self::getAddon($key);
+        if ($addon !== null) {
+            return (string) ($addon['label'] ?? $key);
         }
 
         $plan = self::get($key);

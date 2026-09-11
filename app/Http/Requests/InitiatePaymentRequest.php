@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Enums\CustomQuoteStatus;
 use App\Models\CustomQuote;
+use App\Models\Event;
 use App\Rules\ZambiaMobileMoneyPhone;
 use App\Support\BillingPlan;
 use Illuminate\Contracts\Validation\Validator;
@@ -29,10 +30,12 @@ class InitiatePaymentRequest extends FormRequest
 
         $planKeys = array_keys(BillingPlan::all());
         $planKeys[] = 'enterprise';
+        $planKeys[] = 'remove_branding';
 
         $rules = [
             'plan_key' => ['required', 'string', Rule::in($planKeys)],
             'quote_id' => ['nullable', 'integer', 'required_if:plan_key,enterprise', 'exists:custom_quotes,id'],
+            'event_id' => ['nullable', 'integer', 'required_if:plan_key,remove_branding', 'exists:events,id'],
             'payment_method' => ['required', 'string', Rule::in($allowedMethods)],
             'provider' => ['required_if:payment_method,mobile_money', 'nullable', 'string', Rule::in(['mtn', 'airtel'])],
             'phone' => ['required_if:payment_method,mobile_money', 'nullable', 'string', 'max:20'],
@@ -49,27 +52,54 @@ class InitiatePaymentRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
-            if ($this->input('plan_key') !== 'enterprise') {
-                return;
+            if ($this->input('plan_key') === 'enterprise') {
+                $this->validateEnterpriseQuote($validator);
             }
 
-            $quoteId = (int) $this->input('quote_id');
-            $quote = CustomQuote::query()->find($quoteId);
-
-            if ($quote === null) {
-                return;
-            }
-
-            if ((int) $quote->user_id !== (int) $this->user()?->id) {
-                $validator->errors()->add('quote_id', 'That custom quote does not belong to your account.');
-
-                return;
-            }
-
-            if ($quote->status !== CustomQuoteStatus::Pending) {
-                $validator->errors()->add('quote_id', 'That custom quote is no longer available to pay.');
+            if ($this->input('plan_key') === 'remove_branding') {
+                $this->validateBrandingRemovalEvent($validator);
             }
         });
+    }
+
+    private function validateEnterpriseQuote(Validator $validator): void
+    {
+        $quoteId = (int) $this->input('quote_id');
+        $quote = CustomQuote::query()->find($quoteId);
+
+        if ($quote === null) {
+            return;
+        }
+
+        if ((int) $quote->user_id !== (int) $this->user()?->id) {
+            $validator->errors()->add('quote_id', 'That custom quote does not belong to your account.');
+
+            return;
+        }
+
+        if ($quote->status !== CustomQuoteStatus::Pending) {
+            $validator->errors()->add('quote_id', 'That custom quote is no longer available to pay.');
+        }
+    }
+
+    private function validateBrandingRemovalEvent(Validator $validator): void
+    {
+        $eventId = (int) $this->input('event_id');
+        $event = Event::query()->find($eventId);
+
+        if ($event === null) {
+            return;
+        }
+
+        if ((int) $event->user_id !== (int) $this->user()?->id) {
+            $validator->errors()->add('event_id', 'That event does not belong to your account.');
+
+            return;
+        }
+
+        if ($event->branding_removed) {
+            $validator->errors()->add('event_id', 'Branding is already removed for that event.');
+        }
     }
 
     /**

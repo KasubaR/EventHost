@@ -15,6 +15,11 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
+        // Phase 0.1: bearer-token JSON API for the Android app. No statefulApi()/throttleApi()
+        // call anywhere in this file, so the `api` middleware group stays exactly
+        // [SubstituteBindings::class] — no SPA-cookie/CSRF machinery, no undefined default
+        // rate limiter. Endpoints bring their own named throttle, same convention as web.php.
+        api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
         then: function (): void {

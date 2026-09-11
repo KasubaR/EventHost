@@ -176,6 +176,18 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->event_credits > 0;
     }
 
+    /**
+     * Whether this account may make an invitation event public (discoverable
+     * on /discover, open-RSVP) rather than invite-link-only — Base and
+     * above. The lowest possible gate: anyone who has ever bought a plan
+     * qualifies, only an account that never has (tier `none`) is refused.
+     * Invite-only stays free at every tier, including none.
+     */
+    public function canMakeEventsPublic(): bool
+    {
+        return $this->isActive() && $this->subscriptionTierRank() >= SubscriptionTier::Base->rank();
+    }
+
     public function canUseInvitationTemplate(InvitationTemplate $template): bool
     {
         return $this->isActive() && $this->subscriptionTierRank() >= $template->requiredTierRank();

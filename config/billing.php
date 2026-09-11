@@ -62,6 +62,18 @@ return [
     ],
 
     /*
+    | One-time per-event purchases — not subscription tiers, so deliberately
+    | not inside `plans` above (no `credits`, no `tier`, nothing that raises
+    | the buyer's subscription_tier). See plans/remove-branding.md.
+    */
+    'addons' => [
+        'remove_branding' => [
+            'label' => 'Remove Branding',
+            'amount' => 250.00,
+        ],
+    ],
+
+    /*
     | Homepage / checkout "Most Popular" badge. Driven by completed plan
     | purchases over a rolling window. When no plan meets min_sales, no card
     | gets the badge (there is no hardcoded fallback plan).

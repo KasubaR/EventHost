@@ -226,6 +226,36 @@ Users have an `event_credits` column. Publishing an event costs 1 credit (`User:
 
 When payments are implemented, call `$user->increment('event_credits')` in the payment webhook and it will plug straight in.
 
+### Remove Branding (paid add-on)
+
+K250, any plan, **per event** — removes the `<x-event-host-bar>` component (logo, tagline, "Get
+started free" CTA) from that event's public pages. Plan: `plans/remove-branding.md`.
+
+- One column, `events.branding_removed` (boolean). Set only by
+  `PaymentCompletionService::fulfillRemoveBranding()`, never by a host directly
+- Reuses the existing self-checkout pipeline instead of forking a new one — `plan_key =
+  'remove_branding'` is a **third** special case in `PaymentController::initiate()` and
+  `PaymentCompletionService::complete()`/`reverse()`, alongside the normal credit-granting plans
+  and the `enterprise`/`CustomQuote` flow. It grants **no credits and no tier** — `BillingPlan::getAddon()`
+  reads its price from `config('billing.addons')`, a sibling of `plans`, not an entry inside it
+- The event to remove branding from travels in `Payment.metadata['event_id']`, the same way
+  Enterprise carries `quote_id` — `InitiatePaymentRequest` validates the event is owned by the
+  buyer and not already `branding_removed` before `initiate()` re-validates it again under a row
+  lock inside the transaction
+- Its own small checkout page (`RemoveBrandingController`, `GET /events/{event}/remove-branding`)
+  rather than a card on the tier-comparison `billing/checkout.blade.php` — this is one line item,
+  not a set of plans to compare. Still posts to the same generic `payment.initiate` /
+  `payment.verify*` endpoints
+- A reversed payment (chargeback / failed settlement) flips `branding_removed` back to `false` and
+  skips `EventCreditService::reversePurchase()` entirely — that call would just write a pointless
+  0-credit refund ledger row for a purchase that never touched credits
+- `<x-event-host-bar :event="$event" />` (`resources/views/components/event-host-bar.blade.php`) is
+  the one copy of that bar — it used to be pasted verbatim into four views (`events/public.blade.php`,
+  `events/tickets/landing.blade.php`, `rsvp/token-show.blade.php`, `events/invitation-status.blade.php`).
+  Add any new public-facing event page through the component, not a fresh copy-paste
+- Applies to **both** invitation and ticketed events (the bar shows on the ticketed landing page
+  too) — unlike Contributions below, this isn't scoped to `isInvitation()`
+
 ### Event Contributions
 
 Some invitation-type events (weddings, funerals, baby showers) ask guests to contribute a fixed
@@ -284,8 +314,15 @@ phased rollout: `plans/contributions.md` (Phases 1–3, all described below, are
 ### Subscription Tiers
 
 `App\Enums\SubscriptionTier` ranks accounts `none < base < pro < pro_plus < enterprise` and gates
-features via `User::subscriptionTierRank()`. Three gates exist, at two different floors — mind which
-one a feature actually needs, the names alone don't say:
+features via `User::subscriptionTierRank()`. Four gates exist, at three different floors — mind
+which one a feature actually needs, the names alone don't say:
+- `canMakeEventsPublic()` — **Base and above** (the lowest gate — every tier except `none`
+  qualifies): whether an invitation event may be discoverable/open-RSVP rather than invite-link-only.
+  Invite-only itself stays free at every tier, including `none`, and is the default for a new event
+  (`events.is_public` defaults `false`). Ticketed events are exempt entirely — `TicketedEventCreator`
+  hardcodes `is_public = true` for them regardless of tier, same commission-not-subscription
+  reasoning as the gate below. `StoreEventRequest`/`UpdateEventRequest` only raise a validation error
+  when someone actually tries to check the box below Base — leaving it unchecked never errors
 - `canUsePremiumEventTools()` — **Pro and above** (Pro, Pro+, Enterprise all qualify): check-in, table
   assignment and the photo wall, for invitation events. `Event::ownerHasPremiumEventTools()` is the
   live, event-aware wrapper — ticketed events unlock via `ticketSalesAreApproved()` instead, regardless

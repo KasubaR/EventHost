@@ -171,6 +171,7 @@ class Event extends Model
         'photo_wall_requires_approval',
         'contribution_enabled',
         'contribution_amount',
+        'branding_removed',
     ];
 
     /**
@@ -736,6 +737,7 @@ class Event extends Model
             'photo_wall_requires_approval' => 'boolean',
             'contribution_enabled' => 'boolean',
             'contribution_amount' => 'decimal:2',
+            'branding_removed' => 'boolean',
             'invitation_views_count' => 'integer',
             'invitation_customization' => 'array',
             'invitation_customization_previous' => 'array',

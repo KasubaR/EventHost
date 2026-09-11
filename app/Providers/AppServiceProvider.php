@@ -141,5 +141,12 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('contribution-verify', function (Request $request): Limit {
             return Limit::perMinute(10)->by((string) $request->ip());
         });
+
+        // API Slice A — web's registration form has no throttle at all (relies on validation +
+        // the DB unique constraint alone), but a JSON API is a much easier target to script.
+        // Login intentionally has no named limiter here — see Api\V1\Auth\LoginRequest's docblock.
+        RateLimiter::for('api-auth-register', function (Request $request): Limit {
+            return Limit::perMinute(5)->by((string) $request->ip());
+        });
     }
 }

@@ -93,6 +93,8 @@
             <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Event marked cancelled.</div>
         @elseif (session('status') === 'event-reopened')
             <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Event reopened.</div>
+        @elseif (session('status') === 'branding-already-removed')
+            <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Branding is already removed for this event.</div>
         @endif
 
         @can('pause', $event)
@@ -212,6 +214,30 @@
                 </div>
             </section>
         @endif
+
+        <section class="evt-section" aria-labelledby="evt-branding-title">
+            <div class="evt-section-head">
+                <h2 id="evt-branding-title">Branding</h2>
+                <p>The "{{ config('app.name') }}" bar at the top of this event's public pages.</p>
+            </div>
+            <div class="evt-section-body">
+                @if ($event->branding_removed)
+                    <div class="evt-flash evt-flash--info">
+                        <i class="fa-solid fa-circle-check"></i> Branding removed — the {{ config('app.name') }} bar no longer shows on this event's public pages.
+                    </div>
+                @else
+                    <p class="evt-muted">
+                        Remove the {{ config('app.name') }} bar (logo, tagline and "Get started free" link) from the
+                        top of the public invitation, RSVP links, and status page. One-time, this event only.
+                    </p>
+                    <div class="evt-card-actions">
+                        <a href="{{ route('events.remove-branding', $event) }}" class="btn-primary">
+                            <i class="fa-solid fa-eye-slash"></i> Remove branding — K250
+                        </a>
+                    </div>
+                @endif
+            </div>
+        </section>
 
         <script type="application/json" id="evt-analytics-json">@json($evtAnalyticsChartPayload)</script>
 

@@ -57,6 +57,10 @@
                     <dd>{{ $ev->is_public ? 'Allowed' : 'Invite only' }}</dd>
                 </div>
                 <div class="admin-fact">
+                    <dt>Branding</dt>
+                    <dd>{{ $ev->branding_removed ? 'Removed (paid)' : 'EventHost bar shown' }}</dd>
+                </div>
+                <div class="admin-fact">
                     <dt>Guests</dt>
                     <dd>
                         {{ number_format($ev->guests_count) }}

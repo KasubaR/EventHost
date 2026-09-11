@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\CustomQuoteStatus;
 use App\Models\CreditTransaction;
 use App\Models\CustomQuote;
+use App\Models\Event;
 use App\Models\Payment;
 use App\Models\User;
 use App\Notifications\PaymentReceiptNotification;
@@ -46,45 +47,51 @@ class PaymentCompletionService
             $user = User::query()->whereKey($locked->user_id)->lockForUpdate()->firstOrFail();
 
             if ($locked->credits_fulfilled_at === null) {
-                $quote = $this->resolvePendingQuoteForPayment($locked);
+                if ($locked->plan_key === 'remove_branding') {
+                    if (! $this->fulfillRemoveBranding($locked)) {
+                        return null;
+                    }
+                } else {
+                    $quote = $this->resolvePendingQuoteForPayment($locked);
 
-                if ($locked->plan_key === 'enterprise' && $quote === null) {
-                    // Quote vanished or was cancelled after initiate — do not
-                    // grant Enterprise or credits for an orphan payment.
-                    PaymentLog::forPayment($locked, 'complete.skipped_missing_quote');
+                    if ($locked->plan_key === 'enterprise' && $quote === null) {
+                        // Quote vanished or was cancelled after initiate — do not
+                        // grant Enterprise or credits for an orphan payment.
+                        PaymentLog::forPayment($locked, 'complete.skipped_missing_quote');
 
-                    return null;
+                        return null;
+                    }
+
+                    $this->credits->grant(
+                        $user,
+                        (int) $locked->credits_granted,
+                        CreditTransaction::REASON_PURCHASE,
+                        $locked
+                    );
+
+                    $user->refresh();
+
+                    $purchasedTier = BillingPlan::tierForPlan($locked->plan_key);
+                    if ($purchasedTier->rank() > $user->subscriptionTierRank()) {
+                        $user->subscription_tier = $purchasedTier;
+                        $user->save();
+                    }
+
+                    if ($quote !== null) {
+                        $quote->forceFill([
+                            'status' => CustomQuoteStatus::Paid,
+                            'payment_id' => $locked->id,
+                        ])->save();
+                    }
+
+                    $locked->credits_fulfilled_at = now();
+                    $locked->save();
+
+                    PaymentLog::forPayment($locked, 'complete.fulfilled', [
+                        'credits_granted' => $locked->credits_granted,
+                        'tier' => $purchasedTier->value,
+                    ]);
                 }
-
-                $this->credits->grant(
-                    $user,
-                    (int) $locked->credits_granted,
-                    CreditTransaction::REASON_PURCHASE,
-                    $locked
-                );
-
-                $user->refresh();
-
-                $purchasedTier = BillingPlan::tierForPlan($locked->plan_key);
-                if ($purchasedTier->rank() > $user->subscriptionTierRank()) {
-                    $user->subscription_tier = $purchasedTier;
-                    $user->save();
-                }
-
-                if ($quote !== null) {
-                    $quote->forceFill([
-                        'status' => CustomQuoteStatus::Paid,
-                        'payment_id' => $locked->id,
-                    ])->save();
-                }
-
-                $locked->credits_fulfilled_at = now();
-                $locked->save();
-
-                PaymentLog::forPayment($locked, 'complete.fulfilled', [
-                    'credits_granted' => $locked->credits_granted,
-                    'tier' => $purchasedTier->value,
-                ]);
             }
 
             return $locked->notified_at === null ? (int) $user->id : null;
@@ -107,6 +114,46 @@ class PaymentCompletionService
 
         $freshPayment->notified_at = now();
         $freshPayment->save();
+    }
+
+    /**
+     * Sets Event::branding_removed for a completed remove_branding payment.
+     * No credits, no tier — just the one flag. Returns false when the target
+     * event has gone missing or changed hands since initiate() (the payment
+     * still settled; nothing to fulfill against, same posture as an
+     * Enterprise payment whose quote vanished).
+     */
+    private function fulfillRemoveBranding(Payment $payment): bool
+    {
+        $eventId = data_get($payment->metadata, 'event_id');
+
+        if (! is_numeric($eventId)) {
+            PaymentLog::forPayment($payment, 'complete.skipped_missing_event');
+
+            return false;
+        }
+
+        /** @var Event|null $event */
+        $event = Event::query()->whereKey((int) $eventId)->lockForUpdate()->first();
+
+        if ($event === null || (int) $event->user_id !== (int) $payment->user_id) {
+            PaymentLog::forPayment($payment, 'complete.skipped_missing_event');
+
+            return false;
+        }
+
+        $event->branding_removed = true;
+        $event->save();
+
+        $payment->credits_fulfilled_at = now();
+        $payment->save();
+
+        PaymentLog::forPayment($payment, 'complete.fulfilled', [
+            'event_id' => $event->id,
+            'plan_key' => 'remove_branding',
+        ]);
+
+        return true;
     }
 
     private function resolvePendingQuoteForPayment(Payment $payment): ?CustomQuote
@@ -146,7 +193,11 @@ class PaymentCompletionService
             /** @var User $user */
             $user = User::query()->whereKey($locked->user_id)->lockForUpdate()->firstOrFail();
 
-            if ($locked->credits_fulfilled_at !== null) {
+            // remove_branding never touched credits (fulfillRemoveBranding()
+            // doesn't call credits->grant()), so there's nothing to reverse
+            // there — reversePurchase() would just write a pointless 0-credit
+            // refund ledger row.
+            if ($locked->credits_fulfilled_at !== null && $locked->plan_key !== 'remove_branding') {
                 $this->credits->reversePurchase(
                     $user,
                     $locked,
@@ -173,6 +224,20 @@ class PaymentCompletionService
 
                 if ($quote !== null) {
                     $quote->forceFill(['status' => CustomQuoteStatus::Cancelled])->save();
+                }
+            }
+
+            // Likewise, a reversed branding-removal payment must not leave
+            // the bar hidden after the money's gone back — same reasoning as
+            // the Enterprise quote above.
+            if ($locked->plan_key === 'remove_branding' && $locked->credits_fulfilled_at !== null) {
+                $eventId = data_get($locked->metadata, 'event_id');
+                if (is_numeric($eventId)) {
+                    $brandingEvent = Event::query()->whereKey((int) $eventId)->lockForUpdate()->first();
+                    if ($brandingEvent !== null && $brandingEvent->branding_removed) {
+                        $brandingEvent->branding_removed = false;
+                        $brandingEvent->save();
+                    }
                 }
             }
 

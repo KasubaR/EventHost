@@ -91,7 +91,36 @@ class StoreEventRequest extends FormRequest
         $validator->after(function (Validator $validator): void {
             $this->guardRsvpDeadline($validator);
             $this->guardEventTimeNotAlreadyPassedToday($validator);
+            $this->guardPublicVisibility($validator);
         });
+    }
+
+    /**
+     * Public (discoverable / open-RSVP) invitation events are Base and
+     * above — see User::canMakeEventsPublic(). Invite-only stays free at
+     * every tier, so this only fires when someone actually tried to check
+     * the box. Ticketed events are exempt entirely: TicketedEventCreator
+     * hardcodes is_public = true for them regardless of tier, since that
+     * product is monetized by commission, not by subscription.
+     */
+    private function guardPublicVisibility(Validator $validator): void
+    {
+        if ($this->input('product_kind') === EventProductKind::Ticketed->value) {
+            return;
+        }
+
+        if (! $this->boolean('is_public')) {
+            return;
+        }
+
+        if ($this->user()?->canMakeEventsPublic()) {
+            return;
+        }
+
+        $validator->errors()->add(
+            'is_public',
+            'Making your event public requires the Base plan or higher. Leave it invite-only, or upgrade to unlock this.'
+        );
     }
 
     private function combinedEventInstant(): ?Carbon
