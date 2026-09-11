@@ -5,10 +5,21 @@ use App\Http\Controllers\Api\V1\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Api\V1\Auth\NewPasswordController;
 use App\Http\Controllers\Api\V1\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Api\V1\Auth\RegisteredUserController;
+use App\Http\Controllers\Api\V1\DashboardController;
+use App\Http\Controllers\Api\V1\EventChooseTemplateController;
 use App\Http\Controllers\Api\V1\EventContributionController;
+use App\Http\Controllers\Api\V1\EventController;
 use App\Http\Controllers\Api\V1\EventGalleryController;
+use App\Http\Controllers\Api\V1\EventInvitationDesignController;
+use App\Http\Controllers\Api\V1\EventInvitationMediaController;
+use App\Http\Controllers\Api\V1\EventPreviewController;
+use App\Http\Controllers\Api\V1\EventTableController;
 use App\Http\Controllers\Api\V1\EventTicketCheckoutController;
 use App\Http\Controllers\Api\V1\EventTicketPurchaseController;
+use App\Http\Controllers\Api\V1\GuestBulkActionController;
+use App\Http\Controllers\Api\V1\GuestController;
+use App\Http\Controllers\Api\V1\GuestGroupController;
+use App\Http\Controllers\Api\V1\GuestImportController;
 use App\Http\Controllers\Api\V1\MeController;
 use App\Http\Controllers\Api\V1\PublicEventController;
 use App\Http\Controllers\Api\V1\RsvpController;
@@ -18,8 +29,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 // Phase 0.1 — pure plumbing. Slice A (0.2) — auth, /me, discover, public event read.
-// Slice B1 (0.3) — RSVP. Slice B2 — tickets. Slice B3 (below) — contributions, table
-// photo upload, gallery. See plans/android-app.md and EventHostAndriodApp/implementation.md.
+// Slice B1 (0.3) — RSVP. Slice B2 — tickets. Slice B3 — contributions, table photo
+// upload, gallery. Slice C1 (0.4) — host dashboard, event CRUD/lifecycle, preview,
+// template choose. Slice C2 — invitation design, media staging. Slice C3 (below) —
+// guests, groups, CSV/bulk/export/QR, tables.
+// See plans/android-app.md and EventHostAndriodApp/implementation.md.
 //
 // Guard convention for everything added after this file grows: Sanctum **stateless** bearer
 // tokens via `auth:sanctum` per route/group. `bootstrap/app.php` deliberately does not call
@@ -152,5 +166,99 @@ Route::prefix('v1')->group(function (): void {
     Route::prefix('events/{slug}/gallery')->name('api.v1.gallery.')->group(function (): void {
         Route::get('/', [EventGalleryController::class, 'show'])->name('show');
         Route::get('/feed', [EventGalleryController::class, 'feed'])->name('feed');
+    });
+});
+
+// Slice C1 — host dashboard: stats, event CRUD, lifecycle, preview, template choose.
+// Every route here is auth:sanctum + sanctum.active, unlike every prior slice's guest-facing
+// routes — see the Slice C1 plan for the suspended-token-revocation rationale. Policy checks
+// are the *same* EventPolicy the web routes use (authorizeResource in the constructor, or an
+// explicit $this->authorize() call) — Sanctum's $request->user() resolves identically to the
+// session guard's, so zero policy code changes were needed.
+//
+// Deliberately namespaced under `host/` rather than bare `/events`: Slice A already shipped
+// GET /api/v1/events/{slug} (public, by slug) — a bare GET /api/v1/events/{event} (host, by
+// numeric id) would collide with that exact URL shape. `host/events` avoids the collision now
+// and for every future host-scoped {event} route C2/C3 add, rather than special-casing one route.
+Route::prefix('v1/host')->middleware(['auth:sanctum', 'sanctum.active'])->group(function (): void {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('api.v1.host.dashboard');
+
+    Route::prefix('events')->name('api.v1.host.events.')->group(function (): void {
+        Route::get('/', [EventController::class, 'index'])->name('index');
+        Route::post('/', [EventController::class, 'store'])
+            ->middleware('throttle:10,1')
+            ->name('store');
+
+        Route::get('/{event}', [EventController::class, 'show'])->name('show');
+        Route::match(['put', 'patch'], '/{event}', [EventController::class, 'update'])->name('update');
+        Route::delete('/{event}', [EventController::class, 'destroy'])->name('destroy');
+
+        Route::post('/{event}/restore', [EventController::class, 'restore'])
+            ->withTrashed()
+            ->name('restore');
+
+        Route::patch('/{event}/publish', [EventController::class, 'publish'])->name('publish');
+        Route::patch('/{event}/pause', [EventController::class, 'pause'])->name('pause');
+        Route::patch('/{event}/resume', [EventController::class, 'resume'])->name('resume');
+        Route::patch('/{event}/cancel', [EventController::class, 'cancel'])->name('cancel');
+        Route::patch('/{event}/uncancel', [EventController::class, 'uncancel'])->name('uncancel');
+
+        Route::get('/{event}/preview', [EventPreviewController::class, 'show'])->name('preview');
+
+        Route::get('/{event}/choose-template', [EventChooseTemplateController::class, 'index'])->name('choose-template.index');
+        Route::patch('/{event}/choose-template', [EventChooseTemplateController::class, 'update'])->name('choose-template.update');
+
+        // Slice C2 — invitation design + media staging. Reuses the invitation-design /
+        // invitation-media named rate limiters verbatim (both keyed on the authenticated
+        // user's id already, per AppServiceProvider::boot()).
+        Route::get('/{event}/design', [EventInvitationDesignController::class, 'show'])->name('design.show');
+        Route::patch('/{event}/design', [EventInvitationDesignController::class, 'update'])
+            ->middleware('throttle:invitation-design')
+            ->name('design.update');
+
+        Route::post('/{event}/media', [EventInvitationMediaController::class, 'store'])
+            ->middleware('throttle:invitation-media')
+            ->name('media.store');
+        Route::delete('/{event}/media/{staged}', [EventInvitationMediaController::class, 'destroy'])
+            ->whereNumber('staged')
+            ->name('media.destroy');
+
+        // Slice C3 — guests, groups, CSV/bulk/export/QR, tables. Static sub-paths (export,
+        // import, bulk, qr-sheet.pdf) are registered before the {guest}/{table} wildcard
+        // routes below them, same ordering discipline as web's routes/web.php, so a literal
+        // segment is never swallowed by the wildcard. Reuses the guest-bulk-send named
+        // limiter verbatim; import reuses the same inline throttle:10,1 web uses.
+        Route::prefix('{event}/guests')->name('guests.')->group(function (): void {
+            Route::get('/', [GuestController::class, 'index'])->name('index');
+            Route::post('/', [GuestController::class, 'store'])->name('store');
+            Route::get('/export', [GuestController::class, 'export'])->name('export');
+            Route::get('/export-pdf', [GuestController::class, 'exportPdf'])->name('export-pdf');
+            Route::get('/qr-sheet.pdf', [GuestController::class, 'qrSheet'])->name('qr-sheet');
+            Route::get('/import/template', [GuestImportController::class, 'downloadTemplate'])->name('import.template');
+            Route::post('/import', [GuestImportController::class, 'store'])
+                ->middleware('throttle:10,1')
+                ->name('import.store');
+            Route::post('/bulk', [GuestBulkActionController::class, 'store'])
+                ->middleware('throttle:guest-bulk-send')
+                ->name('bulk');
+            Route::patch('/{guest}', [GuestController::class, 'update'])->name('update');
+            Route::delete('/{guest}', [GuestController::class, 'destroy'])->name('destroy');
+            Route::patch('/{guest}/invitation-sent', [GuestController::class, 'markInvitationSent'])->name('mark-sent');
+        });
+
+        Route::prefix('{event}/guest-groups')->name('guest-groups.')->group(function (): void {
+            Route::get('/', [GuestGroupController::class, 'index'])->name('index');
+            Route::post('/', [GuestGroupController::class, 'store'])->name('store');
+            Route::patch('/{guest_group}', [GuestGroupController::class, 'update'])->name('update');
+            Route::delete('/{guest_group}', [GuestGroupController::class, 'destroy'])->name('destroy');
+        });
+
+        Route::prefix('{event}/tables')->name('tables.')->group(function (): void {
+            Route::get('/', [EventTableController::class, 'index'])->name('index');
+            Route::post('/', [EventTableController::class, 'store'])->name('store');
+            Route::get('/qr-sheet.pdf', [EventTableController::class, 'qrSheet'])->name('qr-sheet');
+            Route::patch('/{table}', [EventTableController::class, 'update'])->name('update');
+            Route::delete('/{table}', [EventTableController::class, 'destroy'])->name('destroy');
+        });
     });
 });

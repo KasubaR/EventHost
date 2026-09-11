@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\AdminAuthenticate;
 use App\Http\Middleware\EnsureAccountIsActive;
+use App\Http\Middleware\EnsureSanctumAccountIsActive;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -37,6 +38,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin.auth' => AdminAuthenticate::class,
             'account.active' => EnsureAccountIsActive::class,
+            // Slice C1 — the Sanctum-token twin of account.active. See
+            // EnsureSanctumAccountIsActive's docblock for why this exists separately.
+            'sanctum.active' => EnsureSanctumAccountIsActive::class,
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
