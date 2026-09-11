@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Api\V1;
 
 use App\Models\Event;
+use App\Support\EventAccess;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -73,6 +74,21 @@ class EventResource extends JsonResource
             'created_at' => $this->created_at?->toIso8601String(),
             'deleted_at' => $this->deleted_at?->toIso8601String(),
         ];
+
+        // Slice D: lets the app tell an owner apart from an accepted Manager/Check-in
+        // staffer for this event without re-deriving EventAccess's ranking client-side —
+        // same "ask the server" rule already applied to subscription-tier flags on /me.
+        $user = $request->user();
+        if ($user !== null) {
+            $staffRole = $this->staffRoleFor($user);
+            $data['is_owner'] = EventAccess::isOwner($user, $this->resource);
+            $data['staff_role'] = $staffRole === null ? null : [
+                'value' => $staffRole->value,
+                'label' => $staffRole->label(),
+            ];
+            $data['can_manage'] = EventAccess::canManage($user, $this->resource);
+            $data['can_check_in'] = EventAccess::canCheckIn($user, $this->resource);
+        }
 
         if ($this->isTicketed()) {
             $data['ticketing_status'] = [

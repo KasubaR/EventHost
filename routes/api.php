@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\Auth\NewPasswordController;
 use App\Http\Controllers\Api\V1\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Api\V1\Auth\RegisteredUserController;
 use App\Http\Controllers\Api\V1\DashboardController;
+use App\Http\Controllers\Api\V1\EventCheckInController;
 use App\Http\Controllers\Api\V1\EventChooseTemplateController;
 use App\Http\Controllers\Api\V1\EventContributionController;
 use App\Http\Controllers\Api\V1\EventController;
@@ -13,9 +14,17 @@ use App\Http\Controllers\Api\V1\EventGalleryController;
 use App\Http\Controllers\Api\V1\EventInvitationDesignController;
 use App\Http\Controllers\Api\V1\EventInvitationMediaController;
 use App\Http\Controllers\Api\V1\EventPreviewController;
+use App\Http\Controllers\Api\V1\EventStaffController;
+use App\Http\Controllers\Api\V1\EventStaffLinkController;
 use App\Http\Controllers\Api\V1\EventTableController;
+use App\Http\Controllers\Api\V1\EventTicketCheckInController;
 use App\Http\Controllers\Api\V1\EventTicketCheckoutController;
+use App\Http\Controllers\Api\V1\EventTicketDashboardController;
+use App\Http\Controllers\Api\V1\EventTicketingController;
+use App\Http\Controllers\Api\V1\EventTicketManagementController;
 use App\Http\Controllers\Api\V1\EventTicketPurchaseController;
+use App\Http\Controllers\Api\V1\EventTicketRevenueController;
+use App\Http\Controllers\Api\V1\EventTicketTypeController;
 use App\Http\Controllers\Api\V1\GuestBulkActionController;
 use App\Http\Controllers\Api\V1\GuestController;
 use App\Http\Controllers\Api\V1\GuestGroupController;
@@ -23,6 +32,7 @@ use App\Http\Controllers\Api\V1\GuestImportController;
 use App\Http\Controllers\Api\V1\MeController;
 use App\Http\Controllers\Api\V1\PublicEventController;
 use App\Http\Controllers\Api\V1\RsvpController;
+use App\Http\Controllers\Api\V1\StaffInvitationController;
 use App\Http\Controllers\Api\V1\TableUploadController;
 use App\Http\Controllers\Api\V1\TicketController;
 use Illuminate\Http\Request;
@@ -31,8 +41,10 @@ use Illuminate\Support\Facades\Route;
 // Phase 0.1 — pure plumbing. Slice A (0.2) — auth, /me, discover, public event read.
 // Slice B1 (0.3) — RSVP. Slice B2 — tickets. Slice B3 — contributions, table photo
 // upload, gallery. Slice C1 (0.4) — host dashboard, event CRUD/lifecycle, preview,
-// template choose. Slice C2 — invitation design, media staging. Slice C3 (below) —
-// guests, groups, CSV/bulk/export/QR, tables.
+// template choose. Slice C2 — invitation design, media staging. Slice C3 — guests,
+// groups, CSV/bulk/export/QR, tables. Slice D (0.5, below) — check-in scanning
+// (guest + ticket), staff scanner links, staff accounts + invitations, ticket
+// types/ticketing submit, ticket management, revenue (read-only).
 // See plans/android-app.md and EventHostAndriodApp/implementation.md.
 //
 // Guard convention for everything added after this file grows: Sanctum **stateless** bearer
@@ -167,6 +179,20 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/', [EventGalleryController::class, 'show'])->name('show');
         Route::get('/feed', [EventGalleryController::class, 'feed'])->name('feed');
     });
+
+    // Slice D — staff-invitation accept flow. Top-level and (mostly) unauthenticated,
+    // same posture as auth/register: this is the one new Android App Link this slice
+    // adds (`/staff/invitations/{token}`), letting an invited Manager/Check-in staffer
+    // accept from the app instead of a desktop browser. See
+    // App\Http\Controllers\Api\V1\StaffInvitationController's docblock for the
+    // twin-path shape (new account vs already-registered "confirm").
+    Route::prefix('staff-invitations/{token}')->name('api.v1.staff-invitations.')->group(function (): void {
+        Route::get('/', [StaffInvitationController::class, 'show'])->name('show');
+        Route::post('/', [StaffInvitationController::class, 'store'])->name('store');
+        Route::post('/confirm', [StaffInvitationController::class, 'confirm'])
+            ->middleware('auth:sanctum')
+            ->name('confirm');
+    });
 });
 
 // Slice C1 — host dashboard: stats, event CRUD, lifecycle, preview, template choose.
@@ -259,6 +285,73 @@ Route::prefix('v1/host')->middleware(['auth:sanctum', 'sanctum.active'])->group(
             Route::get('/qr-sheet.pdf', [EventTableController::class, 'qrSheet'])->name('qr-sheet');
             Route::patch('/{table}', [EventTableController::class, 'update'])->name('update');
             Route::delete('/{table}', [EventTableController::class, 'destroy'])->name('destroy');
+        });
+
+        // Slice D — check-in, staff, ticketing ops. Needed for Android Phase 3
+        // (plans/android-implementation.md §0.5). CheckInController/TicketCheckInController
+        // already return JSON on the web side (their scanner page calls them via fetch()
+        // with session auth) — EventCheckInController/EventTicketCheckInController below are
+        // close to a verbatim port, just swapping the guard. Literal segments
+        // (lookup/guest/{guest}/links/ticket/{ticket}) are registered before the trailing
+        // {token} wildcard, same ordering discipline routes/web.php uses.
+        Route::prefix('{event}/checkin')->name('checkin.')->group(function (): void {
+            Route::get('/lookup', [EventCheckInController::class, 'lookup'])->name('lookup');
+            Route::post('/guest/{guest}', [EventCheckInController::class, 'confirmGuest'])->name('confirm-guest');
+
+            // Staff scanner links — generate/revoke a no-login share URL. Applies to both
+            // invitation and ticketed events (EventStaffLink is generic); do NOT App-Link
+            // the returned scanner_url (plans/android-app.md §5.2) — it's meant to open in
+            // a plain browser for someone without this app or an account. Registered
+            // before the trailing {token} wildcard below — POST /checkin/links would
+            // otherwise be swallowed by POST /checkin/{token} (token="links").
+            Route::get('/links', [EventStaffLinkController::class, 'index'])->name('links.index');
+            Route::post('/links', [EventStaffLinkController::class, 'store'])->name('links.store');
+            Route::delete('/links/{link}', [EventStaffLinkController::class, 'destroy'])->name('links.destroy');
+
+            Route::post('/{token}', [EventCheckInController::class, 'confirmToken'])->name('confirm-token');
+        });
+
+        // Staff accounts (Phase 18 twin) — ticketed events only, owner-only. Distinct from
+        // the staff *links* above: an EventStaff row is a real account with a role
+        // (manager/checkin), never conflate the two in the app's UI either.
+        Route::prefix('{event}/staff')->name('staff.')->group(function (): void {
+            Route::get('/', [EventStaffController::class, 'index'])->name('index');
+            Route::post('/', [EventStaffController::class, 'store'])->name('store');
+            Route::patch('/{eventStaff}', [EventStaffController::class, 'update'])->name('update');
+            Route::post('/{eventStaff}/resend', [EventStaffController::class, 'resend'])->name('resend');
+            Route::delete('/{eventStaff}', [EventStaffController::class, 'destroy'])->name('destroy');
+        });
+
+        Route::prefix('{event}/ticket-types')->name('ticket-types.')->group(function (): void {
+            Route::get('/', [EventTicketTypeController::class, 'index'])->name('index');
+            Route::post('/', [EventTicketTypeController::class, 'store'])->name('store');
+            Route::patch('/{ticketType}', [EventTicketTypeController::class, 'update'])->name('update');
+            Route::delete('/{ticketType}', [EventTicketTypeController::class, 'destroy'])->name('destroy');
+        });
+
+        Route::prefix('{event}/ticketing')->name('ticketing.')->group(function (): void {
+            Route::patch('/', [EventTicketingController::class, 'update'])->name('update');
+            Route::post('/submit', [EventTicketingController::class, 'submit'])->name('submit');
+        });
+
+        // Host ticket dashboard/management/revenue + ticket check-in. Static segments
+        // (overview/export/revenue/payouts/checkin/*) registered before the {ticket}
+        // wildcard actions, same order as routes/web.php's Ticketing section.
+        Route::prefix('{event}/tickets')->name('tickets.')->group(function (): void {
+            Route::get('/overview', [EventTicketDashboardController::class, 'overview'])->name('overview');
+            Route::get('/revenue', [EventTicketRevenueController::class, 'revenue'])->name('revenue');
+            Route::get('/payouts', [EventTicketRevenueController::class, 'payouts'])->name('payouts');
+            Route::get('/export', [EventTicketManagementController::class, 'export'])->name('export');
+
+            Route::get('/checkin/lookup', [EventTicketCheckInController::class, 'lookup'])->name('checkin.lookup');
+            Route::post('/checkin/ticket/{ticket}', [EventTicketCheckInController::class, 'confirmTicket'])->name('checkin.confirm-ticket');
+            Route::post('/checkin/{token}', [EventTicketCheckInController::class, 'confirmToken'])->name('checkin.confirm-token');
+
+            Route::get('/', [EventTicketManagementController::class, 'index'])->name('index');
+            Route::post('/{ticket}/resend', [EventTicketManagementController::class, 'resend'])->name('resend');
+            Route::post('/{ticket}/reissue', [EventTicketManagementController::class, 'reissue'])->name('reissue');
+            Route::post('/{ticket}/cancel', [EventTicketManagementController::class, 'cancel'])->name('cancel');
+            Route::post('/{ticket}/confirm-checkin', [EventTicketManagementController::class, 'confirmCheckIn'])->name('confirm-checkin');
         });
     });
 });

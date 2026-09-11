@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Api\V1;
 
 use App\Models\Event;
+use App\Support\EventAccess;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -44,6 +45,21 @@ class EventListResource extends JsonResource
                 'value' => $this->ticketing_status?->value,
                 'label' => $this->ticketing_status?->label(),
             ];
+        }
+
+        // Slice D: same ability flags as EventResource — the staffing list (this
+        // resource's other caller) is exactly where a Manager/Check-in staffer needs
+        // them, since none of those events are "theirs" in the ownership sense.
+        $user = $request->user();
+        if ($user !== null) {
+            $staffRole = $this->staffRoleFor($user);
+            $data['is_owner'] = EventAccess::isOwner($user, $this->resource);
+            $data['staff_role'] = $staffRole === null ? null : [
+                'value' => $staffRole->value,
+                'label' => $staffRole->label(),
+            ];
+            $data['can_manage'] = EventAccess::canManage($user, $this->resource);
+            $data['can_check_in'] = EventAccess::canCheckIn($user, $this->resource);
         }
 
         return $data;

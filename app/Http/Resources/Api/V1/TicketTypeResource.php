@@ -2,16 +2,21 @@
 
 namespace App\Http\Resources\Api\V1;
 
+use App\Models\TicketType;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * GET /api/v1/events/{slug}/tickets — field list matches what the web ticket picker
- * (events/tickets/purchase.blade.php) shows per type. `available_quantity` and
+ * GET /api/v1/events/{slug}/tickets (guest picker) and GET/POST/PATCH
+ * /api/v1/host/events/{event}/ticket-types (Slice D, host setup) — one shape for
+ * both. `is_active` and `sort_order` are meaningless to a guest (inactive types
+ * never reach the guest endpoint's query, and sort order is applied server-side
+ * before either caller sees the list) but harmless to include, so this stays one
+ * resource instead of forking a host-only twin. `available_quantity` and
  * `is_purchasable` call the model's own methods verbatim rather than re-deriving
  * capacity math client-side.
  *
- * @mixin \App\Models\TicketType
+ * @mixin TicketType
  */
 class TicketTypeResource extends JsonResource
 {
@@ -36,6 +41,8 @@ class TicketTypeResource extends JsonResource
             // null = unlimited, same semantics as TicketType::availableQuantity() itself.
             'available_quantity' => $this->availableQuantity(),
             'is_purchasable' => $this->isPurchasable(),
+            'is_active' => $this->is_active,
+            'sort_order' => $this->sort_order,
         ];
     }
 }
