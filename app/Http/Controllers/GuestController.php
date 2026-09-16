@@ -7,6 +7,7 @@ use App\Http\Requests\StoreGuestRequest;
 use App\Http\Requests\UpdateGuestRequest;
 use App\Models\Event;
 use App\Models\Guest;
+use App\Services\CommunicationService;
 use App\Services\QrCodeService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
@@ -71,7 +72,9 @@ class GuestController extends Controller
             'declined' => $event->guests()->whereHas('rsvp', fn ($q) => $q->where('status', RsvpStatus::Declined))->count(),
         ];
 
-        return view('events.guests.index', compact('event', 'guests', 'filter', 'groups', 'tables', 'stats'));
+        $whatsappSendEnabled = (bool) config('communications.whatsapp.enabled', false);
+
+        return view('events.guests.index', compact('event', 'guests', 'filter', 'groups', 'tables', 'stats', 'whatsappSendEnabled'));
     }
 
     public function export(Request $request, Event $event): StreamedResponse
@@ -263,6 +266,32 @@ class GuestController extends Controller
         ])->save();
 
         return back()->with('status', 'guest-invitation-marked-sent');
+    }
+
+    /**
+     * Server-initiated WhatsApp send via Twilio — see plans/whatsapp-invitations.md. Gated the same
+     * way as Print QR badges / check-in on this page: Pro and above
+     * (Event::ownerHasPremiumEventTools()), since each send has a real per-message cost unlike the
+     * free wa.me link the "WhatsApp" menu item next to this one still offers regardless of tier.
+     */
+    public function sendWhatsAppInvitation(Event $event, Guest $guest, CommunicationService $communicationService): RedirectResponse
+    {
+        $guest->loadMissing('event');
+        $this->authorize('update', $guest);
+
+        abort_unless($guest->event_id === $event->id, 404);
+        abort_unless($event->isInvitation(), 404);
+        abort_unless($event->ownerHasPremiumEventTools(), 403);
+
+        $outcome = $communicationService->sendWhatsAppInvitation($event, $guest);
+
+        return back()->with('status', match ($outcome) {
+            'sent' => 'guest-whatsapp-sent',
+            'invalid_phone' => 'guest-whatsapp-invalid-phone',
+            'rate_limited' => 'guest-whatsapp-rate-limited',
+            'disabled' => 'guest-whatsapp-disabled',
+            default => 'guest-whatsapp-failed',
+        });
     }
 
     public function qr(Event $event, Guest $guest, QrCodeService $qrCodeService): Response

@@ -8,6 +8,7 @@ use App\Models\NotificationLog;
 use App\Models\User;
 use App\Notifications\EventUpdatedNotification;
 use App\Notifications\RsvpReminderNotification;
+use App\Services\WhatsAppService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
@@ -117,5 +118,131 @@ class CommunicationFeaturesTest extends TestCase
         $this->actingAs($owner)
             ->post(route('events.guests.bulk', $event), $payload)
             ->assertStatus(429);
+    }
+
+    public function test_pro_host_can_send_whatsapp_invitation(): void
+    {
+        config()->set('communications.whatsapp.enabled', true);
+        config()->set('services.twilio.invitation_content_sid', 'HXtest');
+
+        $fake = new class implements WhatsAppService
+        {
+            public int $calls = 0;
+
+            public function sendTemplate(string $toE164Phone, string $contentSid, array $templateVariables): array
+            {
+                $this->calls++;
+
+                return ['status' => 'sent', 'provider_message_id' => 'SM123', 'response' => null];
+            }
+        };
+        $this->app->instance(WhatsAppService::class, $fake);
+
+        // Gated same as check-in/table assignment/photo wall — see Event::ownerHasPremiumEventTools().
+        $owner = User::factory()->pro()->create();
+        $event = Event::factory()->for($owner)->create();
+        $guest = Guest::factory()->for($event)->create(['phone' => '+260971234567']);
+
+        $this->actingAs($owner)
+            ->post(route('events.guests.whatsapp-invite', ['event' => $event, 'guest' => $guest]))
+            ->assertRedirect()
+            ->assertSessionHas('status', 'guest-whatsapp-sent');
+
+        $this->assertSame(1, $fake->calls);
+        $this->assertDatabaseHas('notification_logs', [
+            'event_id' => $event->id,
+            'guest_id' => $guest->id,
+            'channel' => 'whatsapp',
+            'type' => 'guest_invitation_whatsapp',
+            'status' => NotificationLog::STATUS_SENT,
+            'provider_message_id' => 'SM123',
+        ]);
+        $this->assertTrue($guest->fresh()->invitation_sent);
+    }
+
+    public function test_base_host_is_forbidden_from_sending_whatsapp_invitation(): void
+    {
+        config()->set('communications.whatsapp.enabled', true);
+
+        $owner = User::factory()->create();
+        $event = Event::factory()->for($owner)->create();
+        $guest = Guest::factory()->for($event)->create(['phone' => '+260971234567']);
+
+        $this->actingAs($owner)
+            ->post(route('events.guests.whatsapp-invite', ['event' => $event, 'guest' => $guest]))
+            ->assertForbidden();
+
+        $this->assertDatabaseMissing('notification_logs', ['guest_id' => $guest->id]);
+    }
+
+    public function test_whatsapp_invitation_reports_invalid_phone_without_calling_the_provider(): void
+    {
+        config()->set('communications.whatsapp.enabled', true);
+
+        $fake = new class implements WhatsAppService
+        {
+            public int $calls = 0;
+
+            public function sendTemplate(string $toE164Phone, string $contentSid, array $templateVariables): array
+            {
+                $this->calls++;
+
+                return ['status' => 'sent', 'provider_message_id' => 'SM123', 'response' => null];
+            }
+        };
+        $this->app->instance(WhatsAppService::class, $fake);
+
+        $owner = User::factory()->pro()->create();
+        $event = Event::factory()->for($owner)->create();
+        $guest = Guest::factory()->for($event)->create(['phone' => null]);
+
+        $this->actingAs($owner)
+            ->post(route('events.guests.whatsapp-invite', ['event' => $event, 'guest' => $guest]))
+            ->assertRedirect()
+            ->assertSessionHas('status', 'guest-whatsapp-invalid-phone');
+
+        $this->assertSame(0, $fake->calls);
+        $this->assertDatabaseMissing('notification_logs', ['guest_id' => $guest->id]);
+    }
+
+    public function test_whatsapp_invitation_respects_the_per_event_hourly_cap(): void
+    {
+        config()->set('communications.whatsapp.enabled', true);
+        config()->set('communications.whatsapp.hourly_cap_per_event', 1);
+
+        $fake = new class implements WhatsAppService
+        {
+            public int $calls = 0;
+
+            public function sendTemplate(string $toE164Phone, string $contentSid, array $templateVariables): array
+            {
+                $this->calls++;
+
+                return ['status' => 'sent', 'provider_message_id' => 'SM123', 'response' => null];
+            }
+        };
+        $this->app->instance(WhatsAppService::class, $fake);
+
+        $owner = User::factory()->pro()->create();
+        $event = Event::factory()->for($owner)->create();
+        $alreadySent = Guest::factory()->for($event)->create(['phone' => '+260971234567']);
+        NotificationLog::query()->create([
+            'event_id' => $event->id,
+            'guest_id' => $alreadySent->id,
+            'channel' => 'whatsapp',
+            'type' => 'guest_invitation_whatsapp',
+            'status' => NotificationLog::STATUS_SENT,
+            'sent_at' => now(),
+        ]);
+
+        $secondGuest = Guest::factory()->for($event)->create(['phone' => '+260977654321']);
+
+        $this->actingAs($owner)
+            ->post(route('events.guests.whatsapp-invite', ['event' => $event, 'guest' => $secondGuest]))
+            ->assertRedirect()
+            ->assertSessionHas('status', 'guest-whatsapp-rate-limited');
+
+        $this->assertSame(0, $fake->calls);
+        $this->assertDatabaseMissing('notification_logs', ['guest_id' => $secondGuest->id]);
     }
 }

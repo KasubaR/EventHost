@@ -55,4 +55,29 @@ return [
         'bank_transfer_enabled' => filter_var(env('LENCO_BANK_TRANSFER_ENABLED', true), FILTER_VALIDATE_BOOL),
     ],
 
+    // Slice E (Android push) — Firebase Cloud Messaging server credentials.
+    // Unset by default: App\Services\NullPushNotificationService is bound
+    // until a real service-account file/project id is configured, same
+    // graceful-degradation posture as an unconfigured SMS provider.
+    'fcm' => [
+        'project_id' => env('FCM_PROJECT_ID'),
+        'credentials_path' => env('FCM_CREDENTIALS_PATH'),
+    ],
+
+    // WhatsApp guest invitations (see plans/whatsapp-invitations.md). api_key_sid/api_key_secret
+    // authenticate the Twilio REST client; account_sid identifies which account they act on
+    // (Twilio's API-key auth still requires it — it isn't implied by the key). Unset by default:
+    // App\Services\NullWhatsAppService is bound until all of these plus
+    // communications.whatsapp.enabled are set, same posture as fcm/sms above.
+    'twilio' => [
+        'account_sid' => env('TWILIO_ACCOUNT_SID'),
+        'api_key_sid' => env('TWILIO_API_KEY_SID'),
+        'api_key_secret' => env('TWILIO_API_KEY_SECRET'),
+        // 'whatsapp:+14155238886' (Sandbox) in dev, an approved WhatsApp sender in production.
+        'whatsapp_from' => env('TWILIO_WHATSAPP_FROM'),
+        // Approved Content Template SID (HX...) for the guest invitation message. Business-initiated
+        // WhatsApp sends outside a 24h session window must use an approved template — see the plan.
+        'invitation_content_sid' => env('TWILIO_INVITATION_CONTENT_SID'),
+    ],
+
 ];

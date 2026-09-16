@@ -5,6 +5,7 @@ namespace App\Notifications;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Models\Rsvp;
+use App\Notifications\Channels\FcmChannel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -23,11 +24,46 @@ class NewRsvpReceivedNotification extends Notification implements ShouldQueue
     }
 
     /**
+     * Both channels are independently gated here (not just at the
+     * CommunicationService::notifyHostNewRsvp() call site, which only checks
+     * "is either channel wanted at all" before bothering to notify) — a host
+     * with email off but push_rsvp_updates on must still get the push, and
+     * vice versa. FcmChannel::class (not the string 'fcm') is how Laravel
+     * resolves a custom channel with no separate Notification::extend()
+     * registration — see FcmChannel's own docblock.
+     *
      * @return array<int, string>
      */
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        $channels = [];
+
+        if ((bool) ($notifiable->notification_preferences['email_rsvp_updates'] ?? true)) {
+            $channels[] = 'mail';
+        }
+
+        if ((bool) ($notifiable->notification_preferences['push_rsvp_updates'] ?? true)
+            && $notifiable->deviceTokens()->exists()) {
+            $channels[] = FcmChannel::class;
+        }
+
+        return $channels;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toFcm(object $notifiable): array
+    {
+        return [
+            'title' => 'New RSVP: '.$this->event->name,
+            'body' => $this->guest->name.' responded '.$this->rsvp->status->label().'.',
+            'data' => [
+                'type' => 'new_rsvp',
+                'event_id' => (string) $this->event->id,
+                'guest_id' => (string) $this->guest->id,
+            ],
+        ];
     }
 
     public function toMail(object $notifiable): MailMessage

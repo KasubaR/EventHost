@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "faf3f00dfc5e763049f768d7434c5a46",
+    "content-hash": "28d50d9dfb2e10e68f20c14f759484f5",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -7641,6 +7641,56 @@
                 "source": "https://github.com/tijsverkoyen/CssToInlineStyles/tree/v2.4.0"
             },
             "time": "2025-12-02T11:56:42+00:00"
+        },
+        {
+            "name": "twilio/sdk",
+            "version": "8.12.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/twilio/twilio-php",
+                "reference": "1446cb97fc7cf0daef94389c2bad465e3b7df64b"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/twilio/twilio-php/zipball/1446cb97fc7cf0daef94389c2bad465e3b7df64b",
+                "reference": "1446cb97fc7cf0daef94389c2bad465e3b7df64b",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=7.1.0"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "3.94.2",
+                "guzzlehttp/guzzle": "7.15.3",
+                "phpunit/phpunit": "9.6.34"
+            },
+            "suggest": {
+                "guzzlehttp/guzzle": "An HTTP client to execute the API requests"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Twilio\\": "src/Twilio/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Twilio API Team",
+                    "email": "api@twilio.com"
+                }
+            ],
+            "description": "A PHP wrapper for Twilio's API",
+            "homepage": "https://github.com/twilio/twilio-php",
+            "keywords": [
+                "api",
+                "sms",
+                "twilio"
+            ],
+            "time": "2026-09-09T12:37:32+00:00"
         },
         {
             "name": "vlucas/phpdotenv",

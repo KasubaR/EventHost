@@ -320,6 +320,7 @@
           <li>Up to 300 guests</li>
           <li>{{ $activeTemplateCount }} premium templates</li>
           <li>Advanced RSVP dashboard</li>
+          <li>Automated WhatsApp invites</li>
           <li>Photo gallery</li>
           <li>Countdown timer</li>
           <li>Analytics & exports</li>

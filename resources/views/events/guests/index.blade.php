@@ -47,6 +47,16 @@
         <div class="evt-admin-flash">Guest removed.</div>
     @elseif (session('status') === 'guest-invitation-marked-sent')
         <div class="evt-admin-flash">Invitation marked as sent.</div>
+    @elseif (session('status') === 'guest-whatsapp-sent')
+        <div class="evt-admin-flash">WhatsApp invitation sent.</div>
+    @elseif (session('status') === 'guest-whatsapp-invalid-phone')
+        <div class="evt-admin-flash">Couldn't send — this guest needs a valid Zambian phone number.</div>
+    @elseif (session('status') === 'guest-whatsapp-rate-limited')
+        <div class="evt-admin-flash">This event has hit its hourly WhatsApp sending limit — try again shortly.</div>
+    @elseif (session('status') === 'guest-whatsapp-disabled')
+        <div class="evt-admin-flash">WhatsApp sending isn't set up for this account yet.</div>
+    @elseif (session('status') === 'guest-whatsapp-failed')
+        <div class="evt-admin-flash">Couldn't send the WhatsApp invitation. Try again in a moment.</div>
     @elseif (session('status') === 'guests-imported')
         <div class="evt-admin-flash">
             Import finished. Added {{ session('import_created', 0) }}, skipped {{ session('import_skipped', 0) }}.
@@ -312,6 +322,34 @@
                                                             <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
                                                             <span>QR check-in</span>
                                                         </a>
+                                                    @endif
+                                                    {{-- Server-initiated Twilio send, distinct from the wa.me manual link above. Pro and
+                                                         above only (real per-message cost) — see plans/whatsapp-invitations.md. Hidden
+                                                         entirely (not shown as a locked upsell) while Twilio isn't configured at all, since
+                                                         even a Pro host couldn't use it yet. --}}
+                                                    @if ($whatsappSendEnabled)
+                                                        @if ($event->ownerHasPremiumEventTools())
+                                                            @if (\App\Support\ZambianPhone::isValid($guestRow->phone))
+                                                                <form method="post" action="{{ route('events.guests.whatsapp-invite', ['event' => $event, 'guest' => $guestRow->id]) }}" class="evt-inline-form">
+                                                                    @csrf
+                                                                    <button type="submit" class="evt-more-item" role="menuitem">
+                                                                        <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+                                                                        <span>Send WhatsApp Invitation</span>
+                                                                    </button>
+                                                                </form>
+                                                            @else
+                                                                <span class="evt-more-item evt-more-item--disabled" role="menuitem" aria-disabled="true" title="Add a valid Zambian phone number to send a WhatsApp invitation">
+                                                                    <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+                                                                    <span>Send WhatsApp Invitation</span>
+                                                                </span>
+                                                            @endif
+                                                        @else
+                                                            <a href="{{ \App\Support\BillingPlan::checkoutUrlForTier(\App\Enums\SubscriptionTier::Pro) }}" class="evt-more-item" role="menuitem">
+                                                                <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+                                                                <span>Send WhatsApp Invitation</span>
+                                                                <span class="evt-credit-badge">Pro</span>
+                                                            </a>
+                                                        @endif
                                                     @endif
                                                 @endif
                                                 @if (!$guestRow->invitation_sent && $guestRow->invitation_token)
