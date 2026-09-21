@@ -28,8 +28,7 @@ class AuthenticatedSessionController extends Controller
             ->featuredForHomepage()
             ->first();
 
-        // Published events plus a fixed 100 head-start for the hero stat.
-        $eventsHosted = Event::where('is_published', true)->count() + 100;
+        $eventsHosted = Event::marketingHostedCount();
 
         return view('auth.login', compact('featuredReview', 'eventsHosted'));
     }

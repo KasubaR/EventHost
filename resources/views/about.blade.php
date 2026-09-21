@@ -26,7 +26,7 @@
 <div class="about-stats-bar">
     <div class="about-stats-inner">
         <div class="about-stat">
-            <div class="about-stat-num">5<span>K+</span></div>
+            <div class="about-stat-num">{{ number_format($eventsHosted) }}</div>
             <div class="about-stat-label">Events Created</div>
         </div>
         <div class="about-stat">

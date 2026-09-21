@@ -58,6 +58,7 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/about', function () {
     return view('about', [
         'activeTemplateCount' => InvitationTemplate::activeCount(),
+        'eventsHosted' => \App\Models\Event::marketingHostedCount(),
     ]);
 })->name('about');
 

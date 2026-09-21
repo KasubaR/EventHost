@@ -794,6 +794,16 @@ class Event extends Model
     }
 
     /**
+     * The "events hosted" figure shown in marketing copy (login hero, about page): every published
+     * event plus a fixed head-start of 100. Not a real-time analytics number — do not reuse it for
+     * reporting.
+     */
+    public static function marketingHostedCount(): int
+    {
+        return static::where('is_published', true)->count() + 100;
+    }
+
+    /**
      * Events anyone may see: published by the host and flagged public.
      *
      * This pair is the app's definition of "publicly visible" (see
