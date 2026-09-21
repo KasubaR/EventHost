@@ -42,7 +42,7 @@
                 <span class="evt-kind-card-hint">Guests respond on a personal or public invite. Publishing uses 1 event credit.</span>
             </a>
             <a href="{{ route('events.create', ['kind' => 'ticketed']) }}" class="evt-kind-card">
-                <span class="evt-kind-card-icon" aria-hidden="true"><i class="fa-solid fa-ticket"></i></span>
+                <span class="evt-kind-card-icon" aria-hidden="true"><x-ticket-icon /></span>
                 <strong>Ticketed event</strong>
                 <span class="evt-kind-card-hint">Sell tickets through EventHost checkout (Lenco). EventHost reviews sales before they go live — no event credit.</span>
             </a>

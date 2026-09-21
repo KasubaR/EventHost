@@ -39,7 +39,7 @@
         {{-- Credits bar --}}
         <div class="billing-credits-bar">
             <div class="billing-credits-stat">
-                <i class="fa-solid fa-ticket" aria-hidden="true"></i>
+                <x-ticket-icon />
                 <strong class="billing-credits-val">{{ $user->event_credits }}</strong>
                 <span class="billing-credits-lbl">event {{ Str::plural('credit', $user->event_credits) }} remaining</span>
             </div>
@@ -234,7 +234,7 @@
                 </div>
                 <div class="billing-summary-item">
                     <span>1 event credit</span>
-                    <i class="fa-solid fa-ticket" aria-hidden="true"></i>
+                    <x-ticket-icon />
                 </div>
                 <button type="button" class="btn-primary billing-pay-btn" id="billingPayBtn">
                     <i class="fa-solid fa-lock" aria-hidden="true"></i> Pay securely

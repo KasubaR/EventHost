@@ -556,3 +556,6 @@
     display: none;
   }
 }
+
+.billing-credits-stat > .ticket-icon { width: 20px; height: 20px; }
+.billing-summary-item .ticket-icon { width: 18px; height: 18px; }

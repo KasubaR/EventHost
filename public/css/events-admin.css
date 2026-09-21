@@ -2336,3 +2336,5 @@ nav.evt-kind-filter {
     color: var(--accent);
     box-shadow: none;
 }
+
+.evt-kind-card-icon .ticket-icon { width: 34px; height: 34px; }

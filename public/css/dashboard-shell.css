@@ -341,3 +341,5 @@
   #nav-progress-badge.is-visible .nav-progress-ring { animation: none; }
 }
 
+
+.dash-nav-link .ticket-icon { width: 17px; height: 17px; }

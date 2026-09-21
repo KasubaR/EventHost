@@ -26,7 +26,7 @@
             </div>
             <div class="evt-card-actions">
                 @if ($event->isTicketed())
-                    <a href="{{ route('events.ticket-types.index', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-ticket"></i> Back to tickets</a>
+                    <a href="{{ route('events.ticket-types.index', $event) }}" class="evt-btn-outline"><x-ticket-icon /> Back to tickets</a>
                 @endif
                 <a href="{{ route('events.show', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-eye"></i> View</a>
                 <a href="{{ route('events.index') }}" class="evt-btn-outline"><i class="fa-solid fa-list"></i> All events</a>

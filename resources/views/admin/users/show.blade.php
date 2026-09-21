@@ -24,7 +24,7 @@
                 <a href="{{ route('admin.users.index') }}" class="evt-btn-outline dash-header-cta">Back to list</a>
                 @if(auth('admin')->user()?->can('ticketing.approve') && $u->status !== 'suspended')
                     <a href="{{ route('admin.ticketing.create', ['user' => $u->id]) }}" class="btn-primary dash-header-cta">
-                        <i class="fa-solid fa-ticket"></i> Create ticketed event
+                        <x-ticket-icon /> Create ticketed event
                     </a>
                 @endif
             </div>

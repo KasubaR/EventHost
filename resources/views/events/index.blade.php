@@ -47,7 +47,7 @@
             Invitation / RSVP
         </a>
         <a href="{{ route('events.index', ['kind' => 'ticketed']) }}" class="evt-kind-filter-tab {{ $kind === \App\Enums\EventProductKind::Ticketed ? 'is-active' : '' }}">
-            <i class="fa-solid fa-ticket" aria-hidden="true"></i>
+            <x-ticket-icon />
             Ticketed
         </a>
     </nav>
@@ -62,7 +62,13 @@
             </div>
         @elseif ($kind !== null)
             <div class="dash-empty">
-                <div class="dash-empty-icon"><i class="fa-solid {{ $kind === \App\Enums\EventProductKind::Ticketed ? 'fa-ticket' : 'fa-envelope-open-text' }}"></i></div>
+                <div class="dash-empty-icon">
+                    @if ($kind === \App\Enums\EventProductKind::Ticketed)
+                        <x-ticket-icon />
+                    @else
+                        <i class="fa-solid fa-envelope-open-text"></i>
+                    @endif
+                </div>
                 <h2>No {{ $kind === \App\Enums\EventProductKind::Ticketed ? 'Ticketed Events' : 'Invitations' }} Yet</h2>
                 <p>Create one to see it here.</p>
                 <a href="{{ route('events.create') }}" class="btn-primary"><i class="fa-solid fa-plus"></i> Create event</a>

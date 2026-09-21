@@ -981,3 +981,6 @@
   .tix-flow { grid-template-columns: 1fr; }
   .tix-flow-arrow { transform: rotate(90deg); margin-top: 0; height: 24px; }
 }
+
+.etc-icon .ticket-icon { width: 26px; height: 26px; }
+.tix-flow-icon .ticket-icon { width: 28px; height: 28px; }

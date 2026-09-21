@@ -34,7 +34,7 @@
                     {{-- While still setting up (Draft/Rejected), send them to the same
                          Tickets step the creation wizard uses rather than the empty
                          ticketing dashboard — see plans/ticketing.md wizard reorder. --}}
-                    <a href="{{ route($event->canSubmitTicketing() ? 'events.ticket-types.index' : 'events.tickets.overview', $event) }}" class="btn-primary"><i class="fa-solid fa-ticket"></i> Tickets</a>
+                    <a href="{{ route($event->canSubmitTicketing() ? 'events.ticket-types.index' : 'events.tickets.overview', $event) }}" class="btn-primary"><x-ticket-icon /> Tickets</a>
                 @else
                     <a href="{{ route('events.guests.index', $event) }}" class="btn-primary"><i class="fa-solid fa-users"></i> Guests & RSVPs</a>
                 @endif

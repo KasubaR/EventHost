@@ -512,3 +512,6 @@
   .profile-header-meta { justify-content: center; }
 }
 
+
+.dash-empty-icon .ticket-icon { width: 36px; height: 36px; }
+.profile-card-icon .ticket-icon { width: 24px; height: 24px; }

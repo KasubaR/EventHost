@@ -48,7 +48,7 @@
       <a class="etc-card etc-card-ticketing" href="{{ auth()->check() ? route('events.create', ['kind' => 'ticketed']) : route('register') }}">
         <div class="etc-inner">
           <span class="etc-badge">New</span>
-          <div class="etc-icon"><i class="fa-solid fa-ticket" aria-hidden="true"></i></div>
+          <div class="etc-icon"><x-ticket-icon /></div>
           <span class="etc-label">Sell Tickets</span>
         </div>
       </a>
@@ -105,7 +105,7 @@
         <div class="tix-flow-step">
           <span class="tix-flow-num">1</span>
           <div class="tix-flow-icon" style="color:var(--accent)">
-            <i class="fa-solid fa-ticket" aria-hidden="true"></i>
+            <x-ticket-icon />
           </div>
           <h3>Set Ticket Types &amp; Pricing</h3>
           <p>Create General, VIP or custom tiers, each with its own price, quantity and sales window.</p>

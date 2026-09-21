@@ -17,7 +17,7 @@
         <i class="fa-solid fa-gauge" aria-hidden="true"></i> Overview
     </a>
     <a href="{{ route('events.tickets.index', $event) }}" class="tkt-tab @if ($active === 'tickets') tkt-tab--active @endif">
-        <i class="fa-solid fa-ticket" aria-hidden="true"></i> Tickets
+        <x-ticket-icon /> Tickets
     </a>
     <span class="tkt-tab tkt-tab--disabled" title="Coming soon">
         <i class="fa-solid fa-receipt" aria-hidden="true"></i> Orders

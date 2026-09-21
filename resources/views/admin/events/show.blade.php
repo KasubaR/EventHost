@@ -99,7 +99,11 @@
             @elseif ($ev->isTicketed())
                 <div class="admin-callout admin-callout--{{ $ticketingTone }}">
                     <div class="admin-callout-icon" aria-hidden="true">
-                        <i class="fa-solid {{ $ev->ticketing_status->icon() }}"></i>
+                        @if ($ev->ticketing_status->icon() === 'fa-ticket')
+                            <x-ticket-icon />
+                        @else
+                            <i class="fa-solid {{ $ev->ticketing_status->icon() }}"></i>
+                        @endif
                     </div>
                     <div>
                         <p class="admin-callout-kicker">Ticketing</p>
@@ -107,7 +111,7 @@
                         @if(auth('admin')->user()?->can('ticketing.view'))
                             <div class="admin-callout-actions">
                                 <a href="{{ route('admin.ticketing.show', $ev) }}" class="btn-primary">
-                                    <i class="fa-solid fa-ticket" aria-hidden="true"></i> Open ticketing review
+                                    <x-ticket-icon /> Open ticketing review
                                 </a>
                             </div>
                         @endif
