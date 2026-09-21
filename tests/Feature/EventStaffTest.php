@@ -314,7 +314,14 @@ class EventStaffTest extends TestCase
     public function test_checkin_staff_can_confirm_a_ticket_but_cannot_cancel_it(): void
     {
         $owner = User::factory()->create();
-        $event = Event::factory()->for($owner)->ticketed()->approved()->create(['event_date' => now()->toDateString()]);
+        // Start the event "now" in the venue's timezone. The factory picks a random
+        // event_time, so pinning only the date left the check-in window
+        // [start, start + 12h] open for just part of the day.
+        $startsAt = now(config('events.timezone', 'Africa/Lusaka'));
+        $event = Event::factory()->for($owner)->ticketed()->approved()->create([
+            'event_date' => $startsAt->format('Y-m-d'),
+            'event_time' => $startsAt->format('H:i:s'),
+        ]);
         $ticket = Ticket::factory()->for($event)->create();
         $staffer = User::factory()->create();
         EventStaff::factory()->for($event)->accepted()->create(['user_id' => $staffer->id, 'email' => $staffer->email]);
