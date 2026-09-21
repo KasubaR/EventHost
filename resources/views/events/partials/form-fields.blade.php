@@ -175,7 +175,7 @@
                 <div class="profile-field">
                     <label class="profile-label">Location pin <span class="profile-optional">optional</span></label>
                     <div class="evt-map-search">
-                        <input type="text" id="evt-map-search" class="profile-input" placeholder="Search address…" autocomplete="off">
+                        <input type="text" id="evt-map-search" class="profile-input" placeholder="Paste a Google Maps link, or search an address…" autocomplete="off">
                         <button type="button" id="evt-map-search-btn" class="evt-btn-outline">
                             <i class="fa-solid fa-magnifying-glass"></i>
                         </button>
@@ -186,7 +186,10 @@
                     <div class="evt-map-wrap">
                         <div id="evt-map" class="evt-map"></div>
                     </div>
-                    <p class="evt-map-hint">Click the map or drag the pin to set location. Search or "use my location" auto-fill the pin.</p>
+                    <p class="evt-map-hint">
+                        Easiest: find your venue on <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer">Google Maps</a>,
+                        tap <strong>Share → Copy link</strong>, and paste it above. You can also search an address, click the map or drag the pin.
+                    </p>
                     <p id="evt-map-status" class="evt-map-status" role="status" aria-live="polite" hidden></p>
                     <div class="evt-grid-2">
                         <div class="profile-field">

@@ -25,7 +25,7 @@ class MapLinkResolveTest extends TestCase
         $this->actingAs($user)
             ->postJson(route('maps.resolve-link'), ['url' => 'https://maps.app.goo.gl/AbC123'])
             ->assertOk()
-            ->assertJson(['latitude' => -15.4067, 'longitude' => 28.2871]);
+            ->assertJson(['latitude' => -15.4067, 'longitude' => 28.2871, 'name' => 'Test Venue']);
     }
 
     public function test_follows_a_multi_hop_redirect_chain(): void
@@ -44,6 +44,23 @@ class MapLinkResolveTest extends TestCase
             ->postJson(route('maps.resolve-link'), ['url' => 'https://maps.app.goo.gl/AbC123'])
             ->assertOk()
             ->assertJson(['latitude' => -15.4067, 'longitude' => 28.2871]);
+    }
+
+    public function test_follows_a_redirect_to_a_regional_google_domain(): void
+    {
+        $user = User::factory()->create();
+
+        Http::fake([
+            'maps.app.goo.gl/*' => Http::response('', 302, [
+                'Location' => 'https://www.google.co.zm/maps/place/Lusaka+Show+Grounds/@-15.4067000,28.2871000,17z',
+            ]),
+            '*' => Http::response('', 200),
+        ]);
+
+        $this->actingAs($user)
+            ->postJson(route('maps.resolve-link'), ['url' => 'https://maps.app.goo.gl/AbC123'])
+            ->assertOk()
+            ->assertJson(['latitude' => -15.4067, 'longitude' => 28.2871, 'name' => 'Lusaka Show Grounds']);
     }
 
     public function test_rejects_a_url_whose_host_is_not_allowlisted(): void

@@ -89,7 +89,7 @@ function parseGoogleMapsCoords(text) {
         return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
     }
 
-    m = text.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
+    m = text.match(/[?&](?:q|query|ll|center|sll)=(-?\d+\.\d+)(?:,|%2C)(-?\d+\.\d+)/i);
     if (m) {
         return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
     }
@@ -102,17 +102,40 @@ function parseGoogleMapsCoords(text) {
     return null;
 }
 
-/** The `{name}` segment of a `/maps/place/{name}/@...` link, decoded back into a readable label. */
+/**
+ * The `{name}` segment of a `/maps/place/{name}/...` link, decoded back into a readable label.
+ * Mirrors GoogleMapsLinkParser::extractPlaceName().
+ */
 function extractGoogleMapsPlaceName(text) {
-    const m = text.match(/\/maps\/place\/([^/@]+)\/@/);
+    const m = text.match(/\/maps\/place\/([^/@?]+)/);
     if (!m) {
         return null;
     }
+    let name;
     try {
-        return decodeURIComponent(m[1].replace(/\+/g, ' '));
+        name = decodeURIComponent(m[1].replace(/\+/g, ' ')).trim();
     } catch (_) {
         return null;
     }
+    // A bare "lat,lng" is not a name.
+    if (!name || /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(name)) {
+        return null;
+    }
+    return name;
+}
+
+/** A full (not short) Google Maps URL — on any regional Google domain. Used only for messaging. */
+function isGoogleMapsUrl(text) {
+    let url;
+    try {
+        url = new URL(text);
+    } catch (_) {
+        return false;
+    }
+    if (!/(^|\.)google\.(com|co\.[a-z]{2}|com\.[a-z]{2})$/i.test(url.hostname)) {
+        return false;
+    }
+    return url.hostname.toLowerCase().startsWith('maps.') || url.pathname.startsWith('/maps');
 }
 
 /** Short links carry no coordinates in the text — they only appear after Google's redirect resolves. */
@@ -211,6 +234,32 @@ function initMap() {
         return;
     }
 
+    async function reverseGeocode(lat, lng) {
+        const locationInput = document.getElementById('location_name');
+        if (!locationInput || locationInput.value.trim()) {
+            return;
+        }
+        try {
+            const res = await fetch(
+                'https://nominatim.openstreetmap.org/reverse?lat=' + lat + '&lon=' + lng + '&format=json',
+                { headers: { 'Accept-Language': 'en' } }
+            );
+            const data = await res.json();
+            if (data && data.display_name) {
+                locationInput.value = data.display_name.split(',').slice(0, 2).join(',').trim();
+            }
+        } catch (_) {
+            // Best-effort only — the pin itself is already placed.
+        }
+    }
+
+    function fillIfEmpty(id, value) {
+        const input = document.getElementById(id);
+        if (input && !input.value.trim()) {
+            input.value = value;
+        }
+    }
+
     function applyFoundCoords(lat, lng, placeName) {
         map.flyTo([lat, lng], 15);
         placeMarker(lat, lng);
@@ -218,17 +267,25 @@ function initMap() {
         setMapStatus(null);
 
         if (placeName) {
-            const locationInput = document.getElementById('location_name');
-            if (locationInput && !locationInput.value.trim()) {
-                locationInput.value = placeName;
-            }
+            fillIfEmpty('location_name', placeName);
         }
     }
 
-    function flashNoResult() {
+    // A pasted Google Maps link names the place (a venue), unlike an address search, which names
+    // an area. Put it in Venue, then let reverse-geocoding suggest the area for the location label.
+    function applyFoundLink(lat, lng, placeName) {
+        applyFoundCoords(lat, lng);
+
+        if (placeName) {
+            fillIfEmpty('venue', placeName);
+        }
+        reverseGeocode(lat, lng);
+    }
+
+    function flashNoResult(message) {
         searchInput.classList.add('evt-map-search--no-result');
         setTimeout(() => searchInput.classList.remove('evt-map-search--no-result'), 2000);
-        setMapStatus('No results for that search. Try a different address, or click the map to drop a pin yourself.');
+        setMapStatus(message || 'No results for that search. Try a different address, or click the map to drop a pin yourself.');
     }
 
     async function doSearch() {
@@ -245,7 +302,7 @@ function initMap() {
             // "lat, lng" pair — parsed locally, no request at all.
             const localCoords = parseGoogleMapsCoords(q);
             if (localCoords) {
-                applyFoundCoords(localCoords.lat, localCoords.lng, extractGoogleMapsPlaceName(q));
+                applyFoundLink(localCoords.lat, localCoords.lng, extractGoogleMapsPlaceName(q));
                 return;
             }
 
@@ -264,10 +321,23 @@ function initMap() {
                 });
                 if (res.ok) {
                     const data = await res.json();
-                    applyFoundCoords(data.latitude, data.longitude);
+                    applyFoundLink(data.latitude, data.longitude, data.name);
                 } else {
-                    flashNoResult();
+                    let message = null;
+                    try {
+                        message = (await res.json()).message;
+                    } catch (_) {
+                        // Non-JSON error body — fall back to the generic message below.
+                    }
+                    flashNoResult(message);
                 }
+                return;
+            }
+
+            // A full Google Maps link that carries no pin (e.g. a search or a bare place name). Don't
+            // feed it to the address search — it would return nonsense — say how to get a usable link.
+            if (isGoogleMapsUrl(q)) {
+                flashNoResult('That link has no pin in it. Open it in Google Maps, tap the place, and copy the link from there.');
                 return;
             }
 
@@ -296,6 +366,17 @@ function initMap() {
     }
 
     searchBtn.addEventListener('click', doSearch);
+
+    // Pasting a Google Maps link or a "lat, lng" pair is unambiguous, so apply it straight away
+    // instead of making the host find the search button. Plain addresses still wait for Enter/click.
+    searchInput.addEventListener('paste', () => {
+        setTimeout(() => {
+            const q = searchInput.value.trim();
+            if (parseGoogleMapsCoords(q) || isGoogleMapsShortLink(q) || isGoogleMapsUrl(q)) {
+                doSearch();
+            }
+        }, 0);
+    });
     searchInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -313,25 +394,6 @@ function initMap() {
         // No point offering a control that can only ever fail.
         locateBtn.style.display = 'none';
         return;
-    }
-
-    async function reverseGeocode(lat, lng) {
-        const locationInput = document.getElementById('location_name');
-        if (!locationInput || locationInput.value.trim()) {
-            return;
-        }
-        try {
-            const res = await fetch(
-                'https://nominatim.openstreetmap.org/reverse?lat=' + lat + '&lon=' + lng + '&format=json',
-                { headers: { 'Accept-Language': 'en' } }
-            );
-            const data = await res.json();
-            if (data && data.display_name) {
-                locationInput.value = data.display_name.split(',').slice(0, 2).join(',').trim();
-            }
-        } catch (_) {
-            // Best-effort only — the pin itself is already placed.
-        }
     }
 
     function flashLocateError() {

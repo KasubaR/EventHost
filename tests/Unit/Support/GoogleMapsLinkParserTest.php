@@ -60,6 +60,47 @@ class GoogleMapsLinkParserTest extends TestCase
         $this->assertNull(GoogleMapsLinkParser::extractCoordinates('https://www.google.com/maps/place/Some+Venue'));
     }
 
+    public function test_search_api_ll_and_center_formats_are_parsed(): void
+    {
+        foreach ([
+            'https://www.google.com/maps/search/?api=1&query=-15.4067,28.2871',
+            'https://www.google.com/maps/search/?api=1&query=-15.4067%2C28.2871',
+            'https://maps.google.com/?ll=-15.4067,28.2871&z=15',
+            'https://www.google.com/maps?center=-15.4067,28.2871',
+        ] as $url) {
+            $coords = GoogleMapsLinkParser::extractCoordinates($url);
+
+            $this->assertSame(-15.4067, $coords['lat'], $url);
+            $this->assertSame(28.2871, $coords['lng'], $url);
+        }
+    }
+
+    public function test_place_name_is_extracted_and_decoded(): void
+    {
+        $this->assertSame(
+            "Taj Pamodzi Hotel & Spa",
+            GoogleMapsLinkParser::extractPlaceName('https://www.google.com/maps/place/Taj+Pamodzi+Hotel+%26+Spa/@-15.4,28.3,17z')
+        );
+        $this->assertSame(
+            'Some Venue',
+            GoogleMapsLinkParser::extractPlaceName('https://www.google.com/maps/place/Some+Venue')
+        );
+    }
+
+    public function test_place_name_is_null_when_absent_or_just_coordinates(): void
+    {
+        $this->assertNull(GoogleMapsLinkParser::extractPlaceName('https://www.google.com/maps/@-15.4,28.3,17z'));
+        $this->assertNull(GoogleMapsLinkParser::extractPlaceName('https://www.google.com/maps/place/-15.4067,28.2871/@-15.4,28.3,17z'));
+    }
+
+    public function test_regional_google_domains_are_allowed_hops_but_lookalikes_are_not(): void
+    {
+        $this->assertTrue(GoogleMapsLinkParser::isAllowedHop('https://www.google.co.zm/maps/@1,2,3z'));
+        $this->assertTrue(GoogleMapsLinkParser::isAllowedHop('https://maps.google.co.za/maps?q=1.5,2.5'));
+        $this->assertFalse(GoogleMapsLinkParser::isAllowedHop('https://google.co.zm.evil.com/maps'));
+        $this->assertFalse(GoogleMapsLinkParser::isAllowedHop('https://evilgoogle.co.zm/maps'));
+    }
+
     public function test_allowed_hops_include_short_link_hosts_and_google_domains(): void
     {
         $this->assertTrue(GoogleMapsLinkParser::isAllowedHop('https://goo.gl/maps/xyz'));
