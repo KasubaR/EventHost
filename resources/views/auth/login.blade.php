@@ -33,7 +33,7 @@
       {{-- Stats row --}}
       <div class="auth-hero-stats">
         <div class="auth-stat">
-          <div class="auth-stat-n">5k+</div>
+          <div class="auth-stat-n">{{ number_format($eventsHosted) }}</div>
           <div class="auth-stat-l">Events hosted</div>
         </div>
         <div class="auth-stat-sep"></div>
@@ -49,7 +49,7 @@
       </div>
     </div>
 
-    <div class="auth-hero-visual">
+    <div class="auth-hero-visual auth-hero-visual--mobile-only">
       <img class="auth-hero-mockup"
            src="{{ asset('images/hero-mockup-guest.png') }}"
            width="400" height="445"
@@ -140,46 +140,15 @@
       </form>
     </div>
 
-    {{-- Side features --}}
+    {{-- Side visual: the hero image, shown here on desktop only (mobile keeps it in the hero) --}}
     <div class="auth-features">
-      <h3>Everything waiting for you</h3>
-      <ul>
-        <li>
-          <div class="auth-feat-icon" style="background:rgba(30,71,187,0.12)"><i class="fa-solid fa-chart-line"></i></div>
-          <div>
-            <strong>Live RSVP Dashboard</strong>
-            <span>Track responses the moment they arrive</span>
-          </div>
-        </li>
-        <li>
-          <div class="auth-feat-icon" style="background:rgba(0,206,201,0.12)"><i class="fa-solid fa-users"></i></div>
-          <div>
-            <strong>Guest Management</strong>
-            <span>Seating, meal preferences, +1s and more</span>
-          </div>
-        </li>
-        <li>
-          <div class="auth-feat-icon" style="background:rgba(72,199,142,0.12)"><i class="fa-brands fa-whatsapp"></i></div>
-          <div>
-            <strong>WhatsApp Sharing</strong>
-            <span>Guests RSVP in one tap — no app needed</span>
-          </div>
-        </li>
-        <li>
-          <div class="auth-feat-icon" style="background:rgba(243,156,18,0.12)"><i class="fa-solid fa-bell"></i></div>
-          <div>
-            <strong>Instant Notifications</strong>
-            <span>Get alerted the moment someone RSVPs</span>
-          </div>
-        </li>
-        <li>
-          <div class="auth-feat-icon" style="background:rgba(30,71,187,0.12)"><i class="fa-solid fa-file-arrow-down"></i></div>
-          <div>
-            <strong>Export Guest Lists</strong>
-            <span>Download as CSV or PDF anytime</span>
-          </div>
-        </li>
-      </ul>
+      <div class="auth-side-visual">
+        <img class="auth-hero-mockup"
+             src="{{ asset('images/hero-mockup-guest.png') }}"
+             width="400" height="445"
+             alt="A guest smiling while RSVPing on her phone"
+             loading="lazy" decoding="async">
+      </div>
 
       {{-- Approved host review the admin has chosen to feature. Same source as the homepage strip. --}}
       @if ($featuredReview)

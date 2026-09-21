@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\Event;
 use App\Models\Review;
 use App\Support\SafeIntendedUrl;
 use Illuminate\Http\RedirectResponse;
@@ -27,7 +28,10 @@ class AuthenticatedSessionController extends Controller
             ->featuredForHomepage()
             ->first();
 
-        return view('auth.login', compact('featuredReview'));
+        // Published events plus a fixed 100 head-start for the hero stat.
+        $eventsHosted = Event::where('is_published', true)->count() + 100;
+
+        return view('auth.login', compact('featuredReview', 'eventsHosted'));
     }
 
     public function store(LoginRequest $request): RedirectResponse
