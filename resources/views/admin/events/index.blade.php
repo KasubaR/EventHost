@@ -23,6 +23,15 @@
             <label class="evt-sr-only" for="admin-event-q">Search</label>
             <input id="admin-event-q" type="search" name="q" value="{{ $search }}" placeholder="Event name or owner">
         </div>
+        <div>
+            <label class="evt-sr-only" for="admin-event-audience">Audience</label>
+            <select id="admin-event-audience" name="audience">
+                <option value="">All audiences</option>
+                @foreach (\App\Enums\EventAudience::cases() as $audienceOption)
+                    <option value="{{ $audienceOption->value }}" @selected($audience === $audienceOption)>{{ $audienceOption->label() }}</option>
+                @endforeach
+            </select>
+        </div>
         <button type="submit" class="btn-primary">Search</button>
     </form>
 
@@ -32,6 +41,7 @@
             <tr>
                 <th>Event</th>
                 <th>Owner</th>
+                <th>Audience</th>
                 <th>Type</th>
                 <th>Guests</th>
                 <th>RSVPs</th>
@@ -45,6 +55,7 @@
                 <tr>
                     <td>{{ $event->name }}</td>
                     <td>{{ $event->user?->email ?? '—' }}</td>
+                    <td>{{ $event->audience->label() }}</td>
                     <td>{{ \App\Models\Event::TYPE_LABELS[$event->event_type] ?? $event->event_type }}</td>
                     <td>{{ $event->guests_count }}</td>
                     <td>{{ $event->rsvps_count }}</td>
@@ -53,7 +64,7 @@
                     <td><a href="{{ route('admin.events.show', $event) }}" class="evt-btn-outline evt-btn-tiny">View</a></td>
                 </tr>
             @empty
-                <tr><td colspan="8" class="admin-muted">No events found.</td></tr>
+                <tr><td colspan="9" class="admin-muted">No events found.</td></tr>
             @endforelse
             </tbody>
         </table>

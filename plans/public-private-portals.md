@@ -1,8 +1,9 @@
 # Feature Plan: Private portal + Public portal
 
-Status: **Phases 1–4, 4c, 5 (for now) and 6 shipped** (2026-09-22 — Phase 5 items 2 and 4 shipped, item 3
+Status: **Phases 1–4, 4c, 5 (for now), 6 and 8 shipped** (2026-09-22 — Phase 5 items 2 and 4 shipped, item 3
 needed no work, item 1 deliberately deferred to a possible Phase 5b, item 5 stays optional/later; see each
-phase's own notes). Phases 7–9 planned. Written 2026-09-22.
+phase's own notes). Phase 7 dropped as unneeded (no real Android client exists to build it for). Phase 9
+(copy, docs, rollout) is all that's left. Written 2026-09-22.
 
 Split the organizer side of EventHost into two portals:
 
@@ -243,14 +244,17 @@ Each phase ships on its own and leaves the app working. Phases 1–2 change no v
    and the codebase's own established precedent for "field doesn't apply to this product kind" is silent
    override, not a validation error — matching that precedent won out over inventing a new one.
    `guardAudienceChoice()` only ever fires for the tier gate now.
-4. **Backward compatibility for the Android app, discovered by the full test suite, not anticipated in the
-   original plan:** `StoreEventRequest` is shared with `POST /api/v1/host/events`
-   (`Api\V1\EventController::store()`), which predates `audience` and never sends one. Making it `required`
-   outright broke 5 Android API tests. Fixed with `fillMissingAudience()` in `prepareForValidation()`: when
-   the caller sent no valid `audience`, one is derived from `is_public` (missing → false) via the same
-   `EventAudience::derive()` the model's own saving hook already uses — reproducing the Android app's exact
-   prior behavior. A caller that does send a real `audience` (the web wizard) is untouched. No Android
-   controller, route or response shape changed; Phase 7's additive-only rule holds.
+4. **Backward compatibility for the Android API's existing contract, discovered by the full test suite, not
+   anticipated in the original plan.** (No Android app is actually built/shipped yet — `/api/v1` is a JSON
+   API built ahead of one per `plans/android-app.md`; "the Android app" throughout this doc is shorthand for
+   that API's contract, enforced today only by its own feature test suite standing in for a real client.)
+   `StoreEventRequest` is shared with `POST /api/v1/host/events` (`Api\V1\EventController::store()`), which
+   predates `audience` and never sends one. Making it `required` outright broke 5 of that test suite's
+   requests. Fixed with `fillMissingAudience()` in `prepareForValidation()`: when the caller sent no valid
+   `audience`, one is derived from `is_public` (missing → false) via the same `EventAudience::derive()` the
+   model's own saving hook already uses — reproducing that endpoint's exact prior behavior. A caller that
+   does send a real `audience` (the web wizard) is untouched. No API controller, route or response shape
+   changed — this API contract stays additive-only.
 5. The "How people join" readonly note (create + edit, `events/partials/form-fields.blade.php`) now
    summarizes **both** audience and product_kind together in one sentence (e.g. "Public — Ticketed, via
    EventHost checkout"), since both are chosen in the same wizard step now. `$audience` there falls back
@@ -466,16 +470,35 @@ inventing new patterns, to keep the risk down.
    timestamp. `tests/Feature/AudienceMigrationNoticeTest.php` (6 tests) covers the model flag, both banner
    states, and that only the owner can dismiss it.
 
-### Phase 7 — Android API (`/api/v1`)
-1. **Additive only:** add `audience` to `EventResource`, `EventListResource`, `EventPreviewResource`.
-   `product_kind` and `is_public` stay exactly as they are — the shipped app reads them.
-2. Optional `?audience=` filter on `GET /api/v1/host/events`.
-3. Public attendee endpoints (`/api/v1/events/{slug}`, rsvp, tickets) are untouched.
+**Phase 7 (Android API additions) — dropped, not planned.** The original idea was to add `audience` to
+`EventResource`/`EventListResource`/`EventPreviewResource` and an optional `?audience=` filter on
+`GET /api/v1/host/events`. Cut because there's no real consumer to build it for — no native Android app is
+actually built or shipped; `/api/v1` is a JSON API built ahead of one, to the spec in
+`plans/android-app.md`/`plans/android-implementation.md` (the app itself is a separate, still-unbuilt
+project, `EventHostAndriodApp/`), and its only "client" today is its own feature test suite
+(`tests/Feature/Api/V1/...`). The one real obligation this created — don't let `audience` becoming required
+on `StoreEventRequest` break that existing contract — was already handled in Phase 4 item 4
+(`fillMissingAudience()`); nothing else here was load-bearing. If a real Android client ever gets built,
+revisit adding `audience` to the read-side resources then, not before.
 
-### Phase 8 — Admin panel
-1. Event lists and analytics filter by audience; add it to the event detail page.
-2. Ticketing approval, payouts and contribution admin stay as they are.
-3. Confirm no admin permission needs to split — audience is not a permission boundary.
+### Phase 8 — Admin panel — SHIPPED 2026-09-22
+1. **Event lists, analytics and the detail page all surface/filter by audience.**
+   `Admin\EventController::index()` takes an optional `?audience=` (same `EventAudience::tryFrom()` pattern
+   as everywhere else — an unrecognized value is silently ignored, not an error) and the table gained an
+   Audience column. `admin/events/show.blade.php` gained an "Audience" fact next to the existing "Public
+   RSVP" one (they're related but distinct — audience is the portal, `is_public` is just the RSVP-openness
+   flag). `AdminAnalyticsService::chartPayload()` now takes an optional `?EventAudience $audience` that
+   scopes every event-derived chart (`weekly_events_created`, `event_types`, and the RSVP charts via a
+   filtered `$eventIds`) — `monthly_registrations` stays platform-wide always, since it counts user signups,
+   not events, and the panel subtitle says so explicitly rather than leaving it ambiguous. Filter chips
+   (All/Private/Public) added to `admin/analytics.blade.php`, same GET-param-reload pattern as the events
+   list. `tests/Feature/AdminAudienceFilterTest.php` (6 tests) covers the column, the filter on both pages,
+   an invalid value being ignored, and the analytics scoping at the service level directly.
+2. **Confirmed unchanged.** Ticketing approval, payouts and contribution admin (`Admin\TicketingController`,
+   `Admin\ContributionRevenueController`, etc.) never reference audience at all — nothing to touch.
+3. **Confirmed: no admin permission needs to split.** Grepped `app/Policies`, `RolePermissionSeeder` and
+   `routes/admin.php` for "audience" — zero matches. Audience is not, and doesn't need to become, a
+   permission boundary.
 
 ### Phase 9 — Copy, docs, rollout
 1. Homepage sections and pricing cards: make sure no plan card promises a feature in the wrong portal
@@ -524,4 +547,5 @@ inventing new patterns, to keep the risk down.
 - 71 files check `product_kind` / `isTicketed()` / `isInvitation()`. This plan deliberately leaves those
   checks alone and adds audience beside them, so no gate is rewritten.
 - `is_public` write-path: after Phase 1 nothing else may assign it. Grep for assignments before merging.
-- The Android app depends on `product_kind` and `is_public` — never remove or repurpose either.
+- The Android API's contract (`/api/v1`, no real app built on it yet) depends on `product_kind` and
+  `is_public` — never remove or repurpose either.

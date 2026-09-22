@@ -364,10 +364,13 @@ built; Phases 5–9 are still just planned.
 **Since Phase 4, audience is immutable in practice.** `/events/create` is a two-level chooser — Private vs
 Public, then (Public only) Ticketed vs Free registration — and neither `StoreEventRequest` nor
 `UpdateEventRequest` has an `is_public` field any more; there is no longer any form path that can set it
-after creation. `StoreEventRequest`'s `audience` field is `required`, but is **shared with the Android app's
-`POST /api/v1/host/events`**, which predates it and never sends one — `prepareForValidation()` derives a
-missing `audience` from `is_public` (via `EventAudience::derive()`, the same helper the model's saving hook
-uses) so that endpoint's behavior is byte-for-byte unchanged. Submitting `audience=private` with
+after creation. `StoreEventRequest`'s `audience` field is `required`, but is **shared with the Android API's
+`POST /api/v1/host/events`** (`/api/v1` is a JSON API built ahead of an Android client per
+`plans/android-app.md` — no such app is actually built or shipped yet, so "the Android app" elsewhere in
+these docs really means "this API's existing contract," enforced today only by its own feature test suite),
+which predates the `audience` field and never sends one — `prepareForValidation()` derives a missing
+`audience` from `is_public` (via `EventAudience::derive()`, the same helper the model's saving hook uses) so
+that endpoint's behavior is byte-for-byte unchanged. Submitting `audience=private` with
 `product_kind=ticketed` is **not** a validation error — `TicketedEventCreator` silently overwrites it to
 `public` regardless (matching how it already overwrites every other invitation-only field), so that
 combination never reaches `Event::save()` at all.
@@ -382,8 +385,10 @@ combination never reaches `Event::save()` at all.
 
 - `DashboardAnalyticsService::forUser()`'s `$audience` parameter is optional and trailing — every call
   site except the web `DashboardController` omits it and keeps seeing every owned event, unfiltered. This
-  is deliberate: the Android API's own host dashboard (`Api\V1\DashboardController`) must stay untouched
-  per the plan's Phase 7 (additive-only)
+  is deliberate: the Android API's own host dashboard endpoint (`Api\V1\DashboardController`) must stay
+  additive-only and untouched — see the note above on what "the Android app" means in these docs. (The
+  plan's Phase 7, which would have added `audience` to that API's own resources, was dropped as unneeded —
+  nothing consumes that API for real yet.)
 - `PublicDashboardAnalyticsService` is a **separate** service, not `DashboardAnalyticsService` with a
   different filter — ticketed events have no `Guest`/`Rsvp` rows at all, so the private dashboard's shape
   (RSVP chart, guest groups, daily RSVPs) doesn't fit. It reads ticket/check-in counts plus

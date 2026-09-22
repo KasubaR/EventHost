@@ -53,6 +53,10 @@
                     </dd>
                 </div>
                 <div class="admin-fact">
+                    <dt>Audience</dt>
+                    <dd>{{ $ev->audience->label() }}</dd>
+                </div>
+                <div class="admin-fact">
                     <dt>Public RSVP</dt>
                     <dd>{{ $ev->is_public ? 'Allowed' : 'Invite only' }}</dd>
                 </div>
