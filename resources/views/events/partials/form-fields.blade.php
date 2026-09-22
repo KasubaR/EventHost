@@ -83,7 +83,12 @@
                 <span class="profile-label">How people join</span>
                 <p class="evt-readonly-note">
                     @if ($audience === \App\Enums\EventAudience::Private)
-                        Private — invite-only, guests join via a personal link.
+                        Private — invite-only. Guests join via a personal link
+                        @if ($event)
+                            , or a <a href="{{ route('events.guests.index', $event) }}">shared invite link</a> you can turn on from Guests{{ $event->hasSharedInviteLink() ? ' (currently on)' : '' }}.
+                        @else
+                            , or an optional shared link you can turn on later from Guests.
+                        @endif
                     @elseif ($isTicketed)
                         Public — Ticketed, via EventHost checkout.
                     @else
