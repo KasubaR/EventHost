@@ -13,7 +13,6 @@
             </div>
             <a href="{{ route('events.create', ['audience' => 'public']) }}" class="btn-primary">
                 <i class="fa-solid fa-plus"></i> New event
-                <span class="evt-credit-badge">{{ auth()->user()->event_credits }} credit{{ auth()->user()->event_credits === 1 ? '' : 's' }}</span>
             </a>
         </div>
     </x-slot>

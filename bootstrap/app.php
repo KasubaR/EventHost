@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\AdminAuthenticate;
 use App\Http\Middleware\EnsureAccountIsActive;
+use App\Http\Middleware\EnsureEventAudience;
 use App\Http\Middleware\EnsureSanctumAccountIsActive;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -38,6 +39,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin.auth' => AdminAuthenticate::class,
             'account.active' => EnsureAccountIsActive::class,
+            'audience' => EnsureEventAudience::class,
             // Slice C1 — the Sanctum-token twin of account.active. See
             // EnsureSanctumAccountIsActive's docblock for why this exists separately.
             'sanctum.active' => EnsureSanctumAccountIsActive::class,

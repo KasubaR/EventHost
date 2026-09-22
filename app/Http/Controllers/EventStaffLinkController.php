@@ -46,7 +46,7 @@ class EventStaffLinkController extends Controller
     private function scanRouteFor(Event $event): string
     {
         return $event->isTicketed()
-            ? route('events.tickets.checkin.scan', $event)
+            ? route('public-events.tickets.checkin.scan', $event)
             : route('events.checkin.scan', $event);
     }
 }

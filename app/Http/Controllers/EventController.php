@@ -153,7 +153,7 @@ class EventController extends Controller
         if ($productKind === EventProductKind::Ticketed) {
             $event = $ticketedCreator->create((int) $request->user()->id, $data);
 
-            return redirect()->route('events.ticket-types.index', $event)->with('status', 'draft-saved');
+            return redirect()->route('public-events.ticket-types.index', $event)->with('status', 'draft-saved');
         }
 
         unset($data['preferred_invitation_template_id'], $data['cover_image']);
@@ -550,7 +550,7 @@ class EventController extends Controller
 
         if ($event->isTicketed()) {
             return redirect()
-                ->route('events.ticket-types.index', $event)
+                ->route('public-events.ticket-types.index', $event)
                 ->withErrors([
                     'publish' => 'Ticketed events go live after EventHost activates ticket sales — they do not use event credits.',
                 ]);

@@ -358,9 +358,8 @@ needs credits to publish.
 ### Event Audience (private vs public portal split)
 
 `events.audience` (`App\Enums\EventAudience`: `private` | `public`) says who an event is for; it is
-orthogonal to `product_kind`. Plan and phases: `plans/public-private-portals.md` — Phases 1, 2 and 4 are
-built, Phase 3 partially (see the plan's own "deferred" list, mainly that ticketing/staff/check-in routes
-still live under `/events/...` for both audiences, not yet re-homed under `/public-events/...`).
+orthogonal to `product_kind`. Plan and phases: `plans/public-private-portals.md` — Phases 1–4 and 4c are
+built; Phases 5–9 are still just planned.
 
 **Since Phase 4, audience is immutable in practice.** `/events/create` is a two-level chooser — Private vs
 Public, then (Public only) Ticketed vs Free registration — and neither `StoreEventRequest` nor
@@ -398,10 +397,23 @@ combination never reaches `Event::save()` at all.
   right one: `EventController::destroy()`, `EventTicketingController::submit()`, the draft-limit guards in
   `create()`/`store()`, and the "All events" link on the edit/show pages
 - **Base event CRUD is not split.** `/events/{event}/edit`, `show`, `update`, guests, tables, media, etc.
-  still serve both audiences on the same URL — only the top-level list and dashboard are audience-scoped
-  so far. Ticketing/staff/check-in sub-pages (`events.ticket-types.*`, `events.ticketing.*`,
-  `events.tickets.*`, `events.staff.*`, `events.checkin.links.*`) have **not** been re-homed under
-  `/public-events/...` yet; that stayed out of Phase 3 as a separately-sized follow-up
+  still serve both audiences on the same URL — only the top-level list and dashboard, plus the ticketed
+  sub-pages below, are audience-scoped
+- **Ticketing/staff/ticket-check-in sub-pages live under `/public-events/...` (Phase 3b, shipped
+  2026-09-22).** `events.ticket-types.*`, `events.ticketing.*`, `events.tickets.*` (including
+  `events.tickets.checkin.*`) and `events.staff.*` all became `public-events.*`, confirmed ticketed-only
+  first by checking every controller's own `abort_unless($event->isTicketed(), 404)`. An `EnsureEventAudience`
+  middleware (alias `audience:`) gates the whole group as pure defence in depth — a ticketed event is always
+  public audience already, so it never actually fires. Old `/events/{event}/...` **GET** URLs 301-redirect
+  to the new path (the one route linked from an email, `TicketingRejectedNotification`, plus anything
+  bookmarked); state-changing verbs got no redirect — a stale form action only exists on a page left open
+  across the exact deploy moment, 404s, and self-heals on refresh. **`events.checkin.links.*` did NOT
+  move** — `EventStaffLinkController`'s scanner-link actions gate on `ownerHasPremiumEventTools()`, which is
+  also true for a Pro+ **invitation** event, and both `events/checkin/scan.blade.php` (private) and
+  `events/tickets/checkin/scan.blade.php` (ticketed) post to the same two routes, so it stays on
+  `/events/{event}/checkin/links` for both audiences. Blade **view** paths (`events.tickets.index`,
+  `events.tickets.partials.*`, `events.staff.index`, …) are unaffected — only route names moved, the view
+  files are still at their old location
 
 - Until Phase 4 removes the "Public invitation" checkbox, `is_public` is still an input, so `Event::booted()`
   **derives** `audience` from `product_kind` + `is_public` on every save. Assign `audience` explicitly and it
@@ -480,10 +492,12 @@ spends an event credit; unlike one, it's priced with a one-off admin-set quote i
   `PublicRegistrationApprovedNotification` (quote + pay link) / `PublicRegistrationRejectedNotification`
   (note + edit-page link) fire from the service, outside its DB transaction, mirroring the ticketing
   notification pair and its "notify only once committed" split
-- **Billing is still shown in the Public portal's sidebar nav** on purpose, even though ticketed events have
-  never needed it. All of Steps 1–3 are live now, so nothing structurally blocks hiding it (Phase 4c Step
-  4's own item 17) — that hasn't been done yet because it's a separate, deliberate step the owner triggers
-  explicitly, same as every other phase transition in this plan, not because anything is still missing
+- **Billing is hidden from the Public portal's sidebar nav (Step 4, shipped 2026-09-22).** Now that Steps
+  2–3 give both public products their own priced flow, neither ticketed nor free-registration events need
+  the general plan-comparison page — `layouts/app.blade.php`'s `$inPublicPortal` branch no longer renders
+  it. The route and every direct link into it (the Enterprise custom-quote banner on
+  `public-dashboard.blade.php`, the remove-branding and public-registration checkout pages) are untouched.
+  The Private portal keeps the link — Base/Pro/Pro+ subscriptions are still sold there
 
 ### Event Preview
 

@@ -41,7 +41,7 @@ class TicketingRejectedNotification extends Notification implements ShouldQueue
             ->line('You can make changes and resubmit for review at any time.')
             ->action(
                 'Review and resubmit',
-                route('events.ticket-types.index', $this->event, absolute: true)
+                route('public-events.ticket-types.index', $this->event, absolute: true)
             )
             ->salutation('The '.config('app.name').' Team');
     }

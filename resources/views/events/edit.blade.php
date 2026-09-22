@@ -26,7 +26,7 @@
             </div>
             <div class="evt-card-actions">
                 @if ($event->isTicketed())
-                    <a href="{{ route('events.ticket-types.index', $event) }}" class="evt-btn-outline"><x-ticket-icon /> Back to tickets</a>
+                    <a href="{{ route('public-events.ticket-types.index', $event) }}" class="evt-btn-outline"><x-ticket-icon /> Back to tickets</a>
                 @endif
                 <a href="{{ route('events.show', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-eye"></i> View</a>
                 <a href="{{ route($event->isPublicAudience() ? 'public-events.index' : 'events.index') }}" class="evt-btn-outline"><i class="fa-solid fa-list"></i> All events</a>
@@ -166,6 +166,31 @@
                 @else
                     <span class="evt-muted">Saves your event details and invitation design together.</span>
                 @endif
+            </div>
+        </div>
+
+        {{-- Custom confirm dialog for "Save & publish", same vanilla-JS overlay
+             pattern as the account delete modal
+             (settings/partials/delete-account-form.blade.php) and the ticket
+             activation modal — accent icon since this confirms a normal
+             forward action, not something destructive. Always rendered;
+             event-edit-save.js only opens it when the bar carries a
+             data-publish-confirm message (i.e. $publishCostsCredit above), so
+             a free publish (already-consumed credit) still skips it exactly
+             as before. --}}
+        <div class="profile-modal-overlay" id="publishConfirmOverlay" role="dialog" aria-modal="true" aria-labelledby="publishConfirmTitle">
+            <div class="profile-modal">
+                <div class="profile-modal-header">
+                    <div class="profile-modal-icon profile-modal-icon--accent"><i class="fa-solid fa-bullhorn"></i></div>
+                    <h3 id="publishConfirmTitle">Publish this event?</h3>
+                    <p id="publishConfirmMessage"></p>
+                </div>
+                <div class="profile-modal-actions">
+                    <button type="button" class="profile-modal-cancel" id="publishConfirmCancel">Cancel</button>
+                    <button type="button" class="btn-primary" id="publishConfirmYes">
+                        <i class="fa-solid fa-bullhorn"></i> Yes, Publish
+                    </button>
+                </div>
             </div>
         </div>
 

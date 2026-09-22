@@ -141,7 +141,7 @@ class TicketingTest extends TestCase
             ->assertDontSee(route('events.preview', $event), false);
 
         $this->actingAs($user)
-            ->get(route('events.ticket-types.index', $event))
+            ->get(route('public-events.ticket-types.index', $event))
             ->assertOk()
             ->assertSee('VIP', false)
             ->assertSee('commission', false)
@@ -155,7 +155,7 @@ class TicketingTest extends TestCase
         $event = Event::factory()->for($user)->create();
 
         $this->actingAs($user)
-            ->get(route('events.ticket-types.index', $event))
+            ->get(route('public-events.ticket-types.index', $event))
             ->assertNotFound();
     }
 
@@ -214,8 +214,8 @@ class TicketingTest extends TestCase
         $event = Event::factory()->for($user)->ticketed()->create();
 
         $this->actingAs($user)
-            ->post(route('events.ticket-types.store', $event), $this->ticketPayload())
-            ->assertRedirect(route('events.ticket-types.index', $event));
+            ->post(route('public-events.ticket-types.store', $event), $this->ticketPayload())
+            ->assertRedirect(route('public-events.ticket-types.index', $event));
 
         $this->assertDatabaseHas('ticket_types', [
             'event_id' => $event->id,
@@ -231,7 +231,7 @@ class TicketingTest extends TestCase
         $event = Event::factory()->for($owner)->ticketed()->create();
 
         $this->actingAs($intruder)
-            ->post(route('events.ticket-types.store', $event), $this->ticketPayload())
+            ->post(route('public-events.ticket-types.store', $event), $this->ticketPayload())
             ->assertForbidden();
     }
 
@@ -241,8 +241,8 @@ class TicketingTest extends TestCase
         $event = Event::factory()->for($user)->ticketed()->create();
 
         $this->actingAs($user)
-            ->post(route('events.ticketing.submit', $event))
-            ->assertRedirect(route('events.ticket-types.index', $event))
+            ->post(route('public-events.ticketing.submit', $event))
+            ->assertRedirect(route('public-events.ticket-types.index', $event))
             ->assertSessionHasErrors('ticketing');
 
         $this->assertSame(TicketingStatus::Draft, $event->fresh()->ticketing_status);
@@ -255,7 +255,7 @@ class TicketingTest extends TestCase
         TicketType::factory()->for($event)->create();
 
         $this->actingAs($user)
-            ->post(route('events.ticketing.submit', $event))
+            ->post(route('public-events.ticketing.submit', $event))
             ->assertRedirect(route('public-events.index'))
             ->assertSessionHas('status', 'ticketing-submitted');
 
@@ -269,10 +269,10 @@ class TicketingTest extends TestCase
         $event = Event::factory()->for($user)->ticketed()->create();
 
         $this->actingAs($user)
-            ->patch(route('events.ticketing.update', $event), [
+            ->patch(route('public-events.ticketing.update', $event), [
                 'commission_mode' => CommissionMode::PassThrough->value,
             ])
-            ->assertRedirect(route('events.ticket-types.index', $event));
+            ->assertRedirect(route('public-events.ticket-types.index', $event));
 
         $this->assertSame(CommissionMode::PassThrough, $event->fresh()->commission_mode);
     }
@@ -284,7 +284,7 @@ class TicketingTest extends TestCase
 
         $this->actingAs($user)
             ->patch(route('events.publish', $event))
-            ->assertRedirect(route('events.ticket-types.index', $event))
+            ->assertRedirect(route('public-events.ticket-types.index', $event))
             ->assertSessionHasErrors('publish');
 
         $this->assertFalse((bool) $event->fresh()->is_published);
@@ -624,7 +624,7 @@ class TicketingTest extends TestCase
         $this->assertSame('Need a clearer venue.', $event->ticketing_rejection_note);
 
         $this->actingAs($owner)
-            ->post(route('events.ticketing.submit', $event))
+            ->post(route('public-events.ticketing.submit', $event))
             ->assertSessionHas('status', 'ticketing-submitted');
 
         $this->assertSame(TicketingStatus::PendingReview, $event->fresh()->ticketing_status);
@@ -781,7 +781,7 @@ class TicketingTest extends TestCase
 
         // Wizard step 3 (Tickets) is the landing point now, not the edit form
         // (step 4) — see plans/ticketing.md's wizard reorder.
-        $response->assertRedirect(route('events.ticket-types.index', $event));
+        $response->assertRedirect(route('public-events.ticket-types.index', $event));
         $response->assertSessionHas('status', 'draft-saved');
     }
 

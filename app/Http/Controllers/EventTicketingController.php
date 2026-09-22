@@ -18,7 +18,7 @@ class EventTicketingController extends Controller
 
         if (! $event->canEditCommissionMode()) {
             return redirect()
-                ->route('events.ticket-types.index', $event)
+                ->route('public-events.ticket-types.index', $event)
                 ->withErrors([
                     'commission_mode' => 'Commission settings are locked after EventHost approves ticket sales.',
                 ]);
@@ -29,7 +29,7 @@ class EventTicketingController extends Controller
         ])->save();
 
         return redirect()
-            ->route('events.ticket-types.index', $event)
+            ->route('public-events.ticket-types.index', $event)
             ->with('status', 'ticketing-settings-updated');
     }
 
@@ -50,7 +50,7 @@ class EventTicketingController extends Controller
             // Validation failure (no active ticket type) — send them back to
             // where they can fix it, not away to My Events.
             return redirect()
-                ->route('events.ticket-types.index', $event)
+                ->route('public-events.ticket-types.index', $event)
                 ->withErrors(['ticketing' => $e->getMessage()]);
         }
 

@@ -63,7 +63,7 @@ class EventStaffController extends Controller
             ->notify(new EventStaffInviteNotification($eventStaff));
 
         return redirect()
-            ->route('events.staff.index', $event)
+            ->route('public-events.staff.index', $event)
             ->with('status', 'staff-invited');
     }
 
@@ -75,7 +75,7 @@ class EventStaffController extends Controller
         $eventStaff->update(['role' => $request->validated()['role']]);
 
         return redirect()
-            ->route('events.staff.index', $event)
+            ->route('public-events.staff.index', $event)
             ->with('status', 'staff-role-updated');
     }
 
@@ -86,7 +86,7 @@ class EventStaffController extends Controller
         $this->authorize('update', $eventStaff);
 
         if (! $eventStaff->isPending()) {
-            return redirect()->route('events.staff.index', $event);
+            return redirect()->route('public-events.staff.index', $event);
         }
 
         $eventStaff->issueInviteToken();
@@ -96,7 +96,7 @@ class EventStaffController extends Controller
             ->notify(new EventStaffInviteNotification($eventStaff));
 
         return redirect()
-            ->route('events.staff.index', $event)
+            ->route('public-events.staff.index', $event)
             ->with('status', 'staff-invite-resent');
     }
 
@@ -109,7 +109,7 @@ class EventStaffController extends Controller
         $eventStaff->delete();
 
         return redirect()
-            ->route('events.staff.index', $event)
+            ->route('public-events.staff.index', $event)
             ->with('status', 'staff-removed');
     }
 }

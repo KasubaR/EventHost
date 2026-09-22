@@ -1,7 +1,6 @@
 # Feature Plan: Private portal + Public portal
 
-Status: **Phases 1, 2, 4 shipped; Phase 3 and 4c shipped (partial)** (2026-09-22). Phases 5–9 planned; Phase
-3's route re-homing and Phase 4c's Step 4 (hiding Billing) remain — see each phase's own notes. Written
+Status: **Phases 1–4 and 4c shipped** (2026-09-22). Phases 5–9 planned — see each phase's own notes. Written
 2026-09-22.
 
 Split the organizer side of EventHost into two portals:
@@ -147,7 +146,7 @@ Each phase ships on its own and leaves the app working. Phases 1–2 change no v
    category slug is skipped, not guessed; the map still has all 7 current slugs; the empty-query fallback;
    `$includeCurrent` grandfathering still works through the new template-derived list.
 
-### Phase 3 — The two shells and routing — SHIPPED (partial) 2026-09-22
+### Phase 3 — The two shells and routing — SHIPPED 2026-09-22
 
 **Shipped:**
 1. `layouts/app.blade.php`: a `.dash-portal-switch` toggle (Private | Public) above the nav, and the nav
@@ -182,25 +181,41 @@ Each phase ships on its own and leaves the app working. Phases 1–2 change no v
    `AdminTicketedEventCreateTest`, `TicketingTest`, `EventStaffTest`, `PublicInvitationLifecycleTest`,
    `DashboardAnalyticsTest` wherever they asserted the old single-list behavior.
 
-**Deferred to a later pass (Phase 3b), scope narrowed on review for size/risk:**
-- **No `EnsureEventAudience` middleware yet.** Its only real target — `events.ticket-types.*`,
-  `events.ticketing.*`, `events.tickets.*`, `events.staff.*`, `events.checkin.links.*` — is all
-  ticketed-only already (enforced today by `abort_unless($event->isTicketed(), 404)` / each controller's own
-  checks), and a ticketed event is always public audience (Phase 1's hook), so the middleware would never
-  actually fire yet. It belongs with the re-homing below, not before it.
-- **The `/events/{event}/tickets...` etc. re-homing under `/public-events/...` did not happen.** That's a
-  genuine, large, mechanical rename (route names, every `route()` call across the ticketing/staff/check-in
-  views and mailables, 301s for verbs beyond GET) that deserves its own reviewable pass rather than riding
-  along with the dashboard/index split. Base event CRUD (`edit`, `show`, `update`, `publish`, guests,
-  tables, media, …) stays on `/events/{event}/...` for **both** audiences in the meantime — only the
-  top-level "My Events" list and dashboard are actually split so far.
-- Because of the above, the Public nav has no "Tickets & Revenue / Check-in / Staff" items yet — those are
-  per-event pages reached from an event's own card/detail page, not portal-level pages, until the re-homing
-  above gives them a real portal-level home.
+**Phase 3b — route re-homing (shipped 2026-09-22):**
+- `events.ticket-types.*`, `events.ticketing.*`, `events.tickets.*` (including `events.tickets.checkin.*`)
+  and `events.staff.*` moved to `/public-events/{event}/...` with matching `public-events.*` route names —
+  confirmed ticketed-only first, by grepping every controller behind them for its own
+  `abort_unless($event->isTicketed(), 404)`. Every `route()`/`redirect()->route()` call across the
+  ticketing/staff/check-in controllers, views and the one notification that links to this family
+  (`TicketingRejectedNotification`) was updated in the same pass — `routes/web.php`'s new block carries a
+  comment naming the exact scope. Blade **view** identifiers (`view('events.tickets.index')`,
+  `@include('events.tickets.partials.nav')`, …) were deliberately left alone — only the route layer moved,
+  the view files still live at `resources/views/events/tickets/...` — this was the one mechanical trap in
+  the rename: a first pass over-matched and renamed several of these to `public-events.tickets.*` too, which
+  would have 404'd every affected page; caught by grepping `@include\(['"]public-events\.` after the fact,
+  reverted.
+- `EnsureEventAudience` middleware now exists (`audience:public` on the moved group) — pure defence in
+  depth, confirmed via `route:list -v` that `SubstituteBindings` still runs before it so `$request->route('event')`
+  is a bound model, not a raw string. It never actually fires today (ticketed ⇒ public per Phase 1's hook),
+  same as originally predicted.
+- **`events.checkin.links.*` did NOT move — correcting this plan's own earlier premise.** The "all
+  ticketed-only already" claim above was checked against `EventStaffLinkController` specifically and turned
+  out wrong: its `store`/`destroy` actions gate on `ownerHasPremiumEventTools()`, which is true for a
+  ticketed event with approved sales **or** a Pro+ invitation event (private or free-registration) — and
+  both `events/checkin/scan.blade.php` (private) and `events/tickets/checkin/scan.blade.php` (ticketed) post
+  to the same two routes. Moving it would have broken the Private portal's own scanner-link feature, so it
+  stays on `/events/{event}/checkin/links` for both audiences.
+- 301 redirects were added for the family's **GET** routes only (bookmarks, the one emailed link) —
+  `Route::redirect(..., 301)`, outside the auth group so a logged-out visitor lands on the new URL first
+  instead of bouncing through login. State-changing verbs (store/update/destroy/resend/…) got no redirect:
+  a stale form action only exists on a page left open across the exact deploy moment, 404s, and self-heals
+  on refresh — the same scope-narrowing trade-off that pushed this whole pass to Phase 3b in the first place.
+- Because of the above, the Public nav still has no "Tickets & Revenue / Check-in / Staff" items — those
+  stay per-event pages reached from an event's own card/detail page, not portal-level pages, since nothing
+  in this pass touched navigation.
 - Item 7 (removing the "Public invitation" checkbox) **moved to Phase 4** on purpose — it's tightly coupled
   to the create/update form rework there, and removing it now with no replacement chooser would take away a
   Base+ host's only way to opt into open RSVP.
-- No 301s were added (nothing old moved yet, per the point above).
 
 ### Phase 4 — Create flow — SHIPPED 2026-09-22
 1. `/events/create` is now a two-level chooser. Step 1: **Private event** vs **Public event** (each with
@@ -373,10 +388,13 @@ inventing new patterns, to keep the risk down.
     of Step 2** (2026-09-22): the same panel shows a real "Pay K{amount} to publish" action once approved.
     **Also done as part of Step 3** (2026-09-22): the same panel now shows a real "Submit for review" action
     instead of only text, and a pending-review / declined-with-note state.
-17. **Not done yet, on purpose.** Now that Steps 2–3 are both live, this item is finally unblocked: hide the
-    "Billing" nav link from the Public portal's sidebar section in `layouts/app.blade.php`
-    (`$inPublicPortal` branch) — neither ticketed nor free-registration needs it any more. Left for the owner
-    to trigger explicitly, same as every other phase transition in this plan.
+17. **Done** (2026-09-22). Removed the "Billing" nav link from the Public portal's sidebar section in
+    `layouts/app.blade.php` (`$inPublicPortal` branch) — neither ticketed nor free-registration ever needs
+    the general plan-comparison page. The route itself, and every direct link to it, are untouched: the
+    Enterprise custom-quote banner on `public-dashboard.blade.php` still links straight to
+    `billing.show(['plan' => 'enterprise'])`, and remove-branding / public-registration payments always used
+    their own dedicated checkout pages, never this nav entry. The Private portal keeps its "Billing" link —
+    Base/Pro/Pro+ subscriptions are still sold there.
 
 ### Phase 5 — Public portal features
 1. Public event page for free-registration events: today it reuses the wedding-style invitation renderer.

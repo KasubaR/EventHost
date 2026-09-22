@@ -78,9 +78,6 @@
                     <a href="{{ route('public-dashboard') }}" class="dash-nav-link {{ request()->routeIs('public-dashboard') ? 'is-active' : '' }}">
                         <i class="fa-solid fa-gauge-high"></i> Overview
                     </a>
-                    <a href="{{ route('billing.show') }}" class="dash-nav-link {{ request()->routeIs('billing.*', 'payment.*') ? 'is-active' : '' }}">
-                        <i class="fa-solid fa-credit-card"></i> Billing
-                    </a>
                     <a href="{{ route('public-events.index') }}" class="dash-nav-link {{ request()->routeIs('public-events.*') ? 'is-active' : '' }}">
                         <i class="fa-solid fa-envelope-open-text"></i> My Events
                     </a>

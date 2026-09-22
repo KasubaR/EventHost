@@ -102,6 +102,42 @@
         box.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
+    // Custom confirm dialog for publish, replacing window.confirm() — same
+    // profile-modal-overlay markup/pattern as the account delete modal and
+    // the ticket activation modal (events/edit.blade.php renders it once,
+    // always present, next to this bar).
+    const publishConfirmOverlay = document.getElementById('publishConfirmOverlay');
+    const publishConfirmMessage = document.getElementById('publishConfirmMessage');
+    const publishConfirmYes = document.getElementById('publishConfirmYes');
+    const publishConfirmCancel = document.getElementById('publishConfirmCancel');
+
+    function confirmPublish(message) {
+        if (!message || !publishConfirmOverlay) return Promise.resolve(true);
+
+        publishConfirmMessage.textContent = message;
+
+        return new Promise((resolve) => {
+            function cleanup(result) {
+                publishConfirmOverlay.classList.remove('is-open');
+                publishConfirmYes.removeEventListener('click', onYes);
+                publishConfirmCancel.removeEventListener('click', onCancel);
+                publishConfirmOverlay.removeEventListener('click', onOverlay);
+                document.removeEventListener('keydown', onKeydown);
+                resolve(result);
+            }
+            function onYes() { cleanup(true); }
+            function onCancel() { cleanup(false); }
+            function onOverlay(e) { if (e.target === publishConfirmOverlay) cleanup(false); }
+            function onKeydown(e) { if (e.key === 'Escape') cleanup(false); }
+
+            publishConfirmYes.addEventListener('click', onYes);
+            publishConfirmCancel.addEventListener('click', onCancel);
+            publishConfirmOverlay.addEventListener('click', onOverlay);
+            document.addEventListener('keydown', onKeydown);
+            publishConfirmOverlay.classList.add('is-open');
+        });
+    }
+
     function setBusy(busy, label) {
         buttons.forEach((b) => {
             b.disabled = busy;
@@ -179,8 +215,8 @@
 
     async function saveAll(publish) {
         if (publish) {
-            const publishConfirm = bar.dataset.publishConfirm;
-            if (publishConfirm && !window.confirm(publishConfirm)) {
+            const confirmed = await confirmPublish(bar.dataset.publishConfirm);
+            if (!confirmed) {
                 return;
             }
         }

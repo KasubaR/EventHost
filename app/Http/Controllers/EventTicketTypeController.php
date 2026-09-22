@@ -54,7 +54,7 @@ class EventTicketTypeController extends Controller
         TicketType::query()->create($data);
 
         return redirect()
-            ->route('events.ticket-types.index', $event)
+            ->route('public-events.ticket-types.index', $event)
             ->with('status', 'ticket-type-created');
     }
 
@@ -87,7 +87,7 @@ class EventTicketTypeController extends Controller
         }
 
         return redirect()
-            ->route('events.ticket-types.index', $event)
+            ->route('public-events.ticket-types.index', $event)
             ->with('status', 'ticket-type-updated');
     }
 
@@ -101,7 +101,7 @@ class EventTicketTypeController extends Controller
 
         if ($ticketType->hasBlockingSales()) {
             return redirect()
-                ->route('events.ticket-types.index', $event)
+                ->route('public-events.ticket-types.index', $event)
                 ->withErrors(['ticket_type' => 'This ticket type has holds or issued tickets and cannot be deleted.']);
         }
 
@@ -113,7 +113,7 @@ class EventTicketTypeController extends Controller
         }
 
         return redirect()
-            ->route('events.ticket-types.index', $event)
+            ->route('public-events.ticket-types.index', $event)
             ->with('status', 'ticket-type-deleted');
     }
 

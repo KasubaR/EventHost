@@ -905,8 +905,8 @@ class TicketPurchaseFlowTest extends TestCase
         TicketReservation::factory()->for($event)->for($type, 'ticketType')->create();
 
         $this->actingAs($user)
-            ->delete(route('events.ticket-types.destroy', ['event' => $event, 'ticketType' => $type]))
-            ->assertRedirect(route('events.ticket-types.index', $event))
+            ->delete(route('public-events.ticket-types.destroy', ['event' => $event, 'ticketType' => $type]))
+            ->assertRedirect(route('public-events.ticket-types.index', $event))
             ->assertSessionHasErrors('ticket_type');
 
         $this->assertDatabaseHas('ticket_types', ['id' => $type->id]);

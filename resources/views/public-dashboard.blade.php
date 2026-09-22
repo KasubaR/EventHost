@@ -18,7 +18,6 @@
             </div>
             <a href="{{ route('events.create', ['audience' => 'public']) }}" class="btn-primary dash-header-cta">
                 <i class="fa-solid fa-plus" aria-hidden="true"></i> New Event
-                <span class="billing-credit-pill">{{ auth()->user()->event_credits }} credit{{ auth()->user()->event_credits === 1 ? '' : 's' }}</span>
             </a>
         </div>
     </x-slot>

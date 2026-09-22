@@ -35,7 +35,7 @@
              action when the sidebar's "Guests & RSVPs" link sent the user here to pick
              an event — see events/index.blade.php. --}}
         @if ($event->isTicketed())
-            <a href="{{ route('events.ticket-types.index', $event) }}" class="btn-primary"><x-ticket-icon /> Tickets</a>
+            <a href="{{ route('public-events.ticket-types.index', $event) }}" class="btn-primary"><x-ticket-icon /> Tickets</a>
         @else
             <a href="{{ route('events.guests.index', $event) }}" class="{{ request('from') === 'guests' ? 'btn-primary' : 'evt-btn-outline' }}"><i class="fa-solid fa-users"></i> Guests &amp; RSVPs</a>
         @endif

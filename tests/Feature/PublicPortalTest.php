@@ -161,7 +161,7 @@ class PublicPortalTest extends TestCase
         TicketType::factory()->for($event)->create();
 
         $this->actingAs($user)
-            ->post(route('events.ticketing.submit', $event))
+            ->post(route('public-events.ticketing.submit', $event))
             ->assertRedirect(route('public-events.index'))
             ->assertSessionHas('status', 'ticketing-submitted');
 
@@ -274,7 +274,14 @@ class PublicPortalTest extends TestCase
      */
     public function test_public_new_event_buttons_open_the_public_chooser_and_never_offer_private(): void
     {
-        $user = User::factory()->create();
+        // withCredits(), not the factory default, specifically so a real
+        // non-zero credit count is in play — otherwise a stray credit pill
+        // here would fail silently as "0 credits" instead of ever tripping
+        // the assertion below. Regression: this button used to show
+        // event_credits, copy-pasted from the private dashboard's identical
+        // button, even though no public event (ticketed or free-registration)
+        // has ever spent a credit.
+        $user = User::factory()->withCredits(100)->create();
 
         foreach ([route('public-dashboard'), route('public-events.index')] as $page) {
             $html = $this->actingAs($user)->get($page)->getContent();
@@ -282,6 +289,11 @@ class PublicPortalTest extends TestCase
                 route('events.create', ['audience' => 'public']),
                 $html,
                 "New event button on {$page} should link to the public chooser"
+            );
+            $this->assertStringNotContainsString(
+                '100 credit',
+                $html,
+                "New event button on {$page} should not show an event-credit count"
             );
         }
 
@@ -292,6 +304,27 @@ class PublicPortalTest extends TestCase
             ->assertSee('Free registration', false)
             ->assertDontSee('Private event', false)
             ->assertDontSee('name="name"', false); // not yet on the details form
+    }
+
+    /**
+     * Phase 4c Step 4: Billing sells Base/Pro/Pro+ subscriptions, which
+     * neither ticketed nor free-registration events need any more now that
+     * both have their own priced flow (remove-branding, public-registration
+     * quote payment). The Private portal still needs the link.
+     */
+    public function test_billing_nav_link_is_hidden_from_the_public_portal_but_not_the_private_one(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->get(route('dashboard'))
+            ->assertSee(route('billing.show'), false);
+
+        foreach ([route('public-dashboard'), route('public-events.index')] as $page) {
+            $this->actingAs($user)
+                ->get($page)
+                ->assertDontSee(route('billing.show'), false);
+        }
     }
 
     public function test_edit_page_back_link_points_at_the_correct_portal_index(): void
