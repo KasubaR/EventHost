@@ -125,4 +125,15 @@ final class InvitationLayoutVariant
             default => 0,
         };
     }
+
+    /**
+     * Whether this layout ever renders $event->cover_image_url anywhere in its
+     * sections. Modern Minimal and Event Invite are text/portrait-only heroes
+     * with no cover fallback — the event edit page hides the Cover Image field
+     * for them rather than collecting an image the invitation never shows.
+     */
+    public static function usesCoverImage(?string $variant): bool
+    {
+        return ! in_array(self::normalize($variant), [self::MODERN_MINIMAL, self::EVENT_INVITE], true);
+    }
 }

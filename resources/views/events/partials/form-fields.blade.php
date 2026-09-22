@@ -227,37 +227,13 @@
     {{-- Ticketed events have no host cover. EventHost sets the public hero
          (same 1200×630 crop, stored as cover_image) on the ticketing review
          page. On create the section stays in the DOM so the product-kind
-         toggle can hide it; on a locked ticketed edit it is omitted entirely. --}}
-    @if (! $productKindLocked || ! $isTicketed)
-        <div class="evt-section" data-product-panel="invitation" @if ($isTicketed) hidden @endif>
-            <div class="evt-section-head">
-                <h2>Cover Image</h2>
-                <p>Recommended wide image; we crop to 1200×630 for sharing.</p>
-            </div>
-            <div class="evt-section-body">
-                <div class="profile-photo-row">
-                    <img src="{{ isset($event) ? $event->cover_image_url : asset('images/default-event.png') }}" alt="" width="120" height="68" class="profile-photo-preview evt-cover-preview" id="evt-cover-preview">
-                    <div>
-                        <label for="cover_image" class="profile-photo-btn">
-                            <i class="fa-solid fa-image"></i> Upload cover
-                        </label>
-                        {{-- Staged on pick only when the event already exists; the create
-                             page has no id to scope an upload to, so it posts the file
-                             with the form as it always has. --}}
-                        <input id="cover_image" name="cover_image" type="file" accept="image/jpeg,image/png,image/webp" class="profile-photo-input"
-                               @isset($event)
-                                   data-upload-slot="cover"
-                                   data-upload-url="{{ route('events.media.stage', $event) }}"
-                                   data-upload-max-bytes="{{ \App\Support\InvitationMediaRules::COVER_MAX_KB * 1024 }}"
-                               @endisset>
-                        <p class="profile-photo-hint">JPG, PNG or WEBP · Max 4MB</p>
-                        @error('cover_image')
-                            <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
-                        @enderror
-                    </div>
-                </div>
-            </div>
-        </div>
+         toggle can hide it; on a locked ticketed create it is omitted entirely.
+         On edit, an invitation event's Cover Image field has already moved
+         below the template picker (see edit.blade.php) so it can be hidden
+         for a layout that never renders a cover — this inline copy is
+         create-only, where no template exists yet to check. --}}
+    @if ($event === null && (! $productKindLocked || ! $isTicketed))
+        @include('events.partials.cover-image-field', ['event' => null, 'hidden' => $isTicketed])
     @endif
 
     <div class="evt-section" data-product-panel="ticketed" @unless ($isTicketed) hidden @endunless>

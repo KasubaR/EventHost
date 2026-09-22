@@ -118,6 +118,18 @@
                     <span aria-hidden="true"> · </span>
                     Fine-tuning resets some layout-specific section defaults until you save design again.
                 </p>
+
+                {{-- Moved below the template picker (rather than living in
+                     form-fields.blade.php with the rest of the event details)
+                     because whether a cover image is even worth collecting
+                     depends on the chosen layout: Modern Minimal and Event
+                     Invite never render $event->cover_image_url in their hero,
+                     so the field is hidden entirely for them here. The input
+                     still posts with the main details form via
+                     form="event-update-form" — see cover-image-field.blade.php. --}}
+                @if (\App\Support\InvitationLayoutVariant::usesCoverImage($event->invitationTemplate?->layout_variant))
+                    @include('events.partials.cover-image-field', ['event' => $event, 'associateForm' => true])
+                @endif
             @endif
         @endunless
 
