@@ -251,6 +251,7 @@ class Event extends Model
         'allow_plus_one',
         'show_guest_list',
         'slug',
+        'open_rsvp_token',
         'is_published',
         'cancelled_at',
         'invitation_paused_at',
@@ -1140,6 +1141,29 @@ class Event extends Model
         }
 
         return now()->lte($this->rsvp_deadline);
+    }
+
+    /**
+     * Whether the host has enabled a shared, no-per-guest-token invite link
+     * for this (private) event — see RsvpController::showShared()/storeShared().
+     * A public event never needs this: it already has /e/{slug}.
+     */
+    public function hasSharedInviteLink(): bool
+    {
+        return $this->open_rsvp_token !== null;
+    }
+
+    /**
+     * Absolute URL a host copies/shares for the link above. Null when the
+     * feature is off — callers must not render a dead link.
+     */
+    public function sharedInviteUrl(): ?string
+    {
+        if ($this->open_rsvp_token === null) {
+            return null;
+        }
+
+        return route('rsvp.shared.show', ['token' => $this->open_rsvp_token], absolute: true);
     }
 
     /**

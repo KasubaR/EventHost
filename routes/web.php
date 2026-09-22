@@ -211,9 +211,15 @@ Route::get('/rsvp/{token}', [RsvpController::class, 'showByToken'])->name('rsvp.
 Route::get('/rsvp/{token}/entry-pass.svg', [RsvpController::class, 'entryPassQr'])->name('rsvp.token.entry-pass');
 Route::get('/e/{slug}/rsvp', [RsvpController::class, 'showOpen'])->name('rsvp.open.show');
 
+// Shared invite link (Event::open_rsvp_token) — a private event's host-generated
+// alternative to adding every guest by hand. Same trust model as the /rsvp/{token}
+// personal link above: the token in the URL is the only guard, no login.
+Route::get('/join/{token}', [RsvpController::class, 'showShared'])->name('rsvp.shared.show');
+
 Route::middleware('throttle:rsvp-submit')->group(function () {
     Route::post('/rsvp/{token}', [RsvpController::class, 'storeByToken'])->name('rsvp.token.store');
     Route::post('/e/{slug}/rsvp', [RsvpController::class, 'storeOpen'])->name('rsvp.open.store');
+    Route::post('/join/{token}', [RsvpController::class, 'storeShared'])->name('rsvp.shared.store');
 });
 
 // Staff invite accept flow (Phase 18) — twin paths depending on whether the
@@ -276,6 +282,12 @@ Route::middleware(['auth', 'account.active', 'verified'])->group(function () {
     Route::post('/events/{event}/guests/bulk', [GuestBulkActionController::class, 'store'])
         ->middleware('throttle:guest-bulk-send')
         ->name('events.guests.bulk');
+
+    // Shared invite link toggle for private events — see GuestController::enableOpenLink().
+    Route::post('/events/{event}/guests/open-link', [GuestController::class, 'enableOpenLink'])
+        ->name('events.guests.open-link.enable');
+    Route::delete('/events/{event}/guests/open-link', [GuestController::class, 'disableOpenLink'])
+        ->name('events.guests.open-link.disable');
 
     Route::resource('events.guest-groups', GuestGroupController::class)
         ->only(['index', 'store', 'update', 'destroy']);

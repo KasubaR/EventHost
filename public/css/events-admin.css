@@ -38,6 +38,17 @@
 .evt-slug-input .profile-input:focus {
     box-shadow: none;
 }
+.evt-open-link-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+.evt-open-link-input {
+    flex: 1;
+    min-width: 0;
+    font-family: inherit;
+}
+
 .evt-field-hint {
     margin: 8px 0 0;
     font-size: 13px;

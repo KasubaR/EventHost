@@ -25,10 +25,21 @@
                     @endif
                 </ul>
                 <hr class="rsvp-divider">
-                <p class="rsvp-lead">Enter your details and let the host know if you can make it.</p>
+                <p class="rsvp-lead">
+                    @if ($isSharedInvite ?? false)
+                        Enter your details and let the host know if you can make it — we'll email you a personal link so you can view or change your response anytime.
+                    @else
+                        Enter your details and let the host know if you can make it.
+                    @endif
+                </p>
             </header>
 
-            @include('rsvp.partials.open-rsvp-form', ['event' => $event, 'maxAttendees' => $maxAttendees])
+            @include('rsvp.partials.open-rsvp-form', [
+                'event' => $event,
+                'maxAttendees' => $maxAttendees,
+                'rsvpFormConfig' => $rsvpFormConfig ?? [],
+                'formAction' => $formAction ?? null,
+            ])
         </div>
     </article>
 @endsection

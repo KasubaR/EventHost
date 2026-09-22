@@ -107,7 +107,7 @@ class RsvpFlowTest extends TestCase
         $payload = array_merge([
             'name' => 'Jamie Guest',
             'email' => 'jamie@example.test',
-            'phone' => null,
+            'phone' => '+260971234567',
         ], $this->rsvpPayload(RsvpStatus::Accepted, 1));
 
         $this->post(route('rsvp.open.store', ['slug' => $event->slug]), $payload)
@@ -253,7 +253,7 @@ class RsvpFlowTest extends TestCase
         $payload = array_merge([
             'name' => 'Jamie Guest',
             'email' => 'jamie-thanks@example.test',
-            'phone' => null,
+            'phone' => '+260971234567',
         ], $this->rsvpPayload(RsvpStatus::Accepted, 1));
 
         $this->post(route('rsvp.open.store', ['slug' => $event->slug]), $payload)

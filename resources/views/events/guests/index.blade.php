@@ -80,9 +80,48 @@
         <div class="evt-admin-flash">Update emails queued for {{ session('bulk_count', 0) }} guest(s).</div>
     @elseif (session('status') === 'guests-bulk-whatsapp')
         <div class="evt-admin-flash">Selected guests prepared for WhatsApp sharing.</div>
+    @elseif (session('status') === 'guest-open-link-enabled')
+        <div class="evt-admin-flash">Shared invite link ready — copy it below.</div>
+    @elseif (session('status') === 'guest-open-link-disabled')
+        <div class="evt-admin-flash">Shared invite link turned off.</div>
     @endif
 
     <div class="evt-stack">
+        @unless ($event->is_public)
+            <div class="evt-section">
+                <div class="evt-section-head">
+                    <h2>Shared invite link</h2>
+                    <p>Share one link (e.g. in a family WhatsApp group) instead of adding every guest by hand — anyone with it can join your guest list and RSVP.</p>
+                </div>
+                <div class="evt-section-body">
+                    @if ($event->hasSharedInviteLink())
+                        <div class="evt-open-link-row">
+                            <input type="text" class="profile-input evt-open-link-input" readonly value="{{ $event->sharedInviteUrl() }}" onclick="this.select()">
+                            <button type="button" class="evt-btn-outline" data-copy-text="{{ $event->sharedInviteUrl() }}" data-copy-label="Copy link">
+                                <i class="fa-regular fa-copy" aria-hidden="true"></i> <span data-copy-label-text>Copy link</span>
+                            </button>
+                        </div>
+                        <div class="evt-card-actions">
+                            <form method="post" action="{{ route('events.guests.open-link.enable', $event) }}" class="evt-inline-form evt-confirm-form" data-evt-confirm="Regenerate this link? The old link will stop working immediately.">
+                                @csrf
+                                <button type="submit" class="evt-btn-outline"><i class="fa-solid fa-rotate" aria-hidden="true"></i> Regenerate link</button>
+                            </form>
+                            <form method="post" action="{{ route('events.guests.open-link.disable', $event) }}" class="evt-inline-form evt-confirm-form" data-evt-confirm="Turn off the shared link? It stops working immediately — guests already added stay on your list.">
+                                @csrf
+                                @method('delete')
+                                <button type="submit" class="evt-btn-outline evt-btn-danger-outline"><i class="fa-solid fa-link-slash" aria-hidden="true"></i> Turn off</button>
+                            </form>
+                        </div>
+                    @else
+                        <form method="post" action="{{ route('events.guests.open-link.enable', $event) }}">
+                            @csrf
+                            <button type="submit" class="btn-primary"><i class="fa-solid fa-link" aria-hidden="true"></i> Create shared link</button>
+                        </form>
+                    @endif
+                </div>
+            </div>
+        @endunless
+
         <div class="evt-grid-2 evt-rsvp-summary-grid">
             <div class="evt-stat-card">
                 <div class="evt-stat-value">

@@ -8,7 +8,7 @@ use App\Models\Guest;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class StoreOpenRsvpRequest extends FormRequest
+class StoreSharedRsvpRequest extends FormRequest
 {
     use ValidatesRsvpPayload;
 
@@ -20,6 +20,21 @@ class StoreOpenRsvpRequest extends FormRequest
         }
 
         if (! $event->isRsvpOpen()) {
+            abort(403);
+        }
+
+        // The plan's guest-list cap applies to this link exactly as it does to a
+        // guest the host adds by hand (Event::guestCapacity()) — but only for a
+        // genuinely new signup. A returning guest updating their own RSVP by
+        // resubmitting with the same email must never be blocked by a cap that
+        // was reached by other guests after their first submission.
+        $email = is_string($this->input('email')) ? strtolower(trim($this->input('email'))) : null;
+        $isReturningGuest = $email !== null && Guest::query()
+            ->where('event_id', $event->id)
+            ->where('email', $email)
+            ->exists();
+
+        if (! $isReturningGuest && $event->hasReachedGuestCapacity()) {
             abort(403);
         }
 
@@ -73,22 +88,25 @@ class StoreOpenRsvpRequest extends FormRequest
                     ->where(fn ($q) => $q->where('event_id', $event->id))
                     ->ignore($existingGuestId),
             ],
+            // Required (unlike the public open-RSVP form's optional phone) — the
+            // whole point of this link is that the guest gets their personal
+            // invitation link back, and WhatsApp is one of the two channels that
+            // delivers it.
             'phone' => ['required', 'string', 'max:50'],
-        ], $this->rsvpFieldRules($event, plusOneAllowed: false));
+        ], $this->rsvpFieldRules($event, plusOneAllowed: true));
     }
 
     public function resolveEvent(): ?Event
     {
-        $slug = $this->route('slug');
+        $token = $this->route('token');
 
-        if (! is_string($slug) || $slug === '') {
+        if (! is_string($token) || $token === '') {
             return null;
         }
 
         $event = Event::query()
-            ->where('slug', $slug)
+            ->where('open_rsvp_token', $token)
             ->where('is_published', true)
-            ->where('is_public', true)
             ->whereNull('cancelled_at')
             ->whereNull('invitation_paused_at')
             ->first();
