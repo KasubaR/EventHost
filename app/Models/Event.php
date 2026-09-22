@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\CommissionMode;
+use App\Enums\EventAudience;
 use App\Enums\EventProductKind;
 use App\Enums\EventStaffRole;
 use App\Enums\PublicInvitationStatus;
@@ -29,7 +30,11 @@ class Event extends Model
 
     /**
      * The invitation/RSVP flavor of EVENT_TYPES — personal and family events.
-     * Unchanged from the original single list; see EVENT_TYPES below.
+     * Fallback only: privateEventTypes() is the live source of truth (see
+     * plans/public-private-portals.md §4) and normally returns this same set,
+     * derived from the template library instead of hardcoded here. This
+     * constant is what privateEventTypes() falls back to if that query ever
+     * comes back empty, and is what a caller not yet updated to it sees.
      */
     public const INVITATION_EVENT_TYPES = [
         'wedding',
@@ -42,8 +47,34 @@ class Event extends Model
     ];
 
     /**
+     * A private event's type must match a template category — you can't pick
+     * a type nobody has designed an invitation for. Category slugs use
+     * hyphens, event types use underscores, so this is an explicit map rather
+     * than string munging. Adding a template category (e.g. anniversary,
+     * kitchen_party — see plans/public-private-portals.md §6) needs an entry
+     * here too before privateEventTypes() will offer it.
+     *
+     * @var array<string, string>
+     */
+    public const CATEGORY_SLUG_TO_TYPE = [
+        'wedding' => 'wedding',
+        'birthday' => 'birthday',
+        'graduation' => 'graduation',
+        'corporate' => 'corporate',
+        'baby-shower' => 'baby_shower',
+        'funeral-memorial' => 'funeral',
+        'church' => 'church',
+    ];
+
+    /**
      * Commercial, pay-for-entry event types — used for ticketed events
      * instead of INVITATION_EVENT_TYPES. "corporate" is shared between both.
+     *
+     * @see self::PUBLIC_EVENT_TYPES the same list under its audience-facing
+     *      name. Kept under this name too since it predates the audience
+     *      split and nothing here needs both names to agree by convention
+     *      alone — PUBLIC_EVENT_TYPES is defined as a copy of this constant,
+     *      so there is exactly one array literal to keep in step.
      */
     public const TICKETED_EVENT_TYPES = [
         'concert',
@@ -57,6 +88,14 @@ class Event extends Model
         'corporate',
         'other',
     ];
+
+    /**
+     * A public event's type when it isn't template-constrained (ticketed
+     * events render one fixed landing page, so there's no template to match).
+     * v1 keeps today's ticketed list; extending it is a plain constant change
+     * — see plans/public-private-portals.md §6.
+     */
+    public const PUBLIC_EVENT_TYPES = self::TICKETED_EVENT_TYPES;
 
     /**
      * Union of both — kept for the handful of places that aren't product-kind
@@ -115,13 +154,20 @@ class Event extends Model
      * list has since changed) never fails re-validation just because its
      * own stored value isn't in the "new" list.
      *
+     * Still keyed on product_kind, not audience: audience isn't part of the
+     * create/update forms until Phase 4 of plans/public-private-portals.md,
+     * and every current caller only has a product_kind to give it. The
+     * Invitation branch is template-derived (privateEventTypes()) rather than
+     * the old hardcoded list, but for today's data that's the same 7 values,
+     * so this is a no-visible-change refactor, not a behavior change.
+     *
      * @return list<string>
      */
     public static function eventTypesFor(?EventProductKind $kind, ?string $includeCurrent = null): array
     {
         $base = match ($kind) {
-            EventProductKind::Ticketed => self::TICKETED_EVENT_TYPES,
-            EventProductKind::Invitation => self::INVITATION_EVENT_TYPES,
+            EventProductKind::Ticketed => self::PUBLIC_EVENT_TYPES,
+            EventProductKind::Invitation => self::privateEventTypes(),
             default => self::EVENT_TYPES,
         };
 
@@ -133,6 +179,38 @@ class Event extends Model
     }
 
     /**
+     * Private event types, derived from template categories that have at
+     * least one active template — the template library is the single source
+     * of truth (plans/public-private-portals.md §4): you cannot pick a type
+     * nobody has designed an invitation for. Categories have no active flag
+     * of their own; a category counts once any of its templates does. Falls
+     * back to the static INVITATION_EVENT_TYPES list if the query comes back
+     * empty (no categories seeded, e.g. an environment that skipped
+     * InvitationTemplateSeeder), so validation never has zero valid options.
+     *
+     * A category slug with no entry in CATEGORY_SLUG_TO_TYPE is skipped
+     * rather than guessed at — adding a new category (anniversary, kitchen
+     * party, …) needs a map entry before it appears here.
+     *
+     * @return list<string>
+     */
+    public static function privateEventTypes(): array
+    {
+        $types = InvitationTemplateCategory::query()
+            ->whereHas('invitationTemplates', fn (Builder $query) => $query->where('is_active', true))
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get(['slug'])
+            ->map(fn (InvitationTemplateCategory $category) => self::CATEGORY_SLUG_TO_TYPE[$category->slug] ?? null)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        return $types === [] ? self::INVITATION_EVENT_TYPES : $types;
+    }
+
+    /**
      * @var list<string>
      */
     protected $fillable = [
@@ -141,6 +219,7 @@ class Event extends Model
         'name',
         'event_type',
         'product_kind',
+        'audience',
         'ticketing_status',
         'commission_mode',
         'ticketing_submitted_at',
@@ -272,6 +351,65 @@ class Event extends Model
         return $this->hasMany(Ticket::class);
     }
 
+    /**
+     * Keeps `audience` and `is_public` from ever disagreeing.
+     *
+     * A ticketed event is always public, whichever attribute a caller touched —
+     * checked first so no path (a new row, `product_kind` flipped on an existing
+     * one, `is_public` cleared) can leave audience = public with is_public =
+     * false, which scopePubliclyListed() would then silently drop from
+     * discover and the homepage.
+     *
+     * For everything else, while is_public is still an input (the "Public
+     * invitation" checkbox writes it), the flags decide the audience. An
+     * explicitly assigned audience wins the other way round and drives
+     * is_public. Phase 4 of plans/public-private-portals.md removes the
+     * checkbox, after which audience is the only writer and this collapses to
+     * the second branch.
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (self $event): void {
+            if ($event->isTicketed()) {
+                if ($event->isDirty('audience') && $event->audience === EventAudience::Private) {
+                    throw new \LogicException('A ticketed event cannot be private.');
+                }
+
+                $event->is_public = true;
+                $event->audience = EventAudience::Public;
+
+                return;
+            }
+
+            if ($event->isDirty('audience') && $event->audience !== null) {
+                $event->is_public = $event->audience === EventAudience::Public;
+
+                return;
+            }
+
+            $event->audience = EventAudience::derive($event->product_kind, (bool) $event->is_public);
+        });
+    }
+
+    public function isPrivate(): bool
+    {
+        return $this->audience === EventAudience::Private;
+    }
+
+    public function isPublicAudience(): bool
+    {
+        return $this->audience === EventAudience::Public;
+    }
+
+    /**
+     * @param  Builder<Event>  $query
+     * @return Builder<Event>
+     */
+    public function scopeForAudience(Builder $query, EventAudience $audience): Builder
+    {
+        return $query->where('audience', $audience);
+    }
+
     public function isTicketed(): bool
     {
         return $this->product_kind === EventProductKind::Ticketed;
@@ -295,10 +433,14 @@ class Event extends Model
      * controls (see plans/contributions.md) — the host never sets either
      * flag, so there is deliberately no "host enabled but admin amount
      * missing" state to reason about: both fields move together.
+     *
+     * Also gated by the platform-wide events.contributions.enabled switch
+     * (off for now), which wins over every per-event setting.
      */
     public function acceptsContributions(): bool
     {
-        return $this->isInvitation()
+        return (bool) config('events.contributions.enabled')
+            && $this->isInvitation()
             && $this->contribution_enabled
             && $this->contribution_amount !== null
             && (float) $this->contribution_amount > 0;
@@ -718,6 +860,7 @@ class Event extends Model
             'invitation_template_id' => 'integer',
             'event_date' => 'date',
             'product_kind' => EventProductKind::class,
+            'audience' => EventAudience::class,
             'ticketing_status' => TicketingStatus::class,
             'commission_mode' => CommissionMode::class,
             'ticketing_submitted_at' => 'datetime',
@@ -810,6 +953,12 @@ class Event extends Model
      * PublicEventController::show()), and is what makes an event eligible for
      * the homepage strip and the discover listing.
      *
+     * Requires BOTH audience = public and the legacy is_public flag. The saving
+     * hook keeps them in step, so this only matters for a row the hook never saw
+     * (a raw update, a bad import): requiring both fails closed, hiding it from
+     * discover instead of listing an event that one of the two says is private.
+     * Phase 4 of plans/public-private-portals.md drops the is_public clause.
+     *
      * @param  Builder<Event>  $query
      * @return Builder<Event>
      */
@@ -817,6 +966,7 @@ class Event extends Model
     {
         return $query
             ->where('is_published', true)
+            ->where('audience', EventAudience::Public)
             ->where('is_public', true)
             ->whereNull('cancelled_at')
             ->whereNull('invitation_paused_at');

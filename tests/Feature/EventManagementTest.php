@@ -569,7 +569,7 @@ class EventManagementTest extends TestCase
     public function test_publish_requires_owner_and_shows_public_page(): void
     {
         $user = User::factory()->create();
-        $event = Event::factory()->for($user)->create(['is_published' => false]);
+        $event = Event::factory()->for($user)->publicAudience()->create(['is_published' => false]);
 
         $intruder = User::factory()->create();
         $denied = $this->actingAs($intruder)->patch(route('events.publish', $event));

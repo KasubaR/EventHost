@@ -314,7 +314,7 @@ class EventStaffTest extends TestCase
     public function test_checkin_staff_can_confirm_a_ticket_but_cannot_cancel_it(): void
     {
         $owner = User::factory()->create();
-        $event = Event::factory()->for($owner)->ticketed()->approved()->create(['event_date' => now()->toDateString()]);
+        $event = Event::factory()->for($owner)->ticketed()->approved()->create($this->eventDateTimeInsideCheckInWindow());
         $ticket = Ticket::factory()->for($event)->create();
         $staffer = User::factory()->create();
         EventStaff::factory()->for($event)->accepted()->create(['user_id' => $staffer->id, 'email' => $staffer->email]);

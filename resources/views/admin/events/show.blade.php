@@ -163,6 +163,16 @@
                 <h2>Contribution</h2>
                 <p class="admin-muted admin-mt-sm">Admin-only — the host cannot turn this on or set the amount. When enabled, guests can pledge and pay this fixed amount, in installments, from the event's public page.</p>
 
+                @unless (config('events.contributions.enabled'))
+                    <div class="admin-callout admin-callout--warn admin-mt-md">
+                        <div class="admin-callout-icon" aria-hidden="true"><i class="fa-solid fa-circle-pause"></i></div>
+                        <div>
+                            <p class="admin-callout-kicker">Switched off platform-wide</p>
+                            <p class="admin-callout-body">Contributions are paused for every event, so nothing below is live for guests. The settings are kept and take effect again when the switch is turned back on. Pledges already in progress can still be paid.</p>
+                        </div>
+                    </div>
+                @endunless
+
                 @if ($ev->contribution_enabled)
                     <div class="admin-callout admin-callout--ok admin-mt-md">
                         <div class="admin-callout-icon" aria-hidden="true"><i class="fa-solid fa-hand-holding-dollar"></i></div>

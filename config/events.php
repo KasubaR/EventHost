@@ -35,4 +35,24 @@ return [
         'closes_hours_after' => (int) env('CHECKIN_CLOSES_HOURS_AFTER', 12),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Contributions
+    |--------------------------------------------------------------------------
+    |
+    | Platform-wide switch for guest contributions (plans/contributions.md).
+    | Off while the two-portal split is built (plans/public-private-portals.md).
+    | It only stops new pledges: Event::acceptsContributions() reads it, so the
+    | contribute page, invitation banner, host summary and API flags all go
+    | dark together. A pledge already in flight can still be paid and verified,
+    | and the payment webhook still credits it — money already on its way is
+    | never orphaned. Stored contribution settings are left untouched, so turning
+    | this back on restores every event exactly as it was.
+    |
+    */
+
+    'contributions' => [
+        'enabled' => (bool) env('CONTRIBUTIONS_ENABLED', false),
+    ],
+
 ];

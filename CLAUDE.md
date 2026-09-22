@@ -258,6 +258,12 @@ started free" CTA) from that event's public pages. Plan: `plans/remove-branding.
 
 ### Event Contributions
 
+**Currently switched off platform-wide** (`config('events.contributions.enabled')`, env
+`CONTRIBUTIONS_ENABLED`, default `false`; `phpunit.xml` sets it `true` so the suite still exercises the
+mechanism). `Event::acceptsContributions()` reads it, so the contribute page 404s and the banner, host
+summary and API flags disappear. Stored settings are kept and in-flight pledges can still be paid.
+See `plans/public-private-portals.md` §6.4.
+
 Some invitation-type events (weddings, funerals, baby showers) ask guests to contribute a fixed
 amount. This is **admin-only, per event** — the host never turns it on or sets the amount. Plan and
 phased rollout: `plans/contributions.md` (Phases 1–3, all described below, are built).
@@ -348,6 +354,41 @@ not something the checkout flow can sell automatically. The homepage pricing car
 `users.manage_status` assigns the tier by hand from the user show page (`PATCH /admin/users/{user}/tier`)
 once a custom deal is agreed — the same page also grants event credits, since an Enterprise account still
 needs credits to publish.
+
+### Event Audience (private vs public portal split)
+
+`events.audience` (`App\Enums\EventAudience`: `private` | `public`) says who an event is for; it is
+orthogonal to `product_kind`. Plan and phases: `plans/public-private-portals.md` — Phases 1–2 are built.
+
+- Until Phase 4 removes the "Public invitation" checkbox, `is_public` is still an input, so `Event::booted()`
+  **derives** `audience` from `product_kind` + `is_public` on every save. Assign `audience` explicitly and it
+  wins and drives `is_public` instead. Never write one without going through a model save — a query-builder
+  `update()` skips the hook and lets them disagree
+- **A ticketed event is always public, on every save.** The hook checks this first and forces
+  `is_public = true` / `audience = public` whatever was touched — a new row, `product_kind` flipped on an
+  existing one, or `is_public` cleared. Assigning `audience = private` to a ticketed event throws
+  `LogicException`. Without this a ticketed row could end up `audience = public, is_public = false` and
+  `scopePubliclyListed()` (which still reads `is_public`) would drop it from discover
+- The "private ticketed event 403s" tests build that row with a raw `DB::table('events')->update()`, since
+  the model can no longer produce it; the runtime `! is_public` gate stays as defence in depth
+- `scopePubliclyListed()` requires **both** `audience = public` and `is_public` — fails closed if a raw write
+  ever makes them disagree. Every other gate still reads `is_public` / `product_kind`
+- `EventFactory` defaults to a **private** invitation event; use `->publicAudience()` (or `->ticketed()`)
+  when a test needs the public page, discover or open RSVP
+
+**Private event types are template-derived, not hardcoded.** `Event::privateEventTypes()` reads active
+`InvitationTemplateCategory` rows (a category counts once any of its templates is active — categories have
+no active flag of their own) through the explicit `Event::CATEGORY_SLUG_TO_TYPE` map, because category slugs
+use hyphens and event types use underscores. A category with no active template disappears from the private
+type list; a category slug missing from the map is skipped, never guessed at. Falls back to the static
+`INVITATION_EVENT_TYPES` constant if the query is empty. Adding a template category (e.g. `anniversary`,
+`kitchen_party` — see `plans/public-private-portals.md` §6) needs a `CATEGORY_SLUG_TO_TYPE` entry too before
+it becomes selectable. `Event::eventTypesFor()` still takes only `?EventProductKind`, not audience — nothing
+has an audience to pass until Phase 4 wires it into the create/update forms.
+
+Public event types (`Event::PUBLIC_EVENT_TYPES`) are not template-constrained — ticketed events render one
+fixed landing page — and stay a plain constant, currently identical to `TICKETED_EVENT_TYPES` (one array
+literal; the two names are kept in step on purpose, not duplicated).
 
 ### Event Preview
 

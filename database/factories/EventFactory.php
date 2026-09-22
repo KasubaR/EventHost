@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\CommissionMode;
+use App\Enums\EventAudience;
 use App\Enums\EventProductKind;
 use App\Enums\TicketingStatus;
 use App\Models\Event;
@@ -36,7 +37,9 @@ class EventFactory extends Factory
             'latitude' => null,
             'longitude' => null,
             'cover_image' => null,
-            'is_public' => true,
+            // Invite-only, matching the column default. A test that needs the public
+            // invitation page, discover or open RSVP says so with ->publicAudience().
+            'is_public' => false,
             'rsvp_deadline' => null,
             'guest_limit' => null,
             'allow_plus_one' => false,
@@ -49,6 +52,24 @@ class EventFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'is_published' => true,
+        ]);
+    }
+
+    /**
+     * Invite-only. Assigning audience explicitly makes it drive is_public — see
+     * Event::booted().
+     */
+    public function privateAudience(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'audience' => EventAudience::Private,
+        ]);
+    }
+
+    public function publicAudience(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'audience' => EventAudience::Public,
         ]);
     }
 

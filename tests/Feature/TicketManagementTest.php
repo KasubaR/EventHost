@@ -205,7 +205,10 @@ class TicketManagementTest extends TestCase
     public function test_confirm_checkin_from_the_management_table_flips_valid_to_used(): void
     {
         $owner = User::factory()->pro()->create();
-        $event = $this->ticketedEvent($owner, ['event_date' => now()->toDateString(), 'ticketing_status' => TicketingStatus::Approved]);
+        $event = $this->ticketedEvent($owner, [
+            ...$this->eventDateTimeInsideCheckInWindow(),
+            'ticketing_status' => TicketingStatus::Approved,
+        ]);
         $ticket = Ticket::factory()->for($event)->create(['status' => TicketStatus::Valid]);
 
         $this->actingAs($owner)

@@ -199,7 +199,7 @@ class GuestEntryPassTest extends TestCase
         // QR to — checkin.public.confirm-token — accepts exactly the token shape
         // Guest::checkInQrUrl() extracts it from, end to end.
         $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->create(['event_date' => now()->toDateString()]);
+        $event = Event::factory()->for($owner)->create($this->eventDateTimeInsideCheckInWindow());
         $link = EventStaffLink::factory()->for($event)->create();
         $guest = Guest::factory()->for($event)->create(['invitation_token' => 'staff-scan-token']);
 
