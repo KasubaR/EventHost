@@ -73,7 +73,7 @@ class StoreOpenRsvpRequest extends FormRequest
                     ->where(fn ($q) => $q->where('event_id', $event->id))
                     ->ignore($existingGuestId),
             ],
-            'phone' => ['required', 'string', 'max:50'],
+            'phone' => ['nullable', 'string', 'max:50'],
         ], $this->rsvpFieldRules($event, plusOneAllowed: false));
     }
 

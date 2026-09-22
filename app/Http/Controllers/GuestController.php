@@ -77,34 +77,6 @@ class GuestController extends Controller
         return view('events.guests.index', compact('event', 'guests', 'filter', 'groups', 'tables', 'stats', 'whatsappSendEnabled'));
     }
 
-    /**
-     * Turns on the shared invite link (Event::open_rsvp_token) — a private
-     * event's alternative to adding every guest by hand. Also serves as
-     * "regenerate": calling it again while already on issues a fresh token,
-     * which immediately breaks the previous link.
-     */
-    public function enableOpenLink(Event $event): RedirectResponse
-    {
-        $this->authorizeInvitation($event);
-
-        // A public event (free registration) already has its own shareable
-        // link (/e/{slug}); this is a private-event-only convenience.
-        abort_if($event->is_public, 404);
-
-        $event->forceFill(['open_rsvp_token' => Str::random(40)])->save();
-
-        return back()->with('status', 'guest-open-link-enabled');
-    }
-
-    public function disableOpenLink(Event $event): RedirectResponse
-    {
-        $this->authorizeInvitation($event);
-
-        $event->forceFill(['open_rsvp_token' => null])->save();
-
-        return back()->with('status', 'guest-open-link-disabled');
-    }
-
     public function export(Request $request, Event $event): StreamedResponse
     {
         $this->authorizeInvitation($event);

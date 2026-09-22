@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Enums\PublicInvitationStatus;
 use App\Http\Requests\StoreOpenRsvpRequest;
 use App\Http\Requests\StoreRsvpByTokenRequest;
-use App\Http\Requests\StoreSharedRsvpRequest;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Models\Rsvp;
@@ -192,121 +191,6 @@ class RsvpController extends Controller
             'maxAttendees' => 1,
             'rsvpFormConfig' => $customizationService->resolveRsvpFormConfig($event),
         ]);
-    }
-
-    /**
-     * Shared invite link (plans: private-event self-serve RSVP) — a host-generated
-     * token on the event itself (Event::open_rsvp_token), not tied to is_public.
-     * Lets a private event's host post one link (e.g. to a family WhatsApp group)
-     * instead of adding every guest by hand. Unlike showOpen()'s public/free-
-     * registration flow, a guest who signs up here gets a real invitation_token
-     * (see storeShared()) so they get an entry pass and a personal RSVP link back,
-     * same as a manually-added guest.
-     */
-    public function showShared(
-        string $token,
-        InvitationCustomizationService $customizationService,
-        PublicInvitationResolver $resolver,
-    ): View {
-        $event = Event::query()->where('open_rsvp_token', $token)->first();
-
-        abort_if($event === null, 404);
-        abort_unless($event->isInvitation(), 404);
-
-        $lifecycle = $resolver->statusForLoadedEvent($event);
-        if ($lifecycle !== null && $lifecycle !== PublicInvitationStatus::Ended) {
-            return $resolver->statusView($event, $lifecycle);
-        }
-
-        if (! $event->is_published) {
-            abort(404);
-        }
-
-        if (! $event->isRsvpOpen()) {
-            return view('rsvp.closed', ['event' => $event, 'guest' => null]);
-        }
-
-        if ($event->hasReachedGuestCapacity()) {
-            return view('rsvp.closed', ['event' => $event, 'guest' => null, 'guestListFull' => true]);
-        }
-
-        $event->loadMissing('invitationTemplate');
-
-        return view('rsvp.open-show', [
-            'event' => $event,
-            'maxAttendees' => $event->allow_plus_one ? 2 : 1,
-            'rsvpFormConfig' => $customizationService->resolveRsvpFormConfig($event),
-            'formAction' => route('rsvp.shared.store', ['token' => $token]),
-            'isSharedInvite' => true,
-        ]);
-    }
-
-    public function storeShared(
-        string $token,
-        StoreSharedRsvpRequest $request,
-        RsvpSubmissionService $rsvpSubmissionService,
-        CommunicationService $communicationService,
-    ): RedirectResponse {
-        $event = $request->resolveEvent();
-        if ($event === null) {
-            abort(404);
-        }
-
-        /** @var array{name:string,email:string,phone:string} $contact */
-        $contact = $request->validated();
-
-        try {
-            /** @var Guest $guest */
-            $guest = Guest::query()->firstOrCreate(
-                [
-                    'event_id' => $event->id,
-                    'email' => $contact['email'],
-                ],
-                [
-                    'name' => $contact['name'],
-                    'phone' => $contact['phone'],
-                    'invitation_token' => Str::random(48),
-                    'plus_one_allowed' => (bool) $event->allow_plus_one,
-                ]
-            );
-        } catch (QueryException) {
-            // Concurrent request won the INSERT race on the unique(event_id, email) constraint.
-            /** @var Guest $guest */
-            $guest = Guest::query()
-                ->where('event_id', $event->id)
-                ->where('email', $contact['email'])
-                ->firstOrFail();
-        }
-
-        // A returning guest who first came through this link already has a token
-        // (branch above set one); a guest who existed beforehand from some other
-        // path (e.g. a stale pre-feature open-RSVP row) did not — back-fill one now
-        // so the "you get a personal link" promise this form makes always holds.
-        $data = ['name' => $contact['name'], 'phone' => $contact['phone']];
-        if ($guest->invitation_token === null) {
-            $data['invitation_token'] = Str::random(48);
-        }
-        $guest->fill($data)->save();
-
-        $payload = $request->validatedRsvpPayload();
-
-        $rsvp = $rsvpSubmissionService->submit($event, $guest, $payload);
-
-        $this->dispatchRsvpNotifications($event, $guest, $rsvp);
-
-        // WhatsApp delivery of the personal link is a Pro+ perk everywhere else on
-        // this page (GuestController::sendWhatsAppInvitation() — a real per-message
-        // cost), so an automatic send here follows the same gate rather than giving
-        // every plan a free way around it. Every plan still gets the email above.
-        if ($event->ownerHasPremiumEventTools()) {
-            try {
-                $communicationService->sendWhatsAppInvitation($event, $guest);
-            } catch (\Throwable $e) {
-                report($e);
-            }
-        }
-
-        return $this->redirectThanks($event, $guest, $rsvp);
     }
 
     public function storeOpen(

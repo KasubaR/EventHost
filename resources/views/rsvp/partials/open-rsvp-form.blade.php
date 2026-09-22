@@ -1,9 +1,8 @@
 @php
     $maxAttendees = $maxAttendees ?? 1;
-    $formAction = $formAction ?? route('rsvp.open.store', ['slug' => $event->slug]);
 @endphp
 
-<form method="post" action="{{ $formAction }}" class="rsvp-form evt-open-rsvp-form">
+<form method="post" action="{{ route('rsvp.open.store', ['slug' => $event->slug]) }}" class="rsvp-form evt-open-rsvp-form">
     @csrf
     <div class="rsvp-field-group">
         <label class="rsvp-field-label" for="rsvp_name">Full name</label>
@@ -20,9 +19,8 @@
         @enderror
     </div>
     <div class="rsvp-field-group">
-        <label class="rsvp-field-label" for="rsvp_phone">Phone</label>
-        <p class="rsvp-field-hint">So the host can reach you about this event, and send your invite link by WhatsApp where available.</p>
-        <input id="rsvp_phone" type="tel" name="phone" class="rsvp-input" required maxlength="50" value="{{ old('phone') }}" autocomplete="tel">
+        <label class="rsvp-field-label" for="rsvp_phone">Phone <span class="rsvp-optional">optional</span></label>
+        <input id="rsvp_phone" type="tel" name="phone" class="rsvp-input" maxlength="50" value="{{ old('phone') }}" autocomplete="tel">
         @error('phone')
             <p class="rsvp-field-error">{{ $message }}</p>
         @enderror
