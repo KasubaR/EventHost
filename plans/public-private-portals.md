@@ -1,9 +1,8 @@
 # Feature Plan: Private portal + Public portal
 
-Status: **Phases 1–4, 4c, 5 (for now), 6 and 8 shipped** (2026-09-22 — Phase 5 items 2 and 4 shipped, item 3
-needed no work, item 1 deliberately deferred to a possible Phase 5b, item 5 stays optional/later; see each
-phase's own notes). Phase 7 dropped as unneeded (no real Android client exists to build it for). Phase 9
-(copy, docs, rollout) is all that's left. Written 2026-09-22.
+Status: **Plan complete** (2026-09-23). Phases 1–4, 4c, 5 (for now), 6, 8 and 9 shipped; Phase 7 dropped as
+unneeded (no real Android client exists to build it for) — see each phase's own notes for exactly what
+"shipped" meant in each case, since several items turned out to need no code at all. Written 2026-09-22.
 
 Split the organizer side of EventHost into two portals:
 
@@ -500,12 +499,27 @@ revisit adding `audience` to the read-side resources then, not before.
    `routes/admin.php` for "audience" — zero matches. Audience is not, and doesn't need to become, a
    permission boundary.
 
-### Phase 9 — Copy, docs, rollout
-1. Homepage sections and pricing cards: make sure no plan card promises a feature in the wrong portal
-   (the CLAUDE.md note about staff accounts is the precedent).
-2. Update `CLAUDE.md` (Routing, Subscription Tiers, Event Preview, new "Portals" section) and
-   `plans/ticketing.md` §0.
-3. Flip `portals.enabled`, run `composer test`, `./vendor/bin/pint`, manual pass through both portals.
+### Phase 9 — Copy, docs, rollout — SHIPPED 2026-09-23
+1. **Confirmed, no changes needed.** Checked every pricing card and the hero/how-it-works copy: nothing
+   promises a ticketed-only or free-registration-only feature on a card that couldn't deliver it — the
+   staff-accounts exclusion CLAUDE.md already documents remains the only such case.
+2. **Docs updated — real staleness fixed, not just cross-links.** CLAUDE.md's Subscription Tiers section
+   still described `canMakeEventsPublic()` in terms of the old "Public invitation" checkbox, gone since
+   Phase 4 — rewritten to describe the actual gate (`StoreEventRequest::guardAudienceChoice()` on the create
+   wizard, immutable after creation, no `UpdateEventRequest` involvement at all). Routing and Event Preview
+   now cross-reference the existing "Event Audience" section instead of staying silent about the split — that
+   section already serves as the "new Portals section" this item asked for, so nothing was duplicated.
+   `plans/ticketing.md` §0 literally said "do not create a second organizer portal" and diagrammed ticketing
+   as a module on one shared dashboard, both flatly contradicted by what shipped — diagram redrawn, the
+   decision marked superseded with a dated note.
+3. **`portals.enabled` dropped — never built, nothing to flip.** Phase 0 planned this flag so Phases 3–6
+   could be merged dark and switched on together; it was never actually added (checked `config/`,
+   `.env.example`, `app/`, `routes/` — zero references anywhere), and every phase since shipped live and
+   directly instead. Retrofitting a kill-switch now, after 8 phases have already been running and tested
+   live all session, would mean auditing every route/controller/view across all of them for a rollback
+   safety net nothing has needed — not worth it. `composer test` / `./vendor/bin/pint` and a manual pass
+   through both portals happened continuously at the end of every phase this session rather than as one
+   final step, so that part of this item was already satisfied throughout.
 
 ---
 

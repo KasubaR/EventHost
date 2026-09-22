@@ -134,7 +134,9 @@ rationale: `plans/upload-progress.md`.
 
 - `/` → `home` view (public)
 - `/privacy`, `/terms`, `/cookies` → `Route::view` to `legal/*` (public) — see Legal Pages below
-- `/dashboard` → `DashboardController@index` (auth + verified)
+- `/dashboard` → `DashboardController@index` (auth + verified) — the **Private** portal's overview. See
+  "Event Audience (private vs public portal split)" below for `/public-dashboard`, `/public-events` and
+  every ticketing/staff sub-route that lives under `/public-events/...`
 - `/settings/*` → `App\Http\Controllers\Settings\*` (auth + verified) — see Account Settings below
 - `/profile` → **301 redirect** to `/settings/profile`, kept for old bookmarks
 - Auth routes in `routes/auth.php` — standard Breeze scaffold + `PUT /password` for password updates
@@ -323,12 +325,14 @@ phased rollout: `plans/contributions.md` (Phases 1–3, all described below, are
 features via `User::subscriptionTierRank()`. Four gates exist, at three different floors — mind
 which one a feature actually needs, the names alone don't say:
 - `canMakeEventsPublic()` — **Base and above** (the lowest gate — every tier except `none`
-  qualifies): whether an invitation event may be discoverable/open-RSVP rather than invite-link-only.
-  Invite-only itself stays free at every tier, including `none`, and is the default for a new event
-  (`events.is_public` defaults `false`). Ticketed events are exempt entirely — `TicketedEventCreator`
-  hardcodes `is_public = true` for them regardless of tier, same commission-not-subscription
-  reasoning as the gate below. `StoreEventRequest`/`UpdateEventRequest` only raise a validation error
-  when someone actually tries to check the box below Base — leaving it unchecked never errors
+  qualifies): whether a host may choose **free registration** (public + invitation) instead of Private on
+  the create wizard's first step. This isn't the old "Public invitation" checkbox any more — that's gone
+  since Phase 4 of `plans/public-private-portals.md`, and audience is immutable after creation, so
+  `UpdateEventRequest` has no `audience` field at all. `StoreEventRequest::guardAudienceChoice()` is the
+  live gate: it only fires for `audience = public, product_kind = invitation` (free-registration); choosing
+  Private stays free at every tier, including `none`. Ticketed events are exempt entirely — a ticketed
+  choice always forces `audience = public` regardless of tier, same commission-not-subscription reasoning
+  as the gate below
 - `canUsePremiumEventTools()` — **Pro and above** (Pro, Pro+, Enterprise all qualify): check-in, table
   assignment and the photo wall, for invitation events. `Event::ownerHasPremiumEventTools()` is the
   live, event-aware wrapper — ticketed events unlock via `ticketSalesAreApproved()` instead, regardless
@@ -511,8 +515,10 @@ the same `events.invitations.renderer` partial and `InvitationCustomizationServi
 public page uses — but gated on `EventPolicy::view` (owner-only) instead of `is_published`/`is_public`.
 
 - This is the only way a host can ever see a **private** (`is_public = false`) event's invitation, published
-  or not — `/e/{slug}` (`PublicEventController::show`) 403s on `is_public = false` regardless of who is
-  asking, by design. It's also the only way to see a **draft** invitation before spending a credit to publish
+  or not — `/e/{slug}` (`PublicEventController::show`, via `PublicInvitationResolver`) 403s on
+  `is_public = false` regardless of who is asking, by design. It's also the only way to see a **draft**
+  invitation before spending a credit to publish. Still keyed on `is_public`, not `audience` — see "Event
+  Audience" below for why those two are kept in agreement on every save and this doesn't need to change
 - Does not increment `invitation_views_count` — that column is real guest traffic
 - Redirects to `events.choose-template` if `invitation_template_id` is still null; there is nothing to
   render yet
