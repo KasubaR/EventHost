@@ -541,6 +541,8 @@
   color: var(--accent);
 }
 .step-icon i { font-size: 26px; }
+.step-icon { margin-bottom: 10px; }
+.step-icon img { display: block; width: 52px; height: 52px; }
 
 /* ── TESTIMONIALS ── */
 .testi-grid {

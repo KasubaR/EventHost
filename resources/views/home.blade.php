@@ -220,7 +220,7 @@
           <img src="{{ asset('images/how-it-works-customize.webp') }}" alt="Customizing colors on an Event Host invitation" width="220" height="120" loading="lazy" decoding="async">
         </div>
         <div class="step-num">2</div>
-        <div class="step-icon"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i></div>
+        <div class="step-icon"><img src="{{ asset('images/icon/track.svg') }}" alt="" width="52" height="52" loading="lazy" decoding="async"></div>
         <h3>Customize It</h3>
         <p>Add your event details, photos, colors, and personal touches with our intuitive editor — in minutes.</p>
       </div>
@@ -229,7 +229,7 @@
           <img src="{{ asset('images/how-it-works-send-rsvp.webp') }}" alt="Guests viewing an RSVP on a phone" width="220" height="120" loading="lazy" decoding="async">
         </div>
         <div class="step-num">3</div>
-        <div class="step-icon"><i class="fa-solid fa-paper-plane" aria-hidden="true"></i></div>
+        <div class="step-icon"><img src="{{ asset('images/icon/customaize.svg') }}" alt="" width="52" height="52" loading="lazy" decoding="async"></div>
         <h3>Share & Track RSVPs</h3>
         <p>Send via WhatsApp, email, or a link. Watch confirmations roll in and manage your guest list live.</p>
       </div>
