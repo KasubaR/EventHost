@@ -13,11 +13,11 @@
     nav.legal-toc, see CLAUDE.md.
 --}}
 <nav class="tkt-tabs" aria-label="Ticketing">
-    <a href="{{ route('events.tickets.overview', $event) }}" class="tkt-tab @if ($active === 'overview') tkt-tab--active @endif">
+    <a href="{{ route('public-events.tickets.overview', $event) }}" class="tkt-tab @if ($active === 'overview') tkt-tab--active @endif">
         <i class="fa-solid fa-gauge" aria-hidden="true"></i> Overview
     </a>
-    <a href="{{ route('events.tickets.index', $event) }}" class="tkt-tab @if ($active === 'tickets') tkt-tab--active @endif">
-        <i class="fa-solid fa-ticket" aria-hidden="true"></i> Tickets
+    <a href="{{ route('public-events.tickets.index', $event) }}" class="tkt-tab @if ($active === 'tickets') tkt-tab--active @endif">
+        <x-ticket-icon /> Tickets
     </a>
     <span class="tkt-tab tkt-tab--disabled" title="Coming soon">
         <i class="fa-solid fa-receipt" aria-hidden="true"></i> Orders
@@ -25,7 +25,7 @@
     <span class="tkt-tab tkt-tab--disabled" title="Coming soon">
         <i class="fa-solid fa-users" aria-hidden="true"></i> Attendees
     </span>
-    <a href="{{ route('events.tickets.checkin.scan', $event) }}" class="tkt-tab @if ($active === 'checkin') tkt-tab--active @endif">
+    <a href="{{ route('public-events.tickets.checkin.scan', $event) }}" class="tkt-tab @if ($active === 'checkin') tkt-tab--active @endif">
         <i class="fa-solid fa-qrcode" aria-hidden="true"></i> Check-in
         {{-- Ticketed events unlock on approval, not subscription tier —
              Event::ownerHasPremiumEventTools(). --}}
@@ -36,13 +36,13 @@
     <span class="tkt-tab tkt-tab--disabled" title="Coming soon">
         <i class="fa-solid fa-chart-line" aria-hidden="true"></i> Sales
     </span>
-    <a href="{{ route('events.tickets.revenue', $event) }}" class="tkt-tab @if ($active === 'revenue') tkt-tab--active @endif">
+    <a href="{{ route('public-events.tickets.revenue', $event) }}" class="tkt-tab @if ($active === 'revenue') tkt-tab--active @endif">
         <i class="fa-solid fa-sack-dollar" aria-hidden="true"></i> Revenue
     </a>
-    <a href="{{ route('events.tickets.payouts', $event) }}" class="tkt-tab @if ($active === 'payouts') tkt-tab--active @endif">
+    <a href="{{ route('public-events.tickets.payouts', $event) }}" class="tkt-tab @if ($active === 'payouts') tkt-tab--active @endif">
         <i class="fa-solid fa-money-bill-transfer" aria-hidden="true"></i> Payouts
     </a>
-    <a href="{{ route('events.ticket-types.index', $event) }}" class="tkt-tab @if ($active === 'settings') tkt-tab--active @endif">
+    <a href="{{ route('public-events.ticket-types.index', $event) }}" class="tkt-tab @if ($active === 'settings') tkt-tab--active @endif">
         <i class="fa-solid fa-gear" aria-hidden="true"></i> Settings
     </a>
 </nav>

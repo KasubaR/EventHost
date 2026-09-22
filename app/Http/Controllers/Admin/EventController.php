@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\EventAudience;
 use App\Exceptions\InsufficientCreditsException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateAdminEventPublishRequest;
@@ -19,6 +20,7 @@ class EventController extends Controller
     public function index(Request $request): View
     {
         $search = trim((string) $request->query('q', ''));
+        $audience = EventAudience::tryFrom((string) $request->query('audience', ''));
 
         $events = Event::withTrashed()
             ->with(['user:id,name,email'])
@@ -32,6 +34,7 @@ class EventController extends Controller
                         });
                 });
             })
+            ->when($audience !== null, fn ($query) => $query->where('audience', $audience))
             ->orderByDesc('created_at')
             ->paginate(20)
             ->withQueryString();
@@ -39,6 +42,7 @@ class EventController extends Controller
         return view('admin.events.index', [
             'events' => $events,
             'search' => $search,
+            'audience' => $audience,
         ]);
     }
 

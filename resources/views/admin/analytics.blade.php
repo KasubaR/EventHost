@@ -24,7 +24,15 @@
 
     @php
         $adminAnalyticsChartPayload = $charts;
+        $scopeLabel = $audience?->label() ?? 'entire platform';
     @endphp
+
+    <div class="evt-filter-row">
+        <a href="{{ route('admin.analytics') }}" class="evt-filter-chip {{ $audience === null ? 'evt-filter-chip--active' : '' }}">All audiences</a>
+        @foreach (\App\Enums\EventAudience::cases() as $audienceOption)
+            <a href="{{ route('admin.analytics', ['audience' => $audienceOption->value]) }}" class="evt-filter-chip {{ $audience === $audienceOption ? 'evt-filter-chip--active' : '' }}">{{ $audienceOption->label() }}</a>
+        @endforeach
+    </div>
 
     <script type="application/json" id="admin-analytics-json">@json($adminAnalyticsChartPayload)</script>
 
@@ -33,7 +41,7 @@
             <section class="dash-panel" aria-labelledby="admin-daily-rsvps-title">
                 <div class="dash-panel-head">
                     <h2 id="admin-daily-rsvps-title" class="dash-panel-title">Daily RSVPs</h2>
-                    <p class="dash-panel-sub">Last 14 days · entire platform</p>
+                    <p class="dash-panel-sub">Last 14 days · {{ $scopeLabel }}</p>
                 </div>
                 <div class="dash-analytics-chart-wrap" data-admin-chart="daily">
                     <canvas role="img" aria-label="Daily RSVP counts chart"></canvas>
@@ -43,7 +51,7 @@
             <section class="dash-panel" aria-labelledby="admin-status-title">
                 <div class="dash-panel-head">
                     <h2 id="admin-status-title" class="dash-panel-title">RSVP outcomes</h2>
-                    <p class="dash-panel-sub">All events combined</p>
+                    <p class="dash-panel-sub">{{ $scopeLabel }}</p>
                 </div>
                 <div class="dash-analytics-chart-wrap dash-analytics-chart-wrap--donut" data-admin-chart="status">
                     <canvas role="img" aria-label="RSVP status distribution chart"></canvas>
@@ -53,7 +61,7 @@
             <section class="dash-panel" aria-labelledby="admin-monthly-users-title">
                 <div class="dash-panel-head">
                     <h2 id="admin-monthly-users-title" class="dash-panel-title">New registrations</h2>
-                    <p class="dash-panel-sub">Trailing 12 months</p>
+                    <p class="dash-panel-sub">Trailing 12 months · not affected by the audience filter above (counts user signups, not events)</p>
                 </div>
                 <div class="dash-analytics-chart-wrap" data-admin-chart="monthly_users">
                     <canvas role="img" aria-label="Monthly user registrations chart"></canvas>
@@ -63,7 +71,7 @@
             <section class="dash-panel" aria-labelledby="admin-weekly-events-title">
                 <div class="dash-panel-head">
                     <h2 id="admin-weekly-events-title" class="dash-panel-title">Events created</h2>
-                    <p class="dash-panel-sub">Last 8 weeks</p>
+                    <p class="dash-panel-sub">Last 8 weeks · {{ $scopeLabel }}</p>
                 </div>
                 <div class="dash-analytics-chart-wrap" data-admin-chart="weekly_events">
                     <canvas role="img" aria-label="Weekly events created chart"></canvas>
@@ -73,7 +81,7 @@
             <section class="dash-panel dash-panel--wide" aria-labelledby="admin-event-types-title">
                 <div class="dash-panel-head">
                     <h2 id="admin-event-types-title" class="dash-panel-title">Event types</h2>
-                    <p class="dash-panel-sub">Share of all events</p>
+                    <p class="dash-panel-sub">Share of events · {{ $scopeLabel }}</p>
                 </div>
                 <div class="dash-analytics-chart-wrap dash-analytics-chart-wrap--donut" data-admin-chart="event_types">
                     <canvas role="img" aria-label="Event types chart"></canvas>

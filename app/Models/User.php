@@ -24,6 +24,14 @@ class User extends Authenticatable implements MustVerifyEmail
         'email_payment_receipts' => true,
         'sms_reminders' => false,
         'email_contribution_updates' => true,
+        // Slice E (Android push) — parallel keys, not a reuse of the email_*
+        // ones (locked decision, plans/android-implementation.md). Only
+        // push_rsvp_updates is wired to an actual send today
+        // (NewRsvpReceivedNotification); push_event_reminders is declared and
+        // toggleable but unwired for now — same status email_event_reminders
+        // already has above.
+        'push_rsvp_updates' => true,
+        'push_event_reminders' => true,
     ];
 
     /**
@@ -117,6 +125,18 @@ class User extends Authenticatable implements MustVerifyEmail
     public function reviews(): HasMany
     {
         return $this->hasMany(Review::class);
+    }
+
+    /**
+     * Registered push-notification devices (Slice E, Android). A user with
+     * no rows here simply never gets 'fcm' added to a notification's via() —
+     * see App\Notifications\Channels\FcmChannel.
+     *
+     * @return HasMany<DeviceToken, $this>
+     */
+    public function deviceTokens(): HasMany
+    {
+        return $this->hasMany(DeviceToken::class);
     }
 
     /**

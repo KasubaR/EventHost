@@ -18,24 +18,29 @@ methods on the EventHost ticket page.
 
 ```
 EVENTHOST
-              ┌─────────────┴─────────────┐
-              │                           │
-        CLIENT PORTAL               PUBLIC WEBSITE
-              │                           │
-        Organizer                  Ticket buyer
-              │                           │
-       ┌──────┴──────┐              /e/{slug}
-       │             │                   │
- Invitations     Ticketing            Checkout
-  RSVP/Guests    Tickets/Orders        Lenco
-                 Revenue                  │
-                 Check-in                 ↓
-                 Payouts              Ticket + QR
+      ┌───────────────────┬───────────────────┐
+      │                   │                   │
+ PRIVATE PORTAL       PUBLIC PORTAL      ATTENDEE-FACING
+ (organizer,          (organizer,          (no login)
+  invite-only)      ticketed + free-reg)       │
+      │                   │               /e/{slug}
+ Invitations       Ticketing/Orders          Checkout
+ RSVP/Guests       Revenue/Payouts             Lenco
+                    Check-in                     │
+                    Registrations                ↓
+                                             Ticket + QR
 ```
 
-Do **not** create a second organizer portal. Ticketing is a module on the
-existing dashboard (`layouts/app.blade.php`), the same way Guests and Check-in
-already hang off an event.
+**Superseded 2026-09-22 by `plans/public-private-portals.md`.** This section originally said "do not
+create a second organizer portal" — Ticketing was meant to stay a module on the single existing dashboard,
+the same way Guests and Check-in hang off an event. That decision was reversed: ticketed and
+free-registration events now live in their own **Public** organizer portal (own sidebar, own dashboard at
+`/public-dashboard`, own "My Events" at `/public-events`), separate from the **Private** portal invitation
+events kept using all along (`/dashboard`, `/events`). Ticketing's own sub-pages
+(`public-events.ticket-types.*`, `public-events.ticketing.*`, `public-events.tickets.*`,
+`public-events.staff.*`) moved under `/public-events/...` accordingly (Phase 3b of that plan). What's
+unchanged: the buyer/attendee side below is still a separate, login-free surface — `/e/{slug}` → checkout →
+ticket link never moved and never will.
 
 Two user types:
 

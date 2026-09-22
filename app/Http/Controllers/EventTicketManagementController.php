@@ -217,7 +217,7 @@ class EventTicketManagementController extends Controller
         $this->authorizeTicketBelongsToEvent($event, $ticket);
 
         if (! $event->ownerHasPremiumEventTools()) {
-            return redirect()->route('events.ticket-types.index', $event)->with('status', 'checkin-requires-approval');
+            return redirect()->route('public-events.ticket-types.index', $event)->with('status', 'checkin-requires-approval');
         }
 
         try {

@@ -9,7 +9,6 @@ use App\Models\Guest;
 use App\Models\Rsvp;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 /**
@@ -200,14 +199,7 @@ class GuestEntryPassTest extends TestCase
         // QR to — checkin.public.confirm-token — accepts exactly the token shape
         // Guest::checkInQrUrl() extracts it from, end to end.
         $owner = User::factory()->pro()->create();
-        // Pin the start explicitly, in the venue's timezone: the factory picks a
-        // random time, and the door window is evaluated on the venue clock (not
-        // the app's UTC), so a bare date lands outside it on a fraction of runs.
-        $startsAt = Carbon::now(config('events.timezone'))->subHour();
-        $event = Event::factory()->for($owner)->create([
-            'event_date' => $startsAt->format('Y-m-d'),
-            'event_time' => $startsAt->format('H:i:s'),
-        ]);
+        $event = Event::factory()->for($owner)->create($this->eventDateTimeInsideCheckInWindow());
         $link = EventStaffLink::factory()->for($event)->create();
         $guest = Guest::factory()->for($event)->create(['invitation_token' => 'staff-scan-token']);
 

@@ -26,10 +26,10 @@
             </div>
             <div class="evt-card-actions">
                 @if ($event->isTicketed())
-                    <a href="{{ route('events.ticket-types.index', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-ticket"></i> Back to tickets</a>
+                    <a href="{{ route('public-events.ticket-types.index', $event) }}" class="evt-btn-outline"><x-ticket-icon /> Back to tickets</a>
                 @endif
                 <a href="{{ route('events.show', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-eye"></i> View</a>
-                <a href="{{ route('events.index') }}" class="evt-btn-outline"><i class="fa-solid fa-list"></i> All events</a>
+                <a href="{{ route($event->isPublicAudience() ? 'public-events.index' : 'events.index') }}" class="evt-btn-outline"><i class="fa-solid fa-list"></i> All events</a>
             </div>
         </div>
     </x-slot>
@@ -64,6 +64,14 @@
 
     @if (session('status') === 'template-chosen')
         <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Invitation layout saved — customize below.</div>
+    @endif
+
+    @if (session('status') === 'public-registration-submitted')
+        <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Submitted for review — EventHost will approve and quote a price soon.</div>
+    @endif
+
+    @if ($errors->has('public_registration'))
+        <div class="profile-errors evt-flash" role="alert"><i class="fa-solid fa-circle-exclamation"></i> {{ $errors->first('public_registration') }}</div>
     @endif
 
     @if ($event->isLocked())
@@ -141,6 +149,8 @@
                 </button>
                 @if ($event->isTicketed())
                     <span class="evt-muted">Ticketed events go live after EventHost activates sales — they do not use event credits.</span>
+                @elseif ($event->isFreeRegistration())
+                    <span class="evt-muted">Public events go live after EventHost approves them and you pay the quoted amount — they do not use event credits.</span>
                 @elseif (! $event->is_published)
                     <button type="button" class="btn-primary" data-save-all data-publish data-requires-preview>
                         <i class="fa-solid fa-bullhorn"></i> Save &amp; publish
@@ -159,9 +169,90 @@
             </div>
         </div>
 
+        {{-- Custom confirm dialog for "Save & publish", same vanilla-JS overlay
+             pattern as the account delete modal
+             (settings/partials/delete-account-form.blade.php) and the ticket
+             activation modal — accent icon since this confirms a normal
+             forward action, not something destructive. Always rendered;
+             event-edit-save.js only opens it when the bar carries a
+             data-publish-confirm message (i.e. $publishCostsCredit above), so
+             a free publish (already-consumed credit) still skips it exactly
+             as before. --}}
+        <div class="profile-modal-overlay" id="publishConfirmOverlay" role="dialog" aria-modal="true" aria-labelledby="publishConfirmTitle">
+            <div class="profile-modal">
+                <div class="profile-modal-header">
+                    <div class="profile-modal-icon profile-modal-icon--accent"><i class="fa-solid fa-bullhorn"></i></div>
+                    <h3 id="publishConfirmTitle">Publish this event?</h3>
+                    <p id="publishConfirmMessage"></p>
+                </div>
+                <div class="profile-modal-actions">
+                    <button type="button" class="profile-modal-cancel" id="publishConfirmCancel">Cancel</button>
+                    <button type="button" class="btn-primary" id="publishConfirmYes">
+                        <i class="fa-solid fa-bullhorn"></i> Yes, Publish
+                    </button>
+                </div>
+            </div>
+        </div>
+
         @if ($event->isTicketed())
             @include('events.tickets.partials.rejection-note', ['event' => $event])
             @include('events.tickets.partials.activation-panel', ['event' => $event, 'ticketTypes' => $ticketTypes])
+        @elseif ($event->isFreeRegistration() && ! $event->is_published)
+            {{-- Payment (Step 2) and the submit-for-review action (Step 3) of
+                 plans/public-private-portals.md Phase 4c are both live now.
+                 Admin approval itself still only happens through the admin
+                 panel card on admin/events/show.blade.php.
+
+                 Plain evt-section, not evt-per-form-actions: that class is
+                 event-edit-save.js's signal to hide a no-JS-fallback button
+                 once the unified save bar provides the same action (see its
+                 own docblock) — none of the actions below have a JS
+                 equivalent in that bar, so hiding them here would remove the
+                 host's only way to reach them. Same reasoning as the ticketed
+                 activation panel just above, which uses plain evt-section
+                 too. --}}
+            <div class="evt-section">
+                <div class="evt-section-head">
+                    <h2>Publish</h2>
+                    <p>Public events are approved and priced by EventHost, not published with an event credit.</p>
+                </div>
+                <div class="evt-section-body">
+                    @if ($event->publicRegistrationApproved())
+                        <p class="evt-muted">
+                            EventHost approved this event and quoted
+                            <strong>K{{ number_format((float) $event->public_registration_quote_amount, 2) }}</strong>.
+                            Pay to make the invitation live.
+                        </p>
+                        <div class="evt-card-actions">
+                            <a href="{{ route('events.public-registration.pay', $event) }}" class="btn-primary">
+                                <i class="fa-solid fa-credit-card"></i> Pay K{{ number_format((float) $event->public_registration_quote_amount, 0) }} to publish
+                            </a>
+                        </div>
+                    @elseif ($event->public_registration_status === \App\Enums\PublicRegistrationStatus::PendingReview)
+                        <p class="evt-muted">
+                            Submitted {{ $event->public_registration_submitted_at?->format('j M Y, H:i') }}.
+                            The invitation stays off until EventHost approves it.
+                        </p>
+                    @else
+                        @if ($event->public_registration_status === \App\Enums\PublicRegistrationStatus::Rejected && $event->public_registration_rejection_note)
+                            <div class="evt-flash evt-flash--warn">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                                EventHost declined this event: {{ $event->public_registration_rejection_note }}
+                            </div>
+                        @endif
+                        <p class="evt-muted">
+                            Save your event details and design above, then submit it for review. EventHost will
+                            approve it and quote a price — the invitation goes live once you pay that quote.
+                        </p>
+                        <form method="post" action="{{ route('events.public-registration.submit', $event) }}" class="evt-card-actions">
+                            @csrf
+                            <button type="submit" class="btn-primary">
+                                <i class="fa-solid fa-paper-plane"></i> Submit for review
+                            </button>
+                        </form>
+                    @endif
+                </div>
+            </div>
         @elseif (! $event->is_published)
             <div class="evt-section evt-per-form-actions">
                 <div class="evt-section-head">

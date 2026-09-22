@@ -8,6 +8,7 @@ use App\Models\Event;
 use App\Models\EventSlugRedirect;
 use App\Models\TicketType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class BrowseTest extends TestCase
@@ -59,7 +60,11 @@ class BrowseTest extends TestCase
 
     public function test_private_ticketed_event_is_forbidden(): void
     {
-        $event = $this->approvedTicketedEvent(['is_public' => false]);
+        $event = $this->approvedTicketedEvent();
+        // Event::booted() forces a ticketed event public, so this state is unreachable
+        // through the model. A raw query (which skips model events) recreates a bad row,
+        // to prove the runtime gate still holds if one ever exists.
+        DB::table('events')->where('id', $event->id)->update(['is_public' => false]);
 
         $this->getJson(route('api.v1.tickets.show', ['slug' => $event->slug]))
             ->assertForbidden();

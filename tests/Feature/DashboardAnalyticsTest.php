@@ -18,6 +18,8 @@ class DashboardAnalyticsTest extends TestCase
     public function test_public_invitation_increments_view_counter(): void
     {
         $user = User::factory()->create();
+        // is_public => true is load-bearing here (unlike the two dashboard tests
+        // below): /e/{slug} 403s on a private event regardless of who's asking.
         $event = Event::factory()->for($user)->published()->create([
             'is_public' => true,
         ]);
@@ -31,9 +33,10 @@ class DashboardAnalyticsTest extends TestCase
     public function test_dashboard_shows_aggregated_analytics(): void
     {
         $user = User::factory()->create();
-        $event = Event::factory()->for($user)->published()->create([
-            'is_public' => true,
-        ]);
+        // No is_public override: DashboardController's /dashboard is now the private
+        // portal's overview (plans/public-private-portals.md Phase 3), so this needs
+        // a private-audience event, which is the factory's default since Phase 1.
+        $event = Event::factory()->for($user)->published()->create();
 
         $group = GuestGroup::factory()->for($event)->create(['name' => 'VIP']);
 
@@ -126,9 +129,10 @@ class DashboardAnalyticsTest extends TestCase
     public function test_rsvp_breakdown_chart_reflects_status_mix(): void
     {
         $user = User::factory()->create();
-        $event = Event::factory()->for($user)->published()->create([
-            'is_public' => true,
-        ]);
+        // No is_public override: DashboardController's /dashboard is now the private
+        // portal's overview (plans/public-private-portals.md Phase 3), so this needs
+        // a private-audience event, which is the factory's default since Phase 1.
+        $event = Event::factory()->for($user)->published()->create();
 
         $ga = Guest::factory()->for($event)->create(['email' => 'a@example.test']);
         $gb = Guest::factory()->for($event)->create(['email' => 'b@example.test']);

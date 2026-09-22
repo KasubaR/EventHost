@@ -134,7 +134,9 @@ rationale: `plans/upload-progress.md`.
 
 - `/` → `home` view (public)
 - `/privacy`, `/terms`, `/cookies` → `Route::view` to `legal/*` (public) — see Legal Pages below
-- `/dashboard` → `DashboardController@index` (auth + verified)
+- `/dashboard` → `DashboardController@index` (auth + verified) — the **Private** portal's overview. See
+  "Event Audience (private vs public portal split)" below for `/public-dashboard`, `/public-events` and
+  every ticketing/staff sub-route that lives under `/public-events/...`
 - `/settings/*` → `App\Http\Controllers\Settings\*` (auth + verified) — see Account Settings below
 - `/profile` → **301 redirect** to `/settings/profile`, kept for old bookmarks
 - Auth routes in `routes/auth.php` — standard Breeze scaffold + `PUT /password` for password updates
@@ -258,6 +260,12 @@ started free" CTA) from that event's public pages. Plan: `plans/remove-branding.
 
 ### Event Contributions
 
+**Currently switched off platform-wide** (`config('events.contributions.enabled')`, env
+`CONTRIBUTIONS_ENABLED`, default `false`; `phpunit.xml` sets it `true` so the suite still exercises the
+mechanism). `Event::acceptsContributions()` reads it, so the contribute page 404s and the banner, host
+summary and API flags disappear. Stored settings are kept and in-flight pledges can still be paid.
+See `plans/public-private-portals.md` §6.4.
+
 Some invitation-type events (weddings, funerals, baby showers) ask guests to contribute a fixed
 amount. This is **admin-only, per event** — the host never turns it on or sets the amount. Plan and
 phased rollout: `plans/contributions.md` (Phases 1–3, all described below, are built).
@@ -317,12 +325,14 @@ phased rollout: `plans/contributions.md` (Phases 1–3, all described below, are
 features via `User::subscriptionTierRank()`. Four gates exist, at three different floors — mind
 which one a feature actually needs, the names alone don't say:
 - `canMakeEventsPublic()` — **Base and above** (the lowest gate — every tier except `none`
-  qualifies): whether an invitation event may be discoverable/open-RSVP rather than invite-link-only.
-  Invite-only itself stays free at every tier, including `none`, and is the default for a new event
-  (`events.is_public` defaults `false`). Ticketed events are exempt entirely — `TicketedEventCreator`
-  hardcodes `is_public = true` for them regardless of tier, same commission-not-subscription
-  reasoning as the gate below. `StoreEventRequest`/`UpdateEventRequest` only raise a validation error
-  when someone actually tries to check the box below Base — leaving it unchecked never errors
+  qualifies): whether a host may choose **free registration** (public + invitation) instead of Private on
+  the create wizard's first step. This isn't the old "Public invitation" checkbox any more — that's gone
+  since Phase 4 of `plans/public-private-portals.md`, and audience is immutable after creation, so
+  `UpdateEventRequest` has no `audience` field at all. `StoreEventRequest::guardAudienceChoice()` is the
+  live gate: it only fires for `audience = public, product_kind = invitation` (free-registration); choosing
+  Private stays free at every tier, including `none`. Ticketed events are exempt entirely — a ticketed
+  choice always forces `audience = public` regardless of tier, same commission-not-subscription reasoning
+  as the gate below
 - `canUsePremiumEventTools()` — **Pro and above** (Pro, Pro+, Enterprise all qualify): check-in, table
   assignment and the photo wall, for invitation events. `Event::ownerHasPremiumEventTools()` is the
   live, event-aware wrapper — ticketed events unlock via `ticketSalesAreApproved()` instead, regardless
@@ -349,6 +359,155 @@ not something the checkout flow can sell automatically. The homepage pricing car
 once a custom deal is agreed — the same page also grants event credits, since an Enterprise account still
 needs credits to publish.
 
+### Event Audience (private vs public portal split)
+
+`events.audience` (`App\Enums\EventAudience`: `private` | `public`) says who an event is for; it is
+orthogonal to `product_kind`. Plan and phases: `plans/public-private-portals.md` — Phases 1–4 and 4c are
+built; Phases 5–9 are still just planned.
+
+**Since Phase 4, audience is immutable in practice.** `/events/create` is a two-level chooser — Private vs
+Public, then (Public only) Ticketed vs Free registration — and neither `StoreEventRequest` nor
+`UpdateEventRequest` has an `is_public` field any more; there is no longer any form path that can set it
+after creation. `StoreEventRequest`'s `audience` field is `required`, but is **shared with the Android API's
+`POST /api/v1/host/events`** (`/api/v1` is a JSON API built ahead of an Android client per
+`plans/android-app.md` — no such app is actually built or shipped yet, so "the Android app" elsewhere in
+these docs really means "this API's existing contract," enforced today only by its own feature test suite),
+which predates the `audience` field and never sends one — `prepareForValidation()` derives a missing
+`audience` from `is_public` (via `EventAudience::derive()`, the same helper the model's saving hook uses) so
+that endpoint's behavior is byte-for-byte unchanged. Submitting `audience=private` with
+`product_kind=ticketed` is **not** a validation error — `TicketedEventCreator` silently overwrites it to
+`public` regardless (matching how it already overwrites every other invitation-only field), so that
+combination never reaches `Event::save()` at all.
+
+**The two portals, as they exist today:**
+
+| | Private | Public |
+|---|---|---|
+| Dashboard | `GET /dashboard` (`DashboardController::index`) — guest/RSVP-shaped, `DashboardAnalyticsService::forUser($user, EventAudience::Private)` | `GET /public-dashboard` (`DashboardController::publicOverview`) — commerce-shaped, `PublicDashboardAnalyticsService` |
+| My Events | `GET /events` (`events.index`) | `GET /public-events` (`public-events.index`) |
+| Both routes | Same `EventController::index()`, audience comes from a route default (`->defaults('audience', ...)`), not a query string |
+
+- `DashboardAnalyticsService::forUser()`'s `$audience` parameter is optional and trailing — every call
+  site except the web `DashboardController` omits it and keeps seeing every owned event, unfiltered. This
+  is deliberate: the Android API's own host dashboard endpoint (`Api\V1\DashboardController`) must stay
+  additive-only and untouched — see the note above on what "the Android app" means in these docs. (The
+  plan's Phase 7, which would have added `audience` to that API's own resources, was dropped as unneeded —
+  nothing consumes that API for real yet.)
+- `PublicDashboardAnalyticsService` is a **separate** service, not `DashboardAnalyticsService` with a
+  different filter — ticketed events have no `Guest`/`Rsvp` rows at all, so the private dashboard's shape
+  (RSVP chart, guest groups, daily RSVPs) doesn't fit. It reads ticket/check-in counts plus
+  `TicketRevenueLedgerService::summaryForEventIds()` (the multi-event sibling of `summaryFor()`, which is
+  now a one-id call to it)
+- The sidebar (`layouts/app.blade.php`) shows a `.dash-portal-switch` toggle and swaps its nav section based
+  on `request()->routeIs(...)`. Neither tab is forced active on a page shared by both portals (Billing,
+  Settings, Reviews) — that's intentional, not a bug
+- Every redirect/back-link that used to assume a single "My Events" list now checks the event's own
+  `audience` (or, before the event exists, the submitted/queried `product_kind`) to send the host to the
+  right one: `EventController::destroy()`, `EventTicketingController::submit()`, the draft-limit guards in
+  `create()`/`store()`, and the "All events" link on the edit/show pages
+- **Base event CRUD is not split.** `/events/{event}/edit`, `show`, `update`, guests, tables, media, etc.
+  still serve both audiences on the same URL — only the top-level list and dashboard, plus the ticketed
+  sub-pages below, are audience-scoped
+- **Ticketing/staff/ticket-check-in sub-pages live under `/public-events/...` (Phase 3b, shipped
+  2026-09-22).** `events.ticket-types.*`, `events.ticketing.*`, `events.tickets.*` (including
+  `events.tickets.checkin.*`) and `events.staff.*` all became `public-events.*`, confirmed ticketed-only
+  first by checking every controller's own `abort_unless($event->isTicketed(), 404)`. An `EnsureEventAudience`
+  middleware (alias `audience:`) gates the whole group as pure defence in depth — a ticketed event is always
+  public audience already, so it never actually fires. Old `/events/{event}/...` **GET** URLs 301-redirect
+  to the new path (the one route linked from an email, `TicketingRejectedNotification`, plus anything
+  bookmarked); state-changing verbs got no redirect — a stale form action only exists on a page left open
+  across the exact deploy moment, 404s, and self-heals on refresh. **`events.checkin.links.*` did NOT
+  move** — `EventStaffLinkController`'s scanner-link actions gate on `ownerHasPremiumEventTools()`, which is
+  also true for a Pro+ **invitation** event, and both `events/checkin/scan.blade.php` (private) and
+  `events/tickets/checkin/scan.blade.php` (ticketed) post to the same two routes, so it stays on
+  `/events/{event}/checkin/links` for both audiences. Blade **view** paths (`events.tickets.index`,
+  `events.tickets.partials.*`, `events.staff.index`, …) are unaffected — only route names moved, the view
+  files are still at their old location
+
+- Until Phase 4 removes the "Public invitation" checkbox, `is_public` is still an input, so `Event::booted()`
+  **derives** `audience` from `product_kind` + `is_public` on every save. Assign `audience` explicitly and it
+  wins and drives `is_public` instead. Never write one without going through a model save — a query-builder
+  `update()` skips the hook and lets them disagree
+- **A ticketed event is always public, on every save.** The hook checks this first and forces
+  `is_public = true` / `audience = public` whatever was touched — a new row, `product_kind` flipped on an
+  existing one, or `is_public` cleared. Assigning `audience = private` to a ticketed event throws
+  `LogicException`. Without this a ticketed row could end up `audience = public, is_public = false` and
+  `scopePubliclyListed()` (which still reads `is_public`) would drop it from discover
+- The "private ticketed event 403s" tests build that row with a raw `DB::table('events')->update()`, since
+  the model can no longer produce it; the runtime `! is_public` gate stays as defence in depth
+- `scopePubliclyListed()` requires **both** `audience = public` and `is_public` — fails closed if a raw write
+  ever makes them disagree. Every other gate still reads `is_public` / `product_kind`
+- `EventFactory` defaults to a **private** invitation event; use `->publicAudience()` (or `->ticketed()`)
+  when a test needs the public page, discover or open RSVP
+
+**Private event types are template-derived, not hardcoded.** `Event::privateEventTypes()` reads active
+`InvitationTemplateCategory` rows (a category counts once any of its templates is active — categories have
+no active flag of their own) through the explicit `Event::CATEGORY_SLUG_TO_TYPE` map, because category slugs
+use hyphens and event types use underscores. A category with no active template disappears from the private
+type list; a category slug missing from the map is skipped, never guessed at. Falls back to the static
+`INVITATION_EVENT_TYPES` constant if the query is empty. Adding a template category (e.g. `anniversary`,
+`kitchen_party` — see `plans/public-private-portals.md` §6) needs a `CATEGORY_SLUG_TO_TYPE` entry too before
+it becomes selectable. `Event::eventTypesFor()` still takes only `?EventProductKind`, not audience — nothing
+has an audience to pass until Phase 4 wires it into the create/update forms.
+
+Public event types (`Event::PUBLIC_EVENT_TYPES`) are not template-constrained — ticketed events render one
+fixed landing page — and stay a plain constant, currently identical to `TICKETED_EVENT_TYPES` (one array
+literal; the two names are kept in step on purpose, not duplicated).
+
+**Free-registration public events are admin-approved and admin-priced, not credit-based** (Phase 4c,
+Step 1 shipped, Steps 2–4 pending — `plans/public-private-portals.md`). `Event::isFreeRegistration()` is
+`isPublicAudience() && isInvitation()` — a public event that isn't ticketed. Like a ticketed event it never
+spends an event credit; unlike one, it's priced with a one-off admin-set quote instead of commission.
+
+- `public_registration_status` (`App\Enums\PublicRegistrationStatus`: `not_applicable | draft |
+  pending_review | approved | rejected`) mirrors `TicketingStatus` deliberately — same shape, kept as a
+  separate enum because `TicketingActivationService`'s own checks (ticket type, hero image) are
+  ticket-specific and don't apply here. Defaults to `draft` for a new free-registration event via
+  `Event::booted()`'s `saving` hook (same place `audience` is finalized, since `isFreeRegistration()` needs
+  it), `not_applicable` for every other event
+- `PublicRegistrationService` (submit/approve/reject) is the ticketing-approval pipeline's twin. The one real
+  divergence: `approve()` does **not** publish the event (ticketed approval does) — the admin is setting a
+  price (`public_registration_quote_amount`) the host still has to pay, so `is_published` stays false until
+  that payment completes. `approve()` allows re-quoting an already-`Approved`-but-unpaid event; it refuses
+  outright once `public_registration_quote_paid_at` is set — a paid event's price is settled, not editable
+  by re-approving over it
+- `EventController::publish()` excludes `isFreeRegistration()` the same way it already excludes
+  `isTicketed()` — no credit path for either public product kind. `edit()`'s `$publishCostsCredit` and every
+  publish-related button/message on `events/create.blade.php` and `events/edit.blade.php` follow the same
+  three-way branch (ticketed / free-registration / everything else)
+- **Payment (Step 2, shipped 2026-09-22):** `plan_key = 'public_registration_quote'` is a fourth special
+  case in `PaymentController::initiate()` / `PaymentCompletionService::complete()`/`reverse()`, mirroring
+  `remove_branding`'s shape exactly — grants no credits, no tier. The price is the event's own
+  `public_registration_quote_amount`, never client-supplied; both `InitiatePaymentRequest` and `initiate()`
+  itself (under a row lock) re-check `Event::awaitingPublicRegistrationPayment()` before charging anything.
+  On completion: `is_published = true`, `public_registration_quote_paid_at = now()`. On reversal: both are
+  undone, same "money went back, undo the flag" posture `reverse()` already applies to `remove_branding`.
+  `PublicRegistrationPaymentController` (`GET /events/{event}/public-registration/pay`) is the dedicated
+  host checkout page, a twin of `RemoveBrandingController`; `events/edit.blade.php`'s free-registration
+  publish panel links to it once the event is approved. `BillingPlan::labelForPlanKey()` and
+  `PaymentReceiptNotification` both got a `public_registration_quote` branch too — without them, admin/
+  receipt copy would either show the raw plan_key or the misleading "you now have N event credit(s)" line
+- **Admin approval + submit-for-review (Step 3, shipped 2026-09-22):** `EventPublicRegistrationController::submit()`
+  (`POST /events/{event}/public-registration/submit`) is the host-facing action, mirroring
+  `EventTicketingController::submit()` exactly — moves Draft/Rejected → PendingReview.
+  `events/edit.blade.php`'s free-registration panel shows a real "Submit for review" button for
+  Draft/Rejected (with the rejection note when there is one), a pending-review message, and (unchanged from
+  Step 2) the pay CTA once Approved. On the admin side, `Admin\PublicRegistrationController`
+  (`approve`/`reject`) is gated by a new `events.public_registration_manage` permission — `support` does not
+  get it, same posture as `events.contribution_manage`/`ticketing.approve` — and rendered as an inline card
+  on `admin/events/show.blade.php`, a twin of the Contribution admin card (not a dedicated queue page like
+  Ticketing's, since there's no list to browse — the admin reviews one event's own status at a time).
+  `approve()` accepts Draft/PendingReview/Approved(unpaid)/Rejected; `reject()` only PendingReview.
+  `PublicRegistrationApprovedNotification` (quote + pay link) / `PublicRegistrationRejectedNotification`
+  (note + edit-page link) fire from the service, outside its DB transaction, mirroring the ticketing
+  notification pair and its "notify only once committed" split
+- **Billing is hidden from the Public portal's sidebar nav (Step 4, shipped 2026-09-22).** Now that Steps
+  2–3 give both public products their own priced flow, neither ticketed nor free-registration events need
+  the general plan-comparison page — `layouts/app.blade.php`'s `$inPublicPortal` branch no longer renders
+  it. The route and every direct link into it (the Enterprise custom-quote banner on
+  `public-dashboard.blade.php`, the remove-branding and public-registration checkout pages) are untouched.
+  The Private portal keeps the link — Base/Pro/Pro+ subscriptions are still sold there
+
 ### Event Preview
 
 `GET /events/{event}/preview` (`EventPreviewController`) renders the event's real, current invitation —
@@ -356,8 +515,10 @@ the same `events.invitations.renderer` partial and `InvitationCustomizationServi
 public page uses — but gated on `EventPolicy::view` (owner-only) instead of `is_published`/`is_public`.
 
 - This is the only way a host can ever see a **private** (`is_public = false`) event's invitation, published
-  or not — `/e/{slug}` (`PublicEventController::show`) 403s on `is_public = false` regardless of who is
-  asking, by design. It's also the only way to see a **draft** invitation before spending a credit to publish
+  or not — `/e/{slug}` (`PublicEventController::show`, via `PublicInvitationResolver`) 403s on
+  `is_public = false` regardless of who is asking, by design. It's also the only way to see a **draft**
+  invitation before spending a credit to publish. Still keyed on `is_public`, not `audience` — see "Event
+  Audience" below for why those two are kept in agreement on every save and this doesn't need to change
 - Does not increment `invitation_views_count` — that column is real guest traffic
 - Redirects to `events.choose-template` if `invitation_template_id` is still null; there is nothing to
   render yet

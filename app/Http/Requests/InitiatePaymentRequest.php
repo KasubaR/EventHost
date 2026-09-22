@@ -31,11 +31,12 @@ class InitiatePaymentRequest extends FormRequest
         $planKeys = array_keys(BillingPlan::all());
         $planKeys[] = 'enterprise';
         $planKeys[] = 'remove_branding';
+        $planKeys[] = 'public_registration_quote';
 
         $rules = [
             'plan_key' => ['required', 'string', Rule::in($planKeys)],
             'quote_id' => ['nullable', 'integer', 'required_if:plan_key,enterprise', 'exists:custom_quotes,id'],
-            'event_id' => ['nullable', 'integer', 'required_if:plan_key,remove_branding', 'exists:events,id'],
+            'event_id' => ['nullable', 'integer', 'required_if:plan_key,remove_branding,public_registration_quote', 'exists:events,id'],
             'payment_method' => ['required', 'string', Rule::in($allowedMethods)],
             'provider' => ['required_if:payment_method,mobile_money', 'nullable', 'string', Rule::in(['mtn', 'airtel'])],
             'phone' => ['required_if:payment_method,mobile_money', 'nullable', 'string', 'max:20'],
@@ -58,6 +59,10 @@ class InitiatePaymentRequest extends FormRequest
 
             if ($this->input('plan_key') === 'remove_branding') {
                 $this->validateBrandingRemovalEvent($validator);
+            }
+
+            if ($this->input('plan_key') === 'public_registration_quote') {
+                $this->validatePublicRegistrationEvent($validator);
             }
         });
     }
@@ -99,6 +104,26 @@ class InitiatePaymentRequest extends FormRequest
 
         if ($event->branding_removed) {
             $validator->errors()->add('event_id', 'Branding is already removed for that event.');
+        }
+    }
+
+    private function validatePublicRegistrationEvent(Validator $validator): void
+    {
+        $eventId = (int) $this->input('event_id');
+        $event = Event::query()->find($eventId);
+
+        if ($event === null) {
+            return;
+        }
+
+        if ((int) $event->user_id !== (int) $this->user()?->id) {
+            $validator->errors()->add('event_id', 'That event does not belong to your account.');
+
+            return;
+        }
+
+        if (! $event->awaitingPublicRegistrationPayment()) {
+            $validator->errors()->add('event_id', 'That event is not awaiting payment.');
         }
     }
 

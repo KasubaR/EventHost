@@ -34,12 +34,12 @@
                     {{-- While still setting up (Draft/Rejected), send them to the same
                          Tickets step the creation wizard uses rather than the empty
                          ticketing dashboard — see plans/ticketing.md wizard reorder. --}}
-                    <a href="{{ route($event->canSubmitTicketing() ? 'events.ticket-types.index' : 'events.tickets.overview', $event) }}" class="btn-primary"><i class="fa-solid fa-ticket"></i> Tickets</a>
+                    <a href="{{ route($event->canSubmitTicketing() ? 'public-events.ticket-types.index' : 'public-events.tickets.overview', $event) }}" class="btn-primary"><x-ticket-icon /> Tickets</a>
                 @else
-                    <a href="{{ route('events.guests.index', $event) }}" class="btn-primary"><i class="fa-solid fa-users"></i> Guests & RSVPs</a>
+                    <a href="{{ route('events.guests.index', $event) }}" class="btn-primary"><i class="fa-solid fa-users"></i> {{ $event->isFreeRegistration() ? 'Registrations' : 'Guests & RSVPs' }}</a>
                 @endif
                 @if ($event->isTicketed())
-                    <a href="{{ route('events.tickets.checkin.scan', $event) }}" class="evt-btn-outline">
+                    <a href="{{ route('public-events.tickets.checkin.scan', $event) }}" class="evt-btn-outline">
                         <i class="fa-solid fa-qrcode"></i> Check-in scanner
                         {{-- Ticketed events unlock on approval, not subscription tier. --}}
                         @unless ($event->ownerHasPremiumEventTools())
@@ -63,7 +63,7 @@
                 @if ($event->isTicketed())
                 @can('manage', [\App\Models\EventStaff::class, $event])
                     {{-- Ticketed events only (Phase 18 brief) — owner-only, staff management is never delegated to a Manager. --}}
-                    <a href="{{ route('events.staff.index', $event) }}" class="evt-btn-outline">
+                    <a href="{{ route('public-events.staff.index', $event) }}" class="evt-btn-outline">
                         <i class="fa-solid fa-user-shield"></i> Staff
                         @unless ($event->ownerHasPremiumEventTools())
                             <span class="evt-credit-badge" title="Unlocks once EventHost approves ticket sales">Pending</span>
@@ -71,7 +71,7 @@
                     </a>
                 @endcan
                 @endif
-                <a href="{{ route('events.index') }}" class="evt-btn-outline"><i class="fa-solid fa-list"></i> All events</a>
+                <a href="{{ route($event->isPublicAudience() ? 'public-events.index' : 'events.index') }}" class="evt-btn-outline"><i class="fa-solid fa-list"></i> All events</a>
             </div>
         </div>
     </x-slot>
@@ -358,7 +358,7 @@
         @if ($event->isTicketed() && ! $event->ticketSalesAreApproved())
             <div class="evt-section">
                 <div class="evt-section-body">
-                    <p class="evt-muted">{{ $event->ticketing_status->label() }}. <a href="{{ route($event->canSubmitTicketing() ? 'events.ticket-types.index' : 'events.tickets.overview', $event) }}">Manage tickets</a> — sales go live after EventHost activates them.</p>
+                    <p class="evt-muted">{{ $event->ticketing_status->label() }}. <a href="{{ route($event->canSubmitTicketing() ? 'public-events.ticket-types.index' : 'public-events.tickets.overview', $event) }}">Manage tickets</a> — sales go live after EventHost activates them.</p>
                 </div>
             </div>
         @elseif (! $event->is_published)

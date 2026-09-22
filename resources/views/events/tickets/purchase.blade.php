@@ -14,7 +14,7 @@
     <article class="tkc-page">
         <div class="tkc-card">
             <header class="tkc-header">
-                <p class="tkc-event-badge"><i class="fa-solid fa-ticket" aria-hidden="true"></i> Tickets</p>
+                <p class="tkc-event-badge"><x-ticket-icon /> Tickets</p>
                 <h1 class="tkc-title">{{ $event->name }}</h1>
                 <ul class="tkc-meta">
                     <li>

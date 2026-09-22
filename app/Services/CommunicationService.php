@@ -15,12 +15,15 @@ use App\Notifications\NewContributionReceivedNotification;
 use App\Notifications\NewRsvpReceivedNotification;
 use App\Notifications\RsvpConfirmationNotification;
 use App\Notifications\RsvpReminderNotification;
+use App\Support\ZambianPhone;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Notification;
 
 class CommunicationService
 {
     public function __construct(
-        private readonly SmsService $smsService
+        private readonly SmsService $smsService,
+        private readonly WhatsAppService $whatsAppService,
     ) {}
 
     public function sendRsvpReminder(Event $event, Guest $guest, int $daysUntilDeadline, ?string $idempotencyKey = null): void
@@ -72,7 +75,14 @@ class CommunicationService
 
     public function notifyHostNewRsvp(User $host, Event $event, Guest $guest, Rsvp $rsvp): void
     {
-        if (! (bool) ($host->notification_preferences['email_rsvp_updates'] ?? true)) {
+        // Either channel wanted is enough to bother notifying at all — the
+        // notification's own via() (Slice E) independently decides which
+        // channel(s) actually fire, so a host with email off but push on
+        // (or vice versa) still gets something instead of nothing.
+        $wantsEmail = (bool) ($host->notification_preferences['email_rsvp_updates'] ?? true);
+        $wantsPush = (bool) ($host->notification_preferences['push_rsvp_updates'] ?? true);
+
+        if (! $wantsEmail && ! $wantsPush) {
             return;
         }
 
@@ -193,6 +203,85 @@ class CommunicationService
                 'response' => $result['response'],
                 'sent_at' => $status === NotificationLog::STATUS_SENT ? now() : null,
             ])->save();
+        } catch (\Throwable $e) {
+            $this->markFailed($log, $e);
+            throw $e;
+        }
+    }
+
+    /**
+     * Server-initiated WhatsApp send via an approved template — see
+     * plans/whatsapp-invitations.md. Distinct from the free App\Support\WhatsAppInviteLink deeplink
+     * (which stays available regardless of whether Twilio is configured); this one is a no-op until
+     * communications.whatsapp.enabled and the phone both check out, same guarded shape as
+     * sendSmsUpdate() above. Returns an outcome string (rather than void, like the fire-and-forget
+     * methods above) because this is a direct, user-triggered button click that needs an immediate
+     * flash message, not a background/scheduled send GuestController never inspects the result of.
+     *
+     * @return 'sent'|'disabled'|'invalid_phone'|'rate_limited'|'failed'
+     */
+    public function sendWhatsAppInvitation(Event $event, Guest $guest): string
+    {
+        if (! (bool) config('communications.whatsapp.enabled', false)) {
+            return 'disabled';
+        }
+
+        $toE164 = ZambianPhone::toE164($guest->phone);
+        if ($toE164 === null || $guest->invitation_token === null) {
+            return 'invalid_phone';
+        }
+
+        // Event-scoped guard on top of the per-user 'guest-whatsapp-send' route throttle — each
+        // send costs real money, so one event can't blow through Twilio's/Meta's own rate limits
+        // via many individual clicks even though no single click is throttled.
+        $cap = max(1, (int) config('communications.whatsapp.hourly_cap_per_event', 100));
+        $sentLastHour = NotificationLog::query()
+            ->where('event_id', $event->id)
+            ->where('channel', 'whatsapp')
+            ->where('status', NotificationLog::STATUS_SENT)
+            ->where('created_at', '>=', now()->subHour())
+            ->count();
+        if ($sentLastHour >= $cap) {
+            return 'rate_limited';
+        }
+
+        // No idempotency key is passed here, so this never actually returns null — same posture
+        // as sendSmsUpdate() above; kept for parity with startLog()'s shared signature.
+        $log = $this->startLog($event, $guest, 'whatsapp', 'guest_invitation_whatsapp', null, null);
+        if ($log === null) {
+            return 'failed';
+        }
+
+        try {
+            $result = $this->whatsAppService->sendTemplate(
+                $toE164,
+                (string) config('services.twilio.invitation_content_sid'),
+                [
+                    '1' => $event->name,
+                    '2' => $event->event_date?->format('j F Y') ?? '',
+                    '3' => $event->hasStartTime() ? Carbon::parse($event->event_time)->format('H:i') : '',
+                    '4' => filled($event->venue) ? $event->venue : 'Venue TBA',
+                    '5' => $guest->personalRsvpUrl(),
+                ]
+            );
+            $status = $result['status'] === 'sent' ? NotificationLog::STATUS_SENT : NotificationLog::STATUS_FAILED;
+            $log->forceFill([
+                'status' => $status,
+                'provider_message_id' => $result['provider_message_id'],
+                'response' => $result['response'],
+                'sent_at' => $status === NotificationLog::STATUS_SENT ? now() : null,
+            ])->save();
+
+            if ($status === NotificationLog::STATUS_SENT) {
+                $guest->forceFill([
+                    'invitation_sent' => true,
+                    'invitation_sent_at' => now(),
+                ])->save();
+
+                return 'sent';
+            }
+
+            return 'failed';
         } catch (\Throwable $e) {
             $this->markFailed($log, $e);
             throw $e;

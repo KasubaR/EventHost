@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\EventAudience;
 use App\Enums\RsvpStatus;
 use App\Models\Event;
 use App\Models\Rsvp;
@@ -12,7 +13,10 @@ use Illuminate\Support\Facades\Schema;
 class AdminAnalyticsService
 {
     /**
-     * Full payload for admin charts (all events).
+     * Full payload for admin charts. `$audience` is optional and scopes
+     * every event-derived chart (plans/public-private-portals.md Phase 8) —
+     * `monthly_registrations` stays platform-wide regardless, since it
+     * counts new user signups, not events.
      *
      * @return array{
      *     daily_rsvps: list<array{date:string,count:int}>,
@@ -22,9 +26,11 @@ class AdminAnalyticsService
      *     event_types: list<array{key:string,label:string,count:int,pct:float}>,
      * }
      */
-    public function chartPayload(): array
+    public function chartPayload(?EventAudience $audience = null): array
     {
-        $eventIds = Event::query()->pluck('id');
+        $eventIds = Event::query()
+            ->when($audience !== null, fn ($query) => $query->where('audience', $audience))
+            ->pluck('id');
 
         if ($eventIds->isEmpty()) {
             return [
@@ -40,8 +46,8 @@ class AdminAnalyticsService
             'daily_rsvps' => $this->dailyRsvpSeries($eventIds, 14),
             'status_chart' => $this->rsvpStatusChart($eventIds),
             'monthly_registrations' => $this->monthlyRegistrations(12),
-            'weekly_events_created' => $this->weeklyEventsCreated(8),
-            'event_types' => $this->eventTypeBreakdown(),
+            'weekly_events_created' => $this->weeklyEventsCreated(8, $audience),
+            'event_types' => $this->eventTypeBreakdown($audience),
         ];
     }
 
@@ -161,13 +167,14 @@ class AdminAnalyticsService
     /**
      * @return list<array{label:string,count:int}>
      */
-    private function weeklyEventsCreated(int $weeks): array
+    private function weeklyEventsCreated(int $weeks, ?EventAudience $audience): array
     {
         $out = [];
         for ($i = 0; $i < $weeks; $i++) {
             $ws = now()->subWeeks($weeks - 1 - $i)->startOfWeek();
             $we = $ws->copy()->endOfWeek();
             $count = (int) Event::query()
+                ->when($audience !== null, fn ($query) => $query->where('audience', $audience))
                 ->where('created_at', '>=', $ws)
                 ->where('created_at', '<=', $we)
                 ->count();
@@ -183,9 +190,10 @@ class AdminAnalyticsService
     /**
      * @return list<array{key:string,label:string,count:int,pct:float}>
      */
-    private function eventTypeBreakdown(): array
+    private function eventTypeBreakdown(?EventAudience $audience): array
     {
         $rows = Event::query()
+            ->when($audience !== null, fn ($query) => $query->where('audience', $audience))
             ->selectRaw('event_type, COUNT(*) as c')
             ->groupBy('event_type')
             ->pluck('c', 'event_type');

@@ -2,8 +2,13 @@
 
 namespace App\Providers;
 
+use App\Services\NullPushNotificationService;
 use App\Services\NullSmsService;
+use App\Services\NullWhatsAppService;
+use App\Services\PushNotificationService;
 use App\Services\SmsService;
+use App\Services\TwilioWhatsAppService;
+use App\Services\WhatsAppService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -11,12 +16,39 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Twilio\Rest\Client as TwilioClient;
 
 class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
         $this->app->singleton(SmsService::class, NullSmsService::class);
+        // Slice E — real push delivery requires Firebase server credentials
+        // (config('services.fcm.*')), which don't exist in this environment
+        // yet; swap this binding for a real implementation once they do,
+        // same as SmsService above.
+        $this->app->singleton(PushNotificationService::class, NullPushNotificationService::class);
+
+        // Unlike the two bindings above (always Null, swapped by hand later), this checks config
+        // directly: real Twilio credentials are being configured now, not deferred indefinitely.
+        // Falls back to Null if the flag is off or any required credential is missing, so a
+        // half-configured .env degrades to "sent nowhere" rather than a boot-time crash.
+        $this->app->singleton(WhatsAppService::class, function () {
+            $twilio = config('services.twilio');
+            $ready = (bool) config('communications.whatsapp.enabled')
+                && filled($twilio['account_sid'] ?? null)
+                && filled($twilio['api_key_sid'] ?? null)
+                && filled($twilio['api_key_secret'] ?? null)
+                && filled($twilio['whatsapp_from'] ?? null);
+
+            if (! $ready) {
+                return new NullWhatsAppService;
+            }
+
+            $client = new TwilioClient($twilio['api_key_sid'], $twilio['api_key_secret'], $twilio['account_sid']);
+
+            return new TwilioWhatsAppService($client, $twilio['whatsapp_from']);
+        });
     }
 
     public function boot(): void
@@ -96,6 +128,14 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perHour($perHour)->by((string) $userId);
         });
 
+        // Per-guest WhatsApp send button — one click per guest, so this is deliberately looser than
+        // guest-bulk-send above (a host clicking through 30 individual guests isn't "bulk" abuse).
+        // communications.whatsapp.hourly_cap_per_event (checked in CommunicationService) is the
+        // per-event cost guard; this is just a per-user floor against a scripted hammer.
+        RateLimiter::for('guest-whatsapp-send', function (Request $request): Limit {
+            return Limit::perMinute(20)->by((string) ($request->user()?->id ?? $request->ip()));
+        });
+
         RateLimiter::for('admin-mutations', function (Request $request): Limit {
             return Limit::perMinute(120)->by((string) $request->user()?->id ?? 'guest');
         });
@@ -109,6 +149,13 @@ class AppServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('ticket-resend', function (Request $request): Limit {
+            return Limit::perMinute(10)->by((string) $request->user()?->id ?? $request->ip());
+        });
+
+        // Covers both the invite and resend actions — a host repeatedly
+        // inviting the same address is otherwise an open email spam/cost
+        // vector, same reasoning as ticket-resend above.
+        RateLimiter::for('staff-invite-send', function (Request $request): Limit {
             return Limit::perMinute(10)->by((string) $request->user()?->id ?? $request->ip());
         });
 

@@ -12,7 +12,7 @@
             </p>
             <div class="evt-card-badges">
                 @if ($event->isTicketed())
-                    <span class="evt-badge {{ $event->ticketSalesAreApproved() ? 'evt-badge--live' : 'evt-badge--draft' }}"><i class="fa-solid fa-ticket"></i> {{ $event->ticketing_status->label() }}</span>
+                    <span class="evt-badge {{ $event->ticketSalesAreApproved() ? 'evt-badge--live' : 'evt-badge--draft' }}"><x-ticket-icon /> {{ $event->ticketing_status->label() }}</span>
                 @elseif ($event->is_published)
                     <span class="evt-badge evt-badge--live"><i class="fa-solid fa-circle-check"></i> Published</span>
                 @else
@@ -35,9 +35,9 @@
              action when the sidebar's "Guests & RSVPs" link sent the user here to pick
              an event — see events/index.blade.php. --}}
         @if ($event->isTicketed())
-            <a href="{{ route('events.ticket-types.index', $event) }}" class="btn-primary"><i class="fa-solid fa-ticket"></i> Tickets</a>
+            <a href="{{ route('public-events.ticket-types.index', $event) }}" class="btn-primary"><x-ticket-icon /> Tickets</a>
         @else
-            <a href="{{ route('events.guests.index', $event) }}" class="{{ request('from') === 'guests' ? 'btn-primary' : 'evt-btn-outline' }}"><i class="fa-solid fa-users"></i> Guests &amp; RSVPs</a>
+            <a href="{{ route('events.guests.index', $event) }}" class="{{ request('from') === 'guests' ? 'btn-primary' : 'evt-btn-outline' }}"><i class="fa-solid fa-users"></i> {{ $event->isFreeRegistration() ? 'Registrations' : 'Guests & RSVPs' }}</a>
         @endif
         <a href="{{ route('events.edit', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-pen-to-square"></i> Edit</a>
         <a href="{{ route('events.show', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-eye"></i> View</a>

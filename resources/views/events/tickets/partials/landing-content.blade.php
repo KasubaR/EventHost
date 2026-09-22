@@ -182,7 +182,7 @@
                     @elseif ($event->ticketSalesAreApproved())
                         <p class="tkc-muted">Secure your spot — tickets are sold directly through EventHost.</p>
                         <a href="{{ route('events.public.tickets', $event->slug) }}" class="btn-primary tev-buy-btn">
-                            <i class="fa-solid fa-ticket" aria-hidden="true"></i> Buy tickets
+                            <x-ticket-icon /> Buy tickets
                         </a>
                         <p class="tev-secure-note">Secure payment through EventHost</p>
                     @else

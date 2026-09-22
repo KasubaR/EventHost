@@ -44,22 +44,61 @@
             </div>
         </div>
 
+        @php
+            // plans/public-private-portals.md Phase 3: which portal's nav to show.
+            // Neither is forced "on" for a page shared by both (Billing, Settings,
+            // Reviews) — that's an honest reflection of those pages not belonging
+            // to either portal, not a bug to fix.
+            // events.create is shared by both portals (Phase 4's chooser) — its
+            // route name alone can't say which one, so the in-progress choice
+            // (still a query string until the details form makes it a hidden
+            // field) breaks the tie for that one route. ?kind=ticketed alone
+            // counts too — the public portal's own "New event" links use that
+            // shortcut without ?audience= (EventController::resolveCreateAudience()
+            // treats them the same way).
+            $onPublicCreateStep = request()->routeIs('events.create')
+                && (request()->query('audience') === 'public' || request()->query('kind') === 'ticketed');
+            $inPublicPortal = request()->routeIs('public-dashboard', 'public-events.*') || $onPublicCreateStep;
+            $inPrivatePortal = request()->routeIs('dashboard', 'events.*', 'templates.*') && ! $onPublicCreateStep;
+        @endphp
+
+        <nav class="dash-portal-switch" aria-label="Switch portal">
+            <a href="{{ route('dashboard') }}" class="dash-portal-switch-tab {{ $inPrivatePortal ? 'is-active' : '' }}">
+                <i class="fa-solid fa-envelope-open-text"></i> Private
+            </a>
+            <a href="{{ route('public-dashboard') }}" class="dash-portal-switch-tab {{ $inPublicPortal ? 'is-active' : '' }}">
+                <x-ticket-icon /> Public
+            </a>
+        </nav>
+
         <nav class="dash-nav">
-            <div class="dash-nav-section">
-                <span class="dash-nav-label">Main</span>
-                <a href="{{ route('dashboard') }}" class="dash-nav-link {{ request()->routeIs('dashboard') ? 'is-active' : '' }}">
-                    <i class="fa-solid fa-gauge-high"></i> Overview
-                </a>
-                <a href="{{ route('billing.show') }}" class="dash-nav-link {{ request()->routeIs('billing.*', 'payment.*') ? 'is-active' : '' }}">
-                    <i class="fa-solid fa-credit-card"></i> Billing
-                </a>
-                <a href="{{ route('events.index') }}" class="dash-nav-link {{ request()->routeIs('events.*') ? 'is-active' : '' }}">
-                    <i class="fa-solid fa-envelope-open-text"></i> My Events
-                </a>
-                <a href="{{ route('templates.index') }}" class="dash-nav-link {{ request()->routeIs('templates.*') ? 'is-active' : '' }}">
-                    <i class="fa-solid fa-palette"></i> Templates
-                </a>
-            </div>
+            @if ($inPublicPortal)
+                <div class="dash-nav-section">
+                    <span class="dash-nav-label">Public portal</span>
+                    <a href="{{ route('public-dashboard') }}" class="dash-nav-link {{ request()->routeIs('public-dashboard') ? 'is-active' : '' }}">
+                        <i class="fa-solid fa-gauge-high"></i> Overview
+                    </a>
+                    <a href="{{ route('public-events.index') }}" class="dash-nav-link {{ request()->routeIs('public-events.*') ? 'is-active' : '' }}">
+                        <i class="fa-solid fa-envelope-open-text"></i> My Events
+                    </a>
+                </div>
+            @else
+                <div class="dash-nav-section">
+                    <span class="dash-nav-label">Private portal</span>
+                    <a href="{{ route('dashboard') }}" class="dash-nav-link {{ request()->routeIs('dashboard') ? 'is-active' : '' }}">
+                        <i class="fa-solid fa-gauge-high"></i> Overview
+                    </a>
+                    <a href="{{ route('billing.show') }}" class="dash-nav-link {{ request()->routeIs('billing.*', 'payment.*') ? 'is-active' : '' }}">
+                        <i class="fa-solid fa-credit-card"></i> Billing
+                    </a>
+                    <a href="{{ route('events.index') }}" class="dash-nav-link {{ request()->routeIs('events.*') ? 'is-active' : '' }}">
+                        <i class="fa-solid fa-envelope-open-text"></i> My Events
+                    </a>
+                    <a href="{{ route('templates.index') }}" class="dash-nav-link {{ request()->routeIs('templates.*') ? 'is-active' : '' }}">
+                        <i class="fa-solid fa-palette"></i> Templates
+                    </a>
+                </div>
+            @endif
 
             <div class="dash-nav-section">
                 <span class="dash-nav-label">Account</span>

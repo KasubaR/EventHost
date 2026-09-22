@@ -98,7 +98,7 @@
                 @endif
                 @if(auth('admin')->user()?->can('ticketing.view'))
                     <a href="{{ route('admin.ticketing.index') }}" class="dash-nav-link {{ request()->routeIs('admin.ticketing.*') ? 'is-active' : '' }}">
-                        <i class="fa-solid fa-ticket"></i> Ticketing
+                        <x-ticket-icon /> Ticketing
                     </a>
                 @endif
                 @if(auth('admin')->user()?->can('events.contribution_manage'))

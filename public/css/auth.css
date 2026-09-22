@@ -425,6 +425,15 @@ nav.auth-breadcrumb {
   font-weight: 500;
 }
 
+/* Login: hero image lives in the side column on desktop, in the hero on mobile */
+.auth-side-visual {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 28px;
+}
+.auth-side-visual .auth-hero-mockup { width: 100%; max-width: 320px; }
+.auth-hero-visual--mobile-only { display: none; }
+
 /* Testimonial */
 .auth-testi {
   background: var(--white);
@@ -487,6 +496,8 @@ nav.auth-breadcrumb {
   .auth-hero-inner { flex-direction: column; gap: 20px; }
   .auth-hero-visual { display: flex; justify-content: center; width: 100%; }
   .auth-hero-mockup { width: 150px; }
+  .auth-side-visual { display: none; }
+  .auth-hero-visual--mobile-only { display: flex; }
 }
 
 /* Account type toggle */

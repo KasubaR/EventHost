@@ -72,6 +72,7 @@ class PaymentController extends Controller
         $planKey = $request->string('plan_key')->toString();
         $quote = null;
         $brandingEvent = null;
+        $registrationEvent = null;
 
         if ($planKey === 'remove_branding') {
             $brandingEvent = Event::query()
@@ -88,6 +89,20 @@ class PaymentController extends Controller
             $amount = (float) ($addon['amount'] ?? 0);
             $creditsGranted = 0;
             $planLabel = (string) ($addon['label'] ?? 'Remove Branding');
+            $plan = ['label' => $planLabel, 'amount' => $amount, 'credits' => 0];
+        } elseif ($planKey === 'public_registration_quote') {
+            $registrationEvent = Event::query()
+                ->where('id', (int) $request->input('event_id'))
+                ->where('user_id', $user->id)
+                ->first();
+
+            if ($registrationEvent === null || ! $registrationEvent->awaitingPublicRegistrationPayment()) {
+                return response()->json(['success' => false, 'message' => 'That event is not available for this payment.'], 422);
+            }
+
+            $amount = (float) $registrationEvent->public_registration_quote_amount;
+            $creditsGranted = 0;
+            $planLabel = 'Public Registration Fee';
             $plan = ['label' => $planLabel, 'amount' => $amount, 'credits' => 0];
         } elseif ($planKey === 'enterprise') {
             $quote = CustomQuote::query()
@@ -125,12 +140,12 @@ class PaymentController extends Controller
 
         $method = $request->string('payment_method')->toString();
         $userRef = 'USR-'.$user->id;
-        $description = $planKey === 'remove_branding'
+        $description = in_array($planKey, ['remove_branding', 'public_registration_quote'], true)
             ? "Event Host — {$planLabel}"
             : "Event Host — {$planLabel} event credit";
 
         try {
-            return DB::transaction(function () use ($request, $lenco, $user, $plan, $planKey, $quote, $brandingEvent, $amount, $creditsGranted, $method, $userRef, $planLabel, $description): JsonResponse {
+            return DB::transaction(function () use ($request, $lenco, $user, $plan, $planKey, $quote, $brandingEvent, $registrationEvent, $amount, $creditsGranted, $method, $userRef, $planLabel, $description): JsonResponse {
                 $lockedUser = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
 
                 if ($quote !== null) {
@@ -149,6 +164,17 @@ class PaymentController extends Controller
                         return response()->json(['success' => false, 'message' => 'That event is not available for this purchase.'], 422);
                     }
                     $brandingEvent = $lockedEvent;
+                }
+
+                if ($registrationEvent !== null) {
+                    $lockedRegistrationEvent = Event::query()->whereKey($registrationEvent->id)->lockForUpdate()->first();
+                    if ($lockedRegistrationEvent === null
+                        || (int) $lockedRegistrationEvent->user_id !== (int) $lockedUser->id
+                        || ! $lockedRegistrationEvent->awaitingPublicRegistrationPayment()) {
+                        return response()->json(['success' => false, 'message' => 'That event is not available for this payment.'], 422);
+                    }
+                    $amount = (float) $lockedRegistrationEvent->public_registration_quote_amount;
+                    $registrationEvent = $lockedRegistrationEvent;
                 }
 
                 $inProgress = Payment::query()
@@ -187,6 +213,9 @@ class PaymentController extends Controller
                 }
                 if ($brandingEvent !== null) {
                     $metadata['event_id'] = $brandingEvent->id;
+                }
+                if ($registrationEvent !== null) {
+                    $metadata['event_id'] = $registrationEvent->id;
                 }
 
                 try {
@@ -550,12 +579,12 @@ class PaymentController extends Controller
 
     /**
      * "Buy a credit" lands on the create-event wizard; "remove branding for
-     * event X" needs to land back on that event, not a wizard with nothing
-     * to do with it.
+     * event X" or "pay the public registration quote for event X" need to
+     * land back on that event, not a wizard with nothing to do with it.
      */
     private function postPaymentRedirectUrl(Payment $payment): string
     {
-        if ($payment->plan_key === 'remove_branding') {
+        if (in_array($payment->plan_key, ['remove_branding', 'public_registration_quote'], true)) {
             $eventId = data_get($payment->metadata, 'event_id');
             $event = is_numeric($eventId) ? Event::query()->find((int) $eventId) : null;
 

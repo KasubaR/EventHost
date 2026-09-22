@@ -42,8 +42,8 @@ class TicketCheckInTest extends TestCase
         $event = Event::factory()->for($owner)->ticketed()->create();
 
         $this->actingAs($owner)
-            ->get(route('events.tickets.checkin.scan', $event))
-            ->assertRedirect(route('events.ticket-types.index', $event))
+            ->get(route('public-events.tickets.checkin.scan', $event))
+            ->assertRedirect(route('public-events.ticket-types.index', $event))
             ->assertSessionHas('status', 'checkin-requires-approval');
     }
 
@@ -53,7 +53,7 @@ class TicketCheckInTest extends TestCase
         $event = Event::factory()->for($owner)->create();
 
         $this->actingAs($owner)
-            ->get(route('events.tickets.checkin.scan', $event))
+            ->get(route('public-events.tickets.checkin.scan', $event))
             ->assertNotFound();
     }
 
@@ -65,7 +65,7 @@ class TicketCheckInTest extends TestCase
         $ticket = Ticket::factory()->for($event)->for($type, 'ticketType')->create();
 
         $response = $this->actingAs($owner)
-            ->postJson(route('events.tickets.checkin.confirm-token', ['event' => $event, 'token' => $ticket->public_token]));
+            ->postJson(route('public-events.tickets.checkin.confirm-token', ['event' => $event, 'token' => $ticket->public_token]));
 
         $response->assertOk();
         $response->assertJson(['already_checked_in' => false]);
@@ -97,7 +97,7 @@ class TicketCheckInTest extends TestCase
         ]);
 
         $response = $this->actingAs($owner)
-            ->postJson(route('events.tickets.checkin.confirm-token', ['event' => $event, 'token' => $ticket->public_token]));
+            ->postJson(route('public-events.tickets.checkin.confirm-token', ['event' => $event, 'token' => $ticket->public_token]));
 
         $response->assertOk();
         $response->assertJson(['already_checked_in' => true]);
@@ -116,7 +116,7 @@ class TicketCheckInTest extends TestCase
         $ticket = Ticket::factory()->for($event)->create(['status' => TicketStatus::Cancelled]);
 
         $this->actingAs($owner)
-            ->postJson(route('events.tickets.checkin.confirm-token', ['event' => $event, 'token' => $ticket->public_token]))
+            ->postJson(route('public-events.tickets.checkin.confirm-token', ['event' => $event, 'token' => $ticket->public_token]))
             ->assertForbidden()
             ->assertJsonPath('message', 'This ticket has been cancelled.');
 
@@ -130,7 +130,7 @@ class TicketCheckInTest extends TestCase
         $ticket = Ticket::factory()->for($event)->create(['status' => TicketStatus::Refunded]);
 
         $this->actingAs($owner)
-            ->postJson(route('events.tickets.checkin.confirm-token', ['event' => $event, 'token' => $ticket->public_token]))
+            ->postJson(route('public-events.tickets.checkin.confirm-token', ['event' => $event, 'token' => $ticket->public_token]))
             ->assertForbidden()
             ->assertJsonPath('message', 'This ticket has been cancelled.');
 
@@ -150,7 +150,7 @@ class TicketCheckInTest extends TestCase
         $event = $this->ticketedEventOnToday($owner);
 
         $this->actingAs($owner)
-            ->postJson(route('events.tickets.checkin.confirm-token', ['event' => $event, 'token' => 'totally-made-up-token']))
+            ->postJson(route('public-events.tickets.checkin.confirm-token', ['event' => $event, 'token' => 'totally-made-up-token']))
             ->assertNotFound()
             ->assertJsonPath('message', 'No matching ticket for this event.');
     }
@@ -163,7 +163,7 @@ class TicketCheckInTest extends TestCase
         $ticket = Ticket::factory()->for($eventB)->create();
 
         $this->actingAs($owner)
-            ->postJson(route('events.tickets.checkin.confirm-token', ['event' => $eventA, 'token' => $ticket->public_token]))
+            ->postJson(route('public-events.tickets.checkin.confirm-token', ['event' => $eventA, 'token' => $ticket->public_token]))
             ->assertNotFound();
 
         $this->assertNull($ticket->fresh()->checked_in_at);
@@ -177,7 +177,7 @@ class TicketCheckInTest extends TestCase
         $ticket = Ticket::factory()->for($event)->create();
 
         $this->actingAs($intruder)
-            ->postJson(route('events.tickets.checkin.confirm-token', ['event' => $event, 'token' => $ticket->public_token]))
+            ->postJson(route('public-events.tickets.checkin.confirm-token', ['event' => $event, 'token' => $ticket->public_token]))
             ->assertForbidden();
 
         $this->assertNull($ticket->fresh()->checked_in_at);
@@ -189,7 +189,7 @@ class TicketCheckInTest extends TestCase
         $event = $this->ticketedEventOnToday($owner);
         $ticket = Ticket::factory()->for($event)->create();
 
-        $this->post(route('events.tickets.checkin.confirm-token', ['event' => $event, 'token' => $ticket->public_token]))
+        $this->post(route('public-events.tickets.checkin.confirm-token', ['event' => $event, 'token' => $ticket->public_token]))
             ->assertRedirect(route('login'));
 
         $this->assertNull($ticket->fresh()->checked_in_at);
@@ -202,7 +202,7 @@ class TicketCheckInTest extends TestCase
         $ticket = Ticket::factory()->for($event)->create();
 
         $response = $this->actingAs($owner)
-            ->postJson(route('events.tickets.checkin.confirm-token', ['event' => $event, 'token' => $ticket->public_token]));
+            ->postJson(route('public-events.tickets.checkin.confirm-token', ['event' => $event, 'token' => $ticket->public_token]));
 
         $response->assertForbidden();
         $this->assertStringContainsString('Check-in opens', (string) $response->json('message'));
@@ -217,7 +217,7 @@ class TicketCheckInTest extends TestCase
         $ticket = Ticket::factory()->for($event)->create();
 
         $this->actingAs($owner)
-            ->postJson(route('events.tickets.checkin.confirm-ticket', ['event' => $event, 'ticket' => $ticket]))
+            ->postJson(route('public-events.tickets.checkin.confirm-ticket', ['event' => $event, 'ticket' => $ticket]))
             ->assertOk()
             ->assertJson(['already_checked_in' => false]);
 
@@ -232,7 +232,7 @@ class TicketCheckInTest extends TestCase
         Ticket::factory()->for($event)->create(['attendee_name' => 'Bob Builder']);
 
         $response = $this->actingAs($owner)
-            ->getJson(route('events.tickets.checkin.lookup', $event).'?q=Alice');
+            ->getJson(route('public-events.tickets.checkin.lookup', $event).'?q=Alice');
 
         $response->assertOk();
         $response->assertJsonCount(1, 'tickets');
@@ -247,7 +247,7 @@ class TicketCheckInTest extends TestCase
         Ticket::factory()->for($event)->create(['attendee_name' => 'Bob Builder']);
 
         $this->actingAs($owner)
-            ->getJson(route('events.tickets.checkin.lookup', $event).'?q=%')
+            ->getJson(route('public-events.tickets.checkin.lookup', $event).'?q=%')
             ->assertOk()
             ->assertJsonCount(0, 'tickets');
     }
@@ -259,12 +259,12 @@ class TicketCheckInTest extends TestCase
         Ticket::factory()->for($event)->create(['attendee_name' => 'Alice Wonder']);
 
         $this->actingAs($owner)
-            ->getJson(route('events.tickets.checkin.lookup', $event).'?q=')
+            ->getJson(route('public-events.tickets.checkin.lookup', $event).'?q=')
             ->assertOk()
             ->assertJsonCount(0, 'tickets');
 
         $this->actingAs($owner)
-            ->getJson(route('events.tickets.checkin.lookup', $event).'?q=A')
+            ->getJson(route('public-events.tickets.checkin.lookup', $event).'?q=A')
             ->assertOk()
             ->assertJsonCount(0, 'tickets');
     }
@@ -277,7 +277,7 @@ class TicketCheckInTest extends TestCase
         ]);
 
         $this->actingAs($owner)
-            ->get(route('events.tickets.checkin.scan', $event))
+            ->get(route('public-events.tickets.checkin.scan', $event))
             ->assertOk()
             ->assertSee('Check-in opens', escape: false)
             ->assertDontSee('ckinVideo', escape: false);
@@ -289,7 +289,7 @@ class TicketCheckInTest extends TestCase
         $event = $this->ticketedEventOnToday($owner);
 
         $this->actingAs($owner)
-            ->get(route('events.tickets.checkin.scan', $event))
+            ->get(route('public-events.tickets.checkin.scan', $event))
             ->assertOk()
             ->assertSee('ckinVideo', escape: false)
             ->assertSee('Scan again', escape: false);

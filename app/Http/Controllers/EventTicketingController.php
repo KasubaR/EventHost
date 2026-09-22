@@ -18,7 +18,7 @@ class EventTicketingController extends Controller
 
         if (! $event->canEditCommissionMode()) {
             return redirect()
-                ->route('events.ticket-types.index', $event)
+                ->route('public-events.ticket-types.index', $event)
                 ->withErrors([
                     'commission_mode' => 'Commission settings are locked after EventHost approves ticket sales.',
                 ]);
@@ -29,7 +29,7 @@ class EventTicketingController extends Controller
         ])->save();
 
         return redirect()
-            ->route('events.ticket-types.index', $event)
+            ->route('public-events.ticket-types.index', $event)
             ->with('status', 'ticketing-settings-updated');
     }
 
@@ -50,15 +50,16 @@ class EventTicketingController extends Controller
             // Validation failure (no active ticket type) — send them back to
             // where they can fix it, not away to My Events.
             return redirect()
-                ->route('events.ticket-types.index', $event)
+                ->route('public-events.ticket-types.index', $event)
                 ->withErrors(['ticketing' => $e->getMessage()]);
         }
 
-        // Success leaves the wizard entirely — My Events, not back to the
-        // Tickets page, since there's nothing further to do here until
-        // EventHost reviews it.
+        // Success leaves the wizard entirely — My Public Events, not back to
+        // the Tickets page, since there's nothing further to do here until
+        // EventHost reviews it. A ticketed event is always public audience
+        // (Event::booted()), so that's always the right portal to land on.
         return redirect()
-            ->route('events.index')
+            ->route('public-events.index')
             ->with('status', 'ticketing-submitted');
     }
 }

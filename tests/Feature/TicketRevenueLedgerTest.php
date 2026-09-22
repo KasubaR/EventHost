@@ -272,6 +272,43 @@ class TicketRevenueLedgerTest extends TestCase
         $this->assertSame(190.0, $summary['host_amount']);
     }
 
+    /**
+     * summaryFor() is now a one-id call to summaryForEventIds() — the public
+     * dashboard's aggregate across several events (plans/public-private-portals.md
+     * Phase 3). Confirms it sums across events and excludes an unrelated one.
+     */
+    public function test_summary_for_event_ids_sums_across_events_and_ignores_others(): void
+    {
+        $eventA = $this->approvedTicketedEvent();
+        $eventB = $this->approvedTicketedEvent();
+        $unrelatedEvent = $this->approvedTicketedEvent();
+
+        $ledger = app(TicketRevenueLedgerService::class);
+
+        $ledger->recordSale(TicketOrder::factory()->for($eventA)->paid()->create([
+            'face_value' => '200.00', 'commission_amount' => '10.00', 'host_amount' => '190.00',
+        ]));
+        $ledger->recordSale(TicketOrder::factory()->for($eventB)->paid()->create([
+            'face_value' => '100.00', 'commission_amount' => '5.00', 'host_amount' => '95.00',
+        ]));
+        $ledger->recordSale(TicketOrder::factory()->for($unrelatedEvent)->paid()->create([
+            'face_value' => '999.00', 'commission_amount' => '50.00', 'host_amount' => '949.00',
+        ]));
+
+        $summary = $ledger->summaryForEventIds([$eventA->id, $eventB->id]);
+
+        $this->assertSame(300.0, $summary['gross_amount']);
+        $this->assertSame(15.0, $summary['platform_fee']);
+        $this->assertSame(285.0, $summary['host_amount']);
+    }
+
+    public function test_summary_for_event_ids_returns_zeroes_for_an_empty_list(): void
+    {
+        $summary = app(TicketRevenueLedgerService::class)->summaryForEventIds([]);
+
+        $this->assertSame(['gross_amount' => 0.0, 'platform_fee' => 0.0, 'host_amount' => 0.0], $summary);
+    }
+
     public function test_recording_a_payout_writes_a_negative_entry_and_updates_the_balance(): void
     {
         $event = $this->approvedTicketedEvent();

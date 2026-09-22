@@ -44,9 +44,9 @@
                      events/checkin/partials/scanner-widget.blade.php's doc block. --}}
                 @include('events.checkin.partials.scanner-widget', [
                     'kind' => 'ticket',
-                    'checkinBase' => url('/events/'.$event->id.'/tickets/checkin'),
+                    'checkinBase' => url('/public-events/'.$event->id.'/tickets/checkin'),
                     'selfQrBase' => url('/t'),
-                    'lookupUrl' => route('events.tickets.checkin.lookup', $event),
+                    'lookupUrl' => route('public-events.tickets.checkin.lookup', $event),
                     'checkInOpen' => $event->isCheckInOpen(),
                     'checkInClosedCopy' => $event->checkInClosedReason(),
                 ])

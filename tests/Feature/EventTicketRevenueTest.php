@@ -42,11 +42,11 @@ class EventTicketRevenueTest extends TestCase
         app(TicketRevenueLedgerService::class)->recordSale($order);
 
         $this->actingAs($owner)
-            ->get(route('events.tickets.revenue', $event))
+            ->get(route('public-events.tickets.revenue', $event))
             ->assertOk();
 
         $this->actingAs($owner)
-            ->get(route('events.tickets.payouts', $event))
+            ->get(route('public-events.tickets.payouts', $event))
             ->assertOk();
     }
 
@@ -57,11 +57,11 @@ class EventTicketRevenueTest extends TestCase
         $event = $this->paidTicketedEvent($owner);
 
         $this->actingAs($stranger)
-            ->get(route('events.tickets.revenue', $event))
+            ->get(route('public-events.tickets.revenue', $event))
             ->assertForbidden();
 
         $this->actingAs($stranger)
-            ->get(route('events.tickets.payouts', $event))
+            ->get(route('public-events.tickets.payouts', $event))
             ->assertForbidden();
     }
 
@@ -71,11 +71,11 @@ class EventTicketRevenueTest extends TestCase
         $event = Event::factory()->for($owner)->create(); // default kind is Invitation
 
         $this->actingAs($owner)
-            ->get(route('events.tickets.revenue', $event))
+            ->get(route('public-events.tickets.revenue', $event))
             ->assertNotFound();
 
         $this->actingAs($owner)
-            ->get(route('events.tickets.payouts', $event))
+            ->get(route('public-events.tickets.payouts', $event))
             ->assertNotFound();
     }
 
@@ -91,12 +91,12 @@ class EventTicketRevenueTest extends TestCase
         $admin = Admin::factory()->create();
         app(TicketPayoutService::class)->recordPayout($event->fresh(), $admin, 90.00, 'First payout', Carbon::today());
 
-        $payoutsPage = $this->actingAs($owner)->get(route('events.tickets.payouts', $event));
+        $payoutsPage = $this->actingAs($owner)->get(route('public-events.tickets.payouts', $event));
         $payoutsPage->assertOk();
         $payoutsPage->assertSee('First payout');
         $payoutsPage->assertSee('K100.00'); // pending payout, 190 - 90
 
-        $overview = $this->actingAs($owner)->get(route('events.tickets.overview', $event));
+        $overview = $this->actingAs($owner)->get(route('public-events.tickets.overview', $event));
         $overview->assertOk();
         $overview->assertSee('K100.00'); // pending payout card
         $overview->assertSee('K190.00'); // host revenue card stays lifetime, unaffected

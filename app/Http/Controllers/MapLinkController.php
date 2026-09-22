@@ -57,12 +57,13 @@ class MapLinkController extends Controller
                 $coordinates = GoogleMapsLinkParser::extractCoordinates($url);
 
                 if ($coordinates === null) {
-                    return response()->json(['message' => 'No coordinates found in that link.'], 422);
+                    return response()->json(['message' => 'That link has no pin in it. Open it in Google Maps, tap the place, and copy the link from there.'], 422);
                 }
 
                 return response()->json([
                     'latitude' => $coordinates['lat'],
                     'longitude' => $coordinates['lng'],
+                    'name' => GoogleMapsLinkParser::extractPlaceName($url),
                 ]);
             }
 

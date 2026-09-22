@@ -35,7 +35,7 @@ class TicketDashboardOverviewTest extends TestCase
         Ticket::factory()->for($event)->for($type, 'ticketType')->for($order, 'order')->create(['status' => TicketStatus::Valid]);
         Ticket::factory()->for($event)->for($type, 'ticketType')->for($order, 'order')->create(['status' => TicketStatus::Cancelled]);
 
-        $response = $this->actingAs($owner)->get(route('events.tickets.overview', $event));
+        $response = $this->actingAs($owner)->get(route('public-events.tickets.overview', $event));
 
         $response->assertOk();
         $response->assertSee('2', escape: false); // tickets sold (valid + used, cancelled excluded)
@@ -54,7 +54,7 @@ class TicketDashboardOverviewTest extends TestCase
         TicketType::factory()->for($event)->create(['quantity' => 5]);
         TicketType::factory()->for($event)->create(['quantity' => null]);
 
-        $response = $this->actingAs($owner)->get(route('events.tickets.overview', $event));
+        $response = $this->actingAs($owner)->get(route('public-events.tickets.overview', $event));
 
         $response->assertOk();
         $response->assertViewHas('ticketsRemaining', 5);
@@ -67,7 +67,7 @@ class TicketDashboardOverviewTest extends TestCase
         $event = Event::factory()->for($owner)->ticketed()->create();
 
         $this->actingAs($intruder)
-            ->get(route('events.tickets.overview', $event))
+            ->get(route('public-events.tickets.overview', $event))
             ->assertForbidden();
     }
 
@@ -77,7 +77,7 @@ class TicketDashboardOverviewTest extends TestCase
         $event = Event::factory()->for($owner)->create();
 
         $this->actingAs($owner)
-            ->get(route('events.tickets.overview', $event))
+            ->get(route('public-events.tickets.overview', $event))
             ->assertNotFound();
     }
 }

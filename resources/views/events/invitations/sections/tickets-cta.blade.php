@@ -13,7 +13,7 @@
     @elseif ($event->ticketSalesAreApproved())
         <p class="evt-inline-rsvp-lead">Secure your spot — tickets are sold directly through EventHost.</p>
         <a href="{{ route('events.public.tickets', $event->slug) }}" class="btn-primary">
-            <i class="fa-solid fa-ticket" aria-hidden="true"></i> Buy tickets
+            <x-ticket-icon /> Buy tickets
         </a>
     @else
         <p class="evt-inline-rsvp-lead">Ticket sales for this event haven't opened yet — check back soon.</p>

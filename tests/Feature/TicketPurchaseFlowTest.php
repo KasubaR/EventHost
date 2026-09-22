@@ -21,6 +21,7 @@ use App\Services\TicketPaymentStatusService;
 use App\Services\TicketReconciliationService;
 use App\Services\TicketReservationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
 use Mockery;
@@ -349,8 +350,12 @@ class TicketPurchaseFlowTest extends TestCase
 
     public function test_picker_is_forbidden_when_event_is_not_public(): void
     {
-        $event = $this->approvedTicketedEvent(['is_public' => false]);
+        $event = $this->approvedTicketedEvent();
         TicketType::factory()->for($event)->create(['price' => '200.00']);
+        // Event::booted() forces a ticketed event public, so this state is unreachable
+        // through the model. A raw query (which skips model events) recreates a bad row,
+        // to prove the runtime gate still holds if one ever exists.
+        DB::table('events')->where('id', $event->id)->update(['is_public' => false]);
 
         // Private is a 403 (invite-only, existence not hidden), same as the
         // main invitation and open-RSVP routes — see PublicInvitationResolver.
@@ -900,8 +905,8 @@ class TicketPurchaseFlowTest extends TestCase
         TicketReservation::factory()->for($event)->for($type, 'ticketType')->create();
 
         $this->actingAs($user)
-            ->delete(route('events.ticket-types.destroy', ['event' => $event, 'ticketType' => $type]))
-            ->assertRedirect(route('events.ticket-types.index', $event))
+            ->delete(route('public-events.ticket-types.destroy', ['event' => $event, 'ticketType' => $type]))
+            ->assertRedirect(route('public-events.ticket-types.index', $event))
             ->assertSessionHasErrors('ticket_type');
 
         $this->assertDatabaseHas('ticket_types', ['id' => $type->id]);

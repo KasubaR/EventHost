@@ -26,7 +26,7 @@
 <div class="about-stats-bar">
     <div class="about-stats-inner">
         <div class="about-stat">
-            <div class="about-stat-num">5<span>K+</span></div>
+            <div class="about-stat-num">{{ number_format($eventsHosted) }}</div>
             <div class="about-stat-label">Events Created</div>
         </div>
         <div class="about-stat">
@@ -75,7 +75,7 @@
         <div class="about-values-grid">
             <div class="about-value-card">
                 <div class="about-value-icon" style="background:rgba(30,71,187,0.12);color:var(--accent)">
-                    <i class="fa-solid fa-ticket" aria-hidden="true"></i>
+                    <x-ticket-icon />
                 </div>
                 <h3>Ticket Types & Pricing</h3>
                 <p>Set up General, VIP or custom tiers, each with its own price, quantity and sales window.</p>

@@ -33,12 +33,12 @@ class EventStaffTest extends TestCase
         $event = Event::factory()->for($owner)->ticketed()->approved()->create();
 
         $this->actingAs($owner)
-            ->post(route('events.staff.store', $event), [
+            ->post(route('public-events.staff.store', $event), [
                 'name' => 'Door Dan',
                 'email' => 'dan@example.com',
                 'role' => EventStaffRole::CheckIn->value,
             ])
-            ->assertRedirect(route('events.staff.index', $event));
+            ->assertRedirect(route('public-events.staff.index', $event));
 
         $staff = EventStaff::query()->where('event_id', $event->id)->first();
         $this->assertNotNull($staff);
@@ -55,11 +55,11 @@ class EventStaffTest extends TestCase
         $event = Event::factory()->for($owner)->create(); // default kind is Invitation
 
         $this->actingAs($owner)
-            ->get(route('events.staff.index', $event))
+            ->get(route('public-events.staff.index', $event))
             ->assertNotFound();
 
         $this->actingAs($owner)
-            ->post(route('events.staff.store', $event), [
+            ->post(route('public-events.staff.store', $event), [
                 'name' => 'Door Dan',
                 'email' => 'dan@example.com',
                 'role' => EventStaffRole::CheckIn->value,
@@ -80,7 +80,7 @@ class EventStaffTest extends TestCase
         $event = Event::factory()->for($owner)->ticketed()->create();
 
         $this->actingAs($owner)
-            ->post(route('events.staff.store', $event), [
+            ->post(route('public-events.staff.store', $event), [
                 'name' => 'Door Dan',
                 'email' => 'dan@example.com',
                 'role' => EventStaffRole::CheckIn->value,
@@ -97,11 +97,11 @@ class EventStaffTest extends TestCase
         $event = Event::factory()->for($owner)->ticketed()->create();
 
         $this->actingAs($stranger)
-            ->get(route('events.staff.index', $event))
+            ->get(route('public-events.staff.index', $event))
             ->assertForbidden();
 
         $this->actingAs($stranger)
-            ->post(route('events.staff.store', $event), [
+            ->post(route('public-events.staff.store', $event), [
                 'name' => 'Door Dan',
                 'email' => 'dan@example.com',
                 'role' => EventStaffRole::CheckIn->value,
@@ -118,11 +118,11 @@ class EventStaffTest extends TestCase
         $other = EventStaff::factory()->for($event)->create();
 
         $this->actingAs($manager)
-            ->get(route('events.staff.index', $event))
+            ->get(route('public-events.staff.index', $event))
             ->assertForbidden();
 
         $this->actingAs($manager)
-            ->delete(route('events.staff.destroy', ['event' => $event, 'eventStaff' => $other]))
+            ->delete(route('public-events.staff.destroy', ['event' => $event, 'eventStaff' => $other]))
             ->assertForbidden();
     }
 
@@ -142,11 +142,11 @@ class EventStaffTest extends TestCase
         $other = EventStaff::factory()->for($event)->create();
 
         $this->actingAs($manager)
-            ->post(route('events.staff.resend', ['event' => $event, 'eventStaff' => $other]))
+            ->post(route('public-events.staff.resend', ['event' => $event, 'eventStaff' => $other]))
             ->assertForbidden();
 
         $this->actingAs($manager)
-            ->patch(route('events.staff.update', ['event' => $event, 'eventStaff' => $other]), [
+            ->patch(route('public-events.staff.update', ['event' => $event, 'eventStaff' => $other]), [
                 'role' => EventStaffRole::Manager->value,
             ])
             ->assertForbidden();
@@ -168,17 +168,17 @@ class EventStaffTest extends TestCase
         $staff = EventStaff::factory()->for($event)->accepted()->create();
 
         $this->actingAs($owner)
-            ->patch(route('events.staff.update', ['event' => $event, 'eventStaff' => $staff]), [
+            ->patch(route('public-events.staff.update', ['event' => $event, 'eventStaff' => $staff]), [
                 'role' => EventStaffRole::Manager->value,
             ])
             ->assertNotFound();
 
         $this->actingAs($owner)
-            ->post(route('events.staff.resend', ['event' => $event, 'eventStaff' => $staff]))
+            ->post(route('public-events.staff.resend', ['event' => $event, 'eventStaff' => $staff]))
             ->assertNotFound();
 
         $this->actingAs($owner)
-            ->delete(route('events.staff.destroy', ['event' => $event, 'eventStaff' => $staff]))
+            ->delete(route('public-events.staff.destroy', ['event' => $event, 'eventStaff' => $staff]))
             ->assertNotFound();
 
         $this->assertNotNull(EventStaff::find($staff->id));
@@ -202,20 +202,24 @@ class EventStaffTest extends TestCase
         $this->assertNotNull($event->fresh());
     }
 
-    public function test_dashboard_and_events_index_list_events_the_user_staffs(): void
+    public function test_public_dashboard_and_public_events_index_list_events_the_user_staffs(): void
     {
+        // Staff access is ticketed-only, i.e. always a public-audience event
+        // (plans/public-private-portals.md Phase 3), so it now surfaces on the
+        // public portal's dashboard and index — not the private ones, which a
+        // check-in staffer with no owned events would otherwise see empty.
         $owner = User::factory()->pro()->create();
         $event = Event::factory()->for($owner)->ticketed()->create(['name' => 'Staffed Concert']);
         $staffer = User::factory()->create();
         EventStaff::factory()->for($event)->accepted()->create(['user_id' => $staffer->id, 'email' => $staffer->email]);
 
         $this->actingAs($staffer)
-            ->get(route('dashboard'))
+            ->get(route('public-dashboard'))
             ->assertOk()
             ->assertSee('Staffed Concert');
 
         $this->actingAs($staffer)
-            ->get(route('events.index'))
+            ->get(route('public-events.index'))
             ->assertOk()
             ->assertSee('Staffed Concert');
     }
@@ -227,10 +231,10 @@ class EventStaffTest extends TestCase
         $staff = EventStaff::factory()->for($event)->accepted()->create();
 
         $this->actingAs($owner)
-            ->patch(route('events.staff.update', ['event' => $event, 'eventStaff' => $staff]), [
+            ->patch(route('public-events.staff.update', ['event' => $event, 'eventStaff' => $staff]), [
                 'role' => EventStaffRole::Manager->value,
             ])
-            ->assertRedirect(route('events.staff.index', $event));
+            ->assertRedirect(route('public-events.staff.index', $event));
 
         $this->assertTrue($staff->fresh()->role === EventStaffRole::Manager);
     }
@@ -242,8 +246,8 @@ class EventStaffTest extends TestCase
         $staff = EventStaff::factory()->for($event)->accepted()->create();
 
         $this->actingAs($owner)
-            ->delete(route('events.staff.destroy', ['event' => $event, 'eventStaff' => $staff]))
-            ->assertRedirect(route('events.staff.index', $event));
+            ->delete(route('public-events.staff.destroy', ['event' => $event, 'eventStaff' => $staff]))
+            ->assertRedirect(route('public-events.staff.index', $event));
 
         $this->assertNull(EventStaff::find($staff->id));
     }
@@ -256,7 +260,7 @@ class EventStaffTest extends TestCase
         EventStaff::factory()->for($event)->manager()->accepted()->create(['user_id' => $manager->id, 'email' => $manager->email]);
 
         $this->actingAs($manager)
-            ->get(route('events.ticket-types.index', $event))
+            ->get(route('public-events.ticket-types.index', $event))
             ->assertOk();
     }
 
@@ -276,7 +280,7 @@ class EventStaffTest extends TestCase
         EventStaff::factory()->for($event)->manager()->accepted()->create(['user_id' => $manager->id, 'email' => $manager->email]);
 
         $this->actingAs($manager)
-            ->post(route('events.ticketing.submit', $event))
+            ->post(route('public-events.ticketing.submit', $event))
             ->assertForbidden();
 
         $this->assertSame(TicketingStatus::Draft, $event->fresh()->ticketing_status);
@@ -290,12 +294,12 @@ class EventStaffTest extends TestCase
         EventStaff::factory()->for($event)->accepted()->create(['user_id' => $staffer->id, 'email' => $staffer->email]);
 
         $this->actingAs($staffer)
-            ->get(route('events.ticket-types.index', $event))
+            ->get(route('public-events.ticket-types.index', $event))
             ->assertForbidden();
 
         $ticket = Ticket::factory()->for($event)->create();
         $this->actingAs($staffer)
-            ->post(route('events.tickets.cancel', ['event' => $event, 'ticket' => $ticket]))
+            ->post(route('public-events.tickets.cancel', ['event' => $event, 'ticket' => $ticket]))
             ->assertForbidden();
     }
 
@@ -307,24 +311,24 @@ class EventStaffTest extends TestCase
         EventStaff::factory()->for($event)->accepted()->create(['user_id' => $staffer->id, 'email' => $staffer->email]);
 
         $this->actingAs($staffer)
-            ->get(route('events.tickets.checkin.scan', $event))
+            ->get(route('public-events.tickets.checkin.scan', $event))
             ->assertOk();
     }
 
     public function test_checkin_staff_can_confirm_a_ticket_but_cannot_cancel_it(): void
     {
         $owner = User::factory()->create();
-        $event = Event::factory()->for($owner)->ticketed()->approved()->create(['event_date' => now()->toDateString()]);
+        $event = Event::factory()->for($owner)->ticketed()->approved()->create($this->eventDateTimeInsideCheckInWindow());
         $ticket = Ticket::factory()->for($event)->create();
         $staffer = User::factory()->create();
         EventStaff::factory()->for($event)->accepted()->create(['user_id' => $staffer->id, 'email' => $staffer->email]);
 
         $this->actingAs($staffer)
-            ->postJson(route('events.tickets.checkin.confirm-ticket', ['event' => $event, 'ticket' => $ticket]))
+            ->postJson(route('public-events.tickets.checkin.confirm-ticket', ['event' => $event, 'ticket' => $ticket]))
             ->assertOk();
 
         $this->actingAs($staffer)
-            ->post(route('events.tickets.cancel', ['event' => $event, 'ticket' => $ticket]))
+            ->post(route('public-events.tickets.cancel', ['event' => $event, 'ticket' => $ticket]))
             ->assertForbidden();
     }
 
@@ -335,7 +339,7 @@ class EventStaffTest extends TestCase
         $stranger = User::factory()->create();
 
         $this->actingAs($stranger)
-            ->get(route('events.tickets.checkin.scan', $event))
+            ->get(route('public-events.tickets.checkin.scan', $event))
             ->assertForbidden();
     }
 }

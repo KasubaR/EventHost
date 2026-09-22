@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\EventAudience;
 use App\Enums\EventProductKind;
 use App\Models\Event;
 use App\Rules\EventSlugAvailable;
@@ -30,6 +31,32 @@ class StoreEventRequest extends FormRequest
             'location_name' => $this->location_name === '' ? null : $this->location_name,
             'rsvp_deadline' => $this->rsvp_deadline === '' ? null : $this->rsvp_deadline,
             'slug' => $this->normalizeSlugInput($this->input('slug')),
+        ]);
+
+        $this->fillMissingAudience();
+    }
+
+    /**
+     * This request is shared with the Android API's POST /api/v1/host/events
+     * (Api\V1\EventController::store()), which predates `audience` and never
+     * sends one — plans/public-private-portals.md Phase 7 keeps that endpoint
+     * additive-only, so it must keep working exactly as before. When the
+     * caller sent no valid `audience`, derive one from `is_public` (missing
+     * defaults to false, same as the old is_public boolean rule) via the same
+     * EventAudience::derive() the model's own saving hook uses — reproducing
+     * today's behavior byte for byte. A caller that DID send a real audience
+     * (the web create wizard) is left untouched.
+     */
+    private function fillMissingAudience(): void
+    {
+        if (EventAudience::tryFrom((string) $this->input('audience')) !== null) {
+            return;
+        }
+
+        $productKind = EventProductKind::tryFrom((string) $this->input('product_kind'));
+
+        $this->merge([
+            'audience' => EventAudience::derive($productKind, $this->boolean('is_public'))->value,
         ]);
     }
 
@@ -74,7 +101,11 @@ class StoreEventRequest extends FormRequest
             'longitude' => ['nullable', 'numeric', 'between:-180,180', 'required_with:latitude'],
             'cover_image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:4096'],
             'slug' => ['nullable', 'string', new EventSlugAvailable],
-            'is_public' => ['boolean'],
+            // Chosen on the create wizard's first step (plans/public-private-portals.md
+            // Phase 4), not a checkbox in this form — audience is immutable after
+            // creation, same as product_kind. See guardAudienceChoice() below for the
+            // private+ticketed conflict and the tier gate this replaces.
+            'audience' => ['required', Rule::enum(EventAudience::class)],
             // event_date comparisons live in withValidator() below — a bare
             // 'before_or_equal:event_date' compares against event_date parsed
             // as midnight, which would reject any same-day deadline that has
@@ -91,25 +122,40 @@ class StoreEventRequest extends FormRequest
         $validator->after(function (Validator $validator): void {
             $this->guardRsvpDeadline($validator);
             $this->guardEventTimeNotAlreadyPassedToday($validator);
-            $this->guardPublicVisibility($validator);
+            $this->guardAudienceChoice($validator);
         });
     }
 
     /**
-     * Public (discoverable / open-RSVP) invitation events are Base and
-     * above — see User::canMakeEventsPublic(). Invite-only stays free at
-     * every tier, so this only fires when someone actually tried to check
-     * the box. Ticketed events are exempt entirely: TicketedEventCreator
-     * hardcodes is_public = true for them regardless of tier, since that
-     * product is monetized by commission, not by subscription.
+     * Replaces the old "Public invitation" checkbox's guardPublicVisibility().
+     * Audience is now chosen on the wizard's first step alongside product_kind
+     * (plans/public-private-portals.md Phase 4), so this checks the pair
+     * instead of a single flag:
+     *  - private + ticketed is not a real combination (Event::booted() would
+     *    throw a LogicException reaching save() with it) — reported here as
+     *    an ordinary validation error instead of a 500.
+     *  - a free-registration (public + invitation) event needs Base or
+     *    above, same gate as before — see User::canMakeEventsPublic().
+     *    Invite-only stays free at every tier. Ticketed is exempt entirely:
+     *    that product is monetized by commission, not by subscription.
      */
-    private function guardPublicVisibility(Validator $validator): void
+    private function guardAudienceChoice(Validator $validator): void
     {
-        if ($this->input('product_kind') === EventProductKind::Ticketed->value) {
+        $audience = EventAudience::tryFrom((string) $this->input('audience'));
+        $productKind = EventProductKind::tryFrom((string) $this->input('product_kind'));
+
+        if ($audience === null || $productKind === null) {
+            // Their own required+enum rules already report this.
             return;
         }
 
-        if (! $this->boolean('is_public')) {
+        if ($audience === EventAudience::Private && $productKind === EventProductKind::Ticketed) {
+            $validator->errors()->add('audience', 'A ticketed event cannot be private.');
+
+            return;
+        }
+
+        if ($productKind === EventProductKind::Ticketed || $audience === EventAudience::Private) {
             return;
         }
 
@@ -118,8 +164,8 @@ class StoreEventRequest extends FormRequest
         }
 
         $validator->errors()->add(
-            'is_public',
-            'Making your event public requires the Base plan or higher. Leave it invite-only, or upgrade to unlock this.'
+            'audience',
+            'A free-registration public event requires the Base plan or higher. Choose Private, or upgrade to unlock this.'
         );
     }
 

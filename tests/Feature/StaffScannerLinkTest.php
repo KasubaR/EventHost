@@ -83,13 +83,13 @@ class StaffScannerLinkTest extends TestCase
 
         $this->actingAs($manager)
             ->post(route('events.checkin.links.store', $event), ['label' => 'Side door'])
-            ->assertRedirect(route('events.tickets.checkin.scan', $event));
+            ->assertRedirect(route('public-events.tickets.checkin.scan', $event));
 
         $link = EventStaffLink::query()->where('event_id', $event->id)->firstOrFail();
 
         $this->actingAs($manager)
             ->delete(route('events.checkin.links.destroy', ['event' => $event, 'link' => $link]))
-            ->assertRedirect(route('events.tickets.checkin.scan', $event));
+            ->assertRedirect(route('public-events.tickets.checkin.scan', $event));
 
         $this->assertNull(EventStaffLink::find($link->id));
     }
@@ -107,11 +107,11 @@ class StaffScannerLinkTest extends TestCase
         EventStaff::factory()->for($event)->accepted()->create(['user_id' => $staffer->id, 'email' => $staffer->email]);
 
         $this->actingAs($staffer)
-            ->get(route('events.ticket-types.index', $event))
+            ->get(route('public-events.ticket-types.index', $event))
             ->assertForbidden();
 
         $this->actingAs($staffer)
-            ->get(route('events.tickets.checkin.scan', $event))
+            ->get(route('public-events.tickets.checkin.scan', $event))
             ->assertOk();
     }
 

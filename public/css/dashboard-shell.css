@@ -71,6 +71,42 @@
   text-overflow: ellipsis;
 }
 
+/* Portal switcher (plans/public-private-portals.md Phase 3) — same nav{} reset
+   as .dash-nav below, plus its own segmented-control look. */
+.dash-portal-switch {
+  position: static;
+  top: auto;
+  z-index: auto;
+  background: var(--gray-light);
+  display: flex;
+  align-items: stretch;
+  justify-content: initial;
+  padding: 3px;
+  height: auto;
+  border: none;
+  border-radius: var(--radius-sm);
+  margin: 0 16px 16px;
+  gap: 3px;
+}
+.dash-portal-switch-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gray-mid);
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+.dash-portal-switch-tab:hover { color: var(--text-dark); }
+.dash-portal-switch-tab.is-active { background: var(--white); color: var(--accent); box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+.dash-portal-switch-tab i { font-size: 12px; }
+.dash-portal-switch-tab .ticket-icon { width: 14px; height: 14px; }
+
 /* Reset global nav{} styles from global.css */
 .dash-nav {
   flex: 1;
@@ -341,3 +377,5 @@
   #nav-progress-badge.is-visible .nav-progress-ring { animation: none; }
 }
 
+
+.dash-nav-link .ticket-icon { width: 17px; height: 17px; }

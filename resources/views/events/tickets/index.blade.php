@@ -70,7 +70,7 @@
                      events-form.js to submit on radio change instead of showing a
                      separate Save button. Outside the wizard (Settings), the pick still
                      needs an explicit save. --}}
-                <form method="post" action="{{ route('events.ticketing.update', $event) }}" class="tkt-commission-form"
+                <form method="post" action="{{ route('public-events.ticketing.update', $event) }}" class="tkt-commission-form"
                       @if ($setupMode) data-auto-submit @endif>
                     @csrf
                     @method('PATCH')
@@ -118,7 +118,7 @@
                     <h2>Ticket Types</h2>
                     <p>Named prices and quantities buyers will choose from.</p>
                 </div>
-                <a href="{{ route('events.ticket-types.create', $event) }}" class="btn-primary"><i class="fa-solid fa-plus"></i> Add ticket type</a>
+                <a href="{{ route('public-events.ticket-types.create', $event) }}" class="btn-primary"><i class="fa-solid fa-plus"></i> Add ticket type</a>
             </div>
             <div class="evt-section-body">
                 @if ($ticketTypes->isEmpty())
@@ -135,8 +135,8 @@
                                     </p>
                                 </div>
                                 <div class="evt-card-actions">
-                                    <a href="{{ route('events.ticket-types.edit', [$event, $type]) }}" class="evt-btn-outline">Edit</a>
-                                    <form method="post" action="{{ route('events.ticket-types.destroy', [$event, $type]) }}" data-confirm="Remove this ticket type?">
+                                    <a href="{{ route('public-events.ticket-types.edit', [$event, $type]) }}" class="evt-btn-outline">Edit</a>
+                                    <form method="post" action="{{ route('public-events.ticket-types.destroy', [$event, $type]) }}" data-confirm="Remove this ticket type?">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="evt-btn-outline evt-btn-danger-outline">Delete</button>

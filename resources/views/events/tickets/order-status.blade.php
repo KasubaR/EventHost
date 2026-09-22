@@ -27,7 +27,7 @@
                 <div class="tkc-ticket-list">
                     @foreach ($order->tickets as $ticket)
                         <div class="tkc-ticket-row">
-                            <span><i class="fa-solid fa-ticket" aria-hidden="true"></i> Ticket #{{ $ticket->id }}</span>
+                            <span><x-ticket-icon /> Ticket #{{ $ticket->id }}</span>
                             <span class="tkc-ticket-row-actions">
                                 <a href="{{ route('tickets.show', $ticket->public_token) }}" class="tkc-ticket-row-cta">View ticket</a>
                                 <a href="{{ route('tickets.download', $ticket->public_token) }}" class="tkc-ticket-row-cta">Download</a>

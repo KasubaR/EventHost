@@ -44,6 +44,80 @@
   font-weight: 500;
 }
 
+/* Informational variant of .dash-quote-banner — the Phase 6 "this event
+   moved to this portal" notice. Blue, not the money-banner's pink, since
+   nothing is due here. */
+.dash-notice-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  margin-bottom: 20px;
+  box-shadow: var(--card-shadow);
+}
+
+.dash-notice-banner > i {
+  color: var(--accent);
+  font-size: 18px;
+  margin-top: 2px;
+}
+
+.dash-notice-banner strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.dash-notice-banner p {
+  margin: 4px 0 12px;
+  font-size: 13px;
+  color: var(--gray-mid);
+  font-weight: 500;
+}
+
+.dash-notice-events {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dash-notice-event {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--gray-light);
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.dash-notice-event-dismiss {
+  flex: none;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.dash-notice-event-dismiss:hover {
+  color: var(--pink);
+}
+
 /* ── DASHBOARD HOME ── */
 .dash-stats {
   display: grid;

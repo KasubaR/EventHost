@@ -45,30 +45,34 @@ class EventManagementTest extends TestCase
             ->assertSeeInOrder(['Published', 'Live Gala', 'Drafts', 'Sketch Party'], false);
     }
 
-    public function test_events_index_has_separate_kind_tabs_and_filters_the_list(): void
+    /**
+     * Phase 3 of plans/public-private-portals.md replaced the old ?kind=
+     * invitation/ticketed tabs with the audience-scoped events.index vs
+     * public-events.index split — a ticketed event (always public audience)
+     * never appears on the private "My Events" list at all now, and vice
+     * versa. See EventTypeTaxonomyTest / EventAudienceTest for the audience
+     * mechanics themselves; this just checks the two index pages partition
+     * a host's events correctly.
+     */
+    public function test_events_index_only_shows_private_events_public_events_index_only_shows_public(): void
     {
         $user = User::factory()->create();
-        Event::factory()->for($user)->create(['name' => 'Garden RSVP']);
+        Event::factory()->for($user)->privateAudience()->create(['name' => 'Garden RSVP']);
         Event::factory()->for($user)->ticketed()->create(['name' => 'Concert Tickets']);
+        Event::factory()->for($user)->publicAudience()->create(['name' => 'Open Fundraiser']);
 
         $this->actingAs($user)
             ->get(route('events.index'))
             ->assertOk()
             ->assertSee('Garden RSVP')
-            ->assertSee('Concert Tickets')
-            ->assertSee(route('events.index', ['kind' => 'invitation']), escape: false)
-            ->assertSee(route('events.index', ['kind' => 'ticketed']), escape: false);
+            ->assertDontSee('Concert Tickets')
+            ->assertDontSee('Open Fundraiser');
 
         $this->actingAs($user)
-            ->get(route('events.index', ['kind' => 'invitation']))
-            ->assertOk()
-            ->assertSee('Garden RSVP')
-            ->assertDontSee('Concert Tickets');
-
-        $this->actingAs($user)
-            ->get(route('events.index', ['kind' => 'ticketed']))
+            ->get(route('public-events.index'))
             ->assertOk()
             ->assertSee('Concert Tickets')
+            ->assertSee('Open Fundraiser')
             ->assertDontSee('Garden RSVP');
     }
 
@@ -79,6 +83,7 @@ class EventManagementTest extends TestCase
         $response = $this->actingAs($user)->post(route('events.store'), [
             'name' => 'Summer Gathering',
             'event_type' => 'birthday',
+            'audience' => 'private',
             'product_kind' => 'invitation',
             'description' => null,
             'event_date' => now()->addWeek()->format('Y-m-d'),
@@ -87,7 +92,6 @@ class EventManagementTest extends TestCase
             'location_name' => null,
             'latitude' => null,
             'longitude' => null,
-            'is_public' => '1',
             'rsvp_deadline' => null,
             'guest_limit' => null,
             'allow_plus_one' => '0',
@@ -109,6 +113,7 @@ class EventManagementTest extends TestCase
         return array_merge([
             'name' => 'Summer Gathering',
             'event_type' => 'birthday',
+            'audience' => 'private',
             'product_kind' => 'invitation',
             'description' => null,
             'event_date' => now()->addWeek()->format('Y-m-d'),
@@ -117,7 +122,6 @@ class EventManagementTest extends TestCase
             'location_name' => null,
             'latitude' => null,
             'longitude' => null,
-            'is_public' => '1',
             'rsvp_deadline' => null,
             'guest_limit' => null,
             'allow_plus_one' => '0',
@@ -566,10 +570,25 @@ class EventManagementTest extends TestCase
             ->assertSee('notify them from the guest list');
     }
 
-    public function test_publish_requires_owner_and_shows_public_page(): void
+    /**
+     * Was a publicAudience() event asserting /e/{slug} became visible after
+     * publish. Since plans/public-private-portals.md Phase 4c, a public
+     * audience invitation event is "free registration" and can no longer
+     * credit-publish at all (admin approval + a paid quote is required
+     * instead — see PublicRegistrationApprovalTest); a privateAudience()
+     * event never shows at /e/{slug} by design regardless of publish state.
+     * Rewritten to a private event, checking visibility the way a private
+     * event's owner actually gets it: events.preview (owner-only), per
+     * EventPreviewController's own docblock.
+     */
+    public function test_publish_requires_owner_and_the_owner_can_then_preview_it(): void
     {
         $user = User::factory()->create();
-        $event = Event::factory()->for($user)->create(['is_published' => false]);
+        $template = InvitationTemplate::query()->where('is_active', true)->firstOrFail();
+        $event = Event::factory()->for($user)->privateAudience()->create([
+            'is_published' => false,
+            'invitation_template_id' => $template->id,
+        ]);
 
         $intruder = User::factory()->create();
         $denied = $this->actingAs($intruder)->patch(route('events.publish', $event));
@@ -581,9 +600,14 @@ class EventManagementTest extends TestCase
         $response->assertSessionHas('status', 'published');
         $this->assertTrue((bool) $event->fresh()->is_published);
 
-        $public = $this->get(route('events.public', $event->slug));
-        $public->assertOk();
-        $public->assertSee($event->name, escape: false);
+        // /e/{slug} 403s for a private event even once published — the
+        // redirect target above is still correct, it's just not visitable by
+        // anyone but the owner, which is what this checks instead.
+        $this->get(route('events.public', $event->slug))->assertForbidden();
+
+        $preview = $this->actingAs($user)->get(route('events.preview', $event));
+        $preview->assertOk();
+        $preview->assertSee($event->name, escape: false);
     }
 
     public function test_unpublished_event_returns_404_on_public_route(): void
@@ -629,8 +653,8 @@ class EventManagementTest extends TestCase
             'latitude' => null,
             'longitude' => null,
             'cover_image' => $file,
+            'audience' => 'private',
             'product_kind' => 'invitation',
-            'is_public' => '1',
             'rsvp_deadline' => null,
             'guest_limit' => null,
             'allow_plus_one' => '0',

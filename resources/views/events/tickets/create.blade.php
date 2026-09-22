@@ -18,11 +18,11 @@
                 <h1 class="dph-title">Add ticket type</h1>
                 <p class="dph-sub">{{ $event->name }}</p>
             </div>
-            <a href="{{ route('events.ticket-types.index', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-arrow-left"></i> All tickets</a>
+            <a href="{{ route('public-events.ticket-types.index', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-arrow-left"></i> All tickets</a>
         </div>
     </x-slot>
 
-    <form method="post" action="{{ route('events.ticket-types.store', $event) }}" enctype="multipart/form-data" class="profile-form">
+    <form method="post" action="{{ route('public-events.ticket-types.store', $event) }}" enctype="multipart/form-data" class="profile-form">
         @csrf
         <div class="evt-section">
             <div class="evt-section-body">

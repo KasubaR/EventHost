@@ -51,6 +51,10 @@ class PaymentCompletionService
                     if (! $this->fulfillRemoveBranding($locked)) {
                         return null;
                     }
+                } elseif ($locked->plan_key === 'public_registration_quote') {
+                    if (! $this->fulfillPublicRegistrationQuote($locked)) {
+                        return null;
+                    }
                 } else {
                     $quote = $this->resolvePendingQuoteForPayment($locked);
 
@@ -156,6 +160,53 @@ class PaymentCompletionService
         return true;
     }
 
+    /**
+     * Sets Event::is_published and public_registration_quote_paid_at for a
+     * completed public_registration_quote payment. No credits, no tier —
+     * the admin-set quote is the only price, same posture as
+     * fulfillRemoveBranding(). Returns false when the target event has gone
+     * missing, changed hands, or is no longer awaiting this payment since
+     * initiate() (e.g. re-approved with a different quote after this
+     * payment was created) — the payment still settled; nothing to fulfill
+     * against.
+     */
+    private function fulfillPublicRegistrationQuote(Payment $payment): bool
+    {
+        $eventId = data_get($payment->metadata, 'event_id');
+
+        if (! is_numeric($eventId)) {
+            PaymentLog::forPayment($payment, 'complete.skipped_missing_event');
+
+            return false;
+        }
+
+        /** @var Event|null $event */
+        $event = Event::query()->whereKey((int) $eventId)->lockForUpdate()->first();
+
+        if ($event === null
+            || (int) $event->user_id !== (int) $payment->user_id
+            || ! $event->awaitingPublicRegistrationPayment()) {
+            PaymentLog::forPayment($payment, 'complete.skipped_missing_event');
+
+            return false;
+        }
+
+        $event->forceFill([
+            'is_published' => true,
+            'public_registration_quote_paid_at' => now(),
+        ])->save();
+
+        $payment->credits_fulfilled_at = now();
+        $payment->save();
+
+        PaymentLog::forPayment($payment, 'complete.fulfilled', [
+            'event_id' => $event->id,
+            'plan_key' => 'public_registration_quote',
+        ]);
+
+        return true;
+    }
+
     private function resolvePendingQuoteForPayment(Payment $payment): ?CustomQuote
     {
         $quoteId = data_get($payment->metadata, 'quote_id');
@@ -193,11 +244,12 @@ class PaymentCompletionService
             /** @var User $user */
             $user = User::query()->whereKey($locked->user_id)->lockForUpdate()->firstOrFail();
 
-            // remove_branding never touched credits (fulfillRemoveBranding()
-            // doesn't call credits->grant()), so there's nothing to reverse
-            // there — reversePurchase() would just write a pointless 0-credit
-            // refund ledger row.
-            if ($locked->credits_fulfilled_at !== null && $locked->plan_key !== 'remove_branding') {
+            // remove_branding and public_registration_quote never touch
+            // credits (their fulfill methods don't call credits->grant()),
+            // so there's nothing to reverse there — reversePurchase() would
+            // just write a pointless 0-credit refund ledger row.
+            if ($locked->credits_fulfilled_at !== null
+                && ! in_array($locked->plan_key, ['remove_branding', 'public_registration_quote'], true)) {
                 $this->credits->reversePurchase(
                     $user,
                     $locked,
@@ -237,6 +289,22 @@ class PaymentCompletionService
                     if ($brandingEvent !== null && $brandingEvent->branding_removed) {
                         $brandingEvent->branding_removed = false;
                         $brandingEvent->save();
+                    }
+                }
+            }
+
+            // And a reversed public-registration payment must not leave the
+            // event live after the money's gone back — un-publish and clear
+            // the paid-at so it returns to "approved, awaiting payment".
+            if ($locked->plan_key === 'public_registration_quote' && $locked->credits_fulfilled_at !== null) {
+                $eventId = data_get($locked->metadata, 'event_id');
+                if (is_numeric($eventId)) {
+                    $registrationEvent = Event::query()->whereKey((int) $eventId)->lockForUpdate()->first();
+                    if ($registrationEvent !== null && $registrationEvent->public_registration_quote_paid_at !== null) {
+                        $registrationEvent->forceFill([
+                            'is_published' => false,
+                            'public_registration_quote_paid_at' => null,
+                        ])->save();
                     }
                 }
             }

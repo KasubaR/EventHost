@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\CommissionMode;
+use App\Enums\EventAudience;
 use App\Enums\EventProductKind;
 use App\Enums\TicketingStatus;
 use App\Models\Event;
@@ -39,6 +40,13 @@ class TicketedEventCreator
         $validated['is_published'] = false;
         $validated['ticketing_status'] = TicketingStatus::Draft;
         $validated['commission_mode'] = CommissionMode::Absorb;
+        // Explicit and unconditional — Event::booted() would force this anyway
+        // (a ticketed event is always public), but this creator is also used
+        // by the admin's white-glove create flow (StoreAdminTicketedEventRequest),
+        // which never validates an `audience` input at all, so $validated
+        // wouldn't otherwise carry one. See plans/public-private-portals.md
+        // Phase 4 item 3.
+        $validated['audience'] = EventAudience::Public;
         $validated['is_public'] = true;
 
         $customSlug = $validated['slug'] ?? null;

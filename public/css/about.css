@@ -344,3 +344,5 @@
   .about-stats-inner { grid-template-columns: 1fr 1fr; }
   .about-cta { padding: 72px 20px; }
 }
+
+.about-value-icon .ticket-icon { width: 32px; height: 32px; }

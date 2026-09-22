@@ -23,7 +23,7 @@
     <article class="tkc-page">
         <div class="tkc-card tkc-card--narrow tkc-ticket-card">
             <header class="tkc-header">
-                <p class="tkc-event-badge"><i class="fa-solid fa-ticket" aria-hidden="true"></i> {{ $ticket->ticketType?->name ?? 'Ticket' }}</p>
+                <p class="tkc-event-badge"><x-ticket-icon /> {{ $ticket->ticketType?->name ?? 'Ticket' }}</p>
                 <h1 class="tkc-title">{{ $ticket->event->name }}</h1>
                 <ul class="tkc-meta">
                     <li>

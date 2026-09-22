@@ -42,7 +42,7 @@ class TicketManagementTest extends TestCase
             'checked_in_at' => now(),
         ]);
 
-        $response = $this->actingAs($owner)->get(route('events.tickets.index', $event));
+        $response = $this->actingAs($owner)->get(route('public-events.tickets.index', $event));
 
         $response->assertOk();
         $response->assertSee('VIP', escape: false);
@@ -58,7 +58,7 @@ class TicketManagementTest extends TestCase
         Ticket::factory()->for($event)->create(['status' => TicketStatus::Cancelled]);
 
         $this->actingAs($owner)
-            ->get(route('events.tickets.index', $event))
+            ->get(route('public-events.tickets.index', $event))
             ->assertOk()
             ->assertSee('—', escape: false);
     }
@@ -73,7 +73,7 @@ class TicketManagementTest extends TestCase
         $ticket = Ticket::factory()->for($event)->for($order, 'order')->create();
 
         $this->actingAs($owner)
-            ->post(route('events.tickets.resend', [$event, $ticket]))
+            ->post(route('public-events.tickets.resend', [$event, $ticket]))
             ->assertRedirect();
 
         Notification::assertSentOnDemand(
@@ -93,7 +93,7 @@ class TicketManagementTest extends TestCase
         $oldToken = $ticket->public_token;
 
         $this->actingAs($owner)
-            ->post(route('events.tickets.reissue', [$event, $ticket]))
+            ->post(route('public-events.tickets.reissue', [$event, $ticket]))
             ->assertRedirect()
             ->assertSessionHas('status', 'ticket-reissued');
 
@@ -118,7 +118,7 @@ class TicketManagementTest extends TestCase
         $ticket = Ticket::factory()->for($event)->create(['status' => TicketStatus::Valid]);
         $oldToken = $ticket->public_token;
 
-        $this->actingAs($owner)->post(route('events.tickets.reissue', [$event, $ticket]));
+        $this->actingAs($owner)->post(route('public-events.tickets.reissue', [$event, $ticket]));
 
         // A screenshot already in circulation points here.
         $this->get(route('tickets.show', ['token' => $oldToken]))->assertNotFound();
@@ -141,7 +141,7 @@ class TicketManagementTest extends TestCase
         Storage::disk('local')->put($oldPdfPath, 'cached-pdf');
         Cache::put($oldQrKey, '<svg></svg>', now()->addWeek());
 
-        $this->actingAs($owner)->post(route('events.tickets.reissue', [$event, $ticket]));
+        $this->actingAs($owner)->post(route('public-events.tickets.reissue', [$event, $ticket]));
 
         Storage::disk('local')->assertMissing($oldPdfPath);
         $this->assertNull(Cache::get($oldQrKey));
@@ -155,7 +155,7 @@ class TicketManagementTest extends TestCase
         $oldToken = $ticket->public_token;
 
         $this->actingAs($owner)
-            ->post(route('events.tickets.reissue', [$event, $ticket]))
+            ->post(route('public-events.tickets.reissue', [$event, $ticket]))
             ->assertSessionHasErrors('ticket');
 
         $this->assertSame($oldToken, $ticket->fresh()->public_token);
@@ -170,7 +170,7 @@ class TicketManagementTest extends TestCase
         $oldToken = $ticket->public_token;
 
         $this->actingAs($stranger)
-            ->post(route('events.tickets.reissue', [$event, $ticket]))
+            ->post(route('public-events.tickets.reissue', [$event, $ticket]))
             ->assertForbidden();
 
         $this->assertSame($oldToken, $ticket->fresh()->public_token);
@@ -183,7 +183,7 @@ class TicketManagementTest extends TestCase
         $ticket = Ticket::factory()->for($event)->create(['status' => TicketStatus::Valid]);
 
         $this->actingAs($owner)
-            ->post(route('events.tickets.cancel', [$event, $ticket]))
+            ->post(route('public-events.tickets.cancel', [$event, $ticket]))
             ->assertRedirect();
 
         $this->assertSame(TicketStatus::Cancelled, $ticket->fresh()->status);
@@ -196,7 +196,7 @@ class TicketManagementTest extends TestCase
         $ticket = Ticket::factory()->for($event)->create(['status' => TicketStatus::Used]);
 
         $this->actingAs($owner)
-            ->post(route('events.tickets.cancel', [$event, $ticket]))
+            ->post(route('public-events.tickets.cancel', [$event, $ticket]))
             ->assertSessionHasErrors('ticket');
 
         $this->assertSame(TicketStatus::Used, $ticket->fresh()->status);
@@ -205,11 +205,14 @@ class TicketManagementTest extends TestCase
     public function test_confirm_checkin_from_the_management_table_flips_valid_to_used(): void
     {
         $owner = User::factory()->pro()->create();
-        $event = $this->ticketedEvent($owner, ['event_date' => now()->toDateString(), 'ticketing_status' => TicketingStatus::Approved]);
+        $event = $this->ticketedEvent($owner, [
+            ...$this->eventDateTimeInsideCheckInWindow(),
+            'ticketing_status' => TicketingStatus::Approved,
+        ]);
         $ticket = Ticket::factory()->for($event)->create(['status' => TicketStatus::Valid]);
 
         $this->actingAs($owner)
-            ->post(route('events.tickets.confirm-checkin', [$event, $ticket]))
+            ->post(route('public-events.tickets.confirm-checkin', [$event, $ticket]))
             ->assertRedirect();
 
         $ticket->refresh();
@@ -230,8 +233,8 @@ class TicketManagementTest extends TestCase
         $ticket = Ticket::factory()->for($event)->create(['status' => TicketStatus::Valid]);
 
         $this->actingAs($owner)
-            ->post(route('events.tickets.confirm-checkin', [$event, $ticket]))
-            ->assertRedirect(route('events.ticket-types.index', $event));
+            ->post(route('public-events.tickets.confirm-checkin', [$event, $ticket]))
+            ->assertRedirect(route('public-events.ticket-types.index', $event));
 
         $this->assertSame(TicketStatus::Valid, $ticket->fresh()->status);
         $this->assertNull($ticket->fresh()->checked_in_at);
@@ -244,9 +247,9 @@ class TicketManagementTest extends TestCase
         Ticket::factory()->for($event)->create(['status' => TicketStatus::Valid]);
 
         $this->actingAs($owner)
-            ->get(route('events.tickets.index', $event))
+            ->get(route('public-events.tickets.index', $event))
             ->assertOk()
-            ->assertDontSee(route('events.tickets.confirm-checkin', [$event, $event->tickets()->first()]), escape: false);
+            ->assertDontSee(route('public-events.tickets.confirm-checkin', [$event, $event->tickets()->first()]), escape: false);
     }
 
     public function test_a_non_owner_cannot_manage_tickets(): void
@@ -256,8 +259,8 @@ class TicketManagementTest extends TestCase
         $event = $this->ticketedEvent($owner);
         $ticket = Ticket::factory()->for($event)->create();
 
-        $this->actingAs($intruder)->get(route('events.tickets.index', $event))->assertForbidden();
-        $this->actingAs($intruder)->post(route('events.tickets.cancel', [$event, $ticket]))->assertForbidden();
+        $this->actingAs($intruder)->get(route('public-events.tickets.index', $event))->assertForbidden();
+        $this->actingAs($intruder)->post(route('public-events.tickets.cancel', [$event, $ticket]))->assertForbidden();
     }
 
     public function test_a_ticket_from_a_different_event_404s_on_row_actions(): void
@@ -268,7 +271,7 @@ class TicketManagementTest extends TestCase
         $ticket = Ticket::factory()->for($eventB)->create();
 
         $this->actingAs($owner)
-            ->post(route('events.tickets.cancel', ['event' => $eventA, 'ticket' => $ticket]))
+            ->post(route('public-events.tickets.cancel', ['event' => $eventA, 'ticket' => $ticket]))
             ->assertNotFound();
     }
 
@@ -296,7 +299,7 @@ class TicketManagementTest extends TestCase
             'status' => TicketStatus::Valid,
         ]);
 
-        $response = $this->actingAs($owner)->get(route('events.tickets.export', $event));
+        $response = $this->actingAs($owner)->get(route('public-events.tickets.export', $event));
 
         $response->assertOk();
         $response->assertHeader('content-type', 'text/csv; charset=UTF-8');
@@ -334,7 +337,7 @@ class TicketManagementTest extends TestCase
         $rows = array_map(
             'str_getcsv',
             array_filter(explode("\n", trim(
-                $this->actingAs($owner)->get(route('events.tickets.export', $event))->streamedContent()
+                $this->actingAs($owner)->get(route('public-events.tickets.export', $event))->streamedContent()
             )))
         );
 
@@ -352,7 +355,7 @@ class TicketManagementTest extends TestCase
         $event = $this->ticketedEvent($owner);
 
         $this->actingAs($intruder)
-            ->get(route('events.tickets.export', $event))
+            ->get(route('public-events.tickets.export', $event))
             ->assertForbidden();
     }
 
@@ -362,7 +365,7 @@ class TicketManagementTest extends TestCase
         $event = Event::factory()->for($owner)->create();
 
         $this->actingAs($owner)
-            ->get(route('events.tickets.export', $event))
+            ->get(route('public-events.tickets.export', $event))
             ->assertNotFound();
     }
 }

@@ -5,7 +5,9 @@ use App\Http\Controllers\Api\V1\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Api\V1\Auth\NewPasswordController;
 use App\Http\Controllers\Api\V1\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Api\V1\Auth\RegisteredUserController;
+use App\Http\Controllers\Api\V1\BillingController;
 use App\Http\Controllers\Api\V1\DashboardController;
+use App\Http\Controllers\Api\V1\DeviceTokenController;
 use App\Http\Controllers\Api\V1\EventCheckInController;
 use App\Http\Controllers\Api\V1\EventChooseTemplateController;
 use App\Http\Controllers\Api\V1\EventContributionController;
@@ -13,6 +15,7 @@ use App\Http\Controllers\Api\V1\EventController;
 use App\Http\Controllers\Api\V1\EventGalleryController;
 use App\Http\Controllers\Api\V1\EventInvitationDesignController;
 use App\Http\Controllers\Api\V1\EventInvitationMediaController;
+use App\Http\Controllers\Api\V1\EventPhotoController;
 use App\Http\Controllers\Api\V1\EventPreviewController;
 use App\Http\Controllers\Api\V1\EventStaffController;
 use App\Http\Controllers\Api\V1\EventStaffLinkController;
@@ -31,10 +34,16 @@ use App\Http\Controllers\Api\V1\GuestGroupController;
 use App\Http\Controllers\Api\V1\GuestImportController;
 use App\Http\Controllers\Api\V1\MeController;
 use App\Http\Controllers\Api\V1\PublicEventController;
+use App\Http\Controllers\Api\V1\ReviewController;
 use App\Http\Controllers\Api\V1\RsvpController;
+use App\Http\Controllers\Api\V1\Settings\AccountController as SettingsAccountController;
+use App\Http\Controllers\Api\V1\Settings\NotificationController as SettingsNotificationController;
+use App\Http\Controllers\Api\V1\Settings\ProfileController as SettingsProfileController;
+use App\Http\Controllers\Api\V1\Settings\SecurityController as SettingsSecurityController;
 use App\Http\Controllers\Api\V1\StaffInvitationController;
 use App\Http\Controllers\Api\V1\TableUploadController;
 use App\Http\Controllers\Api\V1\TicketController;
+use App\Http\Controllers\PaymentController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -353,5 +362,59 @@ Route::prefix('v1/host')->middleware(['auth:sanctum', 'sanctum.active'])->group(
             Route::post('/{ticket}/cancel', [EventTicketManagementController::class, 'cancel'])->name('cancel');
             Route::post('/{ticket}/confirm-checkin', [EventTicketManagementController::class, 'confirmCheckIn'])->name('confirm-checkin');
         });
+
+        // Slice E — photo wall moderation (host-side). Distinct from the guest-facing
+        // feed on Api\V1\EventGalleryController (Slice B3).
+        Route::prefix('{event}/photos')->name('photos.')->group(function (): void {
+            Route::get('/', [EventPhotoController::class, 'index'])->name('index');
+            Route::patch('/{photo}', [EventPhotoController::class, 'update'])->name('update');
+            Route::delete('/{photo}', [EventPhotoController::class, 'destroy'])->name('destroy');
+        });
+    });
+});
+
+// Slice E — settings, billing (+ remove-branding), reviews, devices. Account-level,
+// not event-scoped, so these sit directly under /api/v1/... rather than /api/v1/host/...
+// — none of them collide with the public GET /api/v1/events/{slug} the host prefix was
+// introduced to avoid colliding with (Slice C1's own comment explains that collision).
+// Same guard as the host group: auth:sanctum + sanctum.active, no `verified` requirement
+// (matches web's settings routes, which are ['auth','account.active'] only).
+Route::prefix('v1')->middleware(['auth:sanctum', 'sanctum.active'])->group(function (): void {
+    Route::prefix('settings')->name('api.v1.settings.')->group(function (): void {
+        Route::patch('/profile', [SettingsProfileController::class, 'update'])->name('profile.update');
+        Route::delete('/profile/photo', [SettingsProfileController::class, 'destroyPhoto'])->name('profile.destroy-photo');
+        Route::put('/password', [SettingsSecurityController::class, 'update'])->name('password.update');
+        Route::patch('/notifications', [SettingsNotificationController::class, 'update'])->name('notifications.update');
+        Route::delete('/account', [SettingsAccountController::class, 'destroy'])->name('account.destroy');
+    });
+
+    // Billing + remove-branding (same three routes for both — see
+    // Api\V1\BillingController's docblock). initiate/verify/verifyByReference are the
+    // EXISTING web PaymentController, reused directly: they already return pure JSON
+    // and are guard-agnostic, so forking a new controller would only duplicate a large
+    // transactional method for no behavioral difference.
+    Route::prefix('billing')->name('api.v1.billing.')->group(function (): void {
+        Route::get('/', [BillingController::class, 'show'])->name('show');
+        Route::post('/initiate', [PaymentController::class, 'initiate'])
+            ->middleware('throttle:payment-initiate')
+            ->name('initiate');
+        Route::get('/verify/{transactionId}', [PaymentController::class, 'verify'])
+            ->where('transactionId', '[A-Za-z0-9_\-]{1,64}')
+            ->name('verify');
+        Route::get('/verify-ref/{reference}', [PaymentController::class, 'verifyByReference'])
+            ->where('reference', '[A-Za-z0-9_\-]{1,128}')
+            ->name('verify-ref');
+    });
+
+    Route::prefix('reviews')->name('api.v1.reviews.')->group(function (): void {
+        Route::get('/', [ReviewController::class, 'index'])->name('index');
+        Route::post('/', [ReviewController::class, 'store'])->name('store');
+        Route::patch('/{review}', [ReviewController::class, 'update'])->name('update');
+        Route::delete('/{review}', [ReviewController::class, 'destroy'])->name('destroy');
+    });
+
+    Route::prefix('devices')->name('api.v1.devices.')->group(function (): void {
+        Route::post('/', [DeviceTokenController::class, 'store'])->name('store');
+        Route::delete('/', [DeviceTokenController::class, 'destroy'])->name('destroy');
     });
 });

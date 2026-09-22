@@ -48,7 +48,7 @@
       <a class="etc-card etc-card-ticketing" href="{{ auth()->check() ? route('events.create', ['kind' => 'ticketed']) : route('register') }}">
         <div class="etc-inner">
           <span class="etc-badge">New</span>
-          <div class="etc-icon"><i class="fa-solid fa-ticket" aria-hidden="true"></i></div>
+          <div class="etc-icon"><x-ticket-icon /></div>
           <span class="etc-label">Sell Tickets</span>
         </div>
       </a>
@@ -105,7 +105,7 @@
         <div class="tix-flow-step">
           <span class="tix-flow-num">1</span>
           <div class="tix-flow-icon" style="color:var(--accent)">
-            <i class="fa-solid fa-ticket" aria-hidden="true"></i>
+            <x-ticket-icon />
           </div>
           <h3>Set Ticket Types &amp; Pricing</h3>
           <p>Create General, VIP or custom tiers, each with its own price, quantity and sales window.</p>
@@ -220,7 +220,7 @@
           <img src="{{ asset('images/how-it-works-customize.webp') }}" alt="Customizing colors on an Event Host invitation" width="220" height="120" loading="lazy" decoding="async">
         </div>
         <div class="step-num">2</div>
-        <div class="step-icon"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i></div>
+        <div class="step-icon"><img src="{{ asset('images/icon/track.svg') }}" alt="" width="52" height="52" loading="lazy" decoding="async"></div>
         <h3>Customize It</h3>
         <p>Add your event details, photos, colors, and personal touches with our intuitive editor — in minutes.</p>
       </div>
@@ -229,7 +229,7 @@
           <img src="{{ asset('images/how-it-works-send-rsvp.webp') }}" alt="Guests viewing an RSVP on a phone" width="220" height="120" loading="lazy" decoding="async">
         </div>
         <div class="step-num">3</div>
-        <div class="step-icon"><i class="fa-solid fa-paper-plane" aria-hidden="true"></i></div>
+        <div class="step-icon"><img src="{{ asset('images/icon/customaize.svg') }}" alt="" width="52" height="52" loading="lazy" decoding="async"></div>
         <h3>Share & Track RSVPs</h3>
         <p>Send via WhatsApp, email, or a link. Watch confirmations roll in and manage your guest list live.</p>
       </div>
@@ -320,6 +320,7 @@
           <li>Up to 300 guests</li>
           <li>{{ $activeTemplateCount }} premium templates</li>
           <li>Advanced RSVP dashboard</li>
+          <li>Automated WhatsApp invites</li>
           <li>Photo gallery</li>
           <li>Countdown timer</li>
           <li>Analytics & exports</li>

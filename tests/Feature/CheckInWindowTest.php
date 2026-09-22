@@ -123,7 +123,7 @@ class CheckInWindowTest extends TestCase
         $this->travelTo($this->venueTime('2026-09-20 20:00'));
 
         $this->actingAs($owner)
-            ->postJson(route('events.tickets.checkin.confirm-token', [
+            ->postJson(route('public-events.tickets.checkin.confirm-token', [
                 'event' => $event,
                 'token' => $ticket->public_token,
             ]))

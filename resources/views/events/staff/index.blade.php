@@ -35,7 +35,7 @@
             <div class="evt-flash evt-flash--warn">
                 <i class="fa-solid fa-triangle-exclamation"></i>
                 Staff accounts unlock once EventHost approves ticket sales for this event.
-                <a href="{{ route('events.ticket-types.index', $event) }}">Check your submission status</a>.
+                <a href="{{ route('public-events.ticket-types.index', $event) }}">Check your submission status</a>.
             </div>
         @else
             <div class="evt-section">
@@ -44,7 +44,7 @@
                     <p>Event Manager gets full ticketing access — ticket types, orders, and check-in — short of activating sales, deleting the event, or managing staff. Check-in Staff can only scan at the door.</p>
                 </div>
                 <div class="evt-section-body profile-card-like">
-                    <form method="post" action="{{ route('events.staff.store', $event) }}" class="profile-form-stack evt-staff-invite-form">
+                    <form method="post" action="{{ route('public-events.staff.store', $event) }}" class="profile-form-stack evt-staff-invite-form">
                         @csrf
                         <div class="evt-grid-2">
                             <div class="profile-field">
@@ -106,7 +106,7 @@
                                         <br><span class="evt-muted">{{ $member->email }}</span>
                                     </td>
                                     <td>
-                                        <form method="post" action="{{ route('events.staff.update', ['event' => $event, 'eventStaff' => $member]) }}" class="evt-staff-role-form">
+                                        <form method="post" action="{{ route('public-events.staff.update', ['event' => $event, 'eventStaff' => $member]) }}" class="evt-staff-role-form">
                                             @csrf
                                             @method('PATCH')
                                             <select name="role" data-cs data-cs-size="sm" class="profile-input" aria-label="Role">
@@ -130,12 +130,12 @@
                                     </td>
                                     <td class="evt-table-actions">
                                         @if ($member->isPending())
-                                            <form method="post" action="{{ route('events.staff.resend', ['event' => $event, 'eventStaff' => $member]) }}" class="evt-inline-form">
+                                            <form method="post" action="{{ route('public-events.staff.resend', ['event' => $event, 'eventStaff' => $member]) }}" class="evt-inline-form">
                                                 @csrf
                                                 <button type="submit" class="evt-btn-outline evt-btn-tiny">Resend</button>
                                             </form>
                                         @endif
-                                        <form method="post" action="{{ route('events.staff.destroy', ['event' => $event, 'eventStaff' => $member]) }}" class="evt-inline-form evt-confirm-form" data-evt-confirm="Remove this person's access to this event?">
+                                        <form method="post" action="{{ route('public-events.staff.destroy', ['event' => $event, 'eventStaff' => $member]) }}" class="evt-inline-form evt-confirm-form" data-evt-confirm="Remove this person's access to this event?">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="evt-btn-danger-outline evt-btn-tiny">Remove</button>

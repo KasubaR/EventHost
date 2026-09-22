@@ -26,7 +26,7 @@ class SubscriptionTierInvitationTemplateTest extends TestCase
         $owner = User::factory()->pro()->create();
         $tpl = InvitationTemplate::query()->where('slug', 'modern-minimal')->firstOrFail();
 
-        $event = Event::factory()->for($owner)->create([
+        $event = Event::factory()->for($owner)->publicAudience()->create([
             'invitation_template_id' => $tpl->id,
             'is_published' => true,
             'name' => 'Sofia & Leo',
@@ -56,7 +56,7 @@ class SubscriptionTierInvitationTemplateTest extends TestCase
         $owner = User::factory()->pro()->create();
         $tpl = InvitationTemplate::query()->where('slug', 'wedding-invitation-2')->firstOrFail();
 
-        $event = Event::factory()->for($owner)->create([
+        $event = Event::factory()->for($owner)->publicAudience()->create([
             'invitation_template_id' => $tpl->id,
             'is_published' => true,
             'name' => 'Nadia & Elias',
@@ -84,7 +84,7 @@ class SubscriptionTierInvitationTemplateTest extends TestCase
         $owner = User::factory()->pro()->create();
         $tpl = InvitationTemplate::query()->where('slug', 'wedding-invitation')->firstOrFail();
 
-        $event = Event::factory()->for($owner)->create([
+        $event = Event::factory()->for($owner)->publicAudience()->create([
             'invitation_template_id' => $tpl->id,
             'is_published' => true,
             'name' => 'Amara & Julian',
@@ -114,7 +114,7 @@ class SubscriptionTierInvitationTemplateTest extends TestCase
         $owner = User::factory()->create();
         $tpl = InvitationTemplate::query()->where('slug', 'event-invite')->firstOrFail();
 
-        $event = Event::factory()->for($owner)->create([
+        $event = Event::factory()->for($owner)->publicAudience()->create([
             'invitation_template_id' => $tpl->id,
             'is_published' => true,
             'name' => "Mukuba's",
@@ -170,7 +170,7 @@ class SubscriptionTierInvitationTemplateTest extends TestCase
         $owner = User::factory()->pro()->create();
         $tpl = InvitationTemplate::query()->where('slug', 'graduation-template-2-botanical-blush')->firstOrFail();
 
-        $event = Event::factory()->for($owner)->create([
+        $event = Event::factory()->for($owner)->publicAudience()->create([
             'invitation_template_id' => $tpl->id,
             'is_published' => true,
             'name' => 'River Academic Celebration',
@@ -217,7 +217,7 @@ class SubscriptionTierInvitationTemplateTest extends TestCase
         $owner = User::factory()->pro()->create();
         $tpl = InvitationTemplate::query()->where('slug', 'beauty-for-ashes')->firstOrFail();
 
-        $event = Event::factory()->for($owner)->create([
+        $event = Event::factory()->for($owner)->publicAudience()->create([
             'invitation_template_id' => $tpl->id,
             'is_published' => true,
             'name' => 'Beauty For Ashes',

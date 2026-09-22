@@ -42,7 +42,7 @@ class TicketStaffScannerLinkTest extends TestCase
 
         $this->actingAs($owner)
             ->post(route('events.checkin.links.store', $event), ['label' => 'Front gate'])
-            ->assertRedirect(route('events.tickets.checkin.scan', $event));
+            ->assertRedirect(route('public-events.tickets.checkin.scan', $event));
 
         $link = EventStaffLink::query()->where('event_id', $event->id)->first();
         $this->assertNotNull($link);
@@ -57,7 +57,7 @@ class TicketStaffScannerLinkTest extends TestCase
 
         $this->actingAs($owner)
             ->delete(route('events.checkin.links.destroy', ['event' => $event, 'link' => $link]))
-            ->assertRedirect(route('events.tickets.checkin.scan', $event));
+            ->assertRedirect(route('public-events.tickets.checkin.scan', $event));
 
         $this->assertNull(EventStaffLink::find($link->id));
     }
@@ -217,7 +217,7 @@ class TicketStaffScannerLinkTest extends TestCase
         ]))->assertOk();
 
         $csv = $this->actingAs($owner)
-            ->get(route('events.tickets.export', $event))
+            ->get(route('public-events.tickets.export', $event))
             ->assertOk()
             ->streamedContent();
 

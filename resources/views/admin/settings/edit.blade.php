@@ -62,7 +62,7 @@
 
         <div class="profile-card">
             <div class="profile-card-header">
-                <div class="profile-card-icon admin-settings-icon"><i class="fa-solid fa-ticket" aria-hidden="true"></i></div>
+                <div class="profile-card-icon admin-settings-icon"><x-ticket-icon /></div>
                 <div>
                     <h3>Ticketing fees</h3>
                     <p>Commission and cancellation rates applied to ticketed events.</p>

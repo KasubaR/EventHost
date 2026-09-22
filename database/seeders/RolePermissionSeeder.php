@@ -19,6 +19,7 @@ class RolePermissionSeeder extends Seeder
         'events.delete',
         'events.contribution_manage',
         'contributions.payouts.manage',
+        'events.public_registration_manage',
         'guests.view',
         'rsvps.view',
         'notifications.view',

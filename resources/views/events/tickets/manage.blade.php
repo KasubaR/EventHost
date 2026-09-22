@@ -21,7 +21,7 @@
                 <p class="dph-sub">{{ $event->name }} · {{ number_format($tickets->total()) }} issued</p>
             </div>
             <div class="evt-card-actions">
-                <a href="{{ route('events.tickets.export', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-download"></i> Export CSV</a>
+                <a href="{{ route('public-events.tickets.export', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-download"></i> Export CSV</a>
                 <a href="{{ route('events.show', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-arrow-left"></i> Event</a>
             </div>
         </div>
@@ -91,7 +91,7 @@
                                                     <i class="fa-solid fa-eye" aria-hidden="true"></i> <span>View</span>
                                                 </a>
 
-                                                <form method="post" action="{{ route('events.tickets.resend', [$event, $ticketRow]) }}" class="evt-inline-form">
+                                                <form method="post" action="{{ route('public-events.tickets.resend', [$event, $ticketRow]) }}" class="evt-inline-form">
                                                     @csrf
                                                     <button type="submit" class="evt-more-item" role="menuitem">
                                                         <i class="fa-solid fa-paper-plane" aria-hidden="true"></i> <span>Resend</span>
@@ -100,7 +100,7 @@
 
                                                 @if ($ticketRow->status === \App\Enums\TicketStatus::Valid)
                                                     @if ($event->ownerHasPremiumEventTools())
-                                                        <form method="post" action="{{ route('events.tickets.confirm-checkin', [$event, $ticketRow]) }}" class="evt-inline-form">
+                                                        <form method="post" action="{{ route('public-events.tickets.confirm-checkin', [$event, $ticketRow]) }}" class="evt-inline-form">
                                                             @csrf
                                                             <button type="submit" class="evt-more-item" role="menuitem">
                                                                 <i class="fa-solid fa-qrcode" aria-hidden="true"></i> <span>Check in</span>
@@ -108,14 +108,14 @@
                                                         </form>
                                                     @endif
 
-                                                    <form method="post" action="{{ route('events.tickets.reissue', [$event, $ticketRow]) }}" class="evt-inline-form" data-confirm="Issue a new QR for this ticket? Any copy already shared stops working, and the buyer is emailed a replacement.">
+                                                    <form method="post" action="{{ route('public-events.tickets.reissue', [$event, $ticketRow]) }}" class="evt-inline-form" data-confirm="Issue a new QR for this ticket? Any copy already shared stops working, and the buyer is emailed a replacement.">
                                                         @csrf
                                                         <button type="submit" class="evt-more-item" role="menuitem">
                                                             <i class="fa-solid fa-rotate" aria-hidden="true"></i> <span>Reissue QR</span>
                                                         </button>
                                                     </form>
 
-                                                    <form method="post" action="{{ route('events.tickets.cancel', [$event, $ticketRow]) }}" class="evt-inline-form" data-confirm="Cancel this ticket? The buyer will no longer be able to use it.">
+                                                    <form method="post" action="{{ route('public-events.tickets.cancel', [$event, $ticketRow]) }}" class="evt-inline-form" data-confirm="Cancel this ticket? The buyer will no longer be able to use it.">
                                                         @csrf
                                                         <button type="submit" class="evt-more-item" role="menuitem">
                                                             <i class="fa-solid fa-ban" aria-hidden="true"></i> <span>Cancel</span>

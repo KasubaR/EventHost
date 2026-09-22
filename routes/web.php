@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\EventAudience;
 use App\Http\Controllers\CheckInController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DashboardController;
@@ -11,6 +12,7 @@ use App\Http\Controllers\EventInvitationDesignController;
 use App\Http\Controllers\EventInvitationMediaController;
 use App\Http\Controllers\EventPhotoController;
 use App\Http\Controllers\EventPreviewController;
+use App\Http\Controllers\EventPublicRegistrationController;
 use App\Http\Controllers\EventStaffController;
 use App\Http\Controllers\EventStaffInvitationController;
 use App\Http\Controllers\EventStaffLinkController;
@@ -31,6 +33,7 @@ use App\Http\Controllers\MapLinkController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PublicCheckInController;
 use App\Http\Controllers\PublicEventController;
+use App\Http\Controllers\PublicRegistrationPaymentController;
 use App\Http\Controllers\PublicTicketCheckInController;
 use App\Http\Controllers\RemoveBrandingController;
 use App\Http\Controllers\ReviewController;
@@ -43,6 +46,7 @@ use App\Http\Controllers\TableUploadController;
 use App\Http\Controllers\TemplateLibraryController;
 use App\Http\Controllers\TicketCheckInController;
 use App\Http\Controllers\TicketController;
+use App\Models\Event;
 use App\Models\InvitationTemplate;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
@@ -58,6 +62,7 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/about', function () {
     return view('about', [
         'activeTemplateCount' => InvitationTemplate::activeCount(),
+        'eventsHosted' => Event::marketingHostedCount(),
     ]);
 })->name('about');
 
@@ -218,8 +223,30 @@ Route::middleware('throttle:rsvp-submit')->group(function () {
 Route::get('/staff/invitations/{token}', [EventStaffInvitationController::class, 'show'])->name('staff-invitations.show');
 Route::post('/staff/invitations/{token}', [EventStaffInvitationController::class, 'store'])->name('staff-invitations.store');
 
+// Phase 3b re-homing (public-private-portals.md §2: "Only host-side URLs
+// move, and each gets a 301."). GET-only: the family's state-changing
+// routes (store/update/destroy/resend/etc.) never leak into a sent email or
+// a bookmark the way an index/dashboard page does, so a stale form action
+// from a page left open mid-deploy just 404s and self-heals on refresh —
+// same scope-narrowing trade-off Phase 3 already made for route re-homing
+// risk. No auth middleware here on purpose: an unauthenticated visitor
+// still gets bounced to the new URL, and the destination's own 'auth'
+// redirect takes it from there instead of bouncing through login first.
+Route::redirect('/events/{event}/ticket-types', '/public-events/{event}/ticket-types', 301);
+Route::redirect('/events/{event}/ticket-types/create', '/public-events/{event}/ticket-types/create', 301);
+Route::redirect('/events/{event}/ticket-types/{ticketType}/edit', '/public-events/{event}/ticket-types/{ticketType}/edit', 301);
+Route::redirect('/events/{event}/tickets/overview', '/public-events/{event}/tickets/overview', 301);
+Route::redirect('/events/{event}/tickets/revenue', '/public-events/{event}/tickets/revenue', 301);
+Route::redirect('/events/{event}/tickets/payouts', '/public-events/{event}/tickets/payouts', 301);
+Route::redirect('/events/{event}/tickets/export', '/public-events/{event}/tickets/export', 301);
+Route::redirect('/events/{event}/tickets/checkin/lookup', '/public-events/{event}/tickets/checkin/lookup', 301);
+Route::redirect('/events/{event}/tickets/checkin', '/public-events/{event}/tickets/checkin', 301);
+Route::redirect('/events/{event}/tickets', '/public-events/{event}/tickets', 301);
+Route::redirect('/events/{event}/staff', '/public-events/{event}/staff', 301);
+
 Route::middleware(['auth', 'account.active', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/public-dashboard', [DashboardController::class, 'publicOverview'])->name('public-dashboard');
 
     // Existing-account branch of the staff accept flow — hitting this while
     // logged out gets Laravel's normal "log in, then come back" intended-URL
@@ -262,6 +289,10 @@ Route::middleware(['auth', 'account.active', 'verified'])->group(function () {
     Route::patch('/events/{event}/guests/{guest}/invitation-sent', [GuestController::class, 'markInvitationSent'])
         ->name('events.guests.mark-invitation-sent');
 
+    Route::post('/events/{event}/guests/{guest}/whatsapp-invite', [GuestController::class, 'sendWhatsAppInvitation'])
+        ->middleware('throttle:guest-whatsapp-send')
+        ->name('events.guests.whatsapp-invite');
+
     Route::get('/events/{event}/guests/{guest}/qr.svg', [GuestController::class, 'qr'])
         ->name('events.guests.qr');
 
@@ -276,42 +307,81 @@ Route::middleware(['auth', 'account.active', 'verified'])->group(function () {
         ->only(['index', 'create', 'store', 'edit', 'update', 'destroy'])
         ->scoped();
 
-    Route::resource('events.ticket-types', EventTicketTypeController::class)
-        ->parameters(['ticket-types' => 'ticketType'])
-        ->only(['index', 'create', 'store', 'edit', 'update', 'destroy'])
-        ->scoped();
-    Route::patch('/events/{event}/ticketing', [EventTicketingController::class, 'update'])
-        ->name('events.ticketing.update');
-    Route::post('/events/{event}/ticketing/submit', [EventTicketingController::class, 'submit'])
-        ->name('events.ticketing.submit');
+    // Phase 3b (public-private-portals.md): ticketing settings, the tickets
+    // dashboard, staff accounts and ticket check-in are ticketed-only —
+    // confirmed by each controller's own abort_unless($event->isTicketed())
+    // — so they live under /public-events/... with a public-events.* route
+    // name, twin of public-events.index below. 'audience:public' is defence
+    // in depth: a ticketed event is always public audience (Event's saving
+    // hook), so it never actually fires today, but it stops a future
+    // non-ticketed public product from silently inheriting these routes.
+    // events.checkin.links.* (below, unmoved) deliberately did NOT move —
+    // EventStaffLinkController's scanner links are shared with the Private
+    // portal's own premium check-in page (events/checkin/scan.blade.php),
+    // so it stays on /events/... for both audiences.
+    Route::middleware('audience:public')->group(function (): void {
+        Route::resource('public-events.ticket-types', EventTicketTypeController::class)
+            ->parameters(['public-events' => 'event', 'ticket-types' => 'ticketType'])
+            ->only(['index', 'create', 'store', 'edit', 'update', 'destroy'])
+            ->scoped();
+        Route::patch('/public-events/{event}/ticketing', [EventTicketingController::class, 'update'])
+            ->name('public-events.ticketing.update');
+        Route::post('/public-events/{event}/ticketing/submit', [EventTicketingController::class, 'submit'])
+            ->name('public-events.ticketing.submit');
 
-    // Host "Ticketing" section (Phase 15/16) — Overview dashboard + the
-    // individual-tickets table. Settings stays on events.ticket-types.* above;
-    // Check-in stays on events.tickets.checkin.* below.
-    Route::get('/events/{event}/tickets/overview', [EventTicketDashboardController::class, 'overview'])
-        ->name('events.tickets.overview');
-    // Revenue/Payouts (Phase 23) — read-only for the host; only an admin can
-    // record a payout, see admin.ticketing.revenue.payouts.store.
-    Route::get('/events/{event}/tickets/revenue', [EventTicketRevenueController::class, 'revenue'])
-        ->name('events.tickets.revenue');
-    Route::get('/events/{event}/tickets/payouts', [EventTicketRevenueController::class, 'payouts'])
-        ->name('events.tickets.payouts');
-    Route::get('/events/{event}/tickets/export', [EventTicketManagementController::class, 'export'])
-        ->name('events.tickets.export');
-    Route::get('/events/{event}/tickets', [EventTicketManagementController::class, 'index'])
-        ->name('events.tickets.index');
-    Route::post('/events/{event}/tickets/{ticket}/resend', [EventTicketManagementController::class, 'resend'])
-        ->middleware('throttle:ticket-resend')
-        ->name('events.tickets.resend');
-    // Shares throttle:ticket-resend because it sends the same confirmation
-    // email — the token rotation is cheap, the mail is what needs limiting.
-    Route::post('/events/{event}/tickets/{ticket}/reissue', [EventTicketManagementController::class, 'reissue'])
-        ->middleware('throttle:ticket-resend')
-        ->name('events.tickets.reissue');
-    Route::post('/events/{event}/tickets/{ticket}/cancel', [EventTicketManagementController::class, 'cancel'])
-        ->name('events.tickets.cancel');
-    Route::post('/events/{event}/tickets/{ticket}/confirm-checkin', [EventTicketManagementController::class, 'confirmCheckIn'])
-        ->name('events.tickets.confirm-checkin');
+        // Host "Ticketing" section (Phase 15/16) — Overview dashboard + the
+        // individual-tickets table. Settings stays on public-events.ticket-types.*
+        // above; check-in stays on public-events.tickets.checkin.* below.
+        Route::get('/public-events/{event}/tickets/overview', [EventTicketDashboardController::class, 'overview'])
+            ->name('public-events.tickets.overview');
+        // Revenue/Payouts (Phase 23) — read-only for the host; only an admin can
+        // record a payout, see admin.ticketing.revenue.payouts.store.
+        Route::get('/public-events/{event}/tickets/revenue', [EventTicketRevenueController::class, 'revenue'])
+            ->name('public-events.tickets.revenue');
+        Route::get('/public-events/{event}/tickets/payouts', [EventTicketRevenueController::class, 'payouts'])
+            ->name('public-events.tickets.payouts');
+        Route::get('/public-events/{event}/tickets/export', [EventTicketManagementController::class, 'export'])
+            ->name('public-events.tickets.export');
+        Route::get('/public-events/{event}/tickets', [EventTicketManagementController::class, 'index'])
+            ->name('public-events.tickets.index');
+        Route::post('/public-events/{event}/tickets/{ticket}/resend', [EventTicketManagementController::class, 'resend'])
+            ->middleware('throttle:ticket-resend')
+            ->name('public-events.tickets.resend');
+        // Shares throttle:ticket-resend because it sends the same confirmation
+        // email — the token rotation is cheap, the mail is what needs limiting.
+        Route::post('/public-events/{event}/tickets/{ticket}/reissue', [EventTicketManagementController::class, 'reissue'])
+            ->middleware('throttle:ticket-resend')
+            ->name('public-events.tickets.reissue');
+        Route::post('/public-events/{event}/tickets/{ticket}/cancel', [EventTicketManagementController::class, 'cancel'])
+            ->name('public-events.tickets.cancel');
+        Route::post('/public-events/{event}/tickets/{ticket}/confirm-checkin', [EventTicketManagementController::class, 'confirmCheckIn'])
+            ->name('public-events.tickets.confirm-checkin');
+
+        // Owner-only staff accounts (Phase 18) — twin of the no-login scanner
+        // links, for people the host trusts with an actual account. See
+        // plans/staff-access.md.
+        Route::get('/public-events/{event}/staff', [EventStaffController::class, 'index'])
+            ->name('public-events.staff.index');
+        Route::post('/public-events/{event}/staff', [EventStaffController::class, 'store'])
+            ->middleware('throttle:staff-invite-send')
+            ->name('public-events.staff.store');
+        Route::patch('/public-events/{event}/staff/{eventStaff}', [EventStaffController::class, 'update'])
+            ->name('public-events.staff.update');
+        Route::post('/public-events/{event}/staff/{eventStaff}/resend', [EventStaffController::class, 'resend'])
+            ->middleware('throttle:staff-invite-send')
+            ->name('public-events.staff.resend');
+        Route::delete('/public-events/{event}/staff/{eventStaff}', [EventStaffController::class, 'destroy'])
+            ->name('public-events.staff.destroy');
+
+        Route::get('/public-events/{event}/tickets/checkin/lookup', [TicketCheckInController::class, 'lookup'])
+            ->name('public-events.tickets.checkin.lookup');
+        Route::post('/public-events/{event}/tickets/checkin/ticket/{ticket}', [TicketCheckInController::class, 'confirmTicket'])
+            ->name('public-events.tickets.checkin.confirm-ticket');
+        Route::post('/public-events/{event}/tickets/checkin/{token}', [TicketCheckInController::class, 'confirmToken'])
+            ->name('public-events.tickets.checkin.confirm-token');
+        Route::get('/public-events/{event}/tickets/checkin', [TicketCheckInController::class, 'scan'])
+            ->name('public-events.tickets.checkin.scan');
+    });
 
     Route::get('/events/{event}/tables/qr-sheet.pdf', [EventTableController::class, 'qrSheet'])
         ->name('events.tables.qr-sheet');
@@ -328,19 +398,10 @@ Route::middleware(['auth', 'account.active', 'verified'])->group(function () {
     Route::get('/events/{event}/remove-branding', [RemoveBrandingController::class, 'show'])
         ->name('events.remove-branding');
 
-    // Owner-only staff accounts (Phase 18) — twin of the no-login scanner
-    // links above, for people the host trusts with an actual account. See
-    // plans/staff-access.md.
-    Route::get('/events/{event}/staff', [EventStaffController::class, 'index'])
-        ->name('events.staff.index');
-    Route::post('/events/{event}/staff', [EventStaffController::class, 'store'])
-        ->name('events.staff.store');
-    Route::patch('/events/{event}/staff/{eventStaff}', [EventStaffController::class, 'update'])
-        ->name('events.staff.update');
-    Route::post('/events/{event}/staff/{eventStaff}/resend', [EventStaffController::class, 'resend'])
-        ->name('events.staff.resend');
-    Route::delete('/events/{event}/staff/{eventStaff}', [EventStaffController::class, 'destroy'])
-        ->name('events.staff.destroy');
+    Route::get('/events/{event}/public-registration/pay', [PublicRegistrationPaymentController::class, 'show'])
+        ->name('events.public-registration.pay');
+    Route::post('/events/{event}/public-registration/submit', [EventPublicRegistrationController::class, 'submit'])
+        ->name('events.public-registration.submit');
 
     Route::get('/events/{event}/checkin/lookup', [CheckInController::class, 'lookup'])
         ->name('events.checkin.lookup');
@@ -350,15 +411,6 @@ Route::middleware(['auth', 'account.active', 'verified'])->group(function () {
         ->name('events.checkin.confirm-token');
     Route::get('/events/{event}/checkin', [CheckInController::class, 'scan'])
         ->name('events.checkin.scan');
-
-    Route::get('/events/{event}/tickets/checkin/lookup', [TicketCheckInController::class, 'lookup'])
-        ->name('events.tickets.checkin.lookup');
-    Route::post('/events/{event}/tickets/checkin/ticket/{ticket}', [TicketCheckInController::class, 'confirmTicket'])
-        ->name('events.tickets.checkin.confirm-ticket');
-    Route::post('/events/{event}/tickets/checkin/{token}', [TicketCheckInController::class, 'confirmToken'])
-        ->name('events.tickets.checkin.confirm-token');
-    Route::get('/events/{event}/tickets/checkin', [TicketCheckInController::class, 'scan'])
-        ->name('events.tickets.checkin.scan');
 
     Route::patch('/events/{event}/photos/{photo}', [EventPhotoController::class, 'update'])
         ->name('events.photos.update');
@@ -370,6 +422,8 @@ Route::middleware(['auth', 'account.active', 'verified'])->group(function () {
     Route::patch('/events/{event}/publish', [EventController::class, 'publish'])->name('events.publish');
     Route::patch('/events/{event}/pause', [EventController::class, 'pause'])->name('events.pause');
     Route::patch('/events/{event}/resume', [EventController::class, 'resume'])->name('events.resume');
+    Route::patch('/events/{event}/audience-migration-notice/dismiss', [EventController::class, 'dismissAudienceMigrationNotice'])
+        ->name('events.audience-migration-notice.dismiss');
     Route::patch('/events/{event}/cancel', [EventController::class, 'cancel'])->name('events.cancel');
     Route::patch('/events/{event}/uncancel', [EventController::class, 'uncancel'])->name('events.uncancel');
     Route::post('/events/{event}/restore', [EventController::class, 'restore'])
@@ -394,7 +448,15 @@ Route::middleware(['auth', 'account.active', 'verified'])->group(function () {
         ->middleware('throttle:map-link-resolve')
         ->name('maps.resolve-link');
 
-    Route::resource('events', EventController::class)->except('store');
+    // index is pulled out of the resource below so each portal's "My Events" list
+    // can carry its own audience default (plans/public-private-portals.md Phase 3)
+    // instead of the old ?kind= filter — both still hit EventController@index,
+    // so authorizeResource()'s index -> viewAny mapping is unaffected.
+    Route::get('/events', [EventController::class, 'index'])->name('events.index')
+        ->defaults('audience', EventAudience::Private->value);
+    Route::get('/public-events', [EventController::class, 'index'])->name('public-events.index')
+        ->defaults('audience', EventAudience::Public->value);
+    Route::resource('events', EventController::class)->except(['store', 'index']);
     Route::post('/events', [EventController::class, 'store'])->name('events.store')->middleware('throttle:10,1');
 
     Route::get('/billing', [PaymentController::class, 'show'])->name('billing.show');

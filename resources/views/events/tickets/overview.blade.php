@@ -55,9 +55,9 @@
             <div class="evt-section-body">
                 <p class="evt-muted">
                     Gross sales, fees, and host revenue come from every paid order recorded so far.
-                    See <a href="{{ route('events.tickets.index', $event) }}">Tickets</a> for the full list,
-                    <a href="{{ route('events.tickets.revenue', $event) }}">Revenue</a> for a full statement, or
-                    <a href="{{ route('events.ticket-types.index', $event) }}">Settings</a> to manage ticket types and commission.
+                    See <a href="{{ route('public-events.tickets.index', $event) }}">Tickets</a> for the full list,
+                    <a href="{{ route('public-events.tickets.revenue', $event) }}">Revenue</a> for a full statement, or
+                    <a href="{{ route('public-events.ticket-types.index', $event) }}">Settings</a> to manage ticket types and commission.
                 </p>
             </div>
         </div>

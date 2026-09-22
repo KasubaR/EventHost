@@ -38,7 +38,7 @@
         <div class="evt-section">
             <div class="evt-section-head">
                 <h2>Statement</h2>
-                <p>Every sale and payout recorded against this event, newest first. See <a href="{{ route('events.tickets.payouts', $event) }}">Payouts</a> for a summary of what's been paid out.</p>
+                <p>Every sale and payout recorded against this event, newest first. See <a href="{{ route('public-events.tickets.payouts', $event) }}">Payouts</a> for a summary of what's been paid out.</p>
             </div>
             <div class="evt-section-body evt-table-wrap">
                 @if ($entries->isEmpty())

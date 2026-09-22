@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\ContributionStatus;
+use App\Enums\EventAudience;
 use App\Enums\EventProductKind;
 use App\Enums\RsvpStatus;
 use App\Enums\TicketingStatus;
@@ -35,15 +36,22 @@ class EventController extends Controller
         $this->authorizeResource(Event::class, 'event');
     }
 
-    public function index(): View
+    /**
+     * "My Events" for one portal at a time. $audience comes from a route
+     * default (events.index -> private, public-events.index -> public — see
+     * routes/web.php), not a query string: plans/public-private-portals.md
+     * Phase 3 replaced the old ?kind= invitation/ticketed filter with this,
+     * since which portal you're in is no longer optional.
+     */
+    public function index(Request $request): View
     {
-        $kind = EventProductKind::tryFrom((string) request('kind'));
+        $audience = EventAudience::from((string) $request->route('audience'));
 
         // Two independent paginators so a long draft list never pushes published
         // events off the page. Distinct page names keep their ?page params apart.
         $mine = fn () => Event::query()
             ->where('user_id', auth()->id())
-            ->when($kind, fn ($query) => $query->where('product_kind', $kind))
+            ->forAudience($audience)
             ->orderByDesc('event_date')
             ->orderByDesc('created_at');
 
@@ -57,28 +65,45 @@ class EventController extends Controller
 
         $deleted = Event::onlyTrashed()
             ->where('user_id', auth()->id())
-            ->when($kind, fn ($query) => $query->where('product_kind', $kind))
+            ->forAudience($audience)
             ->orderByDesc('deleted_at')
             ->paginate(10, ['*'], 'deleted_page')
             ->withQueryString();
 
         // Events this user has accepted staff access on (Phase 18) — separate
-        // from "mine" above, which is ownership-only.
-        $staffing = Event::query()
-            ->whereHas('staff', fn ($query) => $query
-                ->where('user_id', auth()->id())
-                ->whereNotNull('accepted_at'))
-            ->orderByDesc('event_date')
-            ->paginate(10, ['*'], 'staff_page')
-            ->withQueryString();
+        // from "mine" above, which is ownership-only. Staff access is
+        // ticketed-only (always a public-audience event), so only the public
+        // portal's index view renders this; skip the query entirely for the
+        // private view, which never reads it.
+        $staffing = $audience === EventAudience::Public
+            ? Event::query()
+                ->whereHas('staff', fn ($query) => $query
+                    ->where('user_id', auth()->id())
+                    ->whereNotNull('accepted_at'))
+                ->orderByDesc('event_date')
+                ->paginate(10, ['*'], 'staff_page')
+                ->withQueryString()
+            : null;
 
-        return view('events.index', compact('published', 'drafts', 'deleted', 'staffing', 'kind'));
+        $view = $audience === EventAudience::Public ? 'events.public-index' : 'events.index';
+
+        return view($view, compact('published', 'drafts', 'deleted', 'staffing', 'audience'));
     }
 
     public function create(Request $request): View|RedirectResponse
     {
         if (Event::openDraftCountFor((int) $request->user()->id) >= Event::MAX_OPEN_DRAFTS) {
-            return redirect()->route('events.index')->with('status', 'draft-limit');
+            // MAX_OPEN_DRAFTS is one global cap across both portals (unchanged by
+            // the audience split), but each portal's index only lists its own
+            // half — so land on the one implied by ?audience= (or the older
+            // ?kind=ticketed shortcut, which still implies public on its own)
+            // rather than always the private one, which would hide a blocking
+            // public draft from someone trying to delete it.
+            $indexRoute = $this->resolveCreateAudience($request, null) === EventAudience::Public
+                ? 'public-events.index'
+                : 'events.index';
+
+            return redirect()->route($indexRoute)->with('status', 'draft-limit');
         }
 
         $prefTemplateId = null;
@@ -95,18 +120,25 @@ class EventController extends Controller
             $templateSlug = null;
         }
 
-        $productKind = $this->resolveCreateProductKind($request, $prefTemplateId);
+        $audience = $this->resolveCreateAudience($request, $prefTemplateId);
+        $productKind = $this->resolveCreateProductKind($request, $audience, $prefTemplateId);
         if ($productKind === EventProductKind::Ticketed) {
             $prefTemplateId = null;
         }
 
-        return view('events.create', compact('prefTemplateId', 'templateSlug', 'productKind'));
+        return view('events.create', compact('prefTemplateId', 'templateSlug', 'audience', 'productKind'));
     }
 
     public function store(StoreEventRequest $request, TicketedEventCreator $ticketedCreator): RedirectResponse
     {
         if (Event::openDraftCountFor((int) $request->user()->id) >= Event::MAX_OPEN_DRAFTS) {
-            return redirect()->route('events.index')->with('status', 'draft-limit');
+            // See the identical comment in create() — validation has already run
+            // by this point (StoreEventRequest), so the submitted audience is
+            // known for certain here rather than guessed from a query hint.
+            $audience = EventAudience::tryFrom((string) $request->validated('audience'));
+            $indexRoute = $audience === EventAudience::Public ? 'public-events.index' : 'events.index';
+
+            return redirect()->route($indexRoute)->with('status', 'draft-limit');
         }
 
         $data = $request->validated();
@@ -121,7 +153,7 @@ class EventController extends Controller
         if ($productKind === EventProductKind::Ticketed) {
             $event = $ticketedCreator->create((int) $request->user()->id, $data);
 
-            return redirect()->route('events.ticket-types.index', $event)->with('status', 'draft-saved');
+            return redirect()->route('public-events.ticket-types.index', $event)->with('status', 'draft-saved');
         }
 
         unset($data['preferred_invitation_template_id'], $data['cover_image']);
@@ -206,7 +238,10 @@ class EventController extends Controller
         $invitationMerged = null;
         $templateFingerprint = null;
         $customizationToken = null;
-        $publishCostsCredit = ! $event->isTicketed() && ! $event->is_published && ! $event->hasConsumedPublishCredit();
+        $publishCostsCredit = ! $event->isTicketed()
+            && ! $event->isFreeRegistration()
+            && ! $event->is_published
+            && ! $event->hasConsumedPublishCredit();
 
         if ($event->invitation_template_id !== null) {
             $invitationMerged = $customizationService->merge($event);
@@ -283,7 +318,6 @@ class EventController extends Controller
 
                 if ($event->isTicketed()) {
                     unset(
-                        $data['is_public'],
                         $data['rsvp_deadline'],
                         $data['guest_limit'],
                         $data['allow_plus_one'],
@@ -306,6 +340,12 @@ class EventController extends Controller
                 if ($shouldPublish && $event->isTicketed()) {
                     throw ValidationException::withMessages([
                         'publish' => 'Ticketed events go live after EventHost activates ticket sales — they do not use event credits.',
+                    ]);
+                }
+
+                if ($shouldPublish && $event->isFreeRegistration()) {
+                    throw ValidationException::withMessages([
+                        'publish' => 'Public events go live after EventHost approves them and you pay the quoted amount — they do not use event credits.',
                     ]);
                 }
 
@@ -419,17 +459,27 @@ class EventController extends Controller
     {
         $this->authorize('delete', $event);
 
-        if ($event->hasBlockingTicketCommerce()) {
-            throw ValidationException::withMessages([
-                'event' => 'This event has ticket holds or orders in progress and cannot be deleted.',
-            ]);
-        }
+        $audience = $event->audience;
 
-        // Soft-delete only — keep cover/invitation media so restore works.
-        // A later prune job can hard-delete after a retention window.
-        $event->delete();
+        DB::transaction(function () use ($event): void {
+            // Locked so a ticket purchase completing concurrently can't slip
+            // past the blocking check between it and the soft-delete below.
+            $locked = Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
 
-        return redirect()->route('events.index')->with('status', 'event-deleted');
+            if ($locked->hasBlockingTicketCommerce()) {
+                throw ValidationException::withMessages([
+                    'event' => 'This event has ticket holds or orders in progress and cannot be deleted.',
+                ]);
+            }
+
+            // Soft-delete only — keep cover/invitation media so restore works.
+            // A later prune job can hard-delete after a retention window.
+            $locked->delete();
+        });
+
+        $indexRoute = $audience === EventAudience::Public ? 'public-events.index' : 'events.index';
+
+        return redirect()->route($indexRoute)->with('status', 'event-deleted');
     }
 
     public function restore(Event $event): RedirectResponse
@@ -469,6 +519,22 @@ class EventController extends Controller
         return back()->with('status', 'invitation-resumed');
     }
 
+    /**
+     * Phase 6 item 3 of plans/public-private-portals.md — dismisses the
+     * one-time "this event moved to the Public portal" notice. `update` is
+     * the right gate here (not a dedicated policy ability): this is a
+     * read-state flag on the event's own record, the same trust level as
+     * any other edit a host can already make to it.
+     */
+    public function dismissAudienceMigrationNotice(Event $event): RedirectResponse
+    {
+        $this->authorize('update', $event);
+
+        $event->dismissAudienceMigrationNotice();
+
+        return back();
+    }
+
     public function cancel(Event $event): RedirectResponse
     {
         $this->authorize('cancel', $event);
@@ -500,9 +566,23 @@ class EventController extends Controller
 
         if ($event->isTicketed()) {
             return redirect()
-                ->route('events.ticket-types.index', $event)
+                ->route('public-events.ticket-types.index', $event)
                 ->withErrors([
                     'publish' => 'Ticketed events go live after EventHost activates ticket sales — they do not use event credits.',
+                ]);
+        }
+
+        // Free-registration public events are admin-approved and admin-priced,
+        // the same posture as ticketed — plans/public-private-portals.md
+        // Phase 4c. No credit path for either public product kind. The
+        // submit-for-review and pay-the-quote steps (Steps 2–3 of that phase)
+        // aren't built yet, so this can only ever report why publishing is
+        // blocked, not yet offer the next step.
+        if ($event->isFreeRegistration()) {
+            return redirect()
+                ->route('events.show', $event)
+                ->withErrors([
+                    'publish' => 'Public events go live after EventHost approves them and you pay the quoted amount — they do not use event credits.',
                 ]);
         }
 
@@ -554,8 +634,55 @@ class EventController extends Controller
         ];
     }
 
-    private function resolveCreateProductKind(Request $request, mixed $prefTemplateId): ?EventProductKind
+    /**
+     * First step of the create wizard (plans/public-private-portals.md Phase
+     * 4): Private vs Public, before product_kind is even asked. Private
+     * always means Invitation, so a resolved Private audience is enough to
+     * skip straight to the details form — resolveCreateProductKind() reflects
+     * that. A resolved Public audience with no kind yet shows the second
+     * chooser (Ticketed vs Free registration).
+     */
+    private function resolveCreateAudience(Request $request, mixed $prefTemplateId): ?EventAudience
     {
+        $fromQuery = $request->query('audience');
+        if (is_string($fromQuery)) {
+            $audience = EventAudience::tryFrom($fromQuery);
+            if ($audience !== null) {
+                return $audience;
+            }
+        }
+
+        $fromOld = old('audience');
+        if (is_string($fromOld)) {
+            $audience = EventAudience::tryFrom($fromOld);
+            if ($audience !== null) {
+                return $audience;
+            }
+        }
+
+        // Pre-dates the audience chooser (Phase 3 already links here with
+        // just ?kind=ticketed, e.g. the public portal's "New event" button) —
+        // ticketed is unambiguously always public, so that alone resolves it
+        // without forcing every existing link to also pass ?audience=.
+        if ($request->query('kind') === EventProductKind::Ticketed->value
+            || old('product_kind') === EventProductKind::Ticketed->value) {
+            return EventAudience::Public;
+        }
+
+        if ($prefTemplateId !== null) {
+            return EventAudience::Private;
+        }
+
+        return null;
+    }
+
+    private function resolveCreateProductKind(Request $request, ?EventAudience $audience, mixed $prefTemplateId): ?EventProductKind
+    {
+        // Private is invitation-only by construction — nothing left to ask.
+        if ($audience === EventAudience::Private) {
+            return EventProductKind::Invitation;
+        }
+
         $fromQuery = $request->query('kind');
         if (is_string($fromQuery)) {
             $kind = EventProductKind::tryFrom($fromQuery);
@@ -576,6 +703,8 @@ class EventController extends Controller
             return EventProductKind::Invitation;
         }
 
+        // Audience is Public but no kind chosen yet (or audience itself is
+        // still unresolved) — the create view shows the appropriate chooser.
         return null;
     }
 

@@ -19,6 +19,16 @@ final class GoogleMapsLinkParser
     /** Hosts a short link may point at directly, and a resolved redirect may pass through. */
     private const ALLOWED_HOSTS = ['maps.app.goo.gl', 'goo.gl'];
 
+    /**
+     * Google-owned country domains a redirect may land on. Short links resolve to the visitor's
+     * regional Google (google.co.zm, google.co.za, ...), not always google.com. An explicit list —
+     * not "google.<any tld>" — so a lookalike can never slip through the SSRF guard.
+     */
+    private const REGIONAL_SUFFIXES = [
+        'com', 'co.zm', 'co.za', 'co.zw', 'co.ke', 'co.tz', 'co.ug', 'co.bw', 'co.mz', 'co.ao',
+        'co.uk', 'co.in', 'com.au', 'com.ng', 'com.gh', 'com.na', 'com.mw', 'com.eg',
+    ];
+
     public static function isShortLink(string $url): bool
     {
         $host = self::host($url);
@@ -52,7 +62,7 @@ final class GoogleMapsLinkParser
             return true;
         }
 
-        return $host === 'google.com' || str_ends_with($host, '.google.com');
+        return self::isGoogleHost($host);
     }
 
     /**
@@ -70,11 +80,44 @@ final class GoogleMapsLinkParser
             return ['lat' => (float) $m[1], 'lng' => (float) $m[2]];
         }
 
-        if (preg_match('/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/', $url, $m) === 1) {
+        // q= (legacy), query= (the api=1 search links), ll= / center= / sll= (older share formats).
+        if (preg_match('/[?&](?:q|query|ll|center|sll)=(-?\d+\.\d+)(?:,|%2C)(-?\d+\.\d+)/i', $url, $m) === 1) {
             return ['lat' => (float) $m[1], 'lng' => (float) $m[2]];
         }
 
         return null;
+    }
+
+    /**
+     * The place name in a `/maps/place/{name}/...` link, decoded — or null when the link has none
+     * (or the "name" is really just a coordinate pair).
+     */
+    public static function extractPlaceName(string $url): ?string
+    {
+        if (preg_match('#/maps/place/([^/@?]+)#', $url, $m) !== 1) {
+            return null;
+        }
+
+        $name = trim(urldecode(str_replace('+', ' ', $m[1])));
+
+        if ($name === '' || preg_match('/^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/', $name) === 1) {
+            return null;
+        }
+
+        return mb_substr($name, 0, 255);
+    }
+
+    private static function isGoogleHost(string $host): bool
+    {
+        foreach (self::REGIONAL_SUFFIXES as $suffix) {
+            $root = 'google.'.$suffix;
+
+            if ($host === $root || str_ends_with($host, '.'.$root)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static function host(string $url): ?string

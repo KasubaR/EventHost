@@ -36,7 +36,7 @@
                 <p>EventHost checks your ticket types and details before turning sales on. You can keep editing the event while this is pending.</p>
             </div>
 
-            <form method="post" action="{{ route('events.ticketing.submit', $event) }}" class="profile-modal-form">
+            <form method="post" action="{{ route('public-events.ticketing.submit', $event) }}" class="profile-modal-form">
                 @csrf
                 <div class="profile-modal-actions">
                     <button type="button" class="profile-modal-cancel" id="closeActivationModal">Cancel</button>
