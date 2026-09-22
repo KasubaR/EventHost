@@ -22,6 +22,28 @@
         </div>
     </x-slot>
 
+    @if ($migratedEvents->isNotEmpty())
+        <div class="dash-notice-banner" role="status">
+            <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+            <div>
+                <strong>{{ $migratedEvents->count() === 1 ? 'An event moved to this portal' : 'Some events moved to this portal' }}</strong>
+                <p>{{ $migratedEvents->count() === 1 ? "It's" : "They're" }} here now because {{ $migratedEvents->count() === 1 ? 'it is' : 'they are' }} open to the public — before the Public/Private split, every event lived on one shared "My Events" list.</p>
+                <ul class="dash-notice-events">
+                    @foreach ($migratedEvents as $migratedEvent)
+                        <li class="dash-notice-event">
+                            <span>{{ $migratedEvent->name }}</span>
+                            <form method="post" action="{{ route('events.audience-migration-notice.dismiss', $migratedEvent) }}">
+                                @csrf
+                                @method('PATCH')
+                                <button type="submit" class="dash-notice-event-dismiss">Got it</button>
+                            </form>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        </div>
+    @endif
+
     @if ($pendingCustomQuote)
         <div class="dash-quote-banner" role="status">
             <div class="dash-quote-banner-body">

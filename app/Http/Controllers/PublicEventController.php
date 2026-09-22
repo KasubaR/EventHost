@@ -7,25 +7,75 @@ use App\Services\InvitationCustomizationService;
 use App\Services\PublicInvitationResolver;
 use App\Support\EventIcsDocument;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\View\View;
 
 class PublicEventController extends Controller
 {
     /**
+     * Date-range presets for the discover filter bar. Values are the query
+     * string tokens; 'any' (the default) applies no extra bound beyond
+     * scopeUpcoming()'s own "today or later".
+     *
+     * @var list<string>
+     */
+    private const WHEN_OPTIONS = ['today', 'week', 'month'];
+
+    /**
      * Public listing of every upcoming event hosts have made public.
      * Reached from the homepage strip's "See all" link and the site nav.
+     *
+     * Filters are plain query-string GET params (?q=&type=&when=&where=), same
+     * convention as Admin\EventController's search — cheap to bookmark/share
+     * and ->withQueryString() keeps them across pagination. `type` uses the
+     * EVENT_TYPES union (not PUBLIC_EVENT_TYPES): a free-registration event's
+     * type comes from privateEventTypes() (Event::eventTypesFor() is keyed on
+     * product_kind, not audience), so both wedding-style and ticketed-style
+     * values can legitimately appear here side by side.
      */
-    public function index(): View
+    public function index(Request $request): View
     {
+        $search = trim((string) $request->query('q', ''));
+        $type = trim((string) $request->query('type', ''));
+        $when = trim((string) $request->query('when', ''));
+        $where = trim((string) $request->query('where', ''));
+
         $events = Event::query()
             ->publiclyListed()
             ->upcoming()
+            ->when($search !== '', fn ($query) => $query->where('name', 'like', '%'.$search.'%'))
+            ->when(
+                in_array($type, Event::EVENT_TYPES, true),
+                fn ($query) => $query->where('event_type', $type)
+            )
+            ->when($where !== '', function ($query) use ($where): void {
+                $query->where(function ($q) use ($where): void {
+                    $q->where('venue', 'like', '%'.$where.'%')
+                        ->orWhere('location_name', 'like', '%'.$where.'%');
+                });
+            })
+            ->when(in_array($when, self::WHEN_OPTIONS, true), function ($query) use ($when): void {
+                $query->whereDate('event_date', '<=', match ($when) {
+                    'today' => today(),
+                    'week' => today()->addDays(7),
+                    'month' => today()->endOfMonth(),
+                });
+            })
             ->orderBy('event_date')
             ->orderBy('event_time')
-            ->paginate(12);
+            ->paginate(12)
+            ->withQueryString();
 
-        return view('events.discover', compact('events'));
+        return view('events.discover', [
+            'events' => $events,
+            'search' => $search,
+            'type' => $type,
+            'when' => $when,
+            'where' => $where,
+            'eventTypes' => Event::EVENT_TYPES,
+            'hasActiveFilters' => $search !== '' || $type !== '' || $when !== '' || $where !== '',
+        ]);
     }
 
     public function show(

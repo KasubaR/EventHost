@@ -402,6 +402,19 @@ class Event extends Model
                 && $event->isFreeRegistration()) {
                 $event->public_registration_status = PublicRegistrationStatus::Draft;
             }
+
+            // Phase 6 item 3 of plans/public-private-portals.md: every
+            // genuinely new row defaults to "already seen" — only the raw
+            // DB::table() backfill in add_audience_migration_notice_to_events_table
+            // (which bypasses Eloquent entirely, so this hook never sees it)
+            // is meant to leave this column NULL. The migration's own
+            // useCurrent() default is a documentation-level fallback; this
+            // hook is the real guarantee, since SQLite's ALTER-TABLE-added
+            // column defaults aren't reliable in every driver/version this
+            // app runs on (dev is MySQL, the test suite is SQLite).
+            if (! $event->exists && $event->audience_migration_notice_seen_at === null) {
+                $event->audience_migration_notice_seen_at = now();
+            }
         });
     }
 
@@ -444,6 +457,27 @@ class Event extends Model
     public function isFreeRegistration(): bool
     {
         return $this->isPublicAudience() && $this->isInvitation();
+    }
+
+    /**
+     * Phase 6 item 3 of plans/public-private-portals.md: true only for the
+     * handful of pre-existing invitation events the 2026-09-22 audience
+     * backfill silently moved into the Public portal (they used to live in a
+     * single, unsplit "My Events" list). The backfill migration
+     * (add_audience_migration_notice_to_events_table) reset this column to
+     * NULL on exactly those rows; every event created since defaults to
+     * "already seen" via the column's useCurrent(), so this can never be
+     * true for an event a host deliberately created through the Public
+     * chooser after Phase 4 shipped.
+     */
+    public function needsAudienceMigrationNotice(): bool
+    {
+        return $this->audience_migration_notice_seen_at === null;
+    }
+
+    public function dismissAudienceMigrationNotice(): void
+    {
+        $this->forceFill(['audience_migration_notice_seen_at' => now()])->save();
     }
 
     /**
@@ -913,6 +947,7 @@ class Event extends Model
             'event_date' => 'date',
             'product_kind' => EventProductKind::class,
             'audience' => EventAudience::class,
+            'audience_migration_notice_seen_at' => 'datetime',
             'ticketing_status' => TicketingStatus::class,
             'commission_mode' => CommissionMode::class,
             'ticketing_submitted_at' => 'datetime',

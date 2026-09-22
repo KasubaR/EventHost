@@ -519,6 +519,22 @@ class EventController extends Controller
         return back()->with('status', 'invitation-resumed');
     }
 
+    /**
+     * Phase 6 item 3 of plans/public-private-portals.md — dismisses the
+     * one-time "this event moved to the Public portal" notice. `update` is
+     * the right gate here (not a dedicated policy ability): this is a
+     * read-state flag on the event's own record, the same trust level as
+     * any other edit a host can already make to it.
+     */
+    public function dismissAudienceMigrationNotice(Event $event): RedirectResponse
+    {
+        $this->authorize('update', $event);
+
+        $event->dismissAudienceMigrationNotice();
+
+        return back();
+    }
+
     public function cancel(Event $event): RedirectResponse
     {
         $this->authorize('cancel', $event);

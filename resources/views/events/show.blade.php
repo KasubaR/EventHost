@@ -36,7 +36,7 @@
                          ticketing dashboard — see plans/ticketing.md wizard reorder. --}}
                     <a href="{{ route($event->canSubmitTicketing() ? 'public-events.ticket-types.index' : 'public-events.tickets.overview', $event) }}" class="btn-primary"><x-ticket-icon /> Tickets</a>
                 @else
-                    <a href="{{ route('events.guests.index', $event) }}" class="btn-primary"><i class="fa-solid fa-users"></i> Guests & RSVPs</a>
+                    <a href="{{ route('events.guests.index', $event) }}" class="btn-primary"><i class="fa-solid fa-users"></i> {{ $event->isFreeRegistration() ? 'Registrations' : 'Guests & RSVPs' }}</a>
                 @endif
                 @if ($event->isTicketed())
                     <a href="{{ route('public-events.tickets.checkin.scan', $event) }}" class="evt-btn-outline">

@@ -37,7 +37,7 @@
         @if ($event->isTicketed())
             <a href="{{ route('public-events.ticket-types.index', $event) }}" class="btn-primary"><x-ticket-icon /> Tickets</a>
         @else
-            <a href="{{ route('events.guests.index', $event) }}" class="{{ request('from') === 'guests' ? 'btn-primary' : 'evt-btn-outline' }}"><i class="fa-solid fa-users"></i> Guests &amp; RSVPs</a>
+            <a href="{{ route('events.guests.index', $event) }}" class="{{ request('from') === 'guests' ? 'btn-primary' : 'evt-btn-outline' }}"><i class="fa-solid fa-users"></i> {{ $event->isFreeRegistration() ? 'Registrations' : 'Guests & RSVPs' }}</a>
         @endif
         <a href="{{ route('events.edit', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-pen-to-square"></i> Edit</a>
         <a href="{{ route('events.show', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-eye"></i> View</a>

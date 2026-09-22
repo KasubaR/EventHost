@@ -1,7 +1,8 @@
 # Feature Plan: Private portal + Public portal
 
-Status: **Phases 1–4 and 4c shipped** (2026-09-22). Phases 5–9 planned — see each phase's own notes. Written
-2026-09-22.
+Status: **Phases 1–4, 4c, 5 (for now) and 6 shipped** (2026-09-22 — Phase 5 items 2 and 4 shipped, item 3
+needed no work, item 1 deliberately deferred to a possible Phase 5b, item 5 stays optional/later; see each
+phase's own notes). Phases 7–9 planned. Written 2026-09-22.
 
 Split the organizer side of EventHost into two portals:
 
@@ -397,22 +398,73 @@ inventing new patterns, to keep the risk down.
     Base/Pro/Pro+ subscriptions are still sold there.
 
 ### Phase 5 — Public portal features
-1. Public event page for free-registration events: today it reuses the wedding-style invitation renderer.
-   Decide in Phase 0 whether v1 accepts that or gets a proper public-event layout (recommended: v1 accepts
-   it, redesign is Phase 5b).
-2. `/discover`: search, event-type filter, date filter, city/venue filter. Public-audience only.
+1. **Decided 2026-09-22: v1 stays on the wedding-style invitation renderer, no work planned.** A
+   free-registration event still renders through `events/public.blade.php` → the same skin/theme/section
+   system private invitation events use, drawing its event type from the same `privateEventTypes()` list
+   (wedding, birthday, corporate, church, …) rather than a concert/conference-style list. Considered and
+   rejected for now: a dedicated fixed public-event landing page mirroring `events/tickets/landing.blade.php`
+   (no skin, no `choose-template` step, fixed hero/date/location/description/RSVP layout) — the
+   architecturally consistent fix, but real net-new work touching the create/edit wizard too. Revisit as
+   Phase 5b if/when a free-registration event that doesn't fit an invitation aesthetic (a public meetup, an
+   open community event) becomes common enough to justify it.
+2. **`/discover` search + filters — shipped 2026-09-22.** `PublicEventController::index()` takes four plain
+   GET params (`q`, `type`, `when`, `where`), same query-string convention as `Admin\EventController`'s own
+   search (`->withQueryString()` keeps them across pagination). `type` filters against `Event::EVENT_TYPES`
+   — the **union**, not `PUBLIC_EVENT_TYPES` — because a free-registration event's type comes from
+   `privateEventTypes()` (`eventTypesFor()` is keyed on product_kind, not audience), so wedding-style and
+   ticketed-style values legitimately mix on this one page. `where` matches `venue` OR `location_name` (no
+   separate city column exists). `when` is three fixed presets (today / next 7 days / this month) layered on
+   top of `scopeUpcoming()`'s own "today or later", not a free date-range picker. An unrecognized `type`
+   value is silently ignored rather than erroring, so a stale/hand-edited URL just falls back to unfiltered.
+   The empty state now distinguishes "no public events exist at all" (unchanged copy, still what
+   `UpcomingEventsSectionTest` asserts) from "filters matched nothing" (new copy + a Clear filters link) —
+   `hasActiveFilters` in the view drives which one renders. New `.discover-filters` block in
+   `event-cards.css` (native `<select>`/`<input>`, not the dashboard's `data-cs` custom-select — this is a
+   `layouts.site` page, plain form controls match the same page's `contact.blade.php` convention).
+   `tests/Feature/DiscoverFiltersTest.php` (11 tests) covers each filter alone, combined, an invalid type
+   value, both empty states, and that filter values persist back into the form.
 3. Homepage strip: unchanged query (`scopePubliclyListed()`), which is already public-only.
-4. Public + invitation events get guest-list style views (registrations) instead of an invite list; reuse
-   `GuestController` with copy changes rather than a new controller.
+4. **Registration-style guest views — shipped 2026-09-22.** `GuestController` itself is unchanged — it
+   already gates on `isInvitation()`, true for both audiences, and a free-registration event's self-signups
+   already land in the `guests` table via `RsvpController::storeOpen()` (with `invitation_token = null`,
+   since nobody personally invited them). This was purely copy: `events/guests/index.blade.php`,
+   `create.blade.php` and `edit.blade.php` branch on `Event::isFreeRegistration()` to say "Registrations" /
+   "Add registration" instead of "Guests" / "Add guest", same for the "Guests & RSVPs" button on
+   `events/show.blade.php` and the shared `events/partials/my-event-card.blade.php` (used by both portal
+   indexes). One small behavior tweak, not just a label: a row with `invitation_token === null` now shows a
+   "Registered" pill instead of "Not marked" in the Invitation/Status column — "Not marked" reads as an
+   ignored task, which is wrong for someone who was never going to get a personal invite. A manually-added
+   entry (still gets a real token regardless of audience, since `store()` doesn't branch on it) keeps the
+   normal Sent/Not marked states. `tests/Feature/GuestRegistrationCopyTest.php` (7 tests) covers both
+   audiences' wording, the self-registered pill, and that a manually-added entry's invite status still shows.
 5. Organizer public profile page (optional, later).
 
-### Phase 6 — Migrate existing events
-1. Data: the Phase 1 backfill already assigns audience. Manually verify the 2 local events land in Public.
-2. Every host-facing email/notification/WhatsApp link that points at a moved URL: audit and repoint
-   (`EventUpdatedNotification`, `RsvpReminderNotification`, staff invitation and ticketing-approval mails,
-   `WhatsApp` invitation builder). The 301s are the safety net, not the plan.
-3. Hosts who currently have a **private** invitation event with `is_public = 1` and real guests: show a
-   one-time notice in the new portal explaining the event moved.
+### Phase 6 — Migrate existing events — SHIPPED 2026-09-22
+1. **Verified.** Both local events (`Sample Public Event`, `John's Wedding`) landed with `audience = public`
+   after the Phase 1 backfill, each with a real guest attached — confirming item 3 below wasn't a
+   theoretical scenario for this data.
+2. **Audited, nothing to repoint.** `EventUpdatedNotification`, `RsvpReminderNotification`,
+   `TicketingApprovedNotification` and `EventStaffInviteNotification` only ever link to attendee-facing URLs
+   (`rsvp.token.show`, `events.public`, `staff-invitations.show`) that Phase 3b's re-homing never touched —
+   those were frozen from the start per §2. `TicketingRejectedNotification` did link to a route that moved
+   (`events.ticket-types.index`), but Phase 3b's own mechanical rename already caught and fixed it in the
+   same pass, so there was nothing left here.
+3. **One-time "this event moved" notice — shipped.** New nullable `events.audience_migration_notice_seen_at`
+   column (migration `add_audience_migration_notice_to_events_table`). The tricky part: the original Phase 1
+   backfill (`add_audience_to_events_table`) never flagged which rows it touched, so this migration
+   reconstructs it after the fact — it resets the column to `NULL` only on rows matching that backfill's
+   exact criteria (`product_kind != ticketed AND is_public = true`), the same query shape. Every event
+   created from this point on defaults to "already seen": originally via the column's own `useCurrent()`,
+   but that turned out unreliable for an ALTER-TABLE-added column under SQLite (works fine on the dev/prod
+   MySQL, silently stayed NULL under the test suite's SQLite driver) — so `Event::booted()`'s existing
+   `saving` hook is the real guarantee now, setting it on any genuinely new row (`! $event->exists`) the
+   same way it already defaults `public_registration_status`. `Event::needsAudienceMigrationNotice()` /
+   `dismissAudienceMigrationNotice()` are the read/write pair; `EventController::dismissAudienceMigrationNotice()`
+   (`PATCH /events/{event}/audience-migration-notice/dismiss`, gated on `update` like any other edit to the
+   event) is the dismiss action. Shown as a `.dash-notice-banner` on `public-dashboard.blade.php` — one row
+   per affected event with its own "Got it" button, not a single dismiss-all, since each event has its own
+   timestamp. `tests/Feature/AudienceMigrationNoticeTest.php` (6 tests) covers the model flag, both banner
+   states, and that only the owner can dismiss it.
 
 ### Phase 7 — Android API (`/api/v1`)
 1. **Additive only:** add `audience` to `EventResource`, `EventListResource`, `EventPreviewResource`.

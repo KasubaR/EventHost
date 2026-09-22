@@ -3,12 +3,14 @@
         <link rel="stylesheet" href="{{ asset('css/events-admin.css') }}">
     @endpush
 
-    <x-slot name="title">Guests — {{ $event->name }}</x-slot>
+    @php $isRegistrations = $event->isFreeRegistration(); @endphp
+
+    <x-slot name="title">{{ $isRegistrations ? 'Registrations' : 'Guests' }} — {{ $event->name }}</x-slot>
 
     <x-slot name="pageHeader">
         <div class="dph-inner">
             <div>
-                <h1 class="dph-title">Guests</h1>
+                <h1 class="dph-title">{{ $isRegistrations ? 'Registrations' : 'Guests' }}</h1>
                 <p class="dph-sub">{{ $event->name }}</p>
             </div>
             <div class="evt-card-actions">
@@ -28,7 +30,7 @@
                 </a>
                 @php $guestCapacityReached = $event->hasReachedGuestCapacity(); @endphp
                 <a href="{{ $guestCapacityReached ? \App\Support\BillingPlan::checkoutUrlForTier($event->nextGuestCapacityTier()) : route('events.guests.create', $event) }}" class="btn-primary">
-                    <i class="fa-solid fa-user-plus"></i> Add guest
+                    <i class="fa-solid fa-user-plus"></i> {{ $isRegistrations ? 'Add registration' : 'Add guest' }}
                     @if ($guestCapacityReached)
                         <span class="evt-credit-badge">{{ $event->nextGuestCapacityTier()->label() }}</span>
                     @endif
@@ -40,11 +42,11 @@
     </x-slot>
 
     @if (session('status') === 'guest-created')
-        <div class="evt-admin-flash">Guest added.</div>
+        <div class="evt-admin-flash">{{ $isRegistrations ? 'Registration added.' : 'Guest added.' }}</div>
     @elseif (session('status') === 'guest-updated')
-        <div class="evt-admin-flash">Guest updated.</div>
+        <div class="evt-admin-flash">{{ $isRegistrations ? 'Registration updated.' : 'Guest updated.' }}</div>
     @elseif (session('status') === 'guest-deleted')
-        <div class="evt-admin-flash">Guest removed.</div>
+        <div class="evt-admin-flash">{{ $isRegistrations ? 'Registration removed.' : 'Guest removed.' }}</div>
     @elseif (session('status') === 'guest-invitation-marked-sent')
         <div class="evt-admin-flash">Invitation marked as sent.</div>
     @elseif (session('status') === 'guest-whatsapp-sent')
@@ -86,7 +88,7 @@
                 <div class="evt-stat-value">
                     {{ $stats['total'] }}@if ($event->guestCapacity() !== null)<span class="evt-stat-value-of"> / {{ $event->guestCapacity() }}</span>@endif
                 </div>
-                <div class="evt-stat-label">Total guests</div>
+                <div class="evt-stat-label">{{ $isRegistrations ? 'Total registrations' : 'Total guests' }}</div>
             </div>
             <div class="evt-stat-card">
                 <div class="evt-stat-value">{{ $stats['pending'] }}</div>
@@ -229,7 +231,7 @@
         <div class="evt-section">
             <div class="evt-section-body evt-table-wrap">
                 @if ($guests->isEmpty())
-                    <p class="evt-muted">No guests match this filter.</p>
+                    <p class="evt-muted">{{ $isRegistrations ? 'No registrations match this filter.' : 'No guests match this filter.' }}</p>
                 @else
                     <table class="evt-table evt-guest-table" data-evt-guest-bulk-table>
                         <thead>
@@ -243,7 +245,7 @@
                                 <th>Table</th>
                                 <th>Response</th>
                                 <th>Attendees</th>
-                                <th>Invitation</th>
+                                <th>{{ $isRegistrations ? 'Status' : 'Invitation' }}</th>
                                 <th></th>
                             </tr>
                         </thead>
@@ -286,7 +288,12 @@
                                     </td>
                                     <td>{{ $rsvpRow && $rsvpRow->status->countsTowardGuestLimit() ? $rsvpRow->attendee_count : '—' }}</td>
                                     <td>
-                                        @if ($guestRow->invitation_sent)
+                                        @if ($guestRow->invitation_token === null)
+                                            {{-- No personal invite link was ever issued — this row came
+                                                 in through open registration, not a host invite, so
+                                                 "Not marked" would misread as a pending task. --}}
+                                            <span class="evt-pill evt-pill--accepted">Registered</span>
+                                        @elseif ($guestRow->invitation_sent)
                                             <span class="evt-pill evt-pill--accepted">Sent</span>
                                             @if ($guestRow->invitation_sent_at)
                                                 <span class="evt-muted evt-guest-sent-meta">{{ $guestRow->invitation_sent_at->timezone(config('app.timezone'))->format('M j, Y') }}</span>

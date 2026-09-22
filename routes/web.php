@@ -422,6 +422,8 @@ Route::middleware(['auth', 'account.active', 'verified'])->group(function () {
     Route::patch('/events/{event}/publish', [EventController::class, 'publish'])->name('events.publish');
     Route::patch('/events/{event}/pause', [EventController::class, 'pause'])->name('events.pause');
     Route::patch('/events/{event}/resume', [EventController::class, 'resume'])->name('events.resume');
+    Route::patch('/events/{event}/audience-migration-notice/dismiss', [EventController::class, 'dismissAudienceMigrationNotice'])
+        ->name('events.audience-migration-notice.dismiss');
     Route::patch('/events/{event}/cancel', [EventController::class, 'cancel'])->name('events.cancel');
     Route::patch('/events/{event}/uncancel', [EventController::class, 'uncancel'])->name('events.uncancel');
     Route::post('/events/{event}/restore', [EventController::class, 'restore'])

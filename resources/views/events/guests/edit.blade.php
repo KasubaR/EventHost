@@ -7,16 +7,18 @@
         <script src="{{ asset('js/custom-select.js') }}" defer></script>
     @endpush
 
-    <x-slot name="title">Edit guest — {{ $event->name }}</x-slot>
+    @php $isRegistrations = $event->isFreeRegistration(); @endphp
+
+    <x-slot name="title">{{ $isRegistrations ? 'Edit registration' : 'Edit guest' }} — {{ $event->name }}</x-slot>
 
     <x-slot name="pageHeader">
         <div class="dph-inner">
             <div>
-                <h1 class="dph-title">Edit guest</h1>
+                <h1 class="dph-title">{{ $isRegistrations ? 'Edit registration' : 'Edit guest' }}</h1>
                 <p class="dph-sub">{{ $guest->name }}</p>
             </div>
             <div class="evt-card-actions">
-                <a href="{{ route('events.guests.index', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-list"></i> All guests</a>
+                <a href="{{ route('events.guests.index', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-list"></i> {{ $isRegistrations ? 'All registrations' : 'All guests' }}</a>
             </div>
         </div>
     </x-slot>

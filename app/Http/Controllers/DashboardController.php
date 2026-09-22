@@ -53,11 +53,21 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
+        // Phase 6 item 3 of plans/public-private-portals.md: the handful of
+        // pre-existing events the audience backfill silently moved here.
+        // whereNull is the live equivalent of Event::needsAudienceMigrationNotice().
+        $migratedEvents = Event::query()
+            ->where('user_id', $user->id)
+            ->whereNull('audience_migration_notice_seen_at')
+            ->orderBy('name')
+            ->get();
+
         return view('public-dashboard', [
             'user' => $user,
             'analytics' => $analyticsService->forUser($user, $ledger),
             'staffing' => $staffing,
             'pendingCustomQuote' => CustomQuote::pendingFor($user),
+            'migratedEvents' => $migratedEvents,
         ]);
     }
 }
