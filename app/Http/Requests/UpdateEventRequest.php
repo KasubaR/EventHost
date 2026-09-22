@@ -85,7 +85,6 @@ class UpdateEventRequest extends FormRequest
             'staged_media' => ['nullable', 'array', 'max:4'],
             'staged_media.*' => ['integer', 'min:1'],
             'slug' => ['nullable', 'string', new EventSlugAvailable($event?->id)],
-            'is_public' => ['boolean'],
             // event_date comparisons live in withValidator() below — a bare
             // 'before_or_equal:event_date' compares against event_date parsed
             // as midnight, which would reject any same-day deadline that has
@@ -104,38 +103,7 @@ class UpdateEventRequest extends FormRequest
         $validator->after(function (Validator $validator): void {
             $this->guardRsvpDeadline($validator);
             $this->guardEventNotPushedIntoPast($validator);
-            $this->guardPublicVisibility($validator);
         });
-    }
-
-    /**
-     * Same gate as StoreEventRequest — Base and above to make an invitation
-     * event public. Ticketed events are exempt: is_public never travels for
-     * them anyway (EventController::update() strips it before the save),
-     * and TicketedEventCreator hardcoded it true at creation regardless of
-     * tier.
-     */
-    private function guardPublicVisibility(Validator $validator): void
-    {
-        /** @var Event $event */
-        $event = $this->route('event');
-
-        if ($event->isTicketed()) {
-            return;
-        }
-
-        if (! $this->boolean('is_public')) {
-            return;
-        }
-
-        if ($this->user()?->canMakeEventsPublic()) {
-            return;
-        }
-
-        $validator->errors()->add(
-            'is_public',
-            'Making your event public requires the Base plan or higher. Leave it invite-only, or upgrade to unlock this.'
-        );
     }
 
     /**

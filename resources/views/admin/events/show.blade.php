@@ -220,6 +220,80 @@
             </div>
         @endif
 
+        @if ($ev->isFreeRegistration() && auth('admin')->user()?->can('events.public_registration_manage'))
+            @php
+                $registrationPaid = $ev->public_registration_quote_paid_at !== null;
+                $registrationActivatable = ! $registrationPaid && in_array($ev->public_registration_status, [
+                    \App\Enums\PublicRegistrationStatus::Draft,
+                    \App\Enums\PublicRegistrationStatus::PendingReview,
+                    \App\Enums\PublicRegistrationStatus::Approved,
+                    \App\Enums\PublicRegistrationStatus::Rejected,
+                ], true);
+            @endphp
+            <div class="admin-panel-card">
+                <h2>Public registration</h2>
+                <p class="admin-muted admin-mt-sm">Free-registration events are admin-approved and admin-priced instead of using an event credit — the host pays this quote to publish.</p>
+
+                <div class="admin-callout admin-callout--{{ $ev->public_registration_status->tone() }} admin-mt-md">
+                    <div class="admin-callout-icon" aria-hidden="true"><i class="fa-solid {{ $ev->public_registration_status->icon() }}"></i></div>
+                    <div>
+                        <p class="admin-callout-kicker">
+                            @if ($registrationPaid)
+                                Approved — paid and live
+                            @else
+                                {{ $ev->public_registration_status->label() }}
+                            @endif
+                        </p>
+                        <p class="admin-callout-body">
+                            @if ($ev->public_registration_status === \App\Enums\PublicRegistrationStatus::PendingReview)
+                                Submitted {{ $ev->public_registration_submitted_at?->format('j M Y, H:i') }}.
+                            @elseif ($ev->public_registration_status === \App\Enums\PublicRegistrationStatus::Approved)
+                                Quoted K{{ number_format((float) $ev->public_registration_quote_amount, 2) }}
+                                @if ($registrationPaid)
+                                    · paid {{ $ev->public_registration_quote_paid_at?->format('j M Y, H:i') }}
+                                @else
+                                    · awaiting payment
+                                @endif
+                            @elseif ($ev->public_registration_status === \App\Enums\PublicRegistrationStatus::Rejected && $ev->public_registration_rejection_note)
+                                {{ $ev->public_registration_rejection_note }}
+                            @else
+                                The host has not submitted this event for review yet.
+                            @endif
+                        </p>
+                    </div>
+                </div>
+
+                @if ($registrationActivatable)
+                    <form method="post" action="{{ route('admin.events.public-registration.approve', $ev) }}" class="profile-form admin-mt-md">
+                        @csrf
+                        <label for="quote_amount">Quote amount (ZMW)</label>
+                        <input id="quote_amount" name="quote_amount" type="number" step="0.01" min="1" max="999999.99"
+                               class="profile-input {{ $errors->has('quote_amount') ? 'profile-input--error' : '' }}"
+                               value="{{ old('quote_amount', $ev->public_registration_quote_amount) }}">
+                        @error('quote_amount')
+                            <p class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
+                        @enderror
+                        <div class="admin-actions admin-mt-md">
+                            <button type="submit" class="btn-primary">
+                                {{ $ev->public_registration_status === \App\Enums\PublicRegistrationStatus::Approved ? 'Update quote' : 'Approve & set quote' }}
+                            </button>
+                        </div>
+                    </form>
+                @endif
+
+                @if ($ev->public_registration_status === \App\Enums\PublicRegistrationStatus::PendingReview)
+                    <form method="post" action="{{ route('admin.events.public-registration.reject', $ev) }}" class="profile-form admin-mt-md">
+                        @csrf
+                        <label for="public_registration_rejection_note">Decline reason</label>
+                        <textarea id="public_registration_rejection_note" name="public_registration_rejection_note" class="profile-input" rows="3" required maxlength="2000">{{ old('public_registration_rejection_note') }}</textarea>
+                        <div class="admin-actions admin-mt-md">
+                            <button type="submit" class="evt-btn-outline evt-btn-danger-outline">Decline</button>
+                        </div>
+                    </form>
+                @endif
+            </div>
+        @endif
+
         <div class="admin-panel-card">
             <h2>Owner account</h2>
             <p class="admin-muted admin-mt-sm">{{ $ev->user?->name ?? '—' }}</p>

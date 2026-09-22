@@ -202,20 +202,24 @@ class EventStaffTest extends TestCase
         $this->assertNotNull($event->fresh());
     }
 
-    public function test_dashboard_and_events_index_list_events_the_user_staffs(): void
+    public function test_public_dashboard_and_public_events_index_list_events_the_user_staffs(): void
     {
+        // Staff access is ticketed-only, i.e. always a public-audience event
+        // (plans/public-private-portals.md Phase 3), so it now surfaces on the
+        // public portal's dashboard and index — not the private ones, which a
+        // check-in staffer with no owned events would otherwise see empty.
         $owner = User::factory()->pro()->create();
         $event = Event::factory()->for($owner)->ticketed()->create(['name' => 'Staffed Concert']);
         $staffer = User::factory()->create();
         EventStaff::factory()->for($event)->accepted()->create(['user_id' => $staffer->id, 'email' => $staffer->email]);
 
         $this->actingAs($staffer)
-            ->get(route('dashboard'))
+            ->get(route('public-dashboard'))
             ->assertOk()
             ->assertSee('Staffed Concert');
 
         $this->actingAs($staffer)
-            ->get(route('events.index'))
+            ->get(route('public-events.index'))
             ->assertOk()
             ->assertSee('Staffed Concert');
     }

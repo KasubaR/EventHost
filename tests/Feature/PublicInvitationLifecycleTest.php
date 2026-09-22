@@ -115,9 +115,12 @@ class PublicInvitationLifecycleTest extends TestCase
         $user = User::factory()->create();
         $event = $this->liveEvent(['user_id' => $user->id, 'name' => 'Gone Event', 'slug' => 'gone-event']);
 
+        // liveEvent() is is_public => true, i.e. public audience (Phase 3 of
+        // plans/public-private-portals.md), so deleting it lands back on the
+        // public portal's index, not the private one.
         $this->actingAs($user)
             ->delete(route('events.destroy', $event))
-            ->assertRedirect(route('events.index'));
+            ->assertRedirect(route('public-events.index'));
 
         $this->assertSoftDeleted('events', ['id' => $event->id]);
 
@@ -286,10 +289,10 @@ class PublicInvitationLifecycleTest extends TestCase
         $this->actingAs($otherOwner)->post(route('events.store'), [
             'name' => 'The Jones Wedding',
             'event_type' => 'wedding',
+            'audience' => 'private',
             'product_kind' => 'invitation',
             'event_date' => now()->addWeek()->format('Y-m-d'),
             'event_time' => '15:30',
-            'is_public' => '1',
             'allow_plus_one' => '0',
             'show_guest_list' => '0',
         ])->assertRedirect();

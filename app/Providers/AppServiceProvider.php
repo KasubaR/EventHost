@@ -152,6 +152,13 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(10)->by((string) $request->user()?->id ?? $request->ip());
         });
 
+        // Covers both the invite and resend actions — a host repeatedly
+        // inviting the same address is otherwise an open email spam/cost
+        // vector, same reasoning as ticket-resend above.
+        RateLimiter::for('staff-invite-send', function (Request $request): Limit {
+            return Limit::perMinute(10)->by((string) $request->user()?->id ?? $request->ip());
+        });
+
         RateLimiter::for('ticket-hold', function (Request $request): Limit {
             $route = $request->route();
             $slug = $route?->parameter('slug');

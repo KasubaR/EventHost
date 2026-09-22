@@ -39,14 +39,25 @@ class PaymentReceiptNotification extends Notification implements ShouldQueue
             ->line('Amount: '.$this->payment->currency.' '.number_format((float) $this->payment->amount, 2))
             ->line('Reference: '.$this->payment->payment_reference);
 
-        // remove_branding grants neither credits nor a tier — the normal
-        // "you now have N credits" line would be misleading here.
+        // remove_branding and public_registration_quote grant neither
+        // credits nor a tier — the normal "you now have N credits" line
+        // would be misleading for either.
         if ($this->payment->plan_key === 'remove_branding') {
             $eventId = data_get($this->payment->metadata, 'event_id');
             $event = is_numeric($eventId) ? Event::query()->find((int) $eventId) : null;
 
             return $mail
                 ->line('The EventHost bar no longer shows on '.($event?->name ?? 'that event').'\'s public pages.')
+                ->action('View event', $event !== null ? route('events.show', $event) : route('events.index'))
+                ->salutation('The '.config('app.name').' Team');
+        }
+
+        if ($this->payment->plan_key === 'public_registration_quote') {
+            $eventId = data_get($this->payment->metadata, 'event_id');
+            $event = is_numeric($eventId) ? Event::query()->find((int) $eventId) : null;
+
+            return $mail
+                ->line(($event?->name ?? 'Your event').' is now live at its public link.')
                 ->action('View event', $event !== null ? route('events.show', $event) : route('events.index'))
                 ->salutation('The '.config('app.name').' Team');
         }

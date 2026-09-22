@@ -81,6 +81,10 @@ class BillingPlan
             return 'Enterprise';
         }
 
+        if ($key === 'public_registration_quote') {
+            return 'Public Registration Fee';
+        }
+
         $addon = self::getAddon($key);
         if ($addon !== null) {
             return (string) ($addon['label'] ?? $key);

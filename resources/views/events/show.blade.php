@@ -71,7 +71,7 @@
                     </a>
                 @endcan
                 @endif
-                <a href="{{ route('events.index') }}" class="evt-btn-outline"><i class="fa-solid fa-list"></i> All events</a>
+                <a href="{{ route($event->isPublicAudience() ? 'public-events.index' : 'events.index') }}" class="evt-btn-outline"><i class="fa-solid fa-list"></i> All events</a>
             </div>
         </div>
     </x-slot>

@@ -54,11 +54,12 @@ class EventTicketingController extends Controller
                 ->withErrors(['ticketing' => $e->getMessage()]);
         }
 
-        // Success leaves the wizard entirely — My Events, not back to the
-        // Tickets page, since there's nothing further to do here until
-        // EventHost reviews it.
+        // Success leaves the wizard entirely — My Public Events, not back to
+        // the Tickets page, since there's nothing further to do here until
+        // EventHost reviews it. A ticketed event is always public audience
+        // (Event::booted()), so that's always the right portal to land on.
         return redirect()
-            ->route('events.index')
+            ->route('public-events.index')
             ->with('status', 'ticketing-submitted');
     }
 }

@@ -9,9 +9,9 @@
         <div class="dph-inner">
             <div>
                 <h1 class="dph-title">My Events</h1>
-                <p class="dph-sub">Drafts and published invitations.</p>
+                <p class="dph-sub">Drafts and published invitations for your invited guests.</p>
             </div>
-            <a href="{{ route('events.create') }}" class="btn-primary">
+            <a href="{{ route('events.create', ['audience' => 'private']) }}" class="btn-primary">
                 <i class="fa-solid fa-plus"></i> New event
                 <span class="evt-credit-badge">{{ auth()->user()->event_credits }} credit{{ auth()->user()->event_credits === 1 ? '' : 's' }}</span>
             </a>
@@ -22,8 +22,6 @@
         <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Event deleted. You can restore it from Recently deleted below.</div>
     @elseif (session('status') === 'event-restored')
         <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Event restored.</div>
-    @elseif (session('status') === 'ticketing-submitted')
-        <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Submitted for EventHost review. Ticket sales stay off until we approve.</div>
     @elseif (session('status') === 'no-event-credits')
         <div class="evt-flash evt-flash--warn"><i class="fa-solid fa-triangle-exclamation"></i> You have no event credits. <a href="{{ route('billing.show') }}">Buy an event credit</a> to publish.</div>
     @elseif (session('status') === 'draft-limit')
@@ -37,138 +35,23 @@
         <div class="evt-flash evt-flash--info"><i class="fa-solid fa-circle-info"></i> Guests and RSVPs are managed per event. Pick an event below, then choose "Guests &amp; RSVPs" on it.</div>
     @endif
 
-    <nav class="evt-kind-filter" aria-label="Filter by event kind">
-        <a href="{{ route('events.index') }}" class="evt-kind-filter-tab {{ $kind === null ? 'is-active' : '' }}">
-            <i class="fa-solid fa-layer-group" aria-hidden="true"></i>
-            All
-        </a>
-        <a href="{{ route('events.index', ['kind' => 'invitation']) }}" class="evt-kind-filter-tab {{ $kind === \App\Enums\EventProductKind::Invitation ? 'is-active' : '' }}">
-            <i class="fa-solid fa-envelope-open-text" aria-hidden="true"></i>
-            Invitation / RSVP
-        </a>
-        <a href="{{ route('events.index', ['kind' => 'ticketed']) }}" class="evt-kind-filter-tab {{ $kind === \App\Enums\EventProductKind::Ticketed ? 'is-active' : '' }}">
-            <x-ticket-icon />
-            Ticketed
-        </a>
-    </nav>
-
     @if ($published->total() === 0 && $drafts->total() === 0 && $deleted->total() === 0)
         @if (request('from') === 'guests')
             <div class="dash-empty">
                 <div class="dash-empty-icon"><i class="fa-solid fa-users"></i></div>
                 <h2>No Events Yet</h2>
                 <p>You need an event before you can manage guests and RSVPs. Create one to get started.</p>
-                <a href="{{ route('events.create') }}" class="btn-primary"><i class="fa-solid fa-plus"></i> Create event</a>
-            </div>
-        @elseif ($kind !== null)
-            <div class="dash-empty">
-                <div class="dash-empty-icon">
-                    @if ($kind === \App\Enums\EventProductKind::Ticketed)
-                        <x-ticket-icon />
-                    @else
-                        <i class="fa-solid fa-envelope-open-text"></i>
-                    @endif
-                </div>
-                <h2>No {{ $kind === \App\Enums\EventProductKind::Ticketed ? 'Ticketed Events' : 'Invitations' }} Yet</h2>
-                <p>Create one to see it here.</p>
-                <a href="{{ route('events.create') }}" class="btn-primary"><i class="fa-solid fa-plus"></i> Create event</a>
+                <a href="{{ route('events.create', ['audience' => 'private']) }}" class="btn-primary"><i class="fa-solid fa-plus"></i> Create event</a>
             </div>
         @else
             <div class="dash-empty">
                 <div class="dash-empty-icon"><i class="fa-solid fa-envelope-open-text"></i></div>
                 <h2>No Events Yet</h2>
                 <p>Create your first invitation to see it here.</p>
-                <a href="{{ route('events.create') }}" class="btn-primary"><i class="fa-solid fa-plus"></i> Create event</a>
+                <a href="{{ route('events.create', ['audience' => 'private']) }}" class="btn-primary"><i class="fa-solid fa-plus"></i> Create event</a>
             </div>
         @endif
     @else
-        <section class="evt-group">
-            <div class="evt-group-head">
-                <h2 class="evt-group-title"><i class="fa-solid fa-circle-check"></i> Published</h2>
-                <span class="evt-group-count">{{ $published->total() }}</span>
-            </div>
-            @if ($published->total() === 0)
-                <p class="evt-group-empty">Nothing published yet. Finish a draft and publish it to share its invitation link.</p>
-            @else
-                <div class="evt-list">
-                    @foreach ($published as $event)
-                        @include('events.partials.my-event-card', ['event' => $event])
-                    @endforeach
-                </div>
-                @if ($published->hasPages())
-                    <div class="evt-pagination">{{ $published->links() }}</div>
-                @endif
-            @endif
-        </section>
-
-        <section class="evt-group">
-            <div class="evt-group-head">
-                <h2 class="evt-group-title"><i class="fa-solid fa-pen"></i> Drafts</h2>
-                <span class="evt-group-count">{{ $drafts->total() }}</span>
-            </div>
-            @if ($drafts->total() === 0)
-                <p class="evt-group-empty">No drafts. Every event you have created is published.</p>
-            @else
-                <div class="evt-list">
-                    @foreach ($drafts as $event)
-                        @include('events.partials.my-event-card', ['event' => $event])
-                    @endforeach
-                </div>
-                @if ($drafts->hasPages())
-                    <div class="evt-pagination">{{ $drafts->links() }}</div>
-                @endif
-            @endif
-        </section>
-
-        @if ($deleted->total() > 0)
-            <section class="evt-group">
-                <div class="evt-group-head">
-                    <h2 class="evt-group-title"><i class="fa-solid fa-trash-can"></i> Recently deleted</h2>
-                    <span class="evt-group-count">{{ $deleted->total() }}</span>
-                </div>
-                <div class="evt-list">
-                    @foreach ($deleted as $event)
-                        <article class="evt-card">
-                            <div class="evt-card-main">
-                                <img src="{{ $event->cover_image_url }}" alt="" class="evt-card-cover" width="96" height="54">
-                                <div class="evt-card-body">
-                                    <h3>{{ $event->name }}</h3>
-                                    <p class="evt-card-meta">
-                                        Deleted {{ $event->deleted_at?->diffForHumans() }}
-                                        · <code>/e/{{ $event->slug }}</code>
-                                    </p>
-                                </div>
-                            </div>
-                            <div class="evt-card-actions">
-                                <form method="post" action="{{ route('events.restore', $event) }}">
-                                    @csrf
-                                    <button type="submit" class="btn-primary"><i class="fa-solid fa-rotate-left"></i> Restore</button>
-                                </form>
-                            </div>
-                        </article>
-                    @endforeach
-                </div>
-                @if ($deleted->hasPages())
-                    <div class="evt-pagination">{{ $deleted->links() }}</div>
-                @endif
-            </section>
-        @endif
-    @endif
-
-    @if ($staffing->total() > 0)
-        <section class="evt-group">
-            <div class="evt-group-head">
-                <h2 class="evt-group-title"><i class="fa-solid fa-user-shield"></i> Events you're staff on</h2>
-                <span class="evt-group-count">{{ $staffing->total() }}</span>
-            </div>
-            <div class="evt-list">
-                @foreach ($staffing as $event)
-                    @include('events.partials.my-event-card', ['event' => $event])
-                @endforeach
-            </div>
-            @if ($staffing->hasPages())
-                <div class="evt-pagination">{{ $staffing->links() }}</div>
-            @endif
-        </section>
+        @include('events.partials.my-events-groups', compact('published', 'drafts', 'deleted'))
     @endif
 </x-app-layout>

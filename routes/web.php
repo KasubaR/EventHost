@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\EventAudience;
 use App\Http\Controllers\CheckInController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DashboardController;
@@ -11,6 +12,7 @@ use App\Http\Controllers\EventInvitationDesignController;
 use App\Http\Controllers\EventInvitationMediaController;
 use App\Http\Controllers\EventPhotoController;
 use App\Http\Controllers\EventPreviewController;
+use App\Http\Controllers\EventPublicRegistrationController;
 use App\Http\Controllers\EventStaffController;
 use App\Http\Controllers\EventStaffInvitationController;
 use App\Http\Controllers\EventStaffLinkController;
@@ -31,6 +33,7 @@ use App\Http\Controllers\MapLinkController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PublicCheckInController;
 use App\Http\Controllers\PublicEventController;
+use App\Http\Controllers\PublicRegistrationPaymentController;
 use App\Http\Controllers\PublicTicketCheckInController;
 use App\Http\Controllers\RemoveBrandingController;
 use App\Http\Controllers\ReviewController;
@@ -43,6 +46,7 @@ use App\Http\Controllers\TableUploadController;
 use App\Http\Controllers\TemplateLibraryController;
 use App\Http\Controllers\TicketCheckInController;
 use App\Http\Controllers\TicketController;
+use App\Models\Event;
 use App\Models\InvitationTemplate;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
@@ -58,7 +62,7 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/about', function () {
     return view('about', [
         'activeTemplateCount' => InvitationTemplate::activeCount(),
-        'eventsHosted' => \App\Models\Event::marketingHostedCount(),
+        'eventsHosted' => Event::marketingHostedCount(),
     ]);
 })->name('about');
 
@@ -221,6 +225,7 @@ Route::post('/staff/invitations/{token}', [EventStaffInvitationController::class
 
 Route::middleware(['auth', 'account.active', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/public-dashboard', [DashboardController::class, 'publicOverview'])->name('public-dashboard');
 
     // Existing-account branch of the staff accept flow — hitting this while
     // logged out gets Laravel's normal "log in, then come back" intended-URL
@@ -333,16 +338,23 @@ Route::middleware(['auth', 'account.active', 'verified'])->group(function () {
     Route::get('/events/{event}/remove-branding', [RemoveBrandingController::class, 'show'])
         ->name('events.remove-branding');
 
+    Route::get('/events/{event}/public-registration/pay', [PublicRegistrationPaymentController::class, 'show'])
+        ->name('events.public-registration.pay');
+    Route::post('/events/{event}/public-registration/submit', [EventPublicRegistrationController::class, 'submit'])
+        ->name('events.public-registration.submit');
+
     // Owner-only staff accounts (Phase 18) — twin of the no-login scanner
     // links above, for people the host trusts with an actual account. See
     // plans/staff-access.md.
     Route::get('/events/{event}/staff', [EventStaffController::class, 'index'])
         ->name('events.staff.index');
     Route::post('/events/{event}/staff', [EventStaffController::class, 'store'])
+        ->middleware('throttle:staff-invite-send')
         ->name('events.staff.store');
     Route::patch('/events/{event}/staff/{eventStaff}', [EventStaffController::class, 'update'])
         ->name('events.staff.update');
     Route::post('/events/{event}/staff/{eventStaff}/resend', [EventStaffController::class, 'resend'])
+        ->middleware('throttle:staff-invite-send')
         ->name('events.staff.resend');
     Route::delete('/events/{event}/staff/{eventStaff}', [EventStaffController::class, 'destroy'])
         ->name('events.staff.destroy');
@@ -399,7 +411,15 @@ Route::middleware(['auth', 'account.active', 'verified'])->group(function () {
         ->middleware('throttle:map-link-resolve')
         ->name('maps.resolve-link');
 
-    Route::resource('events', EventController::class)->except('store');
+    // index is pulled out of the resource below so each portal's "My Events" list
+    // can carry its own audience default (plans/public-private-portals.md Phase 3)
+    // instead of the old ?kind= filter — both still hit EventController@index,
+    // so authorizeResource()'s index -> viewAny mapping is unaffected.
+    Route::get('/events', [EventController::class, 'index'])->name('events.index')
+        ->defaults('audience', EventAudience::Private->value);
+    Route::get('/public-events', [EventController::class, 'index'])->name('public-events.index')
+        ->defaults('audience', EventAudience::Public->value);
+    Route::resource('events', EventController::class)->except(['store', 'index']);
     Route::post('/events', [EventController::class, 'store'])->name('events.store')->middleware('throttle:10,1');
 
     Route::get('/billing', [PaymentController::class, 'show'])->name('billing.show');

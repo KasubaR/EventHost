@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\CommissionMode;
+use App\Enums\EventAudience;
 use App\Enums\EventProductKind;
 use App\Enums\TicketingStatus;
 use App\Models\Admin;
@@ -31,43 +32,46 @@ class TicketingTest extends TestCase
         $this->seed(RolePermissionSeeder::class);
     }
 
-    public function test_create_starts_by_choosing_how_people_join(): void
+    /**
+     * Since plans/public-private-portals.md Phase 4, the create wizard's first
+     * step chooses audience (Private vs Public), not product_kind directly —
+     * see PublicVisibilityPlanGateTest for the Public -> Ticketed/Free
+     * registration second step, and EventManagementTest for the resulting
+     * events.index vs public-events.index split.
+     */
+    public function test_create_starts_by_choosing_private_or_public(): void
     {
         $user = User::factory()->create();
 
         $this->actingAs($user)
             ->get(route('events.create'))
             ->assertOk()
-            ->assertSee('Invitation / RSVP', false)
-            ->assertSee('Guests respond on a personal or public invite. Publishing uses 1 event credit.', false)
-            ->assertSee('Ticketed event', false)
-            ->assertSee('Sell tickets through EventHost checkout (Lenco). EventHost reviews sales before they go live — no event credit.', false)
+            ->assertSee('Private event', false)
+            ->assertSee('Public event', false)
             ->assertDontSee('name="name"', false)
-            ->assertSee(route('events.create', ['kind' => 'invitation']), false)
-            ->assertSee(route('events.create', ['kind' => 'ticketed']), false);
+            ->assertSee(route('events.create', ['audience' => 'private']), false)
+            ->assertSee(route('events.create', ['audience' => 'public']), false);
     }
 
-    public function test_create_details_form_locks_the_chosen_product_kind(): void
+    public function test_choosing_public_then_ticketed_reaches_the_ticketed_details_form(): void
     {
         $user = User::factory()->create();
 
         $this->actingAs($user)
-            ->get(route('events.create', ['kind' => 'invitation']))
+            ->get(route('events.create', ['audience' => 'public']))
             ->assertOk()
-            ->assertSee('name="name"', false)
-            ->assertSee('Invitation / RSVP', false)
-            ->assertSee('Change', false)
-            ->assertDontSee('Ticketed event', false);
+            ->assertSee('Ticketed event', false)
+            ->assertSee('Free registration', false)
+            ->assertDontSee('name="name"', false);
 
         $this->actingAs($user)
             ->get(route('events.create', ['kind' => 'ticketed']))
             ->assertOk()
             ->assertSee('name="name"', false)
-            ->assertSee('Ticketed event', false)
+            ->assertSee('Ticketed', false)
             ->assertDontSee('Cover image', false)
             ->assertDontSee('Guest settings', false)
-            ->assertDontSee('RSVP deadline', false)
-            ->assertDontSee('Invitation / RSVP', false);
+            ->assertDontSee('RSVP deadline', false);
     }
 
     public function test_store_requires_a_product_kind(): void
@@ -77,6 +81,7 @@ class TicketingTest extends TestCase
         $this->actingAs($user)->post(route('events.store'), [
             'name' => 'Garden Party',
             'event_type' => 'birthday',
+            'audience' => EventAudience::Private->value,
             'event_date' => now()->addWeek()->format('Y-m-d'),
             'event_time' => '15:00',
         ])->assertSessionHasErrors('product_kind');
@@ -89,6 +94,7 @@ class TicketingTest extends TestCase
         $this->actingAs($user)->post(route('events.store'), [
             'name' => 'Garden Party',
             'event_type' => 'birthday',
+            'audience' => EventAudience::Private->value,
             'product_kind' => EventProductKind::Invitation->value,
             'event_date' => now()->addWeek()->format('Y-m-d'),
             'event_time' => '15:00',
@@ -106,6 +112,7 @@ class TicketingTest extends TestCase
         $this->actingAs($user)->post(route('events.store'), [
             'name' => 'Summer Festival',
             'event_type' => 'corporate',
+            'audience' => EventAudience::Public->value,
             'product_kind' => EventProductKind::Ticketed->value,
             'event_date' => now()->addMonth()->format('Y-m-d'),
             'event_time' => '18:00',
@@ -249,7 +256,7 @@ class TicketingTest extends TestCase
 
         $this->actingAs($user)
             ->post(route('events.ticketing.submit', $event))
-            ->assertRedirect(route('events.index'))
+            ->assertRedirect(route('public-events.index'))
             ->assertSessionHas('status', 'ticketing-submitted');
 
         $this->assertSame(TicketingStatus::PendingReview, $event->fresh()->ticketing_status);
@@ -470,6 +477,7 @@ class TicketingTest extends TestCase
         $this->actingAs($user)->post(route('events.store'), [
             'name' => 'Summer Festival',
             'event_type' => 'corporate',
+            'audience' => EventAudience::Public->value,
             'product_kind' => EventProductKind::Ticketed->value,
             'event_date' => now()->addMonth()->format('Y-m-d'),
             'event_time' => '18:00',
@@ -487,10 +495,10 @@ class TicketingTest extends TestCase
         $this->actingAs($user)->post(route('events.store'), [
             'name' => 'Summer Festival',
             'event_type' => 'corporate',
+            'audience' => EventAudience::Public->value,
             'product_kind' => EventProductKind::Ticketed->value,
             'event_date' => now()->addMonth()->format('Y-m-d'),
             'event_time' => '18:00',
-            'is_public' => '0',
             'allow_plus_one' => '1',
             'rsvp_deadline' => now()->addDays(3)->format('Y-m-d\TH:i'),
             'guest_limit' => '50',
@@ -763,6 +771,7 @@ class TicketingTest extends TestCase
         $response = $this->actingAs($user)->post(route('events.store'), [
             'name' => 'Summer Festival',
             'event_type' => 'corporate',
+            'audience' => EventAudience::Public->value,
             'product_kind' => EventProductKind::Ticketed->value,
             'event_date' => now()->addMonth()->format('Y-m-d'),
             'event_time' => '18:00',

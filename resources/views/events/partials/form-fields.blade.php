@@ -29,19 +29,19 @@
         $event?->event_type
     );
 
-    // Public (discoverable / open-RSVP) invitation events are Base and
-    // above — see User::canMakeEventsPublic(). A brand-new event defaults
-    // to invite-only regardless of tier; an existing private event stays
-    // private if the host has since lost access (e.g. an admin downgrade).
-    // This partial is also reused by the admin's "create ticketed event on
-    // behalf of a user" page, where auth()->user() is an Admin, not a User
-    // — the invitation panel this feeds is hidden for ticketed events, but
-    // the guard here still needs to survive that call rather than error.
-    $canMakePublic = auth()->user() instanceof \App\Models\User && auth()->user()->canMakeEventsPublic();
+    // Chosen on the create wizard's first step, alongside product_kind — both
+    // are immutable after creation (plans/public-private-portals.md Phase 4).
+    // $audience is passed in on create (never null there — the create view
+    // never reaches this partial without one); on edit it's read straight off
+    // the real, stored event. The isTicketed() fallback only matters for a
+    // call site with neither (the admin ticketed-create page passes no
+    // $audience at all), and ticketed is unambiguously always public.
+    $audience = $audience ?? $event?->audience ?? (
+        $isTicketed ? \App\Enums\EventAudience::Public : \App\Enums\EventAudience::Private
+    );
 @endphp
 
 @unless ($isTicketed)
-    <input type="hidden" name="is_public" value="0">
     <input type="hidden" name="allow_plus_one" value="0">
     <input type="hidden" name="show_guest_list" value="0">
 @endunless
@@ -82,9 +82,15 @@
             <div class="profile-field">
                 <span class="profile-label">How people join</span>
                 <p class="evt-readonly-note">
-                    {{ $event?->product_kind?->label() ?? \App\Enums\EventProductKind::from($productKind)->label() }}
+                    @if ($audience === \App\Enums\EventAudience::Private)
+                        Private — invite-only, guests join via a personal link.
+                    @elseif ($isTicketed)
+                        Public — Ticketed, via EventHost checkout.
+                    @else
+                        Public — free registration, open RSVP, listed on Discover.
+                    @endif
                     @if ($event)
-                        — this is set when the event is created and cannot be changed.
+                        This is set when the event is created and cannot be changed.
                     @elseif (! empty($kindChangeUrl))
                         <a href="{{ $kindChangeUrl }}" class="evt-kind-change">Change</a>
                     @endif
@@ -274,22 +280,6 @@
                 <p>RSVP rules and visibility (RSVP form comes later).</p>
             </div>
         <div class="evt-section-body profile-fields">
-            <label class="profile-label evt-check-label">
-                <input type="checkbox" name="is_public" value="1" class="profile-input evt-check-input"
-                       @checked($canMakePublic && (string) old('is_public', ($event?->is_public ?? false) ? '1' : '0') === '1')
-                       @disabled(! $canMakePublic)>
-                Public invitation (listed on our Discover page and shareable by link)
-                @unless ($canMakePublic)
-                    <span class="evt-credit-badge">Base</span>
-                @endunless
-            </label>
-            @unless ($canMakePublic)
-                <p class="evt-muted">
-                    Invite-only is free on every plan. Making an event public requires the Base plan or higher —
-                    <a href="{{ \App\Support\BillingPlan::checkoutUrlForTier(\App\Enums\SubscriptionTier::Base) }}">upgrade to unlock it</a>.
-                </p>
-            @endunless
-
             <div class="profile-field">
                 <label for="rsvp_deadline" class="profile-label">RSVP deadline <span class="profile-optional">optional</span></label>
                 <input id="rsvp_deadline" name="rsvp_deadline" type="datetime-local" data-dtp

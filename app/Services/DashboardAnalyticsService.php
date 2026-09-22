@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\EventAudience;
 use App\Enums\RsvpStatus;
 use App\Models\Event;
 use App\Models\Guest;
@@ -34,9 +35,18 @@ class DashboardAnalyticsService
      *     top_guests: list<array{name:string,event_name:string,attendee_count:int}>,
      * }
      */
-    public function forUser(User $user): array
+    public function forUser(User $user, ?EventAudience $audience = null): array
     {
-        $eventIds = Event::query()->where('user_id', $user->id)->pluck('id');
+        // $audience is opt-in and additive: every existing caller (the Android
+        // API's own dashboard, see api/v1/host/dashboard) omits it and keeps
+        // getting every owned event, unfiltered, exactly as before. Only the
+        // web DashboardController passes one, to split the private-portal
+        // overview from the public one — plans/public-private-portals.md
+        // Phase 3.
+        $eventIds = Event::query()
+            ->where('user_id', $user->id)
+            ->when($audience !== null, fn ($query) => $query->forAudience($audience))
+            ->pluck('id');
         $hasEvents = $eventIds->isNotEmpty();
 
         if (! $hasEvents) {
@@ -139,8 +149,12 @@ class DashboardAnalyticsService
             ? round(($respondedGuests / $guestsTotal) * 100, 1)
             : null;
 
+        // Not clamped to 100 — accepted_headcount sums attendee_count (plus-ones
+        // included) while guestsTotal is a row count, so an event with meaningful
+        // plus-ones can legitimately exceed 100% and that's a real signal to show,
+        // not noise to hide.
         $attendancePct = $guestsTotal > 0
-            ? round(min(100, ($acceptedHeadcount / $guestsTotal) * 100), 1)
+            ? round(($acceptedHeadcount / $guestsTotal) * 100, 1)
             : null;
 
         $dailyRsvps = $this->dailyRsvpSeries($eventIds, 14);

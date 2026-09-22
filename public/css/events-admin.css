@@ -2075,6 +2075,23 @@ body.evt-qr-lightbox-open {
     color: var(--gray-mid, #64748b);
 }
 
+/* A tier-locked option (e.g. Free registration below Base) — rendered as a
+   plain div, not a disabled <a>, since a disabled link is still announced as
+   a link by screen readers. Its "upgrade" link inside stays a real, focusable
+   link. */
+.evt-kind-card--locked {
+    cursor: default;
+    background: var(--gray-light, #f4f5f9);
+    opacity: 0.75;
+}
+.evt-kind-card--locked:hover,
+.evt-kind-card--locked:focus-visible {
+    transform: none;
+    box-shadow: var(--card-shadow, none);
+}
+.evt-kind-card--locked .evt-kind-card-icon { color: var(--gray-mid, #64748b); }
+.evt-kind-card--locked .evt-kind-card-hint a { color: var(--accent, #1e47bb); font-weight: 600; }
+
 @media (max-width: 560px) {
     .evt-kind-picker {
         grid-template-columns: minmax(0, 280px);

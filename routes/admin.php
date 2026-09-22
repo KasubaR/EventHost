@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\GuestController as AdminGuestController;
 use App\Http\Controllers\Admin\InvitationTemplateController as AdminInvitationTemplateController;
 use App\Http\Controllers\Admin\NotificationLogController;
 use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
+use App\Http\Controllers\Admin\PublicRegistrationController as AdminPublicRegistrationController;
 use App\Http\Controllers\Admin\ReconciliationController;
 use App\Http\Controllers\Admin\ReportController as AdminReportController;
 use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
@@ -110,6 +111,13 @@ Route::prefix('admin')
         Route::middleware(['permission:contributions.payouts.manage,admin', 'throttle:admin-mutations'])->group(function (): void {
             Route::post('/contributions/revenue/{event}/payouts', [ContributionRevenueController::class, 'storePayout'])
                 ->name('contributions.revenue.payouts.store');
+        });
+
+        Route::middleware(['permission:events.public_registration_manage,admin', 'throttle:admin-mutations'])->group(function (): void {
+            Route::post('/events/{event}/public-registration/approve', [AdminPublicRegistrationController::class, 'approve'])
+                ->name('events.public-registration.approve');
+            Route::post('/events/{event}/public-registration/reject', [AdminPublicRegistrationController::class, 'reject'])
+                ->name('events.public-registration.reject');
         });
 
         Route::middleware('permission:guests.view,admin')->group(function (): void {

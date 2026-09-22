@@ -7,6 +7,7 @@ use App\Enums\EventAudience;
 use App\Enums\EventProductKind;
 use App\Enums\EventStaffRole;
 use App\Enums\PublicInvitationStatus;
+use App\Enums\PublicRegistrationStatus;
 use App\Enums\RsvpStatus;
 use App\Enums\SubscriptionTier;
 use App\Enums\TicketingStatus;
@@ -227,6 +228,13 @@ class Event extends Model
         'ticketing_reviewed_by',
         'ticketing_rejection_note',
         'agreed_payout_on',
+        'public_registration_status',
+        'public_registration_submitted_at',
+        'public_registration_reviewed_at',
+        'public_registration_reviewed_by',
+        'public_registration_rejection_note',
+        'public_registration_quote_amount',
+        'public_registration_quote_paid_at',
         'commission_percent_override',
         'cancellation_fee_percent_override',
         'description',
@@ -377,17 +385,23 @@ class Event extends Model
 
                 $event->is_public = true;
                 $event->audience = EventAudience::Public;
-
-                return;
-            }
-
-            if ($event->isDirty('audience') && $event->audience !== null) {
+            } elseif ($event->isDirty('audience') && $event->audience !== null) {
                 $event->is_public = $event->audience === EventAudience::Public;
-
-                return;
+            } else {
+                $event->audience = EventAudience::derive($event->product_kind, (bool) $event->is_public);
             }
 
-            $event->audience = EventAudience::derive($event->product_kind, (bool) $event->is_public);
+            // A brand-new free-registration event starts its own admin-approval
+            // pipeline at Draft (plans/public-private-portals.md Phase 4c),
+            // mirroring how ticketing_status defaults for a ticketed one. Runs
+            // after audience is finalized above, since isFreeRegistration()
+            // depends on it. Only for a genuinely new row, and only when the
+            // caller hasn't already set one explicitly (e.g. a future import).
+            if (! $event->exists
+                && ! $event->isDirty('public_registration_status')
+                && $event->isFreeRegistration()) {
+                $event->public_registration_status = PublicRegistrationStatus::Draft;
+            }
         });
     }
 
@@ -418,6 +432,44 @@ class Event extends Model
     public function isInvitation(): bool
     {
         return $this->product_kind === EventProductKind::Invitation;
+    }
+
+    /**
+     * A "free registration" public event — plans/public-private-portals.md
+     * Phase 4c. Like a ticketed event, it is admin-approved and admin-priced
+     * (a one-off quote instead of commission) rather than costing an event
+     * credit; unlike a ticketed event, guests join for free, and it still
+     * uses templates like any invitation event.
+     */
+    public function isFreeRegistration(): bool
+    {
+        return $this->isPublicAudience() && $this->isInvitation();
+    }
+
+    /**
+     * Mirrors TicketingActivationService::submit()'s own guard: only a fresh
+     * or previously-declined event may be (re)submitted.
+     */
+    public function canSubmitPublicRegistration(): bool
+    {
+        return $this->isFreeRegistration() && in_array($this->public_registration_status, [
+            PublicRegistrationStatus::Draft,
+            PublicRegistrationStatus::Rejected,
+        ], true);
+    }
+
+    public function publicRegistrationApproved(): bool
+    {
+        return $this->isFreeRegistration() && $this->public_registration_status === PublicRegistrationStatus::Approved;
+    }
+
+    /**
+     * Approved but the quoted amount hasn't been paid yet — the gate between
+     * admin approval and EventController::publish() actually going live.
+     */
+    public function awaitingPublicRegistrationPayment(): bool
+    {
+        return $this->publicRegistrationApproved() && $this->public_registration_quote_paid_at === null;
     }
 
     /**
@@ -867,6 +919,12 @@ class Event extends Model
             'ticketing_reviewed_at' => 'datetime',
             'ticketing_reviewed_by' => 'integer',
             'agreed_payout_on' => 'date',
+            'public_registration_status' => PublicRegistrationStatus::class,
+            'public_registration_submitted_at' => 'datetime',
+            'public_registration_reviewed_at' => 'datetime',
+            'public_registration_reviewed_by' => 'integer',
+            'public_registration_quote_amount' => 'decimal:2',
+            'public_registration_quote_paid_at' => 'datetime',
             'commission_percent_override' => 'decimal:2',
             'cancellation_fee_percent_override' => 'decimal:2',
             'rsvp_deadline' => 'datetime',

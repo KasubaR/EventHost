@@ -21,7 +21,7 @@
                 <h1 class="dph-title">Welcome back, {{ auth()->user()->name }}</h1>
                 <p class="dph-sub">Here's what's happening with your events.</p>
             </div>
-            <a href="{{ route('events.create') }}" class="btn-primary dash-header-cta">
+            <a href="{{ route('events.create', ['audience' => 'private']) }}" class="btn-primary dash-header-cta">
                 <i class="fa-solid fa-plus" aria-hidden="true"></i> New Event
                 <span class="billing-credit-pill">{{ auth()->user()->event_credits }} credit{{ auth()->user()->event_credits === 1 ? '' : 's' }}</span>
             </a>
@@ -190,29 +190,10 @@
             <div class="dash-empty-icon"><i class="fa-solid fa-envelope-open-text" aria-hidden="true"></i></div>
             <h2>No events yet</h2>
             <p>Create your first event invitation and start tracking RSVPs in real time.</p>
-            <a href="{{ route('events.create') }}" class="btn-hero-primary dash-empty-cta">
+            <a href="{{ route('events.create', ['audience' => 'private']) }}" class="btn-hero-primary dash-empty-cta">
                 <i class="fa-solid fa-plus" aria-hidden="true"></i> Create Your First Event
             </a>
         </div>
-    @endif
-
-    @if ($staffing->isNotEmpty())
-        <section class="dash-panel" aria-labelledby="dash-staffing-title">
-            <div class="dash-panel-head">
-                <h2 id="dash-staffing-title" class="dash-panel-title"><i class="fa-solid fa-user-shield"></i> Events you're staff on</h2>
-                <p class="dash-panel-sub">Access someone else granted you</p>
-            </div>
-            <ul class="dash-top-guests">
-                @foreach ($staffing as $staffEvent)
-                    <li class="dash-top-guest">
-                        <a href="{{ route('events.show', $staffEvent) }}" class="dash-top-row">
-                            <span class="dash-top-name">{{ $staffEvent->name }}</span>
-                            <span class="dash-top-seats">{{ $staffEvent->staffRoleFor(auth()->user())?->label() }}</span>
-                        </a>
-                    </li>
-                @endforeach
-            </ul>
-        </section>
     @endif
 
 </x-app-layout>

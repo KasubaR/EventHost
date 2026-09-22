@@ -98,8 +98,27 @@ class TicketRevenueLedgerService
      */
     public function summaryFor(Event $event): array
     {
+        return $this->summaryForEventIds([$event->id]);
+    }
+
+    /**
+     * Same lifetime sale summary as summaryFor(), across several events at
+     * once — the public portal dashboard's aggregate, rather than one
+     * event's Revenue tab. summaryFor() is now a one-id call to this.
+     *
+     * @param  iterable<int>  $eventIds
+     * @return array{gross_amount: float, platform_fee: float, host_amount: float}
+     */
+    public function summaryForEventIds(iterable $eventIds): array
+    {
+        $eventIds = collect($eventIds)->all();
+
+        if ($eventIds === []) {
+            return ['gross_amount' => 0.0, 'platform_fee' => 0.0, 'host_amount' => 0.0];
+        }
+
         $row = TicketRevenueEntry::query()
-            ->where('event_id', $event->id)
+            ->whereIn('event_id', $eventIds)
             ->where('type', TicketRevenueEntry::TYPE_SALE)
             ->selectRaw('COALESCE(SUM(gross_amount), 0) as gross_amount, COALESCE(SUM(platform_fee), 0) as platform_fee, COALESCE(SUM(host_amount), 0) as host_amount')
             ->first();

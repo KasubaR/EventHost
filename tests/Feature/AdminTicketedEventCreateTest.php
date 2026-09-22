@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\CommissionMode;
+use App\Enums\EventAudience;
 use App\Enums\EventProductKind;
 use App\Enums\TicketingStatus;
 use App\Models\Admin;
@@ -254,8 +255,11 @@ class AdminTicketedEventCreateTest extends TestCase
             'name' => 'White Glove Night',
         ]);
 
+        // Ticketed events are always public audience, so they live on the public
+        // portal's index (plans/public-private-portals.md Phase 3), not the
+        // private one — the old ?kind=ticketed tab on events.index is gone.
         $this->actingAs($owner)
-            ->get(route('events.index', ['kind' => 'ticketed']))
+            ->get(route('public-events.index'))
             ->assertOk()
             ->assertSee('White Glove Night', false);
     }
@@ -266,6 +270,7 @@ class AdminTicketedEventCreateTest extends TestCase
 
         $this->actingAs($user)
             ->post(route('events.store'), [
+                'audience' => EventAudience::Public->value,
                 'product_kind' => EventProductKind::Ticketed->value,
                 'name' => 'Host Concert',
                 'event_type' => 'concert',
