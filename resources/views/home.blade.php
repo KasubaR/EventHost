@@ -319,6 +319,7 @@
         <ul class="price-features">
           <li>Up to 300 guests</li>
           <li>{{ $activeTemplateCount }} premium templates</li>
+          <li>Custom event URL</li>
           <li>Advanced RSVP dashboard</li>
           <li>Automated WhatsApp invites</li>
           <li>Photo gallery</li>

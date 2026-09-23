@@ -108,17 +108,34 @@
             </div>
 
             <div class="profile-field">
+                @php
+                    $canChooseSlug = auth()->user()->canChooseCustomEventSlug();
+                @endphp
                 <label for="slug" class="profile-label">Custom URL <span class="profile-optional">optional</span></label>
-                <div class="evt-slug-input">
-                    <span class="evt-slug-prefix">{{ rtrim(config('app.url'), '/') }}/e/</span>
-                    <input id="slug" name="slug" type="text" maxlength="60"
-                           class="profile-input {{ $errors->has('slug') ? 'profile-input--error' : '' }}"
-                           value="{{ old('slug', $event?->slug ?? '') }}"
-                           placeholder="john-mary"
-                           autocomplete="off"
-                           spellcheck="false">
-                </div>
-                <p class="evt-field-hint">Lowercase letters, numbers, and hyphens. Leave blank on create to generate from the event name. Changing it keeps the old link as a redirect.</p>
+                @if ($canChooseSlug)
+                    <div class="evt-slug-input">
+                        <span class="evt-slug-prefix">{{ rtrim(config('app.url'), '/') }}/e/</span>
+                        <input id="slug" name="slug" type="text" maxlength="60"
+                               class="profile-input {{ $errors->has('slug') ? 'profile-input--error' : '' }}"
+                               value="{{ old('slug', $event?->slug ?? '') }}"
+                               placeholder="john-mary"
+                               autocomplete="off"
+                               spellcheck="false">
+                    </div>
+                    <p class="evt-field-hint">Lowercase letters, numbers, and hyphens. Leave blank on create to generate from the event name. Changing it keeps the old link as a redirect.</p>
+                @else
+                    <div class="evt-slug-input evt-slug-input--locked" aria-disabled="true">
+                        <span class="evt-slug-prefix">{{ rtrim(config('app.url'), '/') }}/e/</span>
+                        <span class="evt-slug-locked-value" id="slug">{{ $event?->slug ?: 'auto-from-name' }}</span>
+                    </div>
+                    <p class="evt-field-hint evt-palette-lock-hint">
+                        <i class="fa-solid fa-lock" aria-hidden="true"></i>
+                        Requires the {{ \App\Enums\SubscriptionTier::Pro->label() }} plan — the URL is generated from the event name until then.
+                    </p>
+                    <a href="{{ \App\Support\BillingPlan::checkoutUrlForTier(\App\Enums\SubscriptionTier::Pro) }}" class="btn-outline evt-palette-upgrade-link">
+                        Upgrade to {{ \App\Enums\SubscriptionTier::Pro->label() }}
+                    </a>
+                @endif
                 @error('slug')
                     <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                 @enderror
@@ -224,17 +241,10 @@
         </div>
     </div>
 
-    {{-- Ticketed events have no host cover. EventHost sets the public hero
-         (same 1200×630 crop, stored as cover_image) on the ticketing review
-         page. On create the section stays in the DOM so the product-kind
-         toggle can hide it; on a locked ticketed create it is omitted entirely.
-         On edit, an invitation event's Cover Image field has already moved
-         below the template picker (see edit.blade.php) so it can be hidden
-         for a layout that never renders a cover — this inline copy is
-         create-only, where no template exists yet to check. --}}
-    @if ($event === null && (! $productKindLocked || ! $isTicketed))
-        @include('events.partials.cover-image-field', ['event' => null, 'hidden' => $isTicketed])
-    @endif
+    {{-- Cover image is collected on the customize step (edit.blade.php), after
+         a layout is chosen, and only for layouts that render one. Ticketed
+         events have no host cover — EventHost sets the public hero on the
+         ticketing review page. --}}
 
     <div class="evt-section" data-product-panel="ticketed" @unless ($isTicketed) hidden @endunless>
         <div class="evt-section-head">

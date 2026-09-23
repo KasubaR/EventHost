@@ -38,6 +38,26 @@
 .evt-slug-input .profile-input:focus {
     box-shadow: none;
 }
+.evt-slug-input--locked {
+    opacity: 0.85;
+    background: #f8fafc;
+}
+.evt-slug-input--locked:focus-within {
+    border-color: var(--line, #e0e0e8);
+    box-shadow: none;
+}
+.evt-slug-locked-value {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+    padding: 0 14px;
+    font-size: 14px;
+    color: #64748b;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 .evt-field-hint {
     margin: 8px 0 0;
     font-size: 13px;
@@ -286,6 +306,10 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+}
+
+.evt-section-body > .evt-muted + .evt-card-actions {
+    margin-top: 16px;
 }
 
 .evt-btn-outline {

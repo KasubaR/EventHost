@@ -222,6 +222,16 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Host-chosen vanity slug on create/edit — Pro and above. Below that the
+     * slug is auto-generated from the event name (create) or left unchanged
+     * (edit). See StoreEventRequest / UpdateEventRequest guards.
+     */
+    public function canChooseCustomEventSlug(): bool
+    {
+        return $this->isActive() && $this->subscriptionTierRank() >= SubscriptionTier::Pro->rank();
+    }
+
+    /**
      * Curated colour palette picker on the invitation design form — Pro+ only.
      * Everyone else keeps the template's default theme.
      */

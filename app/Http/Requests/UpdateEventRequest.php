@@ -103,7 +103,35 @@ class UpdateEventRequest extends FormRequest
         $validator->after(function (Validator $validator): void {
             $this->guardRsvpDeadline($validator);
             $this->guardEventNotPushedIntoPast($validator);
+            $this->guardCustomSlugChoice($validator);
         });
+    }
+
+    /**
+     * Custom vanity slugs are Pro and above. Blank/null keeps the current
+     * slug (EventSlugService::apply no-op). Submitting the event's own
+     * current slug is also fine — a Pro→Base downgrade or a stuck form
+     * value must not block ordinary saves. Only a change is refused.
+     */
+    private function guardCustomSlugChoice(Validator $validator): void
+    {
+        $slug = $this->input('slug');
+
+        if ($slug === null || $slug === '') {
+            return;
+        }
+
+        if ($this->user()?->canChooseCustomEventSlug()) {
+            return;
+        }
+
+        $event = $this->route('event');
+
+        if ($event instanceof Event && $event->slug === $slug) {
+            return;
+        }
+
+        $validator->errors()->add('slug', 'Choosing a custom URL requires the Pro plan.');
     }
 
     /**

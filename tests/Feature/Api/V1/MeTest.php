@@ -25,6 +25,7 @@ class MeTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('subscription_tier', 'pro_plus')
             ->assertJsonPath('capabilities.can_use_premium_event_tools', true)
+            ->assertJsonPath('capabilities.can_choose_custom_event_slug', true)
             ->assertJsonPath('capabilities.can_choose_invitation_palette', true)
             ->assertJsonPath('capabilities.can_send_automated_reminders', true)
             ->assertJsonPath('capabilities.can_make_events_public', true);
@@ -39,6 +40,7 @@ class MeTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('capabilities.can_use_premium_event_tools', false)
+            ->assertJsonPath('capabilities.can_choose_custom_event_slug', false)
             ->assertJsonPath('capabilities.can_choose_invitation_palette', false)
             ->assertJsonPath('capabilities.can_send_automated_reminders', false)
             ->assertJsonPath('capabilities.can_make_events_public', true); // base is the lowest qualifying tier

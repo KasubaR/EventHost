@@ -123,7 +123,29 @@ class StoreEventRequest extends FormRequest
             $this->guardRsvpDeadline($validator);
             $this->guardEventTimeNotAlreadyPassedToday($validator);
             $this->guardAudienceChoice($validator);
+            $this->guardCustomSlugChoice($validator);
         });
+    }
+
+    /**
+     * Custom vanity slugs are Pro and above. The create form hides the input
+     * for everyone else, so a non-null value here only happens by posting
+     * the form directly — reject it rather than silently applying it.
+     * Absence is fine: Sluggable generates from the event name.
+     */
+    private function guardCustomSlugChoice(Validator $validator): void
+    {
+        $slug = $this->input('slug');
+
+        if ($slug === null || $slug === '') {
+            return;
+        }
+
+        if ($this->user()?->canChooseCustomEventSlug()) {
+            return;
+        }
+
+        $validator->errors()->add('slug', 'Choosing a custom URL requires the Pro plan.');
     }
 
     /**

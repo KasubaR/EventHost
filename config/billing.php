@@ -35,6 +35,7 @@ return [
                 // {template_count} is resolved at render time — see
                 // billing/checkout.blade.php — from InvitationTemplate::activeCount().
                 '{template_count} premium templates',
+                'Custom event URL',
                 'Advanced RSVP dashboard',
                 'Photo gallery',
                 'Countdown timer',
