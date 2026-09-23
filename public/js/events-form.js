@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (radioOpen && radioSet && limitWrap && limitInput) {
         const hasStoredLimit = limitInput.value.trim() !== '';
+        const upgradeHint = document.getElementById('guest_limit_upgrade_hint');
 
         if (hasStoredLimit) {
             radioSet.checked = true;
@@ -29,15 +30,44 @@ document.addEventListener('DOMContentLoaded', () => {
             limitWrap.style.display = 'none';
         }
 
+        const syncUpgradeHint = () => {
+            if (!upgradeHint) {
+                return;
+            }
+            const capacity = limitInput.dataset.guestCapacity
+                ? parseInt(limitInput.dataset.guestCapacity, 10)
+                : null;
+            const value = parseInt(limitInput.value, 10);
+            const upgradeUrl = limitInput.dataset.upgradeUrl;
+            const upgradeLabel = limitInput.dataset.upgradeLabel;
+
+            if (capacity && upgradeUrl && upgradeLabel && Number.isFinite(value) && value > capacity) {
+                upgradeHint.hidden = false;
+                upgradeHint.innerHTML = '';
+                const link = document.createElement('a');
+                link.href = upgradeUrl;
+                link.textContent = 'Upgrade to ' + upgradeLabel + ' for a higher guest limit';
+                upgradeHint.appendChild(link);
+            } else {
+                upgradeHint.hidden = true;
+                upgradeHint.textContent = '';
+            }
+        };
+
         radioOpen.addEventListener('change', () => {
             limitWrap.style.display = 'none';
             limitInput.value = '';
+            syncUpgradeHint();
         });
 
         radioSet.addEventListener('change', () => {
             limitWrap.style.display = '';
             limitInput.focus();
+            syncUpgradeHint();
         });
+
+        limitInput.addEventListener('input', syncUpgradeHint);
+        syncUpgradeHint();
     }
 
     // Cover image preview

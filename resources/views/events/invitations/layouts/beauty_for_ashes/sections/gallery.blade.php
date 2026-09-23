@@ -1,6 +1,15 @@
 @php
-    /** @var list<string> $couple */
-    $couple = array_values(array_filter(array_map('strval', $invitation['media']['couple_photos'] ?? [])));
+    // Positional 4-slot array — empty string means that speaker has no photo.
+    // Do not array_filter/array_values: that would shift later photos onto earlier slots.
+    $rawCouple = $invitation['media']['couple_photos'] ?? [];
+    if (! is_array($rawCouple)) {
+        $rawCouple = [];
+    }
+    $couple = [];
+    for ($i = 0; $i < 4; $i++) {
+        $p = $rawCouple[$i] ?? '';
+        $couple[$i] = (is_string($p) && $p !== '') ? $p : '';
+    }
     /** @var list<string> $gallery */
     $gallery = array_values(array_filter(array_map('strval', $invitation['media']['gallery'] ?? [])));
     /** @var list<array{role: string, name: string}> $cards */
@@ -21,7 +30,7 @@
             $nm = 'To be announced';
         }
         $src = null;
-        if (isset($couple[$i]) && $couple[$i] !== '') {
+        if ($couple[$i] !== '') {
             $src = \App\Support\InvitationMediaUrl::resolve($couple[$i]);
         } elseif (isset($gallery[$i]) && $gallery[$i] !== '') {
             $src = \App\Support\InvitationMediaUrl::resolve($gallery[$i]);

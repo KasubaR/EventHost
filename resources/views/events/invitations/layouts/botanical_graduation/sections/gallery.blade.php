@@ -4,7 +4,11 @@
         <h2 class="section-title evt-bg-section-title-h2">Gallery</h2>
 
         @php
-            $galleryPaths = array_slice($invitation['media']['gallery'], 0, 5);
+            $galleryPaths = array_slice(
+                $invitation['media']['gallery'],
+                0,
+                \App\Support\InvitationLayoutVariant::maxGalleryImages(\App\Support\InvitationLayoutVariant::BOTANICAL_GRADUATION)
+            );
             $gmClasses = ['gm-1', 'gm-2', 'gm-3', 'gm-4', 'gm-5'];
         @endphp
         <div class="gallery-mosaic evt-bg-gallery-mosaic">

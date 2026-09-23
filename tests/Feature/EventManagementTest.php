@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\SubscriptionTier;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Models\InvitationTemplate;
@@ -225,6 +226,218 @@ class EventManagementTest extends TestCase
         $response->assertRedirect(route('events.edit', $event));
         $response->assertSessionHas('status', 'template-chosen');
         $this->assertSame($tpl->id, $event->fresh()->invitation_template_id);
+    }
+
+    public function test_cover_image_waits_until_a_layout_that_uses_one_is_chosen(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->get(route('events.create', ['audience' => 'private']))
+            ->assertOk()
+            ->assertDontSee('Cover Image', false)
+            ->assertDontSee('Upload cover', false);
+
+        $event = Event::factory()->for($user)->create(['invitation_template_id' => null]);
+
+        $this->actingAs($user)->get(route('events.edit', $event))
+            ->assertOk()
+            ->assertSee('Choose invitation layout', false)
+            ->assertDontSee('Cover Image', false);
+
+        $withoutCover = InvitationTemplate::query()->where('slug', 'modern-minimal')->firstOrFail();
+        $event->update(['invitation_template_id' => $withoutCover->id]);
+
+        $this->actingAs($user)->get(route('events.edit', $event))
+            ->assertOk()
+            ->assertDontSee('Upload cover', false);
+
+        $withCover = InvitationTemplate::query()->where('slug', 'slate-minimal')->firstOrFail();
+        $event->update(['invitation_template_id' => $withCover->id]);
+
+        $this->actingAs($user)->get(route('events.edit', $event))
+            ->assertOk()
+            ->assertSee('Cover Image', false)
+            ->assertSee('Upload cover', false);
+    }
+
+    public function test_botanical_edit_page_shows_dual_portraits_not_cover_or_hero_portrait(): void
+    {
+        $user = User::factory()->pro()->create();
+        $tpl = InvitationTemplate::query()->where('slug', 'graduation-template-2-botanical-blush')->firstOrFail();
+        $event = Event::factory()->for($user)->create([
+            'invitation_template_id' => $tpl->id,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('events.edit', $event));
+
+        $response->assertOk();
+        $response->assertSee('Hero portraits', false);
+        $response->assertSee('Portrait photos (up to 2)', false);
+        $response->assertSee('Up to five WebP images', false);
+        $response->assertDontSee('Up to six WebP images', false);
+        $response->assertSee('evt-design-media-file', false);
+        $response->assertSee('data-upload-slot="couple"', false);
+        $response->assertDontSee('Couple / dual portraits', false);
+        $response->assertDontSee('Upload hero portrait', false);
+        $response->assertDontSee('Cover Image', false);
+        $response->assertDontSee('Upload cover', false);
+    }
+
+    public function test_event_invite_edit_page_shows_no_image_upload_controls(): void
+    {
+        $user = User::factory()->create();
+        $tpl = InvitationTemplate::query()->where('slug', 'event-invite')->firstOrFail();
+        $event = Event::factory()->for($user)->create([
+            'invitation_template_id' => $tpl->id,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('events.edit', $event));
+
+        $response->assertOk();
+        $response->assertDontSee('event cover photo', false);
+        $response->assertDontSee('Cover Image', false);
+        $response->assertDontSee('Upload cover', false);
+        $response->assertDontSee('Upload hero portrait', false);
+        $response->assertDontSee('Portrait photos (up to 2)', false);
+        $response->assertDontSee('data-upload-slot="gallery"', false);
+        $response->assertDontSee('data-upload-slot="couple"', false);
+        $response->assertDontSee('data-upload-slot="hero_portrait"', false);
+        $response->assertDontSee('data-upload-slot="cover"', false);
+        $response->assertDontSee('id="gallery_images"', false);
+    }
+
+    public function test_noir_wedding_edit_page_matches_cover_and_six_gallery_slots(): void
+    {
+        $user = User::factory()->pro()->create();
+        $tpl = InvitationTemplate::query()->where('slug', 'wedding-invitation-2')->firstOrFail();
+        $event = Event::factory()->for($user)->create([
+            'invitation_template_id' => $tpl->id,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('events.edit', $event));
+
+        $response->assertOk();
+        $response->assertSee('Hero photo', false);
+        $response->assertSee('Tall portrait on the left of the opening screen', false);
+        $response->assertSee('Upload cover', false);
+        $response->assertSee('Photo gallery', false);
+        $response->assertSee('two rows of three', false);
+        $response->assertSee('Up to six', false);
+        $response->assertSee('data-upload-slot="gallery"', false);
+        $response->assertDontSee('Portrait photos (up to 2)', false);
+        $response->assertDontSee('Couple portraits (3 slots', false);
+        $response->assertDontSee('data-upload-slot="couple"', false);
+        $response->assertDontSee('data-upload-slot="hero_portrait"', false);
+        $response->assertDontSee('event cover photo', false);
+    }
+
+    public function test_classic_edit_page_matches_cover_only_no_gallery(): void
+    {
+        $user = User::factory()->create();
+        $tpl = InvitationTemplate::query()->where('slug', 'slate-minimal')->firstOrFail();
+        $event = Event::factory()->for($user)->create([
+            'invitation_template_id' => $tpl->id,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('events.edit', $event));
+
+        $response->assertOk();
+        $response->assertSee('Cover Image', false);
+        $response->assertSee('Wide banner across the top of the invitation', false);
+        $response->assertSee('1200×630', false);
+        $response->assertSee('Upload cover', false);
+        $response->assertDontSee('data-upload-slot="gallery"', false);
+        $response->assertDontSee('id="gallery_images"', false);
+        $response->assertDontSee('Up to six WebP', false);
+        $response->assertDontSee('Up to five WebP', false);
+        $response->assertDontSee('Portrait photos (up to 2)', false);
+        $response->assertDontSee('Couple portraits (3 slots', false);
+        $response->assertDontSee('data-upload-slot="couple"', false);
+        $response->assertDontSee('data-upload-slot="hero_portrait"', false);
+        $response->assertDontSee('event cover photo', false);
+    }
+
+    public function test_modern_minimal_edit_page_matches_five_gallery_no_cover(): void
+    {
+        $user = User::factory()->pro()->create();
+        $tpl = InvitationTemplate::query()->where('slug', 'modern-minimal')->firstOrFail();
+        $event = Event::factory()->for($user)->create([
+            'invitation_template_id' => $tpl->id,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('events.edit', $event));
+
+        $response->assertOk();
+        $response->assertSee('Up to five photos in the photo grid', false);
+        $response->assertSee('data-upload-slot="gallery"', false);
+        $response->assertDontSee('Cover Image', false);
+        $response->assertDontSee('Upload cover', false);
+        $response->assertDontSee('data-upload-slot="couple"', false);
+        $response->assertDontSee('data-upload-slot="hero_portrait"', false);
+        $response->assertDontSee('event cover photo', false);
+    }
+
+    public function test_pro_magazine_edit_page_matches_cover_and_gallery(): void
+    {
+        $user = User::factory()->pro()->create();
+        $tpl = InvitationTemplate::query()->where('slug', 'pro-magazine')->firstOrFail();
+        $event = Event::factory()->for($user)->create([
+            'invitation_template_id' => $tpl->id,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('events.edit', $event));
+
+        $response->assertOk();
+        $response->assertSee('Cover Image', false);
+        $response->assertSee('Full-bleed magazine hero', false);
+        $response->assertSee('Upload cover', false);
+        $response->assertSee('Up to six WebP images', false);
+        $response->assertSee('data-upload-slot="gallery"', false);
+        $response->assertDontSee('data-upload-slot="couple"', false);
+        $response->assertDontSee('data-upload-slot="hero_portrait"', false);
+        $response->assertDontSee('event cover photo', false);
+    }
+
+    public function test_ivory_gold_wedding_edit_page_matches_cover_couple_and_gallery(): void
+    {
+        $user = User::factory()->create();
+        $tpl = InvitationTemplate::query()->where('slug', 'wedding-invitation')->firstOrFail();
+        $event = Event::factory()->for($user)->create([
+            'invitation_template_id' => $tpl->id,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('events.edit', $event));
+
+        $response->assertOk();
+        $response->assertSee('Cover Image', false);
+        $response->assertSee('Cinematic hero and details backdrop', false);
+        $response->assertSee('Upload cover', false);
+        $response->assertSee('Couple portraits (3 slots', false);
+        $response->assertSee('data-upload-slot="couple"', false);
+        $response->assertSee('story panel can also use a gallery photo', false);
+        $response->assertSee('data-upload-slot="gallery"', false);
+        $response->assertDontSee('data-upload-slot="hero_portrait"', false);
+        $response->assertDontSee('event cover photo', false);
+    }
+
+    public function test_beauty_for_ashes_edit_page_matches_speakers_only_no_cover_or_gallery(): void
+    {
+        $user = User::factory()->pro()->create();
+        $tpl = InvitationTemplate::query()->where('slug', 'beauty-for-ashes')->firstOrFail();
+        $event = Event::factory()->for($user)->create([
+            'invitation_template_id' => $tpl->id,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('events.edit', $event));
+
+        $response->assertOk();
+        $response->assertSee('Speaker portrait slots', false);
+        $response->assertSee('data-upload-slot="speaker:0"', false);
+        $response->assertDontSee('Cover Image', false);
+        $response->assertDontSee('Upload cover', false);
+        $response->assertDontSee('data-upload-slot="gallery"', false);
+        $response->assertDontSee('id="gallery_images"', false);
+        $response->assertDontSee('event cover photo', false);
     }
 
     public function test_non_owner_cannot_update_another_users_event(): void
@@ -610,6 +823,18 @@ class EventManagementTest extends TestCase
         $preview->assertSee($event->name, escape: false);
     }
 
+    public function test_show_page_offers_a_copy_link_button_for_the_invitation_link(): void
+    {
+        $user = User::factory()->create();
+        $event = Event::factory()->for($user)->privateAudience()->published()->create();
+
+        $response = $this->actingAs($user)->get(route('events.show', $event));
+
+        $response->assertOk();
+        $response->assertSee('data-copy-text="'.route('events.public', $event->slug).'"', escape: false);
+        $response->assertDontSee('has no public page', escape: false);
+    }
+
     public function test_unpublished_event_returns_404_on_public_route(): void
     {
         $event = Event::factory()->create(['is_published' => false]);
@@ -670,5 +895,71 @@ class EventManagementTest extends TestCase
         // Soft-delete keeps media so restore can bring the event back.
         Storage::disk('public')->assertExists($event->cover_image);
         $this->assertSoftDeleted('events', ['id' => $event->id]);
+    }
+
+    public function test_base_host_cannot_set_guest_limit_above_plan_capacity(): void
+    {
+        $user = User::factory()->create([
+            'subscription_tier' => SubscriptionTier::Base,
+        ]);
+
+        $this->actingAs($user)->post(route('events.store'), $this->baseStorePayload($user, [
+            'guest_limit' => 151,
+        ]))->assertSessionHasErrors('guest_limit');
+
+        $this->assertNull(Event::where('user_id', $user->id)->first());
+    }
+
+    public function test_pro_host_cannot_set_guest_limit_above_plan_capacity(): void
+    {
+        $user = User::factory()->pro()->create();
+
+        $this->actingAs($user)->post(route('events.store'), $this->baseStorePayload($user, [
+            'guest_limit' => 301,
+        ]))->assertSessionHasErrors('guest_limit');
+
+        $this->assertNull(Event::where('user_id', $user->id)->first());
+    }
+
+    public function test_pro_plus_host_can_set_guest_limit_above_pro_cap(): void
+    {
+        $user = User::factory()->proPlus()->create();
+
+        $response = $this->actingAs($user)->post(route('events.store'), $this->baseStorePayload($user, [
+            'guest_limit' => 500,
+        ]));
+
+        $response->assertSessionHasNoErrors();
+        $event = Event::where('user_id', $user->id)->first();
+        $this->assertNotNull($event);
+        $this->assertSame(500, (int) $event->guest_limit);
+    }
+
+    public function test_open_to_all_guest_limit_still_accepted(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->post(route('events.store'), $this->baseStorePayload($user, [
+            'guest_limit' => null,
+        ]));
+
+        $response->assertSessionHasNoErrors();
+        $event = Event::where('user_id', $user->id)->first();
+        $this->assertNotNull($event);
+        $this->assertNull($event->guest_limit);
+    }
+
+    public function test_guest_settings_show_plan_capacity_and_upgrade_link(): void
+    {
+        $user = User::factory()->create([
+            'subscription_tier' => SubscriptionTier::Base,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('events.create', ['audience' => 'private', 'product_kind' => 'invitation']))
+            ->assertOk()
+            ->assertSee('Your plan allows up to', escape: false)
+            ->assertSee('150', escape: false)
+            ->assertSee('Upgrade to Pro', escape: false);
     }
 }

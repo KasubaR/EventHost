@@ -146,6 +146,16 @@ class RsvpFlowTest extends TestCase
         $this->get(route('rsvp.open.show', ['slug' => $event->slug]))
             ->assertOk();
 
+        $this->get(route('rsvp.open.show', ['slug' => $event->slug, 'status' => 'declined']))
+            ->assertOk()
+            ->assertSee('value="declined" checked', false)
+            ->assertSee('value="0" selected', false)
+            ->assertDontSee('value="accepted" checked', false);
+
+        $this->get(route('rsvp.open.show', ['slug' => $event->slug, 'status' => 'not-a-status']))
+            ->assertOk()
+            ->assertSee('value="accepted" checked', false);
+
         $payload = array_merge([
             'name' => 'Family Member',
             'email' => 'family@example.test',
@@ -280,8 +290,6 @@ class RsvpFlowTest extends TestCase
         $response->assertSee('Join us as we celebrate this milestone together.');
         $response->assertSee('The Garden Hall');
         $response->assertSee('Jane Guest');
-        // The host-only reminder from events/invitations/sections/details.blade.php
-        // belongs on the host's own edit-page preview, not on a guest's own link.
         $response->assertDontSee('This host marked this event as private in settings.');
     }
 

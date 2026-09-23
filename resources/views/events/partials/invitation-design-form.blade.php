@@ -54,14 +54,22 @@
         $sectionLabels['schedule'] = 'Detail cards (schedule data)';
     }
     if ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION_NOIR) {
+        $sectionLabels['hero'] = 'Opening hero';
         $sectionLabels['description'] = 'Formal invitation card';
         $sectionLabels['story'] = 'Quote interlude';
         $sectionLabels['schedule'] = "Day's programme timeline";
+        $sectionLabels['gallery'] = 'Photo gallery (two rows)';
     }
     $blockedSections = InvitationLayoutVariant::blockedSections($layoutVariant);
     $sectionLabels = array_diff_key($sectionLabels, array_flip($blockedSections));
     $heroPortraitSlots = InvitationLayoutVariant::maxInvitationHeroPortraitSlots($layoutVariant);
     $couplePhotoSlots = InvitationLayoutVariant::maxCouplePhotoSlots($layoutVariant);
+    $galleryMax = InvitationLayoutVariant::maxGalleryImages($layoutVariant);
+    $galleryMaxWord = match ($galleryMax) {
+        5 => 'five',
+        6 => 'six',
+        default => (string) $galleryMax,
+    };
     $currentCouple = array_values(array_filter(array_map('strval', $invitationMerged['media']['couple_photos'] ?? [])));
     $currentHeroPortrait = $invitationMerged['media']['hero_portrait'] ?? null;
     $currentHeroPortrait = is_string($currentHeroPortrait) && $currentHeroPortrait !== '' ? $currentHeroPortrait : null;
@@ -640,7 +648,19 @@
                 </fieldset>
             @endif
 
-            @if ($heroPortraitSlots === 0 && $couplePhotoSlots === 0)
+            {{-- Cover is already collected above with layout-specific copy — skip
+                 the redundant “uses your event cover” note for those layouts. --}}
+            @if (
+                $heroPortraitSlots === 0
+                && $couplePhotoSlots === 0
+                && InvitationLayoutVariant::usesCoverImage($layoutVariant)
+                && ! in_array($layoutVariant, [
+                    InvitationLayoutVariant::WEDDING_INVITATION_NOIR,
+                    InvitationLayoutVariant::STANDARD,
+                    InvitationLayoutVariant::PRO_MAGAZINE,
+                    InvitationLayoutVariant::WEDDING_INVITATION,
+                ], true)
+            )
                 <p class="evt-muted evt-design-hint">The invitation hero image uses your <strong>event cover photo</strong> (edit under Event details).</p>
             @endif
 
@@ -649,6 +669,8 @@
                     <legend class="profile-label">
                         @if ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION)
                             Couple portrait grid
+                        @elseif ($layoutVariant === InvitationLayoutVariant::BOTANICAL_GRADUATION)
+                            Hero portraits
                         @else
                             Invitation hero photos
                         @endif
@@ -656,90 +678,135 @@
                     <p class="evt-muted evt-design-hint">
                         @if ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION)
                             Upload three separate photos for the "Two hearts, one story" portrait grid — left portrait, centre portrait, and right portrait. When fewer than three are uploaded, the last image repeats to fill the grid.
+                        @elseif ($layoutVariant === InvitationLayoutVariant::BOTANICAL_GRADUATION)
+                            Optional. Two photos create the side-by-side framed look; one shows a single frame. Select both at once or upload one then the other.
                         @else
-                            Optional portraits beside your headline. When empty, the botanical layout falls back to your event cover for the framed photo.
+                            Optional portraits beside your headline.
                         @endif
                     </p>
 
-                    @if ($heroPortraitSlots > 0)
-                        @if ($currentHeroPortrait !== null)
-                            <div class="evt-design-hero-current profile-field">
-                                <p class="profile-label">Hero portrait</p>
-                                <div class="evt-design-gallery-current evt-design-hero-preview">
-                                    <img src="{{ asset('storage/'.$currentHeroPortrait) }}" alt="" width="120" height="150" loading="lazy">
+                    <div class="evt-design-inset-stack">
+                        {{-- Botanical: the 2-slot couple upload is the only hero photo control.
+                             A separate single hero portrait competed with it and with Cover. --}}
+                        @if ($heroPortraitSlots > 0 && $layoutVariant !== InvitationLayoutVariant::BOTANICAL_GRADUATION)
+                            @if ($currentHeroPortrait !== null)
+                                <div class="evt-design-inset-panel">
+                                    <div class="evt-design-inset-head-row">
+                                        <span class="evt-design-inset-title">Hero portrait</span>
+                                    </div>
+                                    <div class="evt-design-inset-body">
+                                        <div class="evt-design-gallery-current evt-design-hero-preview">
+                                            <img src="{{ asset('storage/'.$currentHeroPortrait) }}" alt="" width="120" height="150" loading="lazy">
+                                        </div>
+                                        <input type="hidden" name="clear_hero_portrait" value="0">
+                                        <label class="profile-label evt-check-label evt-design-media-remove-toggle">
+                                            <input type="checkbox" name="clear_hero_portrait" value="1" class="evt-check-input" @checked(old('clear_hero_portrait') === '1')>
+                                            Remove hero portrait (use event cover)
+                                        </label>
+                                    </div>
                                 </div>
-                                <input type="hidden" name="clear_hero_portrait" value="0">
-                                <label class="profile-label evt-check-label">
-                                    <input type="checkbox" name="clear_hero_portrait" value="1" class="evt-check-input" @checked(old('clear_hero_portrait') === '1')>
-                                    Remove hero portrait (use event cover)
-                                </label>
+                            @endif
+                            <div class="evt-design-inset-panel">
+                                <div class="evt-design-inset-head-row">
+                                    <span class="evt-design-inset-title">{{ $currentHeroPortrait ? 'Replace hero portrait' : 'Upload hero portrait' }}</span>
+                                </div>
+                                <div class="evt-design-inset-body">
+                                    <div class="profile-field evt-design-inset-field">
+                                        <label for="invitation_hero_portrait" class="profile-label evt-design-upload-micro">Image file</label>
+                                        <input id="invitation_hero_portrait" name="invitation_hero_portrait" type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="profile-input evt-design-media-file"
+                                               data-upload-slot="hero_portrait"
+                                               data-upload-url="{{ $stageUrl }}"
+                                               data-upload-max-bytes="{{ InvitationMediaRules::IMAGE_MAX_KB * 1024 }}">
+                                        @error('invitation_hero_portrait')
+                                            <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
+                                        @enderror
+                                    </div>
+                                </div>
                             </div>
                         @endif
-                        <div class="profile-field">
-                            <label for="invitation_hero_portrait" class="profile-label">{{ $currentHeroPortrait ? 'Replace hero portrait' : 'Upload hero portrait' }}</label>
-                            <input id="invitation_hero_portrait" name="invitation_hero_portrait" type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="profile-input"
-                                   data-upload-slot="hero_portrait"
-                                   data-upload-url="{{ $stageUrl }}"
-                                   data-upload-max-bytes="{{ InvitationMediaRules::IMAGE_MAX_KB * 1024 }}">
-                            @error('invitation_hero_portrait')
-                                <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
-                            @enderror
-                        </div>
-                    @endif
 
-                    @if ($couplePhotoSlots > 0)
-                        @if ($currentCouple !== [])
-                            <ul class="evt-design-gallery-current evt-design-couple-current">
-                                @foreach ($currentCouple as $path)
-                                    <li>
-                                        <img src="{{ asset('storage/'.$path) }}" alt="" width="96" height="120" loading="lazy">
-                                        <label class="evt-design-remove-label">
-                                            <input type="checkbox" name="couple_remove[]" value="{{ $path }}"> Remove
-                                        </label>
-                                    </li>
-                                @endforeach
-                            </ul>
+                        @if ($couplePhotoSlots > 0)
+                            @if ($currentCouple !== [])
+                                <div class="evt-design-inset-panel">
+                                    <div class="evt-design-inset-head-row">
+                                        <span class="evt-design-inset-title">Uploaded portraits</span>
+                                    </div>
+                                    <div class="evt-design-inset-body">
+                                        <ul class="evt-design-gallery-current evt-design-couple-current evt-design-gallery-current--in-panel">
+                                            @foreach ($currentCouple as $path)
+                                                <li>
+                                                    <img src="{{ asset('storage/'.$path) }}" alt="" width="96" height="120" loading="lazy">
+                                                    <label class="evt-design-remove-label">
+                                                        <input type="checkbox" name="couple_remove[]" value="{{ $path }}"> Remove
+                                                    </label>
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                </div>
+                            @endif
+                            <div class="evt-design-inset-panel">
+                                <div class="evt-design-inset-head-row">
+                                    <span class="evt-design-inset-title">
+                                        @if ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION)
+                                            {{ $currentCouple !== [] ? 'Add more portraits' : 'Couple portraits (3 slots — left, centre, right)' }}
+                                        @elseif ($layoutVariant === InvitationLayoutVariant::BOTANICAL_GRADUATION)
+                                            {{ $currentCouple !== [] ? 'Add more portraits' : 'Portrait photos (up to 2)' }}
+                                        @else
+                                            {{ $currentCouple !== [] ? 'Add more portraits' : 'Couple / dual portraits' }}
+                                        @endif
+                                    </span>
+                                </div>
+                                <div class="evt-design-inset-body">
+                                    <div class="profile-field evt-design-inset-field">
+                                        <label for="couple_photos" class="profile-label evt-design-upload-micro">Image files</label>
+                                        <input id="couple_photos" name="couple_photos[]" type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="profile-input evt-design-media-file" multiple
+                                               data-upload-slot="couple"
+                                               data-upload-url="{{ $stageUrl }}"
+                                               data-upload-max-bytes="{{ InvitationMediaRules::IMAGE_MAX_KB * 1024 }}"
+                                               @if ($coupleSlotsRemaining === 0) disabled @endif>
+                                        <p class="evt-muted evt-design-hint">
+                                            @if ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION)
+                                                Select up to 3 different images — they fill the left, centre, and right columns of the portrait grid. You can select all three at once or upload in batches.
+                                            @else
+                                                Displayed as one or two framed portraits in the hero.
+                                            @endif
+                                            {{ $coupleSlotsRemaining === 0 ? 'Remove one to add another.' : $coupleSlotsRemaining.' slot(s) left.' }}
+                                        </p>
+                                        @error('couple_photos')
+                                            <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
+                                        @enderror
+                                        @error('couple_remove')
+                                            <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
+                                        @enderror
+                                    </div>
+                                </div>
+                            </div>
                         @endif
-                        <div class="profile-field">
-                            <label for="couple_photos" class="profile-label">
-                                @if ($layoutVariant === InvitationLayoutVariant::BEAUTY_FOR_ASHES)
-                                    Speaker portrait uploads
-                                @elseif ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION)
-                                    Couple portraits (3 slots — left, centre, right)
-                                @else
-                                    Couple / dual portraits
-                                @endif
-                            </label>
-                            <input id="couple_photos" name="couple_photos[]" type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="profile-input" multiple
-                                   data-upload-slot="couple"
-                                   data-upload-url="{{ $stageUrl }}"
-                                   data-upload-max-bytes="{{ InvitationMediaRules::IMAGE_MAX_KB * 1024 }}"
-                                   @if ($coupleSlotsRemaining === 0) disabled @endif>
-                            <p class="evt-muted evt-design-hint">
-                                @if ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION)
-                                    Select up to 3 different images — they fill the left, centre, and right columns of the portrait grid. You can select all three at once or upload in batches.
-                                @elseif ($layoutVariant === InvitationLayoutVariant::BEAUTY_FOR_ASHES)
-                                    Shown on the speaker grid in upload order.
-                                @else
-                                    Displayed as one or two framed portraits in the hero.
-                                @endif
-                                {{ $coupleSlotsRemaining === 0 ? 'Remove one to add another.' : $coupleSlotsRemaining.' slot(s) left.' }}
-                            </p>
-                            @error('couple_photos')
-                                <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
-                            @enderror
-                            @error('couple_remove')
-                                <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
-                            @enderror
-                        </div>
-                    @endif
+                    </div>
                 </fieldset>
             @endif
 
-            @if (! in_array('gallery', $blockedSections, true))
+            @if (! in_array('gallery', $blockedSections, true) && $layoutVariant !== InvitationLayoutVariant::BEAUTY_FOR_ASHES)
             <fieldset class="evt-design-fieldset">
-                <legend class="profile-label">Gallery</legend>
-                <p class="evt-muted evt-design-hint">Up to six WebP images stored after upload (converted from JPG/PNG).</p>
+                <legend class="profile-label">
+                    @if ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION_NOIR)
+                        Photo gallery
+                    @else
+                        Gallery
+                    @endif
+                </legend>
+                <p class="evt-muted evt-design-hint">
+                    @if ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION_NOIR)
+                        Up to {{ $galleryMaxWord }} photos in two rows of three. One of these also appears behind the quote section (or the hero photo if the gallery is empty). Stored as WebP after upload.
+                    @elseif ($layoutVariant === InvitationLayoutVariant::MODERN_MINIMAL)
+                        Up to {{ $galleryMaxWord }} photos in the photo grid. Stored as WebP after upload (converted from JPG/PNG).
+                    @elseif ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION)
+                        Up to {{ $galleryMaxWord }} photos for the masonry gallery. The story panel can also use a gallery photo when one is available. Stored as WebP after upload.
+                    @else
+                        Up to {{ $galleryMaxWord }} WebP images stored after upload (converted from JPG/PNG).
+                    @endif
+                </p>
                 <div class="evt-design-inset-stack">
                     @if (! empty($invitationMerged['media']['gallery']))
                         <div class="evt-design-inset-panel">

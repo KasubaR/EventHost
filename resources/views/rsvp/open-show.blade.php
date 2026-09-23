@@ -39,6 +39,7 @@
                 'maxAttendees' => $maxAttendees,
                 'rsvpFormConfig' => $rsvpFormConfig ?? [],
                 'phoneRequired' => $isPrivateOpenRsvp ?? false,
+                'preselectedStatus' => $preselectedStatus ?? null,
             ])
         </div>
     </article>

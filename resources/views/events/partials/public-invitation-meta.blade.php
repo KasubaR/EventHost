@@ -6,11 +6,38 @@
     $description = $descRaw !== ''
         ? Str::limit($descRaw, 200, preserveWords: true)
         : $event->name.' · '.$event->event_date->format('l, F j, Y');
+
+    $storageImage = function (mixed $path): ?string {
+        if (! is_string($path) || $path === '' || str_contains($path, '://')) {
+            return null;
+        }
+
+        return asset('storage/'.$path);
+    };
+
     $imageUrl = $event->cover_image_url;
-    if (! empty($invitation['media']['gallery'][0] ?? null)) {
-        $p = $invitation['media']['gallery'][0];
-        if (is_string($p) && $p !== '' && ! str_contains($p, '://')) {
-            $imageUrl = asset('storage/'.$p);
+    if (filled($event->cover_image)) {
+        // Host set a cover — gallery still wins for share cards when present
+        // (same as before botanical's portrait fallback).
+        $galleryUrl = $storageImage($invitation['media']['gallery'][0] ?? null);
+        if ($galleryUrl !== null) {
+            $imageUrl = $galleryUrl;
+        }
+    } else {
+        // No cover (e.g. botanical hero portraits): prefer first portrait, then
+        // gallery, then the platform default from cover_image_url. Never write
+        // these paths into events.cover_image.
+        $couplePaths = array_values(array_filter(array_map('strval', $invitation['media']['couple_photos'] ?? [])));
+        $heroPortrait = $invitation['media']['hero_portrait'] ?? null;
+        $portraitUrl = $storageImage($couplePaths[0] ?? null)
+            ?? $storageImage(is_string($heroPortrait) ? $heroPortrait : null);
+        if ($portraitUrl !== null) {
+            $imageUrl = $portraitUrl;
+        } else {
+            $galleryUrl = $storageImage($invitation['media']['gallery'][0] ?? null);
+            if ($galleryUrl !== null) {
+                $imageUrl = $galleryUrl;
+            }
         }
     }
 @endphp

@@ -73,11 +73,15 @@ return [
         'account_sid' => env('TWILIO_ACCOUNT_SID'),
         'api_key_sid' => env('TWILIO_API_KEY_SID'),
         'api_key_secret' => env('TWILIO_API_KEY_SECRET'),
+        // Account Auth Token — used only to verify X-Twilio-Signature on inbound webhooks
+        // (RequestValidator). Outbound REST still uses the API key above.
+        'auth_token' => env('TWILIO_AUTH_TOKEN'),
         // 'whatsapp:+14155238886' (Sandbox) in dev, an approved WhatsApp sender in production.
         'whatsapp_from' => env('TWILIO_WHATSAPP_FROM'),
-        // Approved Content Template SID (HX...) for the guest invitation message. Business-initiated
-        // WhatsApp sends outside a 24h session window must use an approved template — see the plan.
+        // Approved Quick Reply Content Template SID (HX...) for guest invitations.
         'invitation_content_sid' => env('TWILIO_INVITATION_CONTENT_SID'),
+        // Approved Content Template SID for post-RSVP event reminders (7 / 1 / 0 days).
+        'event_reminder_content_sid' => env('TWILIO_EVENT_REMINDER_CONTENT_SID'),
     ],
 
 ];

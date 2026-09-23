@@ -63,4 +63,77 @@ class PaymentCompletionTest extends TestCase
         $this->assertSame(0, $user->fresh()->event_credits);
         $this->assertNotNull($payment->fresh()->notified_at);
     }
+
+    public function test_completion_of_top_up_raises_tier_without_granting_credits(): void
+    {
+        $user = User::factory()->create([
+            'subscription_tier' => SubscriptionTier::Base,
+            'event_credits' => 1,
+        ]);
+        $payment = Payment::factory()->for($user)->completed()->create([
+            'plan_key' => 'pro',
+            'credits_granted' => 0,
+            'amount' => 300.00,
+            'notified_at' => null,
+            'metadata' => [
+                'upgrade' => true,
+                'previous_tier' => 'base',
+            ],
+        ]);
+
+        app(PaymentCompletionService::class)->complete($payment);
+
+        $user->refresh();
+        $this->assertSame(1, $user->event_credits);
+        $this->assertSame(SubscriptionTier::Pro, $user->subscriptionTier());
+        $this->assertNotNull($payment->fresh()->credits_fulfilled_at);
+    }
+
+    public function test_reverse_of_top_up_restores_previous_tier(): void
+    {
+        $user = User::factory()->create([
+            'subscription_tier' => SubscriptionTier::Pro,
+            'event_credits' => 1,
+        ]);
+        $payment = Payment::factory()->for($user)->completed()->create([
+            'plan_key' => 'pro',
+            'credits_granted' => 0,
+            'amount' => 300.00,
+            'credits_fulfilled_at' => now(),
+            'notified_at' => now(),
+            'metadata' => [
+                'upgrade' => true,
+                'previous_tier' => 'base',
+            ],
+        ]);
+
+        app(PaymentCompletionService::class)->reverse($payment, 'refunded');
+
+        $user->refresh();
+        $this->assertSame(1, $user->event_credits);
+        $this->assertSame(SubscriptionTier::Base, $user->subscriptionTier());
+        $this->assertNotNull($payment->fresh()->credits_reversed_at);
+    }
+
+    public function test_reverse_of_top_up_does_not_clobber_a_later_higher_tier(): void
+    {
+        $user = User::factory()->proPlus()->create([
+            'event_credits' => 1,
+        ]);
+        $payment = Payment::factory()->for($user)->completed()->create([
+            'plan_key' => 'pro',
+            'credits_granted' => 0,
+            'amount' => 300.00,
+            'credits_fulfilled_at' => now(),
+            'notified_at' => now(),
+            'metadata' => [
+                'upgrade' => true,
+                'previous_tier' => 'base',
+            ],
+        ]);
+
+        app(PaymentCompletionService::class)->reverse($payment, 'refunded');
+
+        $this->assertSame(SubscriptionTier::ProPlus, $user->fresh()->subscriptionTier());
+    }
 }

@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Event;
+use App\Models\InvitationTemplate;
+use App\Services\InvitationCustomizationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -35,6 +37,30 @@ class PublicInvitationPageTest extends TestCase
         $response->assertSee('Join us for cake.', escape: false);
         $response->assertSee(route('events.public.ics', ['slug' => $event->slug]), escape: false);
         $response->assertSee('evt-calendar-actions', escape: false);
+    }
+
+    public function test_og_image_uses_first_hero_portrait_when_botanical_has_no_cover(): void
+    {
+        $tpl = InvitationTemplate::query()
+            ->where('slug', 'graduation-template-2-botanical-blush')
+            ->firstOrFail();
+
+        $event = $this->publishedPublicEvent([
+            'invitation_template_id' => $tpl->id,
+            'cover_image' => null,
+            'invitation_customization' => [
+                'schema_version' => InvitationCustomizationService::CURRENT_SCHEMA_VERSION,
+                'media' => [
+                    'gallery' => [],
+                    'hero_portrait' => null,
+                    'couple_photos' => ['invitation-couple/1/portrait.webp'],
+                ],
+            ],
+        ]);
+
+        $this->get(route('events.public', ['slug' => $event->slug]))
+            ->assertOk()
+            ->assertSee('og:image" content="'.asset('storage/invitation-couple/1/portrait.webp').'"', false);
     }
 
     public function test_private_published_invitation_event_renders_its_page_and_ics(): void

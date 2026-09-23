@@ -45,10 +45,5 @@
                 <li><i class="fa-solid fa-list"></i> Guest list visible to attendees</li>
             @endif
         </ul>
-
-        {{-- See events/invitations/sections/details.blade.php — host-only note, hidden from guests. --}}
-        @if (! $event->is_public && ! isset($guest))
-            <p class="evt-muted evt-inv-private-note"><i class="fa-solid fa-lock"></i> This host marked this event as private in settings.</p>
-        @endif
     </div>
 </div>

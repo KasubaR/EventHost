@@ -4,9 +4,11 @@ namespace App\Http\Requests;
 
 use App\Enums\EventAudience;
 use App\Enums\EventProductKind;
+use App\Enums\SubscriptionTier;
 use App\Models\Event;
 use App\Rules\EventSlugAvailable;
 use App\Rules\UserCanUseInvitationTemplate;
+use App\Support\BillingPlan;
 use Carbon\Carbon;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -111,10 +113,33 @@ class StoreEventRequest extends FormRequest
             // as midnight, which would reject any same-day deadline that has
             // a time on it at all (i.e. almost every real deadline).
             'rsvp_deadline' => ['nullable', 'date'],
-            'guest_limit' => ['nullable', 'integer', 'min:1', 'max:100000'],
+            'guest_limit' => $this->guestLimitRules(),
             'allow_plus_one' => ['boolean'],
             'show_guest_list' => ['boolean'],
         ];
+    }
+
+    /**
+     * Per-event accepted-attendee cap, hard-capped at the owner's plan guest
+     * capacity (Base 150 / Pro 300 / Pro+ unlimited). Ticketed creates strip
+     * this field before save — the rule still runs but never sticks.
+     *
+     * @return list<mixed>
+     */
+    private function guestLimitRules(): array
+    {
+        $rules = ['nullable', 'integer', 'min:1'];
+        $capacity = BillingPlan::guestLimitDefaultForTier(
+            $this->user()?->subscriptionTier() ?? SubscriptionTier::None
+        );
+
+        if ($capacity !== null) {
+            $rules[] = 'max:'.$capacity;
+        } else {
+            $rules[] = 'max:100000';
+        }
+
+        return $rules;
     }
 
     public function withValidator(Validator $validator): void

@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\SubscriptionTier;
 use App\Models\Event;
 use App\Rules\EventSlugAvailable;
+use App\Support\BillingPlan;
 use Carbon\Carbon;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -90,12 +92,41 @@ class UpdateEventRequest extends FormRequest
             // as midnight, which would reject any same-day deadline that has
             // a time on it at all (i.e. almost every real deadline).
             'rsvp_deadline' => ['nullable', 'date'],
-            'guest_limit' => ['nullable', 'integer', 'min:1', 'max:100000'],
+            'guest_limit' => $this->guestLimitRules(),
             'allow_plus_one' => ['boolean'],
             'show_guest_list' => ['boolean'],
             'photo_wall_enabled' => ['boolean'],
             'photo_wall_requires_approval' => ['boolean'],
         ];
+    }
+
+    /**
+     * @return list<mixed>
+     */
+    private function guestLimitRules(): array
+    {
+        $rules = ['nullable', 'integer', 'min:1'];
+
+        // Ticketed events ignore guest_limit on save; still validate against
+        // the owner's invitation-plan capacity when the field is present.
+        $event = $this->route('event');
+        if ($event instanceof Event && $event->isTicketed()) {
+            $rules[] = 'max:100000';
+
+            return $rules;
+        }
+
+        $capacity = BillingPlan::guestLimitDefaultForTier(
+            $this->user()?->subscriptionTier() ?? SubscriptionTier::None
+        );
+
+        if ($capacity !== null) {
+            $rules[] = 'max:'.$capacity;
+        } else {
+            $rules[] = 'max:100000';
+        }
+
+        return $rules;
     }
 
     public function withValidator(Validator $validator): void

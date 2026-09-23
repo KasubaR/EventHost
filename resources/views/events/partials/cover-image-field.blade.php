@@ -1,11 +1,13 @@
 @php
     $associateForm = $associateForm ?? false;
     $hidden = $hidden ?? false;
+    $heading = $heading ?? 'Cover Image';
+    $description = $description ?? 'Recommended wide image; we crop to 1200×630 for sharing.';
 @endphp
 <div class="evt-section" data-product-panel="invitation" @if ($hidden) hidden @endif>
     <div class="evt-section-head">
-        <h2>Cover Image</h2>
-        <p>Recommended wide image; we crop to 1200×630 for sharing.</p>
+        <h2>{{ $heading }}</h2>
+        <p>{{ $description }}</p>
     </div>
     <div class="evt-section-body">
         <div class="profile-photo-row">

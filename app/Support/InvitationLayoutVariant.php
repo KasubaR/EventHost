@@ -127,13 +127,31 @@ final class InvitationLayoutVariant
     }
 
     /**
-     * Whether this layout ever renders $event->cover_image_url anywhere in its
-     * sections. Modern Minimal and Event Invite are text/portrait-only heroes
-     * with no cover fallback — the event edit page hides the Cover Image field
-     * for them rather than collecting an image the invitation never shows.
+     * How many gallery images this layout can usefully show. Botanical and
+     * Modern Minimal mosaics are five tiles; other layouts use the platform cap.
+     */
+    public static function maxGalleryImages(?string $variant): int
+    {
+        return match (self::normalize($variant)) {
+            self::BOTANICAL_GRADUATION, self::MODERN_MINIMAL => 5,
+            default => InvitationMediaRules::GALLERY_MAX,
+        };
+    }
+
+    /**
+     * Whether this layout should collect a host Cover Image on the edit page.
+     * Modern Minimal and Event Invite never render cover in the invitation.
+     * Botanical Blush uses up to two hero portraits instead — cover was only a
+     * redundant single-frame fallback / share image. Beauty for Ashes uses a
+     * CSS hero and four speaker portraits — cover is not the invitation photo path.
      */
     public static function usesCoverImage(?string $variant): bool
     {
-        return ! in_array(self::normalize($variant), [self::MODERN_MINIMAL, self::EVENT_INVITE], true);
+        return ! in_array(self::normalize($variant), [
+            self::MODERN_MINIMAL,
+            self::EVENT_INVITE,
+            self::BOTANICAL_GRADUATION,
+            self::BEAUTY_FOR_ASHES,
+        ], true);
     }
 }

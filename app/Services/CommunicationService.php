@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\RsvpStatus;
 use App\Models\ContributionPayment;
 use App\Models\Event;
 use App\Models\EventContribution;
@@ -15,6 +16,7 @@ use App\Notifications\NewContributionReceivedNotification;
 use App\Notifications\NewRsvpReceivedNotification;
 use App\Notifications\RsvpConfirmationNotification;
 use App\Notifications\RsvpReminderNotification;
+use App\Support\WhatsAppEventReminderBuckets;
 use App\Support\ZambianPhone;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Notification;
@@ -97,6 +99,29 @@ class CommunicationService
         } catch (\Throwable $e) {
             $this->markFailed($log, $e);
             throw $e;
+        }
+    }
+
+    /**
+     * Shared by web RSVP, API RSVP, and WhatsApp inbound quick-reply — keep side effects identical.
+     */
+    public function dispatchRsvpNotifications(Event $event, Guest $guest, Rsvp $rsvp): void
+    {
+        try {
+            $rsvp->loadMissing('guest');
+
+            if (is_string($guest->email) && $guest->email !== '') {
+                $this->sendRsvpConfirmation($event, $guest, $rsvp);
+            }
+
+            $event->loadMissing('user');
+            $host = $event->user;
+
+            if ($host !== null) {
+                $this->notifyHostNewRsvp($host, $event, $guest, $rsvp);
+            }
+        } catch (\Throwable $e) {
+            report($e);
         }
     }
 
@@ -253,15 +278,22 @@ class CommunicationService
         }
 
         try {
+            // Numbered slots match the Meta/Twilio Quick Reply Content Template
+            // (plans/whatsapp-invitations.md / docs/twilio.md): body {{1}}..{{5}} details,
+            // {{6}} = full personal RSVP URL for plus-ones; Yes/No/Maybe are template buttons.
             $result = $this->whatsAppService->sendTemplate(
                 $toE164,
                 (string) config('services.twilio.invitation_content_sid'),
                 [
-                    '1' => $event->name,
-                    '2' => $event->event_date?->format('j F Y') ?? '',
-                    '3' => $event->hasStartTime() ? Carbon::parse($event->event_time)->format('H:i') : '',
-                    '4' => filled($event->venue) ? $event->venue : 'Venue TBA',
-                    '5' => $guest->personalRsvpUrl(),
+                    '1' => filled($guest->name) ? $guest->name : 'Guest',
+                    '2' => $event->name,
+                    '3' => $event->event_date?->format('j F Y') ?? '',
+                    '4' => $event->hasStartTime() ? Carbon::parse($event->event_time)->format('H:i') : 'TBA',
+                    '5' => filled($event->venue) ? $event->venue : 'Venue TBA',
+                    // Body footnote for plus-ones / full form — Quick Reply template has no URL button.
+                    '6' => (string) $guest->personalRsvpUrl(),
+                    // IMAGE header path after the production host (template: https://HOST/{{7}}).
+                    '7' => $event->whatsAppInviteHeaderMediaPath(),
                 ]
             );
             $status = $result['status'] === 'sent' ? NotificationLog::STATUS_SENT : NotificationLog::STATUS_FAILED;
@@ -277,6 +309,100 @@ class CommunicationService
                     'invitation_sent' => true,
                     'invitation_sent_at' => now(),
                 ])->save();
+
+                return 'sent';
+            }
+
+            return 'failed';
+        } catch (\Throwable $e) {
+            $this->markFailed($log, $e);
+            throw $e;
+        }
+    }
+
+    /**
+     * Scheduled WhatsApp reminder for Accepted guests (7 / 1 / 0 days before event_date).
+     * Distinct from sendRsvpReminder() which emails non-responders before rsvp_deadline.
+     *
+     * @return 'sent'|'disabled'|'invalid_phone'|'rate_limited'|'skipped'|'failed'
+     */
+    public function sendWhatsAppEventReminder(Event $event, Guest $guest, string $bucket): string
+    {
+        if (! (bool) config('communications.whatsapp.enabled', false)) {
+            return 'disabled';
+        }
+
+        if (! $event->ownerCanSendAutomatedReminders()) {
+            return 'disabled';
+        }
+
+        if (! WhatsAppEventReminderBuckets::isAllowed($bucket)) {
+            return 'skipped';
+        }
+
+        /** @var list<string> $already */
+        $already = $guest->whatsapp_event_reminders_sent;
+        if (in_array($bucket, $already, true)) {
+            return 'skipped';
+        }
+
+        $guest->loadMissing('rsvp');
+        if ($guest->rsvp === null || $guest->rsvp->status !== RsvpStatus::Accepted) {
+            return 'skipped';
+        }
+
+        $toE164 = ZambianPhone::toE164($guest->phone);
+        if ($toE164 === null) {
+            return 'invalid_phone';
+        }
+
+        $contentSid = (string) config('services.twilio.event_reminder_content_sid', '');
+        if ($contentSid === '') {
+            return 'disabled';
+        }
+
+        $cap = max(1, (int) config('communications.whatsapp.hourly_cap_per_event', 100));
+        $sentLastHour = NotificationLog::query()
+            ->where('event_id', $event->id)
+            ->where('channel', 'whatsapp')
+            ->where('status', NotificationLog::STATUS_SENT)
+            ->where('created_at', '>=', now()->subHour())
+            ->count();
+        if ($sentLastHour >= $cap) {
+            return 'rate_limited';
+        }
+
+        $idempotencyKey = sprintf('wa-event-reminder:%d:%d:%s', $event->id, $guest->id, $bucket);
+        $log = $this->startLog($event, $guest, 'whatsapp', 'guest_event_reminder_whatsapp', $idempotencyKey, [
+            'bucket' => $bucket,
+        ]);
+        if ($log === null) {
+            return 'skipped';
+        }
+
+        try {
+            $result = $this->whatsAppService->sendTemplate(
+                $toE164,
+                $contentSid,
+                [
+                    '1' => WhatsAppEventReminderBuckets::leadForBucket($event->name, $bucket),
+                    '2' => $event->event_date?->format('j F Y') ?? '',
+                    '3' => $event->hasStartTime() ? Carbon::parse($event->event_time)->format('H:i') : 'TBA',
+                    '4' => filled($event->venue) ? $event->venue : 'Venue TBA',
+                ]
+            );
+            $status = $result['status'] === 'sent' ? NotificationLog::STATUS_SENT : NotificationLog::STATUS_FAILED;
+            $log->forceFill([
+                'status' => $status,
+                'provider_message_id' => $result['provider_message_id'],
+                'response' => $result['response'],
+                'sent_at' => $status === NotificationLog::STATUS_SENT ? now() : null,
+            ])->save();
+
+            if ($status === NotificationLog::STATUS_SENT) {
+                $guest->forceFill([
+                    'whatsapp_event_reminders_sent' => WhatsAppEventReminderBuckets::withBucketAppended($already, $bucket),
+                ])->saveQuietly();
 
                 return 'sent';
             }

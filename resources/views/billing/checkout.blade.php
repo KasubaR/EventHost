@@ -62,6 +62,7 @@
                         $icon     = $icons[$key] ?? 'fa-star';
                         $isPopular  = $popularPlanKey !== null && $key === $popularPlanKey;
                         $isSelected = ($selectedPlan ?? 'pro') === $key;
+                        $isUpgrade  = (bool) ($plan['is_upgrade'] ?? false);
                         $priceLabel = ($currency === 'ZMW' ? 'K' : $currency) . number_format($plan['amount'], 0);
                     @endphp
                     <label class="billing-plan-card {{ $isSelected ? 'is-selected' : '' }} {{ $isPopular ? 'is-popular' : '' }}"
@@ -79,7 +80,11 @@
                         <div class="billing-plan-price">
                             <span class="billing-plan-currency">{{ $currency === 'ZMW' ? 'K' : $currency }}</span>{{ number_format($plan['amount'], 0) }}
                         </div>
-                        <div class="billing-plan-period">per event</div>
+                        @if ($isUpgrade)
+                            <div class="billing-plan-period">upgrade — keep your unused credit</div>
+                        @else
+                            <div class="billing-plan-period">per event</div>
+                        @endif
                         <ul class="billing-plan-features">
                             @foreach ($plan['features'] as $feature)
                                 <li><i class="fa-solid fa-check" aria-hidden="true"></i> {{ str_replace('{template_count}', $activeTemplateCount, $feature) }}</li>

@@ -216,22 +216,6 @@ class RsvpController extends Controller
 
     private function dispatchRsvpNotifications(Event $event, Guest $guest, Rsvp $rsvp): void
     {
-        try {
-            $rsvp->loadMissing('guest');
-            $communication = app(CommunicationService::class);
-
-            if (is_string($guest->email) && $guest->email !== '') {
-                $communication->sendRsvpConfirmation($event, $guest, $rsvp);
-            }
-
-            $event->loadMissing('user');
-            $host = $event->user;
-
-            if ($host !== null && $host->wantsEmailRsvpUpdates()) {
-                $communication->notifyHostNewRsvp($host, $event, $guest, $rsvp);
-            }
-        } catch (\Throwable $e) {
-            report($e);
-        }
+        app(CommunicationService::class)->dispatchRsvpNotifications($event, $guest, $rsvp);
     }
 }

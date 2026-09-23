@@ -169,7 +169,7 @@ class InvitationTemplate extends Model
 
         $event = new Event([
             'invitation_template_id' => $this->id,
-            'name' => 'Alex & Jordan\'s Celebration',
+            'name' => 'Peter & Bwanga\'s Celebration',
             'event_type' => 'wedding',
             'description' => "We're tying the knot and would love for you to celebrate with us.\n\nDress code: semi-formal.",
             'venue' => 'Riverside Conservatory',
@@ -190,7 +190,7 @@ class InvitationTemplate extends Model
         $event->setRelation('invitationTemplate', $this);
 
         if ($this->slug === 'modern-minimal') {
-            $event->name = 'Sofia & Leo';
+            $event->name = 'Kasuba & Tamara';
             $event->event_type = 'wedding';
             $event->description = "Two designers, one coffee shop, and a shared love for mid-century furniture. What started as a debate over Eames chairs turned into a lifetime of collaboration, adventure, and quiet Sunday mornings. We can't wait to celebrate with you.";
             $event->venue = 'The Greenhouse';
@@ -219,7 +219,7 @@ class InvitationTemplate extends Model
                 ],
             ];
         } elseif ($this->slug === 'wedding-invitation-2') {
-            $event->name = 'Nadia & Elias';
+            $event->name = 'Peter Banda & Bwanga Chibaye';
             $event->event_type = 'wedding';
             $event->description = 'An evening of vows, dining, and dancing under the Cape Town sky.';
             $event->venue = 'The Ridgecrest Estate Chapel';
@@ -253,12 +253,12 @@ class InvitationTemplate extends Model
                     'wi2_invite_body' => "request the honour of your presence\nas they exchange vows and begin\ntheir life together in love",
                     'wi2_photo_quote' => '"Two souls with but a single thought, two hearts that beat as one."',
                     'wi2_photo_quote_cite' => '— Friedrich Halm',
-                    'wi2_footer_monogram' => 'N&E',
+                    'wi2_footer_monogram' => 'P&B',
                     'wi2_footer_legal' => 'With Love & Gratitude',
                 ],
             ];
         } elseif ($this->slug === 'wedding-invitation') {
-            $event->name = 'Amara & Julian';
+            $event->name = 'Kasuba Mulenga & Tamara Muzwindi';
             $event->event_type = 'wedding';
             $event->description = 'We joyfully invite you to celebrate the union of two souls as they begin their forever journey together in love and laughter.';
             $event->venue = "St. Mary's Chapel";
@@ -294,7 +294,7 @@ class InvitationTemplate extends Model
                 ],
             ];
         } elseif ($this->slug === 'event-invite') {
-            $event->name = "Nalishebo's";
+            $event->name = "Tamara Muzwindi's";
             $event->event_type = 'birthday';
             $event->description = 'A joyful birthday lunch celebration.';
             $event->venue = 'Mwanachanya Function Hall';
@@ -305,8 +305,8 @@ class InvitationTemplate extends Model
                 'schema_version' => InvitationCustomizationService::CURRENT_SCHEMA_VERSION,
                 'content' => [
                     'ei_color_theme' => 'Denim and Brown',
-                    'ei_guest_speaker' => 'Mutinta Kapembwe',
-                    'ei_mc' => 'Chanda and Mumba',
+                    'ei_guest_speaker' => 'Bwanga Chibaye',
+                    'ei_mc' => 'Peter Banda and Kasuba Mulenga',
                 ],
             ];
         } elseif ($this->slug === 'beauty-for-ashes') {
@@ -333,10 +333,10 @@ class InvitationTemplate extends Model
                         ['time' => '10:00', 'title' => 'Main session', 'detail' => 'Worship and word'],
                     ],
                     'speaker_cards' => [
-                        ['role' => 'Dr Prophetess', 'name' => 'Christine Mwelwa'],
-                        ['role' => 'Prophetess', 'name' => 'Nomsa Maida'],
-                        ['role' => 'Minister', 'name' => 'Temwani'],
-                        ['role' => 'Dr Prophetess', 'name' => 'Tiko Silweya'],
+                        ['role' => 'Dr Prophetess', 'name' => 'Kasuba Mulenga'],
+                        ['role' => 'Prophetess', 'name' => 'Tamara Muzwindi'],
+                        ['role' => 'Minister', 'name' => 'Peter Banda'],
+                        ['role' => 'Dr Prophetess', 'name' => 'Bwanga Chibaye'],
                     ],
                     'venue_note' => '3rd gate after the curve — right next to CM Bakery.',
                     'bfa_conference_theme' => 'All Shades of Purple',
@@ -349,7 +349,7 @@ class InvitationTemplate extends Model
                 ],
             ];
         } elseif ($this->slug === 'graduation-template-2-botanical-blush') {
-            $event->name = 'Amina Chulu';
+            $event->name = 'Kasuba Mulenga';
             $event->event_type = 'graduation';
             $event->description = "Bachelor of Science, Class of {$starts->format('Y')}\n\nFour years of late nights and early mornings — please join us to celebrate the finish line.";
             $event->venue = 'University Great Hall';

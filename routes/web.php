@@ -46,6 +46,7 @@ use App\Http\Controllers\TableUploadController;
 use App\Http\Controllers\TemplateLibraryController;
 use App\Http\Controllers\TicketCheckInController;
 use App\Http\Controllers\TicketController;
+use App\Http\Controllers\TwilioWhatsAppWebhookController;
 use App\Models\Event;
 use App\Models\InvitationTemplate;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -56,6 +57,11 @@ $lencoWebhookPath = trim((string) config('services.lenco.webhook_path'), '/') ?:
 Route::post($lencoWebhookPath, [PaymentController::class, 'webhook'])
     ->withoutMiddleware([VerifyCsrfToken::class])
     ->name('lenco.webhook');
+
+Route::post('/webhooks/twilio/whatsapp', TwilioWhatsAppWebhookController::class)
+    ->withoutMiddleware([VerifyCsrfToken::class])
+    ->middleware('throttle:120,1')
+    ->name('webhooks.twilio.whatsapp');
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
@@ -209,6 +215,7 @@ Route::get('/rsvp/{token}', [RsvpController::class, 'showByToken'])->name('rsvp.
 // Same trust model as the line above: the token in the URL is the only guard, no
 // login, no throttle — a guest reopens this repeatedly to show their entry pass.
 Route::get('/rsvp/{token}/entry-pass.svg', [RsvpController::class, 'entryPassQr'])->name('rsvp.token.entry-pass');
+Route::get('/rsvp/{token}/entry-pass.png', [RsvpController::class, 'entryPassQrPng'])->name('rsvp.token.entry-pass-png');
 Route::get('/e/{slug}/rsvp', [RsvpController::class, 'showOpen'])->name('rsvp.open.show');
 
 Route::middleware('throttle:rsvp-submit')->group(function () {

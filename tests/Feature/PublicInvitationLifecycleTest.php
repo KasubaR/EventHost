@@ -142,7 +142,8 @@ class PublicInvitationLifecycleTest extends TestCase
 
     public function test_slug_change_redirects_old_url_to_new(): void
     {
-        $user = User::factory()->create();
+        // Changing a slug is Pro and above — see CustomEventSlugPlanGateTest.
+        $user = User::factory()->pro()->create();
         $event = $this->liveEvent(['user_id' => $user->id, 'slug' => 'old-slug', 'name' => 'Redirect Me']);
 
         $this->actingAs($user)->put(route('events.update', $event), [
@@ -172,7 +173,8 @@ class PublicInvitationLifecycleTest extends TestCase
 
     public function test_reclaiming_old_slug_removes_redirect(): void
     {
-        $user = User::factory()->create();
+        // Changing a slug is Pro and above — see CustomEventSlugPlanGateTest.
+        $user = User::factory()->pro()->create();
         $event = $this->liveEvent(['user_id' => $user->id, 'slug' => 'alpha']);
 
         $this->actingAs($user)->put(route('events.update', $event), [
@@ -253,7 +255,8 @@ class PublicInvitationLifecycleTest extends TestCase
 
     public function test_slug_cannot_collide_with_another_events_redirect(): void
     {
-        $owner = User::factory()->create();
+        // Changing a slug is Pro and above — see CustomEventSlugPlanGateTest.
+        $owner = User::factory()->pro()->create();
         $first = $this->liveEvent(['user_id' => $owner->id, 'slug' => 'taken-once']);
         $second = $this->liveEvent(['user_id' => $owner->id, 'slug' => 'other-slug', 'name' => 'Second']);
 
@@ -285,7 +288,8 @@ class PublicInvitationLifecycleTest extends TestCase
 
     public function test_auto_generated_slug_does_not_hijack_another_events_redirect(): void
     {
-        $owner = User::factory()->create();
+        // Changing a slug is Pro and above — see CustomEventSlugPlanGateTest.
+        $owner = User::factory()->pro()->create();
         $original = $this->liveEvent(['user_id' => $owner->id, 'slug' => 'the-jones-wedding', 'name' => 'Old Name']);
 
         // Change the slug away, leaving "the-jones-wedding" as a live redirect.

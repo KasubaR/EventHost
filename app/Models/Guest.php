@@ -3,8 +3,10 @@
 namespace App\Models;
 
 use App\Casts\AsRsvpRemindersSent;
+use App\Casts\AsWhatsAppEventRemindersSent;
 use App\Enums\RsvpStatus;
 use App\Support\RsvpReminderBuckets;
+use App\Support\WhatsAppEventReminderBuckets;
 use Database\Factories\GuestFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -15,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * @property list<string> $rsvp_reminders_sent Reminder buckets sent; shape enforced by {@see AsRsvpRemindersSent} / {@see RsvpReminderBuckets}.
+ * @property list<string> $whatsapp_event_reminders_sent Event-day WhatsApp buckets; {@see AsWhatsAppEventRemindersSent} / {@see WhatsAppEventReminderBuckets}.
  */
 class Guest extends Model
 {
@@ -36,6 +39,7 @@ class Guest extends Model
         'invitation_sent',
         'invitation_sent_at',
         'rsvp_reminders_sent',
+        'whatsapp_event_reminders_sent',
     ];
 
     /**
@@ -151,6 +155,19 @@ class Guest extends Model
     }
 
     /**
+     * Absolute PNG entry-pass URL for WhatsApp media (Twilio fetches it). Null when
+     * the guest has no invitation token — callers must still check hasEntryPassFor.
+     */
+    public function entryPassPngUrl(): ?string
+    {
+        if ($this->invitation_token === null) {
+            return null;
+        }
+
+        return route('rsvp.token.entry-pass-png', ['token' => $this->invitation_token], absolute: true);
+    }
+
+    /**
      * URL encoded into the guest's printable/emailed QR code. It targets the staff-only,
      * auth-protected check-in confirm endpoint — not the public RSVP link — so a guest
      * scanning their own invitation cannot self-check-in before arriving; only a logged-in
@@ -254,6 +271,7 @@ class Guest extends Model
             'invitation_sent' => 'boolean',
             'invitation_sent_at' => 'datetime',
             'rsvp_reminders_sent' => AsRsvpRemindersSent::class,
+            'whatsapp_event_reminders_sent' => AsWhatsAppEventRemindersSent::class,
             'checked_in_at' => 'datetime',
             'checked_in_by' => 'integer',
         ];

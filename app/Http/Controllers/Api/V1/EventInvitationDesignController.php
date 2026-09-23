@@ -12,7 +12,6 @@ use App\Services\InvitationCustomizationService;
 use App\Support\InvitationCustomizationPersistenceValidator;
 use App\Support\InvitationFonts;
 use App\Support\InvitationLayoutVariant;
-use App\Support\InvitationMediaRules;
 use App\Support\InvitationMediaStager;
 use App\Support\InvitationPalettes;
 use App\Support\InvitationVideoBackground;
@@ -621,7 +620,7 @@ class EventInvitationDesignController extends Controller
             'available_sections' => collect($template->default_sections ?? [])->pluck('type')->values(),
             'max_hero_portrait_slots' => InvitationLayoutVariant::maxInvitationHeroPortraitSlots($variant),
             'max_couple_photo_slots' => InvitationLayoutVariant::maxCouplePhotoSlots($variant),
-            'gallery_max' => InvitationMediaRules::GALLERY_MAX,
+            'gallery_max' => InvitationLayoutVariant::maxGalleryImages($variant),
             'gallery_max_total_bytes' => (int) config('invitations.gallery_max_total_bytes', 0),
         ];
     }

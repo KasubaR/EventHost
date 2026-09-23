@@ -149,6 +149,15 @@ class UpdateInvitationDesignRequest extends FormRequest
      */
     public function rules(): array
     {
+        $galleryMax = InvitationMediaRules::GALLERY_MAX;
+        $event = $this->route('event');
+        if ($event instanceof Event) {
+            $variant = InvitationLayoutVariant::normalize(
+                app(InvitationCustomizationService::class)->resolvedTemplate($event)->layout_variant ?? null
+            );
+            $galleryMax = InvitationLayoutVariant::maxGalleryImages($variant);
+        }
+
         return [
             // Nullable here, then required in withValidator() for every layout that
             // actually consumes the theme variables — Beauty for Ashes does not, so
@@ -166,7 +175,7 @@ class UpdateInvitationDesignRequest extends FormRequest
             'animation_subtle' => ['boolean'],
             'countdown_enabled' => ['boolean'],
 
-            'gallery_images' => ['nullable', 'array', 'max:6'],
+            'gallery_images' => ['nullable', 'array', 'max:'.$galleryMax],
             'gallery_images.*' => ['file', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:5120'],
             'gallery_remove' => ['nullable', 'array'],
             'gallery_remove.*' => ['string', 'regex:/^invitation-gallery\/[0-9]+\/[a-zA-Z0-9_\-]+\.(webp|jpe?g|png|gif)$/i'],
@@ -397,6 +406,9 @@ class UpdateInvitationDesignRequest extends FormRequest
                 }
             }
 
+            $variant = InvitationLayoutVariant::normalize($template->layout_variant ?? null);
+            $galleryMax = InvitationLayoutVariant::maxGalleryImages($variant);
+
             $stagedGallery = $this->stagedForSlot(StagedMedia::SLOT_GALLERY);
 
             $keepCount = count($galleryKeep);
@@ -404,8 +416,11 @@ class UpdateInvitationDesignRequest extends FormRequest
             // towards the cap here — this is the authoritative check, the one at
             // staging time only sees files, never pending removals.
             $newCount = count($this->file('gallery_images', []) ?: []) + $stagedGallery->count();
-            if ($keepCount + $newCount > InvitationMediaRules::GALLERY_MAX) {
-                $validator->errors()->add('gallery_images', 'You may keep at most six gallery images.');
+            if ($keepCount + $newCount > $galleryMax) {
+                $validator->errors()->add(
+                    'gallery_images',
+                    'You may keep at most '.$galleryMax.' gallery image'.($galleryMax === 1 ? '' : 's').'.'
+                );
             }
 
             $cap = (int) config('invitations.gallery_max_total_bytes', 0);
@@ -430,7 +445,6 @@ class UpdateInvitationDesignRequest extends FormRequest
                 }
             }
 
-            $variant = InvitationLayoutVariant::normalize($template->layout_variant ?? null);
             $maxPortrait = InvitationLayoutVariant::maxInvitationHeroPortraitSlots($variant);
             $maxCouple = InvitationLayoutVariant::maxCouplePhotoSlots($variant);
 

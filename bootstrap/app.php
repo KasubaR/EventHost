@@ -34,6 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->validateCsrfTokens(except: [
             $lencoWebhookPath,
+            'webhooks/twilio/whatsapp',
         ]);
 
         $middleware->alias([

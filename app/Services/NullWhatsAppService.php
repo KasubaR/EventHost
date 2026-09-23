@@ -22,4 +22,28 @@ class NullWhatsAppService implements WhatsAppService
             'response' => 'WhatsApp provider not configured.',
         ];
     }
+
+    /**
+     * @return array{status: string, provider_message_id: ?string, response: ?string}
+     */
+    public function sendText(string $toE164Phone, string $body): array
+    {
+        return [
+            'status' => 'skipped',
+            'provider_message_id' => null,
+            'response' => 'WhatsApp provider not configured.',
+        ];
+    }
+
+    /**
+     * @return array{status: string, provider_message_id: ?string, response: ?string}
+     */
+    public function sendMedia(string $toE164Phone, string $mediaUrl, ?string $caption = null): array
+    {
+        return [
+            'status' => 'skipped',
+            'provider_message_id' => null,
+            'response' => 'WhatsApp provider not configured.',
+        ];
+    }
 }

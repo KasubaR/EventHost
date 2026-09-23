@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\CustomQuoteStatus;
+use App\Enums\SubscriptionTier;
 use App\Models\CreditTransaction;
 use App\Models\CustomQuote;
 use App\Models\Event;
@@ -66,14 +67,18 @@ class PaymentCompletionService
                         return null;
                     }
 
-                    $this->credits->grant(
-                        $user,
-                        (int) $locked->credits_granted,
-                        CreditTransaction::REASON_PURCHASE,
-                        $locked
-                    );
+                    // Unused-credit top-ups set credits_granted = 0 (tier only).
+                    // EventCreditService::grant() rejects amounts below 1.
+                    if ((int) $locked->credits_granted >= 1) {
+                        $this->credits->grant(
+                            $user,
+                            (int) $locked->credits_granted,
+                            CreditTransaction::REASON_PURCHASE,
+                            $locked
+                        );
 
-                    $user->refresh();
+                        $user->refresh();
+                    }
 
                     $purchasedTier = BillingPlan::tierForPlan($locked->plan_key);
                     if ($purchasedTier->rank() > $user->subscriptionTierRank()) {
@@ -244,11 +249,12 @@ class PaymentCompletionService
             /** @var User $user */
             $user = User::query()->whereKey($locked->user_id)->lockForUpdate()->firstOrFail();
 
-            // remove_branding and public_registration_quote never touch
-            // credits (their fulfill methods don't call credits->grant()),
-            // so there's nothing to reverse there — reversePurchase() would
-            // just write a pointless 0-credit refund ledger row.
+            // remove_branding, public_registration_quote, and unused-credit
+            // top-ups (credits_granted = 0) never touch the credit ledger —
+            // reversePurchase() would just write a pointless 0-credit refund
+            // row for those.
             if ($locked->credits_fulfilled_at !== null
+                && (int) $locked->credits_granted >= 1
                 && ! in_array($locked->plan_key, ['remove_branding', 'public_registration_quote'], true)) {
                 $this->credits->reversePurchase(
                     $user,
@@ -306,6 +312,21 @@ class PaymentCompletionService
                             'public_registration_quote_paid_at' => null,
                         ])->save();
                     }
+                }
+            }
+
+            // Unused-credit top-up: restore the prior tier only when the
+            // account is still on the tier this payment raised them to —
+            // otherwise a later higher purchase would be clobbered.
+            if ($locked->credits_fulfilled_at !== null
+                && (bool) data_get($locked->metadata, 'upgrade')
+                && is_string(data_get($locked->metadata, 'previous_tier'))) {
+                $purchasedTier = BillingPlan::tierForPlan($locked->plan_key);
+                $previousTier = SubscriptionTier::normalize((string) data_get($locked->metadata, 'previous_tier'));
+
+                if ($user->subscriptionTier()->rank() === $purchasedTier->rank()) {
+                    $user->subscription_tier = $previousTier;
+                    $user->save();
                 }
             }
 

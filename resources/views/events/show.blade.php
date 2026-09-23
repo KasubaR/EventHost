@@ -5,6 +5,7 @@
 
     @push('scripts')
         @vite(['resources/js/analytics-charts.js'])
+        <script src="{{ asset('js/event-show.js') }}" defer></script>
     @endpush
 
     @php
@@ -77,15 +78,6 @@
     </x-slot>
 
     <div class="evt-stack">
-        @unless ($event->is_public)
-            <div class="evt-flash evt-flash--info">
-                <i class="fa-solid fa-circle-info"></i>
-                This is a private event — its invitation link below works for anyone who has it, but it's never
-                listed on Discover or anywhere else. You can also share each guest's personal invite link from
-                <a href="{{ route('events.guests.index', $event) }}">Guests</a>.
-            </div>
-        @endunless
-
         @if (session('status') === 'invitation-paused')
             <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Invitation paused — guests see “Invitation unavailable”.</div>
         @elseif (session('status') === 'invitation-resumed')
@@ -137,6 +129,9 @@
                                 <button type="submit" class="evt-btn-outline evt-btn-danger-outline"><i class="fa-solid fa-ban"></i> Cancel event</button>
                             </form>
                         @endif
+                        <button type="button" class="evt-btn-outline" data-copy-text="{{ route('events.public', $event->slug) }}" data-copy-label="Copy link">
+                            <i class="fa-regular fa-copy" aria-hidden="true"></i> <span data-copy-label-text>Copy link</span>
+                        </button>
                         @if (! $event->isCancelled() && ! $event->isInvitationPaused() && ! $event->isLocked())
                             <a href="{{ route('events.public', $event->slug) }}" class="evt-btn-outline" target="_blank" rel="noopener"><i class="fa-solid fa-link"></i> {{ $event->is_public ? 'Open public page' : 'Open invitation link' }}</a>
                         @endif

@@ -129,19 +129,43 @@ class CommunicationFeaturesTest extends TestCase
         {
             public int $calls = 0;
 
+            /** @var array<string, string>|null */
+            public ?array $lastVariables = null;
+
             public function sendTemplate(string $toE164Phone, string $contentSid, array $templateVariables): array
             {
                 $this->calls++;
+                $this->lastVariables = $templateVariables;
 
                 return ['status' => 'sent', 'provider_message_id' => 'SM123', 'response' => null];
+            }
+
+            public function sendText(string $toE164Phone, string $body): array
+            {
+                return ['status' => 'skipped', 'provider_message_id' => null, 'response' => null];
+            }
+
+            public function sendMedia(string $toE164Phone, string $mediaUrl, ?string $caption = null): array
+            {
+                return ['status' => 'skipped', 'provider_message_id' => null, 'response' => null];
             }
         };
         $this->app->instance(WhatsAppService::class, $fake);
 
         // Gated same as check-in/table assignment/photo wall — see Event::ownerHasPremiumEventTools().
         $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->create();
-        $guest = Guest::factory()->for($event)->create(['phone' => '+260971234567']);
+        $event = Event::factory()->for($owner)->create([
+            'name' => 'Mary & David Wedding',
+            'event_date' => '2026-12-12',
+            'event_time' => '14:00:00',
+            'venue' => 'Ciela Resort',
+            'cover_image' => null,
+        ]);
+        $guest = Guest::factory()->for($event)->create([
+            'name' => 'John',
+            'phone' => '+260971234567',
+            'invitation_token' => 'tok_whatsapp_assert_48chars_abcdefghijklmnop',
+        ]);
 
         $this->actingAs($owner)
             ->post(route('events.guests.whatsapp-invite', ['event' => $event, 'guest' => $guest]))
@@ -149,6 +173,16 @@ class CommunicationFeaturesTest extends TestCase
             ->assertSessionHas('status', 'guest-whatsapp-sent');
 
         $this->assertSame(1, $fake->calls);
+        $this->assertSame([
+            '1' => 'John',
+            '2' => 'Mary & David Wedding',
+            '3' => '12 December 2026',
+            '4' => '14:00',
+            '5' => 'Ciela Resort',
+            '6' => $guest->personalRsvpUrl(),
+            '7' => 'images/default-event.png',
+        ], $fake->lastVariables);
+        $this->assertStringStartsWith('http', (string) ($fake->lastVariables['6'] ?? ''));
         $this->assertDatabaseHas('notification_logs', [
             'event_id' => $event->id,
             'guest_id' => $guest->id,
@@ -189,6 +223,16 @@ class CommunicationFeaturesTest extends TestCase
 
                 return ['status' => 'sent', 'provider_message_id' => 'SM123', 'response' => null];
             }
+
+            public function sendText(string $toE164Phone, string $body): array
+            {
+                return ['status' => 'skipped', 'provider_message_id' => null, 'response' => null];
+            }
+
+            public function sendMedia(string $toE164Phone, string $mediaUrl, ?string $caption = null): array
+            {
+                return ['status' => 'skipped', 'provider_message_id' => null, 'response' => null];
+            }
         };
         $this->app->instance(WhatsAppService::class, $fake);
 
@@ -219,6 +263,16 @@ class CommunicationFeaturesTest extends TestCase
                 $this->calls++;
 
                 return ['status' => 'sent', 'provider_message_id' => 'SM123', 'response' => null];
+            }
+
+            public function sendText(string $toE164Phone, string $body): array
+            {
+                return ['status' => 'skipped', 'provider_message_id' => null, 'response' => null];
+            }
+
+            public function sendMedia(string $toE164Phone, string $mediaUrl, ?string $caption = null): array
+            {
+                return ['status' => 'skipped', 'provider_message_id' => null, 'response' => null];
             }
         };
         $this->app->instance(WhatsAppService::class, $fake);

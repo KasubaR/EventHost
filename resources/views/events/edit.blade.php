@@ -111,6 +111,34 @@
                     </div>
                 </div>
             @else
+                {{-- After a layout is chosen, and only when that layout renders
+                     a cover. Modern Minimal and Event Invite never use
+                     $event->cover_image_url, so the field stays hidden for
+                     them. The input still posts with the details form via
+                     form="event-update-form" — see cover-image-field.blade.php. --}}
+                @if (\App\Support\InvitationLayoutVariant::usesCoverImage($event->invitationTemplate?->layout_variant))
+                    @php
+                        $coverVariant = \App\Support\InvitationLayoutVariant::normalize(
+                            $event->invitationTemplate?->layout_variant
+                        );
+                        $coverField = ['event' => $event, 'associateForm' => true];
+                        if ($coverVariant === \App\Support\InvitationLayoutVariant::WEDDING_INVITATION_NOIR) {
+                            $coverField['heading'] = 'Hero photo';
+                            $coverField['description'] = 'Tall portrait on the left of the opening screen. Also used for link sharing.';
+                        } elseif ($coverVariant === \App\Support\InvitationLayoutVariant::STANDARD) {
+                            $coverField['heading'] = 'Cover Image';
+                            $coverField['description'] = 'Wide banner across the top of the invitation. We crop to 1200×630 for the hero and for link sharing.';
+                        } elseif ($coverVariant === \App\Support\InvitationLayoutVariant::PRO_MAGAZINE) {
+                            $coverField['heading'] = 'Cover Image';
+                            $coverField['description'] = 'Full-bleed magazine hero. We crop to 1200×630 for the hero and for link sharing.';
+                        } elseif ($coverVariant === \App\Support\InvitationLayoutVariant::WEDDING_INVITATION) {
+                            $coverField['heading'] = 'Cover Image';
+                            $coverField['description'] = 'Cinematic hero and details backdrop. Also used for link sharing and as a fallback when couple or gallery photos are missing.';
+                        }
+                    @endphp
+                    @include('events.partials.cover-image-field', $coverField)
+                @endif
+
                 @include('events.partials.invitation-design-form', ['event' => $event, 'invitationMerged' => $invitationMerged])
 
                 <p class="evt-muted evt-template-switch-note">
@@ -118,18 +146,6 @@
                     <span aria-hidden="true"> · </span>
                     Fine-tuning resets some layout-specific section defaults until you save design again.
                 </p>
-
-                {{-- Moved below the template picker (rather than living in
-                     form-fields.blade.php with the rest of the event details)
-                     because whether a cover image is even worth collecting
-                     depends on the chosen layout: Modern Minimal and Event
-                     Invite never render $event->cover_image_url in their hero,
-                     so the field is hidden entirely for them here. The input
-                     still posts with the main details form via
-                     form="event-update-form" — see cover-image-field.blade.php. --}}
-                @if (\App\Support\InvitationLayoutVariant::usesCoverImage($event->invitationTemplate?->layout_variant))
-                    @include('events.partials.cover-image-field', ['event' => $event, 'associateForm' => true])
-                @endif
             @endif
         @endunless
 

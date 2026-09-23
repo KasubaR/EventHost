@@ -50,7 +50,7 @@ class BillingController extends Controller
         $pendingQuote = CustomQuote::pendingFor($user);
 
         return response()->json([
-            'plans' => BillingPlan::all(),
+            'plans' => BillingPlan::plansForCheckout($user),
             'currency' => BillingPlan::currency(),
             'banks' => $banks,
             'bank_transfer_enabled' => (bool) config('services.lenco.bank_transfer_enabled', true),

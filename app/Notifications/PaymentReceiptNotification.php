@@ -62,6 +62,17 @@ class PaymentReceiptNotification extends Notification implements ShouldQueue
                 ->salutation('The '.config('app.name').' Team');
         }
 
+        if ((bool) data_get($this->payment->metadata, 'upgrade')
+            && (int) $this->payment->credits_granted < 1) {
+            $tierLabel = BillingPlan::labelForPlanKey($this->payment->plan_key);
+
+            return $mail
+                ->line('Your plan is now '.$tierLabel.'. Your unused event credit is unchanged.')
+                ->line('You still have '.$notifiable->fresh()->event_credits.' event credit(s).')
+                ->action('Create an event', route('events.create'))
+                ->salutation('The '.config('app.name').' Team');
+        }
+
         return $mail
             ->line('You now have '.$notifiable->fresh()->event_credits.' event credit(s).')
             ->action('Create an event', route('events.create'))

@@ -50,7 +50,7 @@ class PaymentController extends Controller
         });
 
         return view('billing.checkout', [
-            'plans' => BillingPlan::all(),
+            'plans' => BillingPlan::plansForCheckout($user),
             'currency' => BillingPlan::currency(),
             'banks' => $banks,
             'user' => $user,
@@ -129,6 +129,9 @@ class PaymentController extends Controller
                 return response()->json(['success' => false, 'message' => 'Invalid plan.'], 422);
             }
 
+            // Placeholder — recomputed under the user row lock via
+            // checkoutAmountFor() so unused-credit top-up pricing cannot
+            // race against a concurrent spend.
             $amount = (float) $plan['amount'];
             $creditsGranted = (int) ($plan['credits'] ?? 1);
             $planLabel = (string) ($plan['label'] ?? $planKey);
@@ -177,6 +180,23 @@ class PaymentController extends Controller
                     $registrationEvent = $lockedRegistrationEvent;
                 }
 
+                $isUpgrade = false;
+                if (! in_array($planKey, ['remove_branding', 'public_registration_quote', 'enterprise'], true)) {
+                    $checkout = BillingPlan::checkoutAmountFor($lockedUser, $planKey);
+                    $amount = $checkout['amount'];
+                    $creditsGranted = $checkout['credits'];
+                    $isUpgrade = $checkout['is_upgrade'];
+                    $plan['amount'] = $amount;
+                    $plan['credits'] = $creditsGranted;
+                    $description = $isUpgrade
+                        ? "Event Host — {$planLabel} plan upgrade"
+                        : "Event Host — {$planLabel} event credit";
+                }
+
+                if ($amount <= 0) {
+                    return response()->json(['success' => false, 'message' => 'Invalid plan amount.'], 422);
+                }
+
                 $inProgress = Payment::query()
                     ->forUser($lockedUser->id)
                     ->inProgress()
@@ -216,6 +236,11 @@ class PaymentController extends Controller
                 }
                 if ($registrationEvent !== null) {
                     $metadata['event_id'] = $registrationEvent->id;
+                }
+                if ($isUpgrade) {
+                    $metadata['upgrade'] = true;
+                    $previousTier = $lockedUser->subscriptionTier();
+                    $metadata['previous_tier'] = $previousTier->value;
                 }
 
                 try {

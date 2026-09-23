@@ -276,36 +276,6 @@
     text-decoration: underline;
 }
 
-.evt-rsvp-actions {
-    margin-bottom: 24px;
-    padding: 20px;
-    border-radius: 14px;
-    border: 1px solid var(--line, #e0e0e8);
-    background: var(--white, #fff);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-    text-align: center;
-}
-
-.evt-rsvp-actions .evt-rsvp-cta {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    justify-content: center;
-}
-
-.evt-rsvp-helper {
-    margin: 12px 0 0;
-    font-size: 13px;
-    color: var(--gray-mid, #64748b);
-}
-
-.evt-rsvp-actions--botanical {
-    border: none;
-    background: transparent;
-    box-shadow: none;
-    padding: 8px 0 16px;
-}
-
 /* Lifecycle status pages (ended / unavailable / cancelled / gone) */
 .evt-status-page {
     min-height: calc(100vh - 52px);

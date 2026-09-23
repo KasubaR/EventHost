@@ -1,4 +1,6 @@
 @php
+    use App\Enums\RsvpStatus;
+
     $rsvpPublicAvailable = $rsvpPublicAvailable ?? false;
 @endphp
 
@@ -14,9 +16,18 @@
                 RSVP preview — publishing unlocks live links for your guests.
             </div>
         @elseif ($rsvpPublicAvailable && filled($event->slug ?? null))
-            <div class="evt-bg-rsvp-banner evt-rsvp-actions evt-rsvp-actions--botanical">
-                <a href="{{ route('rsvp.open.show', $event->slug) }}" class="btn-primary evt-rsvp-cta">Will you be attending?</a>
-                <p class="evt-rsvp-helper">Respond in one step — no account needed.</p>
+            <div class="evt-bg-rsvp-choice">
+                <p class="evt-bg-rsvp-kicker">RSVP</p>
+                <h2 class="evt-bg-rsvp-question">Will you be attending?</h2>
+                <div class="evt-bg-rsvp-choices" role="group" aria-label="Will you be attending?">
+                    @foreach (RsvpStatus::cases() as $statusCase)
+                        <a
+                            class="evt-bg-rsvp-choice-btn evt-bg-rsvp-choice-btn--{{ $statusCase->value }}"
+                            href="{{ route('rsvp.open.show', ['slug' => $event->slug, 'status' => $statusCase->value]) }}"
+                        >{{ $statusCase->label() }}</a>
+                    @endforeach
+                </div>
+                <p class="evt-bg-rsvp-choice-note">Choose a response, then add your details. No account needed.</p>
             </div>
         @else
             <div class="evt-rsvp-banner evt-rsvp-banner--open evt-bg-rsvp-banner">

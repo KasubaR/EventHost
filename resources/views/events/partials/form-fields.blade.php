@@ -109,7 +109,15 @@
 
             <div class="profile-field">
                 @php
-                    $canChooseSlug = auth()->user()->canChooseCustomEventSlug();
+                    // This partial also renders on the admin white-glove ticketed-create
+                    // page. That page authenticates on the `admin` guard, and testing's
+                    // actingAs()/shouldUse() aside, auth()->user() there is either null
+                    // (no session on the default `web` guard) or an App\Models\Admin, never
+                    // an App\Models\User — so a plain method call 500s either way. Admin
+                    // creates are ungated (see TicketedEventCreator), so anything that
+                    // isn't a host User means "no gate applies".
+                    $hostUser = auth()->user();
+                    $canChooseSlug = $hostUser instanceof \App\Models\User ? $hostUser->canChooseCustomEventSlug() : true;
                 @endphp
                 <label for="slug" class="profile-label">Custom URL <span class="profile-optional">optional</span></label>
                 @if ($canChooseSlug)
@@ -279,6 +287,31 @@
 
             <div class="profile-field">
                 <span class="profile-label">Guest limit</span>
+                @php
+                    $ownerTier = auth()->user()?->subscriptionTier() ?? \App\Enums\SubscriptionTier::None;
+                    $guestCapacity = \App\Support\BillingPlan::guestLimitDefaultForTier($ownerTier);
+                    $nextGuestTier = \App\Support\BillingPlan::nextGuestCapacityTier($ownerTier);
+                    $nextGuestCap = $nextGuestTier !== null
+                        ? \App\Support\BillingPlan::guestLimitDefaultForTier($nextGuestTier)
+                        : null;
+                @endphp
+                @if ($guestCapacity === null)
+                    <p class="evt-muted evt-guest-capacity-hint">Your plan allows unlimited guests.</p>
+                @else
+                    <p class="evt-muted evt-guest-capacity-hint">
+                        Your plan allows up to <strong>{{ $guestCapacity }}</strong> guests.
+                        @if ($nextGuestTier !== null)
+                            <a href="{{ \App\Support\BillingPlan::checkoutUrlForTier($nextGuestTier) }}">
+                                Need more? Upgrade to {{ $nextGuestTier->label() }}
+                                @if ($nextGuestCap === null)
+                                    (unlimited)
+                                @else
+                                    (up to {{ $nextGuestCap }})
+                                @endif
+                            </a>
+                        @endif
+                    </p>
+                @endif
                 <div class="evt-guest-limit-radios">
                     <label class="profile-label evt-check-label">
                         <input type="radio" name="guest_limit_mode" value="open"
@@ -295,9 +328,13 @@
                 </div>
                 <div id="guest_limit_wrap">
                     <input id="guest_limit" name="guest_limit" type="number" min="1" step="1"
+                           @if ($guestCapacity !== null) max="{{ $guestCapacity }}" @endif
                            class="profile-input {{ $errors->has('guest_limit') ? 'profile-input--error' : '' }}"
                            value="{{ old('guest_limit', $event?->guest_limit ?? '') }}"
-                           placeholder="e.g. 200">
+                           placeholder="{{ $guestCapacity !== null ? 'e.g. '.$guestCapacity : 'e.g. 200' }}"
+                           @if ($guestCapacity !== null) data-guest-capacity="{{ $guestCapacity }}" @endif
+                           @if ($nextGuestTier !== null) data-upgrade-url="{{ \App\Support\BillingPlan::checkoutUrlForTier($nextGuestTier) }}" data-upgrade-label="{{ $nextGuestTier->label() }}" @endif>
+                    <p id="guest_limit_upgrade_hint" class="evt-muted evt-guest-capacity-hint" hidden></p>
                     @error('guest_limit')
                         <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                     @enderror

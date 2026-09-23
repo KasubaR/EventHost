@@ -110,7 +110,7 @@ class StoreStagedMediaRequest extends FormRequest
             // in UpdateInvitationDesignRequest; over-staging here costs nothing but
             // pruned disk.
             $ceiling = match ($slot) {
-                StagedMedia::SLOT_GALLERY => InvitationMediaRules::GALLERY_MAX,
+                StagedMedia::SLOT_GALLERY => InvitationLayoutVariant::maxGalleryImages($variant),
                 StagedMedia::SLOT_COUPLE => $maxCouple,
                 default => null,
             };

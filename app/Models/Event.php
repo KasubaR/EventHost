@@ -12,6 +12,7 @@ use App\Enums\RsvpStatus;
 use App\Enums\SubscriptionTier;
 use App\Enums\TicketingStatus;
 use App\Enums\TicketOrderStatus;
+use App\Support\BillingPlan;
 use App\Support\TicketingSettings;
 use Cviebrock\EloquentSluggable\Sluggable;
 use Database\Factories\EventFactory;
@@ -23,6 +24,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
+use Intervention\Image\ImageManager;
 
 class Event extends Model
 {
@@ -1115,6 +1118,53 @@ class Event extends Model
     }
 
     /**
+     * Path after the app origin for the WhatsApp invitation Content Template IMAGE header
+     * (Twilio/Meta only allow media URL variables after the domain — see docs/twilio.md).
+     * Returns JPEG/PNG only; WebP covers are converted once to a cached JPEG sibling.
+     */
+    public function whatsAppInviteHeaderMediaPath(): string
+    {
+        $path = $this->cover_image;
+
+        if (! is_string($path) || $path === '' || str_contains($path, '://')) {
+            return 'images/default-event.png';
+        }
+
+        if (! Storage::disk('public')->exists($path)) {
+            return 'images/default-event.png';
+        }
+
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        if (in_array($ext, ['jpg', 'jpeg', 'png'], true)) {
+            return 'storage/'.$path;
+        }
+
+        // WhatsApp media headers require JPEG/PNG. Covers are stored as WebP — cache a JPEG.
+        $cached = 'events/wa_cover_'.$this->id.'.jpg';
+        if (! Storage::disk('public')->exists($cached)) {
+            try {
+                $manager = extension_loaded('imagick')
+                    ? ImageManager::imagick()
+                    : ImageManager::gd();
+                $jpeg = $manager->read(Storage::disk('public')->path($path))->toJpeg(85);
+                Storage::disk('public')->put($cached, $jpeg->toString());
+            } catch (\Throwable) {
+                return 'images/default-event.png';
+            }
+        }
+
+        return 'storage/'.$cached;
+    }
+
+    /**
+     * Absolute public URL for the invitation header image (same asset as whatsAppInviteHeaderMediaPath).
+     */
+    public function whatsAppInviteHeaderMediaUrl(): string
+    {
+        return url($this->whatsAppInviteHeaderMediaPath());
+    }
+
+    /**
      * Whether the RSVP window is currently open.
      *
      * The event date is an implicit deadline: an invitation link stays viewable
@@ -1206,16 +1256,9 @@ class Event extends Model
             return null;
         }
 
-        $tier = $this->loadMissing('user')->user->subscriptionTier();
-
-        if ($tier->rank() >= SubscriptionTier::ProPlus->rank()) {
-            return null;
-        }
-
-        $planKey = $tier->rank() >= SubscriptionTier::Pro->rank() ? 'pro' : 'base';
-        $limit = config("billing.plans.{$planKey}.guest_limit_default");
-
-        return is_int($limit) ? $limit : null;
+        return BillingPlan::guestLimitDefaultForTier(
+            $this->loadMissing('user')->user->subscriptionTier()
+        );
     }
 
     /**
@@ -1250,10 +1293,8 @@ class Event extends Model
             return null;
         }
 
-        $currentRank = $this->loadMissing('user')->user->subscriptionTier()->rank();
-
-        return $currentRank >= SubscriptionTier::Pro->rank()
-            ? SubscriptionTier::ProPlus
-            : SubscriptionTier::Pro;
+        return BillingPlan::nextGuestCapacityTier(
+            $this->loadMissing('user')->user->subscriptionTier()
+        );
     }
 }

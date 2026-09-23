@@ -47,10 +47,12 @@ class EventPreviewTest extends TestCase
 
         $publicResponse = $this->actingAs($user)->get(route('events.public', $event->slug));
         $publicResponse->assertOk();
+        $publicResponse->assertDontSee('This host marked this event as private in settings.');
 
         $previewResponse = $this->actingAs($user)->get(route('events.preview', $event));
         $previewResponse->assertOk();
         $previewResponse->assertSee('This page is host-only', escape: false);
+        $previewResponse->assertDontSee('This host marked this event as private in settings.');
     }
 
     public function test_other_users_cannot_preview_the_event(): void

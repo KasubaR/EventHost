@@ -46,17 +46,79 @@ class TwilioWhatsAppService implements WhatsAppService
             ];
         }
 
-        // create()'s response reflects the send's *initial* queueing state (queued/accepted/sending),
-        // not final delivery — that only arrives later via a Twilio status-callback webhook
-        // (plans/whatsapp-invitations.md, phase 2, not built yet). 'failed'/'undelivered' can
-        // already be known synchronously in some rejection cases; anything else means Twilio
-        // accepted the message for delivery.
-        $status = in_array($message->status, ['failed', 'undelivered'], true) ? 'failed' : 'sent';
+        return $this->mapMessageResult($message->status, $message->sid, $message->errorMessage);
+    }
+
+    /**
+     * @return array{status: string, provider_message_id: ?string, response: ?string}
+     */
+    public function sendText(string $toE164Phone, string $body): array
+    {
+        try {
+            $message = $this->client->messages->create(
+                'whatsapp:'.$toE164Phone,
+                [
+                    'from' => $this->from,
+                    'body' => $body,
+                ]
+            );
+        } catch (TwilioException $e) {
+            return [
+                'status' => 'failed',
+                'provider_message_id' => null,
+                'response' => substr($e->getMessage(), 0, 500),
+            ];
+        }
+
+        return $this->mapMessageResult($message->status, $message->sid, $message->errorMessage);
+    }
+
+    /**
+     * @return array{status: string, provider_message_id: ?string, response: ?string}
+     */
+    public function sendMedia(string $toE164Phone, string $mediaUrl, ?string $caption = null): array
+    {
+        try {
+            $params = [
+                'from' => $this->from,
+                'mediaUrl' => [$mediaUrl],
+            ];
+            if (is_string($caption) && $caption !== '') {
+                $params['body'] = $caption;
+            }
+
+            $message = $this->client->messages->create(
+                'whatsapp:'.$toE164Phone,
+                $params
+            );
+        } catch (TwilioException $e) {
+            return [
+                'status' => 'failed',
+                'provider_message_id' => null,
+                'response' => substr($e->getMessage(), 0, 500),
+            ];
+        }
+
+        return $this->mapMessageResult($message->status, $message->sid, $message->errorMessage);
+    }
+
+    /**
+     * create()'s response reflects the send's *initial* queueing state (queued/accepted/sending),
+     * not final delivery — that only arrives later via a Twilio status-callback webhook
+     * (plans/whatsapp-invitations.md, phase 2, not built yet). 'failed'/'undelivered' can
+     * already be known synchronously in some rejection cases; anything else means Twilio
+     * accepted the message for delivery.
+     *
+     * @return array{status: string, provider_message_id: ?string, response: ?string}
+     */
+    private function mapMessageResult(?string $status, ?string $sid, ?string $errorMessage): array
+    {
+        $mapped = in_array($status, ['failed', 'undelivered'], true) ? 'failed' : 'sent';
 
         return [
-            'status' => $status,
-            'provider_message_id' => $message->sid,
-            'response' => $message->errorMessage,
+            'status' => $mapped,
+            'provider_message_id' => $sid,
+            'response' => $errorMessage,
         ];
     }
 }

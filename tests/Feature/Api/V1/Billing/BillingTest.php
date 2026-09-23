@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api\V1\Billing;
 
+use App\Enums\SubscriptionTier;
 use App\Models\Payment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -33,6 +34,24 @@ class BillingTest extends TestCase
 
         $response->assertOk();
         $response->assertJsonStructure(['plans', 'currency', 'banks', 'bank_transfer_enabled', 'popular_plan_key']);
+    }
+
+    public function test_show_annotates_upgrade_pricing_when_user_has_unused_credit(): void
+    {
+        $user = User::factory()->create([
+            'subscription_tier' => SubscriptionTier::Base,
+            'event_credits' => 1,
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$this->tokenFor($user))
+            ->getJson(route('api.v1.billing.show'));
+
+        $response->assertOk()
+            ->assertJsonPath('plans.pro.is_upgrade', true)
+            ->assertJsonPath('plans.pro.amount', 300)
+            ->assertJsonPath('plans.pro.list_amount', 750)
+            ->assertJsonPath('plans.pro.credits', 0)
+            ->assertJsonPath('plans.base.is_upgrade', false);
     }
 
     public function test_show_requires_authentication(): void

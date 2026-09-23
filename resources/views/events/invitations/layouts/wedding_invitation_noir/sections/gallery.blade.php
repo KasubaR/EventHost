@@ -1,9 +1,12 @@
-@php
-    $gallery = array_values(array_filter(array_map('strval', $invitation['media']['gallery'] ?? [])));
-    $galleryId = 'wi2-gallery-'.$event->getKey();
-    $row1 = array_slice($gallery, 0, 3);
-    $row2 = array_slice($gallery, 3, 3);
-@endphp
+        @php
+            $galleryMax = \App\Support\InvitationLayoutVariant::maxGalleryImages(
+                \App\Support\InvitationLayoutVariant::WEDDING_INVITATION_NOIR
+            );
+            $gallery = array_values(array_filter(array_map('strval', $invitation['media']['gallery'] ?? [])));
+            $galleryId = 'wi2-gallery-'.$event->getKey();
+            $row1 = array_slice($gallery, 0, 3);
+            $row2 = array_slice($gallery, 3, max(0, $galleryMax - 3));
+        @endphp
 
 @if (count($gallery) > 0)
     <div class="wi2-gallery-section wi2-reveal" data-wi2-reveal>

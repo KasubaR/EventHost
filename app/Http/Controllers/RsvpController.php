@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\PublicInvitationStatus;
+use App\Enums\RsvpStatus;
 use App\Http\Requests\StoreOpenRsvpRequest;
 use App\Http\Requests\StoreRsvpByTokenRequest;
 use App\Models\Event;
@@ -125,6 +126,34 @@ class RsvpController extends Controller
     }
 
     /**
+     * PNG sibling of entryPassQr() — WhatsApp (and email-style clients) need raster
+     * media. Twilio fetches this absolute URL when attaching the entry pass after
+     * an Accepted WhatsApp RSVP. Same eligibility gate as the SVG route.
+     */
+    public function entryPassQrPng(string $token, QrCodeService $qrCodeService): Response
+    {
+        $guest = Guest::query()
+            ->where('invitation_token', $token)
+            ->with(['event' => fn ($q) => $q->withTrashed(), 'rsvp'])
+            ->first();
+
+        $event = $guest?->event;
+
+        abort_if($guest === null || $event === null || ! $event->isInvitation() || ! $this->guestHasEntryPass($guest, $event), 404);
+
+        $url = $guest->checkInQrUrl();
+        abort_if($url === null, 404);
+
+        $png = Cache::remember(
+            'guest-entry-pass-qr-png:'.$token,
+            now()->addWeek(),
+            fn () => $qrCodeService->png($url)
+        );
+
+        return response($png, 200, ['Content-Type' => 'image/png']);
+    }
+
+    /**
      * Only a guest who RSVP'd attending gets an entry pass, and only while the
      * host's plan actually supports check-in scanning — showing a QR nobody can
      * scan would just confuse the guest. See plans/guest-entry-pass.md §0.
@@ -198,6 +227,7 @@ class RsvpController extends Controller
             'maxAttendees' => (! $event->is_public && $event->allow_plus_one) ? 2 : 1,
             'rsvpFormConfig' => $customizationService->resolveRsvpFormConfig($event),
             'isPrivateOpenRsvp' => ! $event->is_public,
+            'preselectedStatus' => RsvpStatus::tryFrom(strtolower(trim((string) request()->query('status', '')))),
         ]);
     }
 
@@ -385,22 +415,6 @@ class RsvpController extends Controller
 
     private function dispatchRsvpNotifications(Event $event, Guest $guest, Rsvp $rsvp): void
     {
-        try {
-            $rsvp->loadMissing('guest');
-            $communication = app(CommunicationService::class);
-
-            if (is_string($guest->email) && $guest->email !== '') {
-                $communication->sendRsvpConfirmation($event, $guest, $rsvp);
-            }
-
-            $event->loadMissing('user');
-            $host = $event->user;
-
-            if ($host !== null && $host->wantsEmailRsvpUpdates()) {
-                $communication->notifyHostNewRsvp($host, $event, $guest, $rsvp);
-            }
-        } catch (\Throwable $e) {
-            report($e);
-        }
+        app(CommunicationService::class)->dispatchRsvpNotifications($event, $guest, $rsvp);
     }
 }

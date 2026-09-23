@@ -49,7 +49,7 @@ class InvitationTemplateFeaturesTest extends TestCase
         $response->assertOk();
         $response->assertSee('evt-layout-modern-minimal', escape: false);
         $response->assertSee('mm-hero', escape: false);
-        $response->assertSee('Sofia', escape: false);
+        $response->assertSee('Kasuba', escape: false);
         $response->assertSee('The Countdown', escape: false);
     }
 
@@ -63,7 +63,7 @@ class InvitationTemplateFeaturesTest extends TestCase
         $response->assertOk();
         $response->assertSee('evt-layout-wedding-invitation-noir', escape: false);
         $response->assertSee('wi2-hero', escape: false);
-        $response->assertSee('Nadia', escape: false);
+        $response->assertSee('Peter', escape: false);
         $response->assertSee('wi2-timeline', escape: false);
     }
 
@@ -77,7 +77,7 @@ class InvitationTemplateFeaturesTest extends TestCase
         $response->assertOk();
         $response->assertSee('evt-layout-wedding-invitation', escape: false);
         $response->assertSee('wi-hero', escape: false);
-        $response->assertSee('Amara', escape: false);
+        $response->assertSee('Kasuba', escape: false);
         $response->assertSee('Save the', escape: false);
     }
 

@@ -9,10 +9,11 @@
             : $default;
     $_rfcVisible = fn(string $field): bool =>
         ! is_array($_rfc[$field] ?? null) || (bool) ($_rfc[$field]['visible'] ?? true);
-    $statusOld = old('status', $existing?->status?->value ?? RsvpStatus::Accepted->value);
-    $countOld = old('attendee_count', $existing ? ($existing->status === \App\Enums\RsvpStatus::Accepted ? $existing->attendee_count : 0) : null);
+    $preselected = ($preselectedStatus ?? null) instanceof RsvpStatus ? $preselectedStatus->value : null;
+    $statusOld = old('status', $existing?->status?->value ?? $preselected ?? RsvpStatus::Accepted->value);
+    $countOld = old('attendee_count', $existing ? ($existing->status === RsvpStatus::Accepted ? $existing->attendee_count : 0) : null);
     if ($countOld === null) {
-        $countOld = 1;
+        $countOld = $statusOld === RsvpStatus::Accepted->value ? 1 : 0;
     }
     $statusIcons = [
         RsvpStatus::Accepted->value => 'fa-solid fa-circle-check',
@@ -95,3 +96,9 @@
     @enderror
 </div>
 @endif
+
+@once
+    @push('scripts')
+        <script src="{{ asset('js/rsvp-form.js') }}" defer></script>
+    @endpush
+@endonce

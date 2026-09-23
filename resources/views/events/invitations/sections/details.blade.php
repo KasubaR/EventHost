@@ -78,11 +78,3 @@
         </ul>
     </div>
 @endif
-
-{{-- Shown on the host's own preview and to anyone reaching the unlisted /e/{slug}
-     link for a private event — explains why there's no Discover listing. A guest
-     on their own personal token link already has everything they need, so this
-     would just be noise there. --}}
-@if (! $event->is_public && ! isset($guest))
-    <p class="evt-muted evt-inv-private-note"><i class="fa-solid fa-lock"></i> This host marked this event as private in settings.</p>
-@endif

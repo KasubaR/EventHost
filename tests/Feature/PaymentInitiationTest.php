@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\SubscriptionTier;
 use App\Jobs\RetryLencoPayment;
 use App\Models\Payment;
 use App\Models\User;
@@ -219,5 +220,149 @@ class PaymentInitiationTest extends TestCase
         $response->assertStatus(502)->assertJsonPath('success', false)->assertJsonPath('message', 'Lenco API key is not configured.');
         $this->assertSame('pending', $payment->fresh()->status);
         $this->assertSame(0, $user->fresh()->event_credits);
+    }
+
+    public function test_initiate_charges_top_up_when_user_has_unused_credit_and_picks_higher_tier(): void
+    {
+        $user = User::factory()->create([
+            'subscription_tier' => SubscriptionTier::Base,
+            'event_credits' => 1,
+            'phone' => '0971234567',
+        ]);
+
+        $lenco = Mockery::mock(LencoService::class);
+        $lenco->shouldReceive('generatePaymentReference')->once()->andReturn('EH-1-upgrade-ref');
+        $lenco->shouldReceive('initiateMobileMoneyPayment')
+            ->once()
+            ->withArgs(function (array $context) {
+                return (float) $context['amount'] === 300.0
+                    && str_contains((string) $context['description'], 'plan upgrade');
+            })
+            ->andReturn([
+                'success' => true,
+                'transactionId' => 'col_upgrade_123',
+                'reference' => 'EH-1-upgrade-ref',
+                'lencoReference' => 'LEN-UP',
+                'status' => 'pay-offline',
+                'amount' => 300.00,
+                'currency' => 'ZMW',
+                'provider' => 'mtn',
+                'paymentInstructions' => 'Approve on your phone.',
+                'rawResponse' => ['data' => ['id' => 'col_upgrade_123']],
+            ]);
+        $this->app->instance(LencoService::class, $lenco);
+
+        $response = $this->actingAs($user)->postJson(route('payment.initiate'), [
+            'plan_key' => 'pro',
+            'payment_method' => 'mobile_money',
+            'provider' => 'mtn',
+            'phone' => '0961234567',
+        ]);
+
+        $response->assertOk()->assertJsonPath('success', true);
+
+        $payment = Payment::query()->where('user_id', $user->id)->first();
+        $this->assertNotNull($payment);
+        $this->assertSame(300.0, (float) $payment->amount);
+        $this->assertSame(0, (int) $payment->credits_granted);
+        $this->assertTrue((bool) data_get($payment->metadata, 'upgrade'));
+        $this->assertSame('base', data_get($payment->metadata, 'previous_tier'));
+    }
+
+    public function test_initiate_charges_full_price_when_user_has_no_unused_credit(): void
+    {
+        $user = User::factory()->create([
+            'subscription_tier' => SubscriptionTier::Base,
+            'event_credits' => 0,
+            'phone' => '0971234567',
+        ]);
+
+        $lenco = Mockery::mock(LencoService::class);
+        $lenco->shouldReceive('generatePaymentReference')->once()->andReturn('EH-1-full-ref');
+        $lenco->shouldReceive('initiateMobileMoneyPayment')
+            ->once()
+            ->withArgs(fn (array $context) => (float) $context['amount'] === 750.0)
+            ->andReturn([
+                'success' => true,
+                'transactionId' => 'col_full_123',
+                'reference' => 'EH-1-full-ref',
+                'lencoReference' => 'LEN-FULL',
+                'status' => 'pay-offline',
+                'amount' => 750.00,
+                'currency' => 'ZMW',
+                'provider' => 'mtn',
+                'paymentInstructions' => 'Approve on your phone.',
+                'rawResponse' => ['data' => ['id' => 'col_full_123']],
+            ]);
+        $this->app->instance(LencoService::class, $lenco);
+
+        $this->actingAs($user)->postJson(route('payment.initiate'), [
+            'plan_key' => 'pro',
+            'payment_method' => 'mobile_money',
+            'provider' => 'mtn',
+            'phone' => '0961234567',
+        ])->assertOk();
+
+        $payment = Payment::query()->where('user_id', $user->id)->first();
+        $this->assertNotNull($payment);
+        $this->assertSame(750.0, (float) $payment->amount);
+        $this->assertSame(1, (int) $payment->credits_granted);
+        $this->assertFalse((bool) data_get($payment->metadata, 'upgrade'));
+    }
+
+    public function test_initiate_from_none_with_unused_credit_charges_full_target_as_zero_credit_upgrade(): void
+    {
+        $user = User::factory()->create([
+            'subscription_tier' => SubscriptionTier::None,
+            'event_credits' => 1,
+            'phone' => '0971234567',
+        ]);
+
+        $lenco = Mockery::mock(LencoService::class);
+        $lenco->shouldReceive('generatePaymentReference')->once()->andReturn('EH-1-none-ref');
+        $lenco->shouldReceive('initiateMobileMoneyPayment')
+            ->once()
+            ->withArgs(fn (array $context) => (float) $context['amount'] === 750.0)
+            ->andReturn([
+                'success' => true,
+                'transactionId' => 'col_none_123',
+                'reference' => 'EH-1-none-ref',
+                'lencoReference' => 'LEN-NONE',
+                'status' => 'pay-offline',
+                'amount' => 750.00,
+                'currency' => 'ZMW',
+                'provider' => 'mtn',
+                'paymentInstructions' => 'Approve on your phone.',
+                'rawResponse' => ['data' => ['id' => 'col_none_123']],
+            ]);
+        $this->app->instance(LencoService::class, $lenco);
+
+        $this->actingAs($user)->postJson(route('payment.initiate'), [
+            'plan_key' => 'pro',
+            'payment_method' => 'mobile_money',
+            'provider' => 'mtn',
+            'phone' => '0961234567',
+        ])->assertOk();
+
+        $payment = Payment::query()->where('user_id', $user->id)->first();
+        $this->assertNotNull($payment);
+        $this->assertSame(750.0, (float) $payment->amount);
+        $this->assertSame(0, (int) $payment->credits_granted);
+        $this->assertTrue((bool) data_get($payment->metadata, 'upgrade'));
+        $this->assertSame('none', data_get($payment->metadata, 'previous_tier'));
+    }
+
+    public function test_billing_page_shows_top_up_price_when_user_can_upgrade(): void
+    {
+        $user = User::factory()->create([
+            'subscription_tier' => SubscriptionTier::Base,
+            'event_credits' => 1,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('billing.show'))
+            ->assertOk()
+            ->assertSee('upgrade — keep your unused credit', escape: false)
+            ->assertSee('300', escape: false);
     }
 }

@@ -182,6 +182,11 @@ class SubscriptionTierInvitationTemplateTest extends TestCase
         $response->assertSee('evt-layout-botanical-graduation', escape: false);
         $response->assertSee('evt-bg-nav-strip', escape: false);
         $response->assertSee('hero-left', escape: false);
+        $response->assertSee('Will you be attending?', escape: false);
+        $response->assertSee(route('rsvp.open.show', ['slug' => $event->slug, 'status' => 'accepted']), escape: false);
+        $response->assertSee(route('rsvp.open.show', ['slug' => $event->slug, 'status' => 'declined']), escape: false);
+        $response->assertSee(route('rsvp.open.show', ['slug' => $event->slug, 'status' => 'maybe']), escape: false);
+        $response->assertDontSee('evt-rsvp-cta', escape: false);
     }
 
     public function test_base_user_cannot_choose_beauty_for_ashes_template(): void
