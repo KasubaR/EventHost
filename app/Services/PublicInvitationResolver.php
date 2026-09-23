@@ -43,7 +43,14 @@ class PublicInvitationResolver
             abort(404);
         }
 
-        if (! $event->is_public) {
+        // A private invitation event still renders here — it's just never listed
+        // anywhere (Discover, /events.publiclyListed()), so the slug only reaches
+        // anyone the host actually shared it with. Ticketed (and free-registration
+        // public) events keep the is_public gate as defence in depth: a ticketed
+        // row is always forced public on save, so this should never fire for one,
+        // but a raw DB write bypassing the model hook must still 403 rather than
+        // leak a commerce page — see the "private ticketed event 403s" tests.
+        if (! $event->isInvitation() && ! $event->is_public) {
             abort(403);
         }
 
@@ -93,7 +100,9 @@ class PublicInvitationResolver
             abort(404);
         }
 
-        if (! $event->is_public) {
+        // Kept byte-for-byte in step with resolveInvitationPage() above — see its
+        // comment on this same line for why a private invitation event now passes.
+        if (! $event->isInvitation() && ! $event->is_public) {
             abort(403);
         }
 
@@ -220,9 +229,10 @@ class PublicInvitationResolver
             abort(404);
         }
 
-        if (! $event->is_public) {
-            abort(403);
-        }
+        // Unlike resolveInvitationPage()/resolveForTickets()/etc., every caller of
+        // this method already narrowed to isInvitation() above, so there is no
+        // ticketed/commerce page left to defend — a private invitation event's
+        // open-RSVP page is just as reachable-by-slug-only as its main page now is.
 
         if ($event->isLocked()) {
             return ['event' => $event, 'status' => PublicInvitationStatus::Ended];

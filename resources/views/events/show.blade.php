@@ -80,7 +80,8 @@
         @unless ($event->is_public)
             <div class="evt-flash evt-flash--info">
                 <i class="fa-solid fa-circle-info"></i>
-                This is a private event — it has no public page. Share each guest's personal invite link from
+                This is a private event — its invitation link below works for anyone who has it, but it's never
+                listed on Discover or anywhere else. You can also share each guest's personal invite link from
                 <a href="{{ route('events.guests.index', $event) }}">Guests</a>.
             </div>
         @endunless
@@ -102,7 +103,12 @@
                 <section class="evt-section">
                     <div class="evt-section-head">
                         <h2>Invitation link</h2>
-                        <p>Pause, cancel, or share the public URL <code>/e/{{ $event->slug }}</code>.</p>
+                        <p>
+                            Pause, cancel, or share <code>/e/{{ $event->slug }}</code>.
+                            @unless ($event->is_public)
+                                Not listed anywhere — only guests you send it to can find it.
+                            @endunless
+                        </p>
                     </div>
                     <div class="evt-section-body evt-card-actions">
                         @if ($event->isCancelled())
@@ -131,8 +137,8 @@
                                 <button type="submit" class="evt-btn-outline evt-btn-danger-outline"><i class="fa-solid fa-ban"></i> Cancel event</button>
                             </form>
                         @endif
-                        @if ($event->is_public && ! $event->isCancelled() && ! $event->isInvitationPaused() && ! $event->isLocked())
-                            <a href="{{ route('events.public', $event->slug) }}" class="evt-btn-outline" target="_blank" rel="noopener"><i class="fa-solid fa-link"></i> Open public page</a>
+                        @if (! $event->isCancelled() && ! $event->isInvitationPaused() && ! $event->isLocked())
+                            <a href="{{ route('events.public', $event->slug) }}" class="evt-btn-outline" target="_blank" rel="noopener"><i class="fa-solid fa-link"></i> {{ $event->is_public ? 'Open public page' : 'Open invitation link' }}</a>
                         @endif
                     </div>
                 </section>

@@ -23,6 +23,25 @@ class StoreOpenRsvpRequest extends FormRequest
             abort(403);
         }
 
+        // The plan's guest-list cap only matters for a private event here — a
+        // public/free-registration signup was never capacity-limited by this
+        // form, and that stays unchanged. It applies to this link exactly as it
+        // does to a guest the host adds by hand (Event::guestCapacity()), but
+        // only for a genuinely new signup: a returning guest resubmitting their
+        // own RSVP with the same email must never be blocked by a cap that was
+        // reached by other guests after their first submission.
+        if (! $event->is_public) {
+            $email = is_string($this->input('email')) ? strtolower(trim($this->input('email'))) : null;
+            $isReturningGuest = $email !== null && Guest::query()
+                ->where('event_id', $event->id)
+                ->where('email', $email)
+                ->exists();
+
+            if (! $isReturningGuest && $event->hasReachedGuestCapacity()) {
+                abort(403);
+            }
+        }
+
         return true;
     }
 
@@ -73,8 +92,12 @@ class StoreOpenRsvpRequest extends FormRequest
                     ->where(fn ($q) => $q->where('event_id', $event->id))
                     ->ignore($existingGuestId),
             ],
-            'phone' => ['nullable', 'string', 'max:50'],
-        ], $this->rsvpFieldRules($event, plusOneAllowed: false));
+            // Required for a private event: the whole point of this link there is
+            // that the guest gets a personal invitation link back, and WhatsApp is
+            // one of the two channels that delivers it (RsvpController::storeOpen()).
+            // A public/free-registration signup keeps phone optional, unchanged.
+            'phone' => $event->is_public ? ['nullable', 'string', 'max:50'] : ['required', 'string', 'max:50'],
+        ], $this->rsvpFieldRules($event, plusOneAllowed: ! $event->is_public));
     }
 
     public function resolveEvent(): ?Event
@@ -88,7 +111,6 @@ class StoreOpenRsvpRequest extends FormRequest
         $event = Event::query()
             ->where('slug', $slug)
             ->where('is_published', true)
-            ->where('is_public', true)
             ->whereNull('cancelled_at')
             ->whereNull('invitation_paused_at')
             ->first();

@@ -186,10 +186,18 @@ class RsvpController extends Controller
             return view('rsvp.closed', ['event' => $event, 'guest' => null]);
         }
 
+        // The guest-list cap is a private-event-only concern here — a public/
+        // free-registration signup was never capacity-limited by this form. See
+        // StoreOpenRsvpRequest::authorize() for the matching write-side check.
+        if (! $event->is_public && $event->hasReachedGuestCapacity()) {
+            return view('rsvp.closed', ['event' => $event, 'guest' => null, 'guestListFull' => true]);
+        }
+
         return view('rsvp.open-show', [
             'event' => $event,
-            'maxAttendees' => 1,
+            'maxAttendees' => (! $event->is_public && $event->allow_plus_one) ? 2 : 1,
             'rsvpFormConfig' => $customizationService->resolveRsvpFormConfig($event),
+            'isPrivateOpenRsvp' => ! $event->is_public,
         ]);
     }
 
@@ -197,11 +205,19 @@ class RsvpController extends Controller
         string $slug,
         StoreOpenRsvpRequest $request,
         RsvpSubmissionService $rsvpSubmissionService,
+        CommunicationService $communicationService,
     ): RedirectResponse {
         $event = $request->resolveEvent();
         if ($event === null) {
             abort(404);
         }
+
+        // A private event has no per-guest invite already issued, so a guest who
+        // self-RSVPs here needs a real invitation_token to get an entry pass and a
+        // personal "view/change RSVP" link back — same as a guest the host added
+        // by hand. A public/free-registration signup stays token-less, unchanged:
+        // that flow is closer to an anonymous headcount than a guest list.
+        $isPrivate = ! $event->is_public;
 
         /** @var array{name:string,email:string,phone?:string|null} $contact */
         $contact = $request->validated();
@@ -216,8 +232,8 @@ class RsvpController extends Controller
                 [
                     'name' => $contact['name'],
                     'phone' => $contact['phone'] ?? null,
-                    'invitation_token' => null,
-                    'plus_one_allowed' => false,
+                    'invitation_token' => $isPrivate ? Str::random(48) : null,
+                    'plus_one_allowed' => $isPrivate && (bool) $event->allow_plus_one,
                 ]
             );
         } catch (QueryException) {
@@ -230,16 +246,36 @@ class RsvpController extends Controller
                 ->firstOrFail();
         }
 
-        $guest->fill([
-            'name' => $contact['name'],
-            'phone' => $contact['phone'] ?? null,
-        ])->save();
+        $data = ['name' => $contact['name'], 'phone' => $contact['phone'] ?? null];
+
+        // A returning guest who first came through this link already has a token
+        // (branch above set one); a guest who existed beforehand from some other
+        // path (e.g. the public open-RSVP form, before this event became private —
+        // audience is otherwise immutable) did not — back-fill one now so the
+        // "you get a personal link" promise the private form makes always holds.
+        if ($isPrivate && $guest->invitation_token === null) {
+            $data['invitation_token'] = Str::random(48);
+        }
+
+        $guest->fill($data)->save();
 
         $payload = $request->validatedRsvpPayload();
 
         $rsvp = $rsvpSubmissionService->submit($event, $guest, $payload);
 
         $this->dispatchRsvpNotifications($event, $guest, $rsvp);
+
+        // WhatsApp delivery of the personal link is a Pro+ perk everywhere else on
+        // this page (GuestController::sendWhatsAppInvitation() — a real per-message
+        // cost), so an automatic send here follows the same gate rather than giving
+        // every plan a free way around it. Every plan still gets the email above.
+        if ($isPrivate && $event->ownerHasPremiumEventTools()) {
+            try {
+                $communicationService->sendWhatsAppInvitation($event, $guest);
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
 
         return $this->redirectThanks($event, $guest, $rsvp);
     }
@@ -321,9 +357,11 @@ class RsvpController extends Controller
     {
         $hasToken = $guest->invitation_token !== null;
 
-        // A private event has no public page at all (events.public 403s), so a
-        // non-token (open) guest there gets no View Invitation/Change/Share links —
-        // there genuinely isn't a URL that would work for them.
+        // storeOpen() always issues a token for a private event now (see its own
+        // comment), so a token-less guest here only exists on an is_public event
+        // (the free-registration flow deliberately stays token-less) or predates
+        // that change — either way there's no personal link to build, so fall back
+        // to the slug URL only when the event is actually public.
         $tokenOrPublicShowUrl = $hasToken
             ? route('rsvp.token.show', ['token' => $guest->invitation_token])
             : ($event->is_public ? route('events.public', ['slug' => $event->slug]) : null);

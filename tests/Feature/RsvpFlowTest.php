@@ -126,8 +126,17 @@ class RsvpFlowTest extends TestCase
         $this->assertSame(RsvpStatus::Maybe, $guest->fresh()->rsvp?->status);
     }
 
-    public function test_open_rsvp_not_available_for_private_events(): void
+    /**
+     * A private event's custom URL (/e/{slug}) is unlisted, not unreachable — a
+     * host shares it directly (e.g. in a family WhatsApp group) instead of adding
+     * every guest by hand. Unlike the public/free-registration open-RSVP flow
+     * below, a guest here always gets a real invitation_token, so they get an
+     * entry pass and a personal "view/change RSVP" link back.
+     */
+    public function test_open_rsvp_lets_a_private_events_guest_self_rsvp_with_a_personal_token(): void
     {
+        Notification::fake();
+
         $user = User::factory()->create();
         $event = Event::factory()->for($user)->published()->create([
             'is_public' => false,
@@ -135,7 +144,93 @@ class RsvpFlowTest extends TestCase
         ]);
 
         $this->get(route('rsvp.open.show', ['slug' => $event->slug]))
+            ->assertOk();
+
+        $payload = array_merge([
+            'name' => 'Family Member',
+            'email' => 'family@example.test',
+            'phone' => '+260971111111',
+        ], $this->rsvpPayload(RsvpStatus::Accepted, 1));
+
+        $response = $this->post(route('rsvp.open.store', ['slug' => $event->slug]), $payload);
+
+        $guest = Guest::query()->where('event_id', $event->id)->where('email', 'family@example.test')->first();
+        $this->assertNotNull($guest);
+        $this->assertNotNull($guest->invitation_token);
+
+        $response->assertRedirect(route('rsvp.token.thanks', ['token' => $guest->invitation_token]));
+        $this->assertSame(RsvpStatus::Accepted, $guest->rsvp?->status);
+    }
+
+    public function test_open_rsvp_requires_phone_for_a_private_event_but_not_a_public_one(): void
+    {
+        $private = Event::factory()->published()->create(['is_public' => false, 'rsvp_deadline' => null]);
+        $public = Event::factory()->published()->create(['is_public' => true, 'rsvp_deadline' => null]);
+
+        $payload = array_merge([
+            'name' => 'No Phone',
+            'email' => 'nophone-private@example.test',
+            'phone' => null,
+        ], $this->rsvpPayload(RsvpStatus::Accepted, 1));
+
+        $this->post(route('rsvp.open.store', ['slug' => $private->slug]), $payload)
+            ->assertSessionHasErrors('phone');
+        $this->assertDatabaseMissing('guests', ['event_id' => $private->id, 'email' => 'nophone-private@example.test']);
+
+        $payload['email'] = 'nophone-public@example.test';
+        $this->post(route('rsvp.open.store', ['slug' => $public->slug]), $payload)
+            ->assertSessionDoesntHaveErrors('phone');
+        $this->assertDatabaseHas('guests', ['event_id' => $public->id, 'email' => 'nophone-public@example.test']);
+
+        // The public guest keeps the existing token-less, anonymous-headcount shape.
+        $publicGuest = Guest::query()->where('event_id', $public->id)->where('email', 'nophone-public@example.test')->first();
+        $this->assertNull($publicGuest->invitation_token);
+    }
+
+    public function test_open_rsvp_respects_the_plan_guest_capacity_for_a_private_event(): void
+    {
+        $owner = User::factory()->create(); // Base tier, cap 150
+        $event = Event::factory()->for($owner)->published()->create([
+            'is_public' => false,
+            'rsvp_deadline' => null,
+        ]);
+        Guest::factory()->count(150)->for($event)->create();
+
+        $this->get(route('rsvp.open.show', ['slug' => $event->slug]))
+            ->assertOk()
+            ->assertSee('guest list is full');
+
+        $payload = array_merge([
+            'name' => 'One Fifty One',
+            'email' => 'guest151@example.test',
+            'phone' => '+260970000000',
+        ], $this->rsvpPayload(RsvpStatus::Accepted, 1));
+
+        $this->post(route('rsvp.open.store', ['slug' => $event->slug]), $payload)
             ->assertForbidden();
+
+        $this->assertSame(150, $event->guests()->count());
+    }
+
+    public function test_a_returning_private_event_guest_is_not_blocked_by_a_full_capacity(): void
+    {
+        $event = Event::factory()->published()->create(['is_public' => false, 'rsvp_deadline' => null]);
+        Guest::factory()->count(149)->for($event)->create();
+        Guest::factory()->for($event)->create([
+            'email' => 'returning@example.test',
+            'invitation_token' => 'existing_token_123',
+        ]);
+
+        $payload = array_merge([
+            'name' => 'Returning Guest',
+            'email' => 'returning@example.test',
+            'phone' => '+260972222222',
+        ], $this->rsvpPayload(RsvpStatus::Maybe, 0));
+
+        $this->post(route('rsvp.open.store', ['slug' => $event->slug]), $payload)
+            ->assertRedirect(route('rsvp.token.thanks', ['token' => 'existing_token_123']));
+
+        $this->assertSame(150, $event->guests()->count());
     }
 
     public function test_token_rsvp_works_when_event_is_private(): void
@@ -159,9 +254,9 @@ class RsvpFlowTest extends TestCase
     }
 
     /**
-     * A guest's personal link is the only page they can reach for a private event
-     * (the public /e/{slug} page 403s), so it has to show the actual designed
-     * invitation — not just a bare form they can't judge without context.
+     * A guest's personal link has to show the actual designed invitation — not
+     * just a bare form they can't judge without context — same as the (now also
+     * reachable, but unlisted) /e/{slug} page for the event.
      */
     public function test_token_rsvp_page_shows_the_designed_invitation_not_a_bare_form(): void
     {

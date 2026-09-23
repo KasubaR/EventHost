@@ -43,6 +43,16 @@ class StoreOpenRsvpApiRequest extends FormRequest
             abort(403);
         }
 
+        // PublicInvitationResolver::resolveOpenRsvp() allows a private event
+        // through now (the web open-RSVP form gained a private-event mode with a
+        // real invitation_token, phone requirement and guest-capacity check — see
+        // RsvpController::storeOpen()). This API endpoint hasn't grown that
+        // parallel behavior, so it keeps requiring is_public rather than silently
+        // exposing a weaker, unprotected version of the private flow.
+        if (! $resolved['event']->is_public) {
+            abort(403);
+        }
+
         return true;
     }
 

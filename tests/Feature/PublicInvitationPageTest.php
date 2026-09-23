@@ -37,15 +37,17 @@ class PublicInvitationPageTest extends TestCase
         $response->assertSee('evt-calendar-actions', escape: false);
     }
 
-    public function test_private_published_event_returns_403_on_public_page_and_ics(): void
+    public function test_private_published_invitation_event_renders_its_page_and_ics(): void
     {
+        // Private events are unlisted, not unreachable — see
+        // PublicInvitationLifecycleTest for the "never on Discover" half of this.
         $event = $this->publishedPublicEvent(['is_public' => false]);
 
         $this->get(route('events.public', ['slug' => $event->slug]))
-            ->assertForbidden();
+            ->assertOk();
 
         $this->get(route('events.public.ics', ['slug' => $event->slug]))
-            ->assertForbidden();
+            ->assertOk();
     }
 
     public function test_ics_download_returns_valid_calendar_document(): void

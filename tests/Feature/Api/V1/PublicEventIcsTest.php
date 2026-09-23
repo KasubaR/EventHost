@@ -38,11 +38,15 @@ class PublicEventIcsTest extends TestCase
         $this->get("/api/v1/events/{$event->slug}/calendar.ics")->assertNotFound();
     }
 
-    public function test_a_private_event_is_forbidden(): void
+    public function test_a_private_invitation_event_still_returns_a_calendar_document(): void
     {
+        // Kept in step with the web ics() action: a private event's slug is
+        // unlisted, not unreachable.
         $event = $this->publishedPublicEvent(['is_public' => false]);
 
-        $this->get("/api/v1/events/{$event->slug}/calendar.ics")->assertForbidden();
+        $this->get("/api/v1/events/{$event->slug}/calendar.ics")
+            ->assertOk()
+            ->assertHeader('Content-Type', 'text/calendar; charset=utf-8');
     }
 
     public function test_a_renamed_slug_redirects(): void

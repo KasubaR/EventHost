@@ -75,7 +75,9 @@ class PublicEventController extends Controller
         $event->loadMissing('invitationTemplate');
 
         $rsvpOpen = $event->isRsvpOpen();
-        $rsvpPublicAvailable = $event->is_public && $rsvpOpen;
+        // Ticketed events already returned above, so this is always an invitation
+        // event — kept in step with the web PublicEventController's own comment.
+        $rsvpPublicAvailable = $rsvpOpen;
         $invitation = $customizationService->merge($event);
 
         Event::query()->whereKey($event->getKey())->increment('invitation_views_count');

@@ -40,7 +40,10 @@ class EventPreviewController extends Controller
         }
 
         $rsvpOpen = $event->isRsvpOpen();
-        $rsvpPublicAvailable = $event->is_public && $rsvpOpen;
+        // Ticketed events already redirected above, so this is always an
+        // invitation event — private ones now get the same open-RSVP preview
+        // as public ones. See PublicEventController::show()/PublicInvitationResolver.
+        $rsvpPublicAvailable = $rsvpOpen;
         $invitation = $customizationService->merge($event);
 
         // Deliberately does not touch invitation_views_count — that counter is

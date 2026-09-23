@@ -56,11 +56,15 @@ class PublicEventShowTest extends TestCase
         $this->assertStringContainsString('storage/invitation-gallery/photo1.webp', $gallery[0]);
     }
 
-    public function test_a_private_published_event_is_forbidden(): void
+    public function test_a_private_published_invitation_event_still_renders(): void
     {
+        // Kept in step with the web PublicEventController: a private event's slug
+        // is unlisted, not unreachable — see PublicInvitationLifecycleTest.
         $event = $this->publishedPublicEvent(['is_public' => false]);
 
-        $this->getJson("/api/v1/events/{$event->slug}")->assertForbidden();
+        $this->getJson("/api/v1/events/{$event->slug}")
+            ->assertOk()
+            ->assertJsonPath('slug', $event->slug);
     }
 
     public function test_an_unknown_slug_is_not_found(): void

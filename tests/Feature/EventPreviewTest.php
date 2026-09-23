@@ -34,8 +34,10 @@ class EventPreviewTest extends TestCase
 
     public function test_owner_can_preview_a_published_private_event(): void
     {
-        // /e/{slug} 403s for a private event even once published — this is the
-        // one place a host can still see it.
+        // /e/{slug} also renders for a private event once published (it's just
+        // never listed anywhere) — this preview page differs in that it ignores
+        // is_published/invitation_paused/cancelled entirely, so it's still the
+        // only place a host can see a draft, paused, or cancelled event.
         $user = User::factory()->create();
         $event = Event::factory()->for($user)->create([
             'is_published' => true,
@@ -44,7 +46,7 @@ class EventPreviewTest extends TestCase
         ]);
 
         $publicResponse = $this->actingAs($user)->get(route('events.public', $event->slug));
-        $publicResponse->assertForbidden();
+        $publicResponse->assertOk();
 
         $previewResponse = $this->actingAs($user)->get(route('events.preview', $event));
         $previewResponse->assertOk();

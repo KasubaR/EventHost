@@ -575,13 +575,12 @@ class EventManagementTest extends TestCase
      * publish. Since plans/public-private-portals.md Phase 4c, a public
      * audience invitation event is "free registration" and can no longer
      * credit-publish at all (admin approval + a paid quote is required
-     * instead — see PublicRegistrationApprovalTest); a privateAudience()
-     * event never shows at /e/{slug} by design regardless of publish state.
-     * Rewritten to a private event, checking visibility the way a private
-     * event's owner actually gets it: events.preview (owner-only), per
-     * EventPreviewController's own docblock.
+     * instead — see PublicRegistrationApprovalTest). Rewritten to a private
+     * event: /e/{slug} now renders for a private event too (it's just never
+     * listed anywhere — see PublicInvitationLifecycleTest), which is exactly
+     * where EventController::publish() redirects the host after publishing.
      */
-    public function test_publish_requires_owner_and_the_owner_can_then_preview_it(): void
+    public function test_publish_requires_owner_and_the_owner_can_then_view_it(): void
     {
         $user = User::factory()->create();
         $template = InvitationTemplate::query()->where('is_active', true)->firstOrFail();
@@ -600,10 +599,11 @@ class EventManagementTest extends TestCase
         $response->assertSessionHas('status', 'published');
         $this->assertTrue((bool) $event->fresh()->is_published);
 
-        // /e/{slug} 403s for a private event even once published — the
-        // redirect target above is still correct, it's just not visitable by
-        // anyone but the owner, which is what this checks instead.
-        $this->get(route('events.public', $event->slug))->assertForbidden();
+        // The redirect above lands the host straight on this page — it must
+        // actually render, not 403, even though the event is private.
+        $this->get(route('events.public', $event->slug))
+            ->assertOk()
+            ->assertSee($event->name, escape: false);
 
         $preview = $this->actingAs($user)->get(route('events.preview', $event));
         $preview->assertOk();

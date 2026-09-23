@@ -11,7 +11,10 @@
         <header class="rsvp-header">
             <h1 class="rsvp-title">{{ $event->name }}</h1>
             <div class="evt-rsvp-banner evt-rsvp-banner--closed rsvp-closed-banner">
-                @if ($event->isLocked())
+                @if ($guestListFull ?? false)
+                    <i class="fa-solid fa-users"></i>
+                    This event's guest list is full — the host isn't accepting new RSVPs from this link right now.
+                @elseif ($event->isLocked())
                     <i class="fa-solid fa-champagne-glasses"></i>
                     @if ($guest)
                         Hi {{ $guest->name }}, this event has already taken place.
@@ -27,11 +30,13 @@
                     @endif
                 @endif
             </div>
-            @if ($event->isLocked())
-                <p class="rsvp-muted">It was held on {{ $event->event_date->format('l, F j, Y') }}.</p>
-            @elseif ($event->rsvp_deadline)
-                <p class="rsvp-muted">Deadline was {{ $event->rsvp_deadline->timezone(config('app.timezone'))->format('l, F j, Y \a\t g:i A') }}.</p>
-            @endif
+            @unless ($guestListFull ?? false)
+                @if ($event->isLocked())
+                    <p class="rsvp-muted">It was held on {{ $event->event_date->format('l, F j, Y') }}.</p>
+                @elseif ($event->rsvp_deadline)
+                    <p class="rsvp-muted">Deadline was {{ $event->rsvp_deadline->timezone(config('app.timezone'))->format('l, F j, Y \a\t g:i A') }}.</p>
+                @endif
+            @endunless
         </header>
 
         @if ($guest)

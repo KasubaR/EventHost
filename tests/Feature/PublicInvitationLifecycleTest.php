@@ -15,6 +15,7 @@ use App\Models\TicketOrder;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class PublicInvitationLifecycleTest extends TestCase
@@ -213,9 +214,27 @@ class PublicInvitationLifecycleTest extends TestCase
         $this->get(route('events.public', 'no-such-slug'))->assertNotFound();
     }
 
-    public function test_private_published_event_is_403(): void
+    public function test_private_invitation_event_renders_at_its_slug_but_is_never_listed(): void
     {
-        $event = $this->liveEvent(['is_public' => false]);
+        // Private events are unlisted, not unreachable — the slug is the whole point
+        // of "share this one link" (see RsvpFlowTest for the self-RSVP flow through
+        // it). Discover/publiclyListed() is what actually keeps it out of view.
+        $event = $this->liveEvent(['is_public' => false, 'name' => 'Private Bash']);
+
+        $this->get(route('events.public', $event->slug))
+            ->assertOk()
+            ->assertSee('Private Bash', escape: false);
+
+        $this->assertFalse(Event::query()->publiclyListed()->whereKey($event->id)->exists());
+    }
+
+    public function test_private_ticketed_event_is_still_403_as_defence_in_depth(): void
+    {
+        // A ticketed event is always forced public on save, so this can only ever
+        // happen via a raw write that skips the model hook — the runtime gate must
+        // still hold rather than leak a commerce page. See PublicInvitationResolver.
+        $event = Event::factory()->ticketed()->published()->create(['is_public' => true]);
+        DB::table('events')->where('id', $event->id)->update(['is_public' => false]);
 
         $this->get(route('events.public', $event->slug))->assertForbidden();
     }

@@ -102,7 +102,10 @@ class PublicEventController extends Controller
         $event->loadMissing('invitationTemplate');
 
         $rsvpOpen = $event->isRsvpOpen();
-        $rsvpPublicAvailable = $event->is_public && $rsvpOpen;
+        // The ticketed branch above already returned, so every event reaching here
+        // is invitation-kind — private ones now get the same inline/open-RSVP form
+        // as public ones, just never listed anywhere. See PublicInvitationResolver.
+        $rsvpPublicAvailable = $rsvpOpen;
         $invitation = $customizationService->merge($event);
 
         Event::query()->whereKey($event->getKey())->increment('invitation_views_count');

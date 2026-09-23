@@ -116,6 +116,13 @@ class RsvpController extends Controller
         $event = $resolved['event'];
         $status = $resolved['status'];
 
+        // See StoreOpenRsvpApiRequest::authorize() — this endpoint hasn't grown
+        // the web open-RSVP form's private-event mode (real token, phone
+        // requirement, guest-capacity check), so it keeps requiring is_public.
+        if ($status === null && ! $event->is_public) {
+            abort(403);
+        }
+
         $event->loadMissing('invitationTemplate');
 
         return new RsvpFormResource(

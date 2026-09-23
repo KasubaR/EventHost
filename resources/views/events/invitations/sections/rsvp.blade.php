@@ -24,13 +24,23 @@
             ])
         </div>
     @elseif ($rsvpPublicAvailable && filled($event->slug ?? null))
+        @php
+            $inlineIsPrivate = ! $event->is_public;
+        @endphp
         <div class="evt-inline-rsvp" id="rsvp">
             <h2 class="evt-inline-rsvp-heading">RSVP</h2>
-            <p class="evt-inline-rsvp-lead">Let the host know if you can make it — no account needed.</p>
+            <p class="evt-inline-rsvp-lead">
+                @if ($inlineIsPrivate)
+                    Let the host know if you can make it — we'll email you a personal link so you can view or change your response anytime.
+                @else
+                    Let the host know if you can make it — no account needed.
+                @endif
+            </p>
             @include('rsvp.partials.open-rsvp-form', [
                 'event'          => $event,
-                'maxAttendees'   => 1,
+                'maxAttendees'   => ($inlineIsPrivate && $event->allow_plus_one) ? 2 : 1,
                 'rsvpFormConfig' => $invitation['rsvp_form'] ?? [],
+                'phoneRequired'  => $inlineIsPrivate,
             ])
             <p class="evt-inline-rsvp-alt">
                 <a href="{{ route('rsvp.open.show', $event->slug) }}" class="evt-inline-rsvp-alt-link">Prefer a dedicated RSVP page</a>

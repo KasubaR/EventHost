@@ -29,7 +29,9 @@ class EventPreviewController extends Controller
         }
 
         $rsvpOpen = $event->isRsvpOpen();
-        $rsvpPublicAvailable = $event->is_public && $rsvpOpen;
+        // is_ticketed already returned above, so this is always an invitation
+        // event — kept in step with the web EventPreviewController's own comment.
+        $rsvpPublicAvailable = $rsvpOpen;
         $invitation = $customizationService->merge($event);
 
         // Deliberately does not touch invitation_views_count — that counter is
