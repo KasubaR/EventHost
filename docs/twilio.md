@@ -134,9 +134,14 @@ template and swap the SID in `.env`.
 | `{{4}}` | Time (`TBA` if none) | `14:00` |
 | `{{5}}` | Venue (`Venue TBA` if none) | `Ciela Resort` |
 | `{{6}}` | Full personal RSVP URL | `https://…/rsvp/<token>` |
-| `{{7}}` | Cover path after host (JPEG/PNG) | `storage/events/….jpg` or `images/default-event.png` |
+| `{{7}}` | Cover path after host (JPEG/PNG) | `storage/events/….jpg` or `images/default-event-wa.jpg` |
 
 `{{7}}` is never a full URL — the production host is baked into the template header.
+The no-cover fallback is `public/images/default-event-wa.jpg` (a real 1200×1200 JPEG). Do not
+use `images/default-event.png` for WhatsApp: it is a 5000×5000 JPEG saved with a `.png`
+extension, so the server labels it `image/png` while the bytes are JPEG, and WhatsApp's
+fetcher fails with Twilio error `63019` (media failed to download). The Meta sample value
+`images/default-event.png` stays as it was approved — only the value sent at runtime changed.
 WebP covers are converted once to a cached JPEG under `storage/events/wa_cover_{id}.jpg`
 (WhatsApp headers require JPEG/PNG).
 
@@ -188,18 +193,28 @@ paste this body, get it approved, then set `TWILIO_EVENT_REMINDER_CONTENT_SID`:
 ```
 Hello 👋
 
+This is a friendly reminder from EventHost about an event you have confirmed that you will attend.
+
 {{1}}
 
-📅 {{2}}
-🕐 {{3}}
-📍 {{4}}
+Here are the details of the event:
 
-Thank you.
+📅 Date: {{2}}
+🕐 Time: {{3}}
+📍 Venue: {{4}}
+
+If your plans have changed, please let the host know as soon as possible. Thank you, and we look forward to seeing you there.
 ```
 
 Sample values for Meta: `{{1}}` `Mary & David Wedding is tomorrow.`, `{{2}}` `12 December 2026`,
 `{{3}}` `14:00`, `{{4}}` `Ciela Resort`. The opening and closing static lines keep the body
 from starting or ending with a variable.
+
+**Length matters.** Meta rejects a template whose body is too short for its number of
+variables (error `2388293`, "too many variables for its length"). A first draft with only
+the four variables and a few short lines was rejected for exactly this reason — keep the
+surrounding sentences, do not trim them. If it is rejected again, add another sentence of
+static text rather than removing a variable.
 
 ---
 

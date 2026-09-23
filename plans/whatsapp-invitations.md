@@ -26,7 +26,7 @@ Guest taps a button → `POST /webhooks/twilio/whatsapp` → `WhatsAppInboundRsv
 |---|---|
 | `1`–`5` | guest name, event name, date, time/`TBA`, venue/`Venue TBA` |
 | `6` | `personalRsvpUrl()` |
-| `7` | `Event::whatsAppInviteHeaderMediaPath()` (cover JPEG/PNG path or `images/default-event.png`) |
+| `7` | `Event::whatsAppInviteHeaderMediaPath()` (cover JPEG/PNG path or `images/default-event-wa.jpg`) |
 
 Media URL in the Meta/Twilio card: `https://PRODUCTION_HOST/{{7}}`.
 

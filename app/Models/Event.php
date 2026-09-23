@@ -1127,11 +1127,11 @@ class Event extends Model
         $path = $this->cover_image;
 
         if (! is_string($path) || $path === '' || str_contains($path, '://')) {
-            return 'images/default-event.png';
+            return 'images/default-event-wa.jpg';
         }
 
         if (! Storage::disk('public')->exists($path)) {
-            return 'images/default-event.png';
+            return 'images/default-event-wa.jpg';
         }
 
         $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
@@ -1149,7 +1149,7 @@ class Event extends Model
                 $jpeg = $manager->read(Storage::disk('public')->path($path))->toJpeg(85);
                 Storage::disk('public')->put($cached, $jpeg->toString());
             } catch (\Throwable) {
-                return 'images/default-event.png';
+                return 'images/default-event-wa.jpg';
             }
         }
 

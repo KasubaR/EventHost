@@ -304,8 +304,8 @@ class WhatsAppInboundRsvpTest extends TestCase
         $without = Event::factory()->for($owner)->create(['cover_image' => null]);
 
         $this->assertSame('storage/events/cover-test.png', $withCover->whatsAppInviteHeaderMediaPath());
-        $this->assertSame('images/default-event.png', $without->whatsAppInviteHeaderMediaPath());
-        $this->assertStringEndsWith('/images/default-event.png', $without->whatsAppInviteHeaderMediaUrl());
+        $this->assertSame('images/default-event-wa.jpg', $without->whatsAppInviteHeaderMediaPath());
+        $this->assertStringEndsWith('/images/default-event-wa.jpg', $without->whatsAppInviteHeaderMediaUrl());
     }
 
     /**

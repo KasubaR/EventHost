@@ -180,7 +180,7 @@ class CommunicationFeaturesTest extends TestCase
             '4' => '14:00',
             '5' => 'Ciela Resort',
             '6' => $guest->personalRsvpUrl(),
-            '7' => 'images/default-event.png',
+            '7' => 'images/default-event-wa.jpg',
         ], $fake->lastVariables);
         $this->assertStringStartsWith('http', (string) ($fake->lastVariables['6'] ?? ''));
         $this->assertDatabaseHas('notification_logs', [
