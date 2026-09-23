@@ -1,6 +1,6 @@
 # WhatsApp Invitations via Twilio
 
-Status: **built** (single-guest outbound send with cover IMAGE header + inbound Quick Reply
+Status: **built** (single-guest outbound send with cover image header + inbound quick-reply
 RSVP + Accepted entry-pass QR confirmation + post-RSVP event-day reminders). Bulk Twilio send
 and delivery-status webhooks are still future work.
 
@@ -8,8 +8,10 @@ Ops checklist: [docs/twilio.md](../docs/twilio.md).
 
 ## What this is
 
-Host clicks **Send WhatsApp Invitation** → Quick Reply template with **event cover** as IMAGE
-header (`{{7}}` path after production host) + Yes/No/Maybe.
+Host clicks **Send WhatsApp Invitation** → **WhatsApp card** template (`whatsapp/card`) with the
+**event cover** as image header (`{{7}}` path after production host) + Yes/No/Maybe quick-reply
+buttons. The plain Quick reply content type has no media field, so a card type is required.
+Two templates in total: this invitation card and a Text template for event reminders.
 
 Guest taps a button → `POST /webhooks/twilio/whatsapp` → `WhatsAppInboundRsvpService` →
 `RsvpSubmissionService` (Accepted = `attendee_count` 1).
@@ -26,7 +28,7 @@ Guest taps a button → `POST /webhooks/twilio/whatsapp` → `WhatsAppInboundRsv
 | `6` | `personalRsvpUrl()` |
 | `7` | `Event::whatsAppInviteHeaderMediaPath()` (cover JPEG/PNG path or `images/default-event.png`) |
 
-IMAGE header in Meta/Twilio: `https://PRODUCTION_HOST/{{7}}`.
+Media URL in the Meta/Twilio card: `https://PRODUCTION_HOST/{{7}}`.
 
 ## Event reminders (post-RSVP)
 

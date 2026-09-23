@@ -1,7 +1,7 @@
 # Twilio WhatsApp invitations — setup guide
 
 Laravel sends personalized invitations via
-`CommunicationService::sendWhatsAppInvitation()` and records RSVPs from Quick Reply
+`CommunicationService::sendWhatsAppInvitation()` and records RSVPs from quick-reply button
 taps via `POST /webhooks/twilio/whatsapp`. This doc is the **ops checklist**.
 
 Architecture details: [plans/whatsapp-invitations.md](../plans/whatsapp-invitations.md).
@@ -15,7 +15,8 @@ Architecture details: [plans/whatsapp-invitations.md](../plans/whatsapp-invitati
 | Twilio Account + API Key | Auth for outbound REST (`messages->create`) |
 | Account Auth Token | Verify `X-Twilio-Signature` on inbound webhooks |
 | WhatsApp sender | Sandbox number (dev) or approved Business number (prod) |
-| Quick Reply + IMAGE Content Template (`HX…`) | Cover header + Yes / No / Maybe buttons |
+| WhatsApp card Content Template (`HX…`) | Cover image header + Yes / No / Maybe quick-reply buttons |
+| Text Content Template (`HX…`) | Event-day reminders (see §5b) |
 | Inbound webhook URL | Twilio “A message comes in” → Laravel |
 | `.env` flags | Wire credentials and turn the feature on |
 
@@ -55,20 +56,28 @@ The free **manual** `wa.me` “WhatsApp” link on the guest list does **not** n
 
 ---
 
-## 4. Invitation Content Template (Quick Reply + IMAGE header)
+## 4. Invitation Content Template (WhatsApp card: image header + quick replies)
 
-Business-initiated WhatsApp messages **must** use a Meta-approved template. EventHost uses
-**Quick Reply** buttons for RSVP plus an **IMAGE header** (event cover). Guests who need a
-plus-one use the personal RSVP URL in the body. After they tap Yes on a Pro+ event, the
-session confirmation attaches their **entry-pass QR** (PNG).
+Business-initiated WhatsApp messages **must** use a Meta-approved template. EventHost uses a
+**WhatsApp card** (`whatsapp/card`) so one template carries an **image header** (event cover)
+plus **quick-reply buttons** for RSVP. The plain **Quick reply** type has no media field, so it
+cannot be used. Guests who need a plus-one use the personal RSVP URL in the body. After they
+tap Yes on a Pro+ event, the session confirmation attaches their **entry-pass QR** (PNG).
+
+Per Twilio's [whatsapp/card docs](https://www.twilio.com/docs/content/whatsappcard): `body`
+(max 1,024 chars), `media` (cannot coexist with `header_text`), optional `footer`, and
+`QUICK_REPLY` actions whose IDs come back as `ButtonPayload`. The combined media URL must
+include the file type and resolve to a public file; once approved, the template can only send
+that one media type (image).
 
 ### 4.1 In Twilio Console
 
 1. Go to **Content Template Builder**.
 2. Create a new template:
+   - **Name:** `eventhost_invitation_rsvp`
    - **Category:** Utility (or the closest Meta accepts for invitations)
-   - **Type:** Quick Reply **with an IMAGE header** (not plain text / Visit Website CTA alone)
-3. **IMAGE header** media URL pattern (Twilio only allows variables *after* the domain):
+   - **Content type:** **WhatsApp card**
+3. **Media** URL pattern (Twilio only allows variables *after* the domain):
 
 ```
 https://YOUR_PRODUCTION_HOST/{{7}}
@@ -94,7 +103,12 @@ Reply with a button below.
 
 Need a plus-one or to change details?
 {{6}}
+
+Thank you.
 ```
+
+   The closing static line is deliberate: Meta commonly rejects a body that ends in a
+   variable. Laravel only fills `{{1}}`–`{{7}}`, so the static text can be reworded freely.
 
 5. **Quick reply buttons** (set stable IDs — Twilio returns these as `ButtonPayload`):
 
@@ -107,7 +121,7 @@ Need a plus-one or to change details?
 6. Submit for Meta approval. Expect hours to 1–2 days.
 7. When approved, copy the Content SID (`HX…`) → `TWILIO_INVITATION_CONTENT_SID`.
 
-Do **not** edit an old text-only / CTA template in place. Create a new Quick Reply + IMAGE
+Do **not** edit an old text-only / CTA template in place. Create a new WhatsApp card
 template and swap the SID in `.env`.
 
 ### 4.2 What Laravel fills in
@@ -154,8 +168,8 @@ Guest matching:
 
 ## 5b. Event reminders (Accepted guests)
 
-Scheduled command `events:send-whatsapp-reminders` runs **daily at 09:00** (same cron as
-`rsvp:send-reminders`). It is separate from email “please RSVP” reminders.
+Scheduled command `events:send-whatsapp-reminders` runs **daily at 09:00 Africa/Lusaka** (same
+schedule as `rsvp:send-reminders`; the app timezone itself stays UTC). It is separate from email “please RSVP” reminders.
 
 | When (vs `event_date`) | Bucket | Lead (`{{1}}`) |
 |---|---|---|
@@ -163,19 +177,29 @@ Scheduled command `events:send-whatsapp-reminders` runs **daily at 09:00** (same
 | 1 day before | `1` | `Reminder: {event} is tomorrow.` |
 | Event day | `0` | `Today is the big day! We look forward to seeing you at {event}.` |
 
-Shared body:
-
-```
-📅 {{2}}
-🕐 {{3}}
-📍 {{4}}
-```
+One template serves all three buckets — the changing lead line is `{{1}}`.
 
 **Who gets it:** Accepted RSVP + Zambian phone + Pro+ host + WhatsApp enabled.  
 Tracked on `guests.whatsapp_event_reminders_sent`. Log type: `guest_event_reminder_whatsapp`.
 
-**Ops:** approve a text Content Template with `{{1}}`–`{{4}}`, set
-`TWILIO_EVENT_REMINDER_CONTENT_SID`.
+**Ops:** create a **Text** Content Template, category Utility, name `eventhost_event_reminder`,
+paste this body, get it approved, then set `TWILIO_EVENT_REMINDER_CONTENT_SID`:
+
+```
+Hello 👋
+
+{{1}}
+
+📅 {{2}}
+🕐 {{3}}
+📍 {{4}}
+
+Thank you.
+```
+
+Sample values for Meta: `{{1}}` `Mary & David Wedding is tomorrow.`, `{{2}}` `12 December 2026`,
+`{{3}}` `14:00`, `{{4}}` `Ciela Resort`. The opening and closing static lines keep the body
+from starting or ending with a variable.
 
 ---
 
