@@ -27,7 +27,19 @@ class IndexTest extends TestCase
 
         $response->assertOk()
             ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.id', $published->id);
+            ->assertJsonPath('data.0.id', $published->id)
+            ->assertJsonStructure([
+                'data' => [
+                    [
+                        'id',
+                        'is_check_in_open',
+                        'check_in_closed_reason',
+                        'can_check_in',
+                    ],
+                ],
+            ]);
+
+        $this->assertIsBool($response->json('data.0.is_check_in_open'));
     }
 
     public function test_status_draft_returns_only_unpublished_events(): void

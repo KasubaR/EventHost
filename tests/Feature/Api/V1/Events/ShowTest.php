@@ -27,7 +27,15 @@ class ShowTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('id', $event->id)
-            ->assertJsonStructure(['rsvp_summary' => ['invited', 'pending', 'accepted', 'declined', 'maybe', 'accepted_heads'], 'analytics']);
+            ->assertJsonStructure([
+                'rsvp_summary' => ['invited', 'pending', 'accepted', 'declined', 'maybe', 'accepted_heads'],
+                'analytics',
+                'is_check_in_open',
+                'check_in_closed_reason',
+                'can_check_in',
+            ]);
+
+        $this->assertIsBool($response->json('is_check_in_open'));
 
         $this->assertArrayNotHasKey('contribution_summary', $response->json());
     }

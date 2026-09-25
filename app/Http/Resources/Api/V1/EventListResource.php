@@ -38,6 +38,9 @@ class EventListResource extends JsonResource
             'is_cancelled' => $this->isCancelled(),
             'is_invitation_paused' => $this->isInvitationPaused(),
             'deleted_at' => $this->deleted_at?->toIso8601String(),
+            // Android scanner: keep the camera off without probing confirm when closed.
+            'is_check_in_open' => $this->isCheckInOpen(),
+            'check_in_closed_reason' => $this->isCheckInOpen() ? null : $this->checkInClosedReason(),
         ];
 
         if ($this->isTicketed()) {
