@@ -5,6 +5,16 @@ use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
 use Monolog\Processor\PsrLogMessageProcessor;
 
+// Same allow-list Laravel's ParsesLogConfiguration uses. Empty or typo'd
+// LOG_PAYMENTS_LEVEL must not crash the payments channel (env() returns '' when
+// the key is set blank — the default is then unused).
+$paymentsLogLevel = strtolower(trim((string) env('LOG_PAYMENTS_LEVEL', 'debug')));
+if ($paymentsLogLevel === '' || ! in_array($paymentsLogLevel, [
+    'debug', 'info', 'notice', 'warning', 'error', 'critical', 'alert', 'emergency',
+], true)) {
+    $paymentsLogLevel = 'debug';
+}
+
 return [
 
     /*
@@ -130,7 +140,7 @@ return [
         'payments' => [
             'driver' => 'daily',
             'path' => storage_path('logs/payments.log'),
-            'level' => env('LOG_PAYMENTS_LEVEL', 'debug'),
+            'level' => $paymentsLogLevel,
             'days' => (int) env('LOG_PAYMENTS_DAYS', 90),
             'replace_placeholders' => true,
         ],

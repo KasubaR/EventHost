@@ -60,7 +60,13 @@ class PaymentLog
     {
         $payload = array_merge(['event' => $event], self::sanitize($context));
 
-        Log::channel('payments')->{$level}($event, $payload);
+        try {
+            Log::channel('payments')->{$level}($event, $payload);
+        } catch (\Throwable) {
+            // Misconfigured payments channel (e.g. invalid level before config
+            // was hardened) must not abort payment polling — fall back to default.
+            Log::{$level}($event, $payload);
+        }
     }
 
     /**

@@ -11,6 +11,7 @@ use App\Services\TwilioWhatsAppService;
 use App\Services\WhatsAppService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
@@ -42,6 +43,14 @@ class AppServiceProvider extends ServiceProvider
                 && filled($twilio['whatsapp_from'] ?? null);
 
             if (! $ready) {
+                return new NullWhatsAppService;
+            }
+
+            // Credentials can be present while twilio/sdk is missing from vendor
+            // (incomplete deploy). class_exists autoloads; false → Null, not a 500.
+            if (! class_exists(TwilioClient::class)) {
+                Log::warning('whatsapp.twilio_sdk_missing');
+
                 return new NullWhatsAppService;
             }
 
