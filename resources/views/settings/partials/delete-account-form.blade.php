@@ -13,7 +13,7 @@
     <div class="profile-modal">
         <div class="profile-modal-header">
             <div class="profile-modal-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
-            <h3 id="deleteModalTitle">Delete your account?</h3>
+            <h3 id="deleteModalTitle">Delete Your Account?</h3>
             <p>This will permanently delete all your events, invitations, guests and data. Enter your password to confirm.</p>
         </div>
 

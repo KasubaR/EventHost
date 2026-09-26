@@ -4,12 +4,14 @@
     // behind them ships, but nothing sends against them yet — flagging that
     // here instead of presenting a toggle that silently does nothing.
     $prefLabels = [
-        'email_rsvp_updates'    => ['label' => 'RSVP updates', 'desc' => 'Get notified when guests respond to your invitations', 'icon' => 'fa-envelope'],
-        'email_event_reminders' => ['label' => 'Event reminders', 'desc' => 'Receive reminders before your events go live', 'icon' => 'fa-calendar-days', 'soon' => true],
-        'email_payment_receipts'=> ['label' => 'Payment receipts', 'desc' => 'Email confirmation for every payment made', 'icon' => 'fa-receipt'],
-        'email_marketing'       => ['label' => 'Tips & announcements', 'desc' => 'Occasional product updates and event hosting tips', 'icon' => 'fa-bullhorn', 'soon' => true],
-        'sms_reminders'         => ['label' => 'SMS reminders', 'desc' => 'Text message reminders sent to your phone', 'icon' => 'fa-mobile-screen-button', 'soon' => true],
-        'email_contribution_updates' => ['label' => 'Contribution updates', 'desc' => 'Get notified when a guest contributes to your event', 'icon' => 'fa-hand-holding-dollar'],
+        'email_rsvp_updates'    => ['label' => 'RSVP Updates', 'desc' => 'Get notified when guests respond to your invitations', 'icon' => 'fa-envelope'],
+        'email_event_reminders' => ['label' => 'Event Reminders', 'desc' => 'Receive reminders before your events go live', 'icon' => 'fa-calendar-days', 'soon' => true],
+        'email_payment_receipts'=> ['label' => 'Payment Receipts', 'desc' => 'Email confirmation for every payment made', 'icon' => 'fa-receipt'],
+        'email_marketing'       => ['label' => 'Tips & Announcements', 'desc' => 'Occasional product updates and event hosting tips', 'icon' => 'fa-bullhorn', 'soon' => true],
+        'sms_reminders'         => ['label' => 'SMS Reminders', 'desc' => 'Text message reminders sent to your phone', 'icon' => 'fa-mobile-screen-button', 'soon' => true],
+        'email_contribution_updates' => ['label' => 'Contribution Updates', 'desc' => 'Get notified when a guest contributes to your event', 'icon' => 'fa-hand-holding-dollar'],
+        'push_rsvp_updates'     => ['label' => 'Push RSVP Updates', 'desc' => 'Push notifications on your phone when guests respond', 'icon' => 'fa-bell'],
+        'push_event_reminders'  => ['label' => 'Push Event Reminders', 'desc' => 'Push notifications on your phone before your events', 'icon' => 'fa-bell', 'soon' => true],
     ];
 @endphp
 
