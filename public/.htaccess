@@ -5,6 +5,10 @@
 
     RewriteEngine On
 
+    # Send the bare domain to www so shared links match the Android app's App Links host.
+    RewriteCond %{HTTP_HOST} ^eventhostzm\.com$ [NC]
+    RewriteRule ^(.*)$ https://www.eventhostzm.com/$1 [R=301,L]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
