@@ -558,6 +558,34 @@ delivery, API fields).
 - Guest QRs use standard error correction, so state ("Checked in", cancelled, ended) is a pill **above** the
   code and a dimmed QR, never an overlay — unlike ticket QRs, which are `ECC_HIGH` for exactly that reason
 
+### Deleted-Event Retention
+
+A deleted event is only soft-deleted and stays in "Recently deleted"; `events:purge-deleted` (daily 03:00
+Africa/Lusaka) permanently removes it once it is older than `events.retention.deleted_days`. Plan and phases:
+`plans/event-retention.md` — **Phase 1 (the purge) is built and disabled by default**; the countdown UI, the
+warning email, the launch-date grace in the UI and the Privacy copy are still planned. **Do not set
+`EVENT_TRASH_RETENTION_DAYS` in production until those ship** — the "warned first" backstop is not built yet.
+
+- Off unless `EVENT_TRASH_RETENTION_DAYS` > 0 (default 0). `EVENT_TRASH_RETENTION_STARTS_AT` (YYYY-MM-DD) is the
+  release date: anything already in the trash then is treated as deleted on that date, so it gets a full window
+  from the release. **While it is unset and trash older than the window exists the command refuses to run**
+  (exit 1, deletes nothing); `--allow-backlog` overrides it, `--dry-run` is never refused
+- **An event that has ever taken money is never purged** — `Event::hasRetainedFinancialRecords()`, the single
+  definition: ticket orders Paid / Refunded / pending / processing; contributions with a Completed or Refunded
+  payment, any `amount_paid`, or a pending payment under 7 days old (older pending contribution rows are
+  abandoned checkouts and nothing expires them). It is a different question from `hasBlockingTicketCommerce()`
+  ("is money moving right now?", which gates soft-deleting) — don't merge them
+- `Event::scheduledPurgeDate()` is pure date math (safe on a list page); `purgeAt()` is the same date or null when
+  exempt; `scopePurgeable()` selects candidates. The **exemption is re-checked per event inside
+  `EventPurgeService`'s transaction, under a row lock** — an order can settle between selecting and deleting
+- The purge detaches reviews first (`reviews.event_id` cascades — a purge would otherwise delete a featured
+  testimonial), deletes the event's `notification_logs` (they're `nullOnDelete` and would outlive their guests),
+  then `forceDelete()`s and lets the cascades run. `credit_transactions`, ticket revenue and payouts are
+  `nullOnDelete` and survive with a null event id. **Files are deleted only after the transaction commits**, and a
+  failed file delete is logged (`event.purge_file_failed`), never thrown
+- **Slugs of purged events are freed** — a new event can later take a URL that was printed on an old invitation.
+  Accepted deliberately (no tombstone table); see the plan §10
+
 ### Event Preview
 
 `GET /events/{event}/preview` (`EventPreviewController`) renders the event's real, current invitation —

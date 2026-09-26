@@ -37,6 +37,29 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Deleted-event retention
+    |--------------------------------------------------------------------------
+    |
+    | A deleted event is only soft-deleted: it sits in "Recently deleted" and can
+    | be restored. `events:purge-deleted` permanently removes it once it has been
+    | there for `deleted_days` — except events that have ever taken money, which
+    | are kept for payment records (Event::hasRetainedFinancialRecords()).
+    | 0 or blank turns purging off entirely, which is how this ships.
+    |
+    | `starts_at` is the release date. Trash older than this is treated as deleted
+    | on this date, so nothing that was already in the trash when the feature
+    | shipped is purged before starts_at + deleted_days. While it is unset and old
+    | trash exists the command refuses to run. Plan: plans/event-retention.md
+    |
+    */
+
+    'retention' => [
+        'deleted_days' => (int) env('EVENT_TRASH_RETENTION_DAYS', 0),
+        'starts_at' => env('EVENT_TRASH_RETENTION_STARTS_AT'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Contributions
     |--------------------------------------------------------------------------
     |

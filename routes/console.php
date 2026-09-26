@@ -12,6 +12,10 @@ Schedule::command('sanctum:prune-expired --hours=24')->daily();
 Schedule::command('invitation:prune-orphaned-files')->daily();
 // app.timezone is UTC; guests are in Zambia, so pin the 09:00 send to local time.
 Schedule::command('rsvp:send-reminders')->dailyAt('09:00')->timezone('Africa/Lusaka');
+// Permanently removes events deleted more than EVENT_TRASH_RETENTION_DAYS ago. A no-op while that is 0
+// (the default), and it refuses to run against old trash until EVENT_TRASH_RETENTION_STARTS_AT is set.
+// See plans/event-retention.md.
+Schedule::command('events:purge-deleted')->dailyAt('03:00')->timezone('Africa/Lusaka')->withoutOverlapping();
 Schedule::command('events:send-host-reminders')->dailyAt('09:00')->timezone('Africa/Lusaka');
 Schedule::command('events:send-whatsapp-reminders')->dailyAt('09:00')->timezone('Africa/Lusaka');
 Schedule::command('payments:poll-pending')

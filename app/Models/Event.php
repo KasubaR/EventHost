@@ -567,6 +567,141 @@ class Event extends Model
             ->exists();
     }
 
+    /** Days a pending/processing contribution payment can still be completed by a late webhook. */
+    public const CONTRIBUTION_IN_FLIGHT_DAYS = 7;
+
+    /**
+     * Whether this event has ever taken money, so that permanently deleting it
+     * would destroy a payment record the Privacy policy says we keep. This is the
+     * one definition the purge uses (plans/event-retention.md §2); it is not the
+     * same question as hasBlockingTicketCommerce(), which asks whether money is
+     * moving *right now* and gates soft-deleting.
+     *
+     * - ticket orders: Paid, Refunded (the accounting trail is the point), and
+     *   in-flight — those can still resolve to Paid, the pollers and the webhook
+     *   stay live for a trashed event. Failed/Cancelled/Expired took no money
+     * - contributions: any payment Completed or Refunded, any amount actually
+     *   paid, or a pending/processing payment recent enough to still complete.
+     *   Older pending rows are abandoned checkouts; nothing ever expires them, so
+     *   counting them would let a never-finished payment shield an event forever
+     */
+    public function hasRetainedFinancialRecords(): bool
+    {
+        $orderStatuses = [
+            ...TicketOrderStatus::inFlight(),
+            TicketOrderStatus::Paid,
+            TicketOrderStatus::Refunded,
+        ];
+
+        if ($this->ticketOrders()->whereIn('status', $orderStatuses)->exists()) {
+            return true;
+        }
+
+        return $this->eventContributions()
+            ->where(function (Builder $contribution): void {
+                $contribution
+                    ->where('amount_paid', '>', 0)
+                    ->orWhereHas('payments', function (Builder $payment): void {
+                        $payment
+                            ->whereIn('status', ['completed', 'refunded'])
+                            ->orWhere(function (Builder $recent): void {
+                                $recent
+                                    ->whereIn('status', ['pending', 'processing'])
+                                    ->where('created_at', '>=', now()->subDays(self::CONTRIBUTION_IN_FLIGHT_DAYS));
+                            });
+                    });
+            })
+            ->exists();
+    }
+
+    /** Days a deleted event stays restorable; 0 means purging is off. */
+    public static function retentionDays(): int
+    {
+        return max(0, (int) config('events.retention.deleted_days', 0));
+    }
+
+    /**
+     * The release date from which trash is counted, or null when unset or not a
+     * valid date. An unparseable value is deliberately treated as unset — the
+     * purge command then refuses while old trash exists, which is the safe way to
+     * fail.
+     */
+    public static function retentionStartsAt(): ?Carbon
+    {
+        $value = config('events.retention.starts_at');
+
+        if (! is_string($value) || trim($value) === '') {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($value)->startOfDay();
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * When this deleted event becomes eligible for permanent deletion — pure date
+     * arithmetic, no queries, so it is cheap on a list page. deleted_at + N days,
+     * pushed out to starts_at + N days for anything deleted before the release
+     * (plans/event-retention.md §5). Null when the event is not deleted or
+     * purging is off. Says nothing about exemption: see purgeAt().
+     */
+    public function scheduledPurgeDate(): ?Carbon
+    {
+        $days = self::retentionDays();
+
+        if ($days < 1 || $this->deleted_at === null) {
+            return null;
+        }
+
+        $date = $this->deleted_at->copy()->addDays($days);
+        $start = self::retentionStartsAt();
+
+        if ($start !== null && $date->lt($floor = $start->copy()->addDays($days))) {
+            return $floor;
+        }
+
+        return $date;
+    }
+
+    /**
+     * The date this event will actually be permanently deleted, or null if it never
+     * will be: not deleted, purging off, or it has taken money. The UI countdown
+     * and the purge both read this so the two cannot disagree.
+     */
+    public function purgeAt(): ?Carbon
+    {
+        $date = $this->scheduledPurgeDate();
+
+        return $date !== null && ! $this->hasRetainedFinancialRecords() ? $date : null;
+    }
+
+    /**
+     * Deleted events whose retention window has run out. Does not filter the
+     * financial exemption in SQL — the purge re-checks that per event, under a row
+     * lock, because an order can settle between selecting and deleting.
+     * Use as Event::onlyTrashed()->purgeable().
+     *
+     * @param  Builder<Event>  $query
+     * @return Builder<Event>
+     */
+    public function scopePurgeable(Builder $query): Builder
+    {
+        $days = self::retentionDays();
+        $cutoff = now()->subDays($days);
+        $start = self::retentionStartsAt();
+
+        // Eligible when deleted_at <= now-N and starts_at <= now-N; the second half
+        // is what stops pre-release trash being purged early.
+        if ($days < 1 || ($start !== null && $start->gt($cutoff))) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereNotNull('deleted_at')->where('deleted_at', '<=', $cutoff);
+    }
+
     public function canSubmitTicketing(): bool
     {
         return $this->isTicketed()

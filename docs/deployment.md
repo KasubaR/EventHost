@@ -68,6 +68,19 @@ A missing manifest is the `Vite manifest not found at: .../public/build/manifest
 - [ ] Confirm queue workers are alive: `php artisan queue:monitor` or check Supervisor status
 - [ ] If migrations ran, spot-check one changed table in `php artisan tinker` or phpMyAdmin
 
+## 3b. Deleted-event purging (off by default — read before enabling)
+
+`events:purge-deleted` runs daily but does nothing while `EVENT_TRASH_RETENTION_DAYS=0` (the default). It
+**permanently deletes** events that have been in Recently deleted longer than that many days. Do not enable it
+until the countdown UI, the warning email and the Privacy-policy wording from `plans/event-retention.md` have
+shipped. To go live, in order:
+
+1. Set `EVENT_TRASH_RETENTION_STARTS_AT=YYYY-MM-DD` (the release date) in `.env`
+2. `php artisan events:purge-deleted --dry-run` — read what it reports (it is never refused, and deletes nothing)
+3. Set `EVENT_TRASH_RETENTION_DAYS=30` and `php artisan config:cache`
+
+With days > 0 and the date unset, the command refuses to run while old trash exists — deliberately.
+
 ## 4. If something in this checklist was skipped and a page is now 500ing
 
 `Target class [...] does not exist` or `Class "..." not found` in `storage/logs/laravel.log` almost
