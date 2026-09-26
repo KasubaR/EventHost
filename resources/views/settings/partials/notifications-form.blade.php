@@ -5,7 +5,7 @@
     // here instead of presenting a toggle that silently does nothing.
     $prefLabels = [
         'email_rsvp_updates'    => ['label' => 'RSVP Updates', 'desc' => 'Get notified when guests respond to your invitations', 'icon' => 'fa-envelope'],
-        'email_event_reminders' => ['label' => 'Event Reminders', 'desc' => 'Receive reminders before your events go live', 'icon' => 'fa-calendar-days', 'soon' => true],
+        'email_event_reminders' => ['label' => 'Event Reminders', 'desc' => 'Get an email 7 days and 1 day before your events', 'icon' => 'fa-calendar-days'],
         'email_payment_receipts'=> ['label' => 'Payment Receipts', 'desc' => 'Email confirmation for every payment made', 'icon' => 'fa-receipt'],
         'email_marketing'       => ['label' => 'Tips & Announcements', 'desc' => 'Occasional product updates and event hosting tips', 'icon' => 'fa-bullhorn', 'soon' => true],
         'sms_reminders'         => ['label' => 'SMS Reminders', 'desc' => 'Text message reminders sent to your phone', 'icon' => 'fa-mobile-screen-button', 'soon' => true],

@@ -182,6 +182,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return (bool) ($this->notification_preferences['email_rsvp_updates'] ?? true);
     }
 
+    public function wantsEmailEventReminders(): bool
+    {
+        return (bool) ($this->notification_preferences['email_event_reminders'] ?? true);
+    }
+
     public function wantsEmailContributionUpdates(): bool
     {
         return (bool) ($this->notification_preferences['email_contribution_updates'] ?? true);

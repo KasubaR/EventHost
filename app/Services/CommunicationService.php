@@ -12,6 +12,7 @@ use App\Models\Rsvp;
 use App\Models\User;
 use App\Notifications\ContributionReceiptNotification;
 use App\Notifications\EventUpdatedNotification;
+use App\Notifications\HostEventReminderNotification;
 use App\Notifications\NewContributionReceivedNotification;
 use App\Notifications\NewRsvpReceivedNotification;
 use App\Notifications\RsvpConfirmationNotification;
@@ -177,6 +178,37 @@ class CommunicationService
         try {
             $host->notify(new NewContributionReceivedNotification($contribution, $payment));
             $this->markSent($log);
+        } catch (\Throwable $e) {
+            $this->markFailed($log, $e);
+            throw $e;
+        }
+    }
+
+    /**
+     * Scheduled email to the event owner before the event (7 / 1 days). One
+     * per event per lead time — the idempotency key makes a re-run of the
+     * scheduler, or a second worker, a no-op. Returns whether one was sent.
+     */
+    public function notifyHostEventReminder(User $host, Event $event, int $daysUntilEvent): bool
+    {
+        if (! $host->wantsEmailEventReminders()) {
+            return false;
+        }
+
+        $idempotencyKey = sprintf('host-event-reminder:%d:%d', $event->id, $daysUntilEvent);
+        $log = $this->startLog($event, null, 'email', 'host_event_reminder', $idempotencyKey, [
+            'host_user_id' => $host->id,
+            'days_until_event' => $daysUntilEvent,
+        ]);
+        if ($log === null) {
+            return false;
+        }
+
+        try {
+            $host->notify(new HostEventReminderNotification($event, $daysUntilEvent));
+            $this->markSent($log);
+
+            return true;
         } catch (\Throwable $e) {
             $this->markFailed($log, $e);
             throw $e;

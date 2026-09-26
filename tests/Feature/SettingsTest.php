@@ -187,7 +187,7 @@ class SettingsTest extends TestCase
         $response = $this->actingAs($user)->get('/settings/notifications');
 
         $response->assertSee('Coming soon');
-        $response->assertSeeInOrder(['RSVP Updates', 'Event Reminders', 'Coming soon']);
+        $response->assertSeeInOrder(['Tips & Announcements', 'Coming soon']);
     }
 
     public function test_invalid_zambian_phone_number_is_rejected_on_profile_update(): void

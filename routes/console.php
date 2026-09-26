@@ -12,6 +12,7 @@ Schedule::command('sanctum:prune-expired --hours=24')->daily();
 Schedule::command('invitation:prune-orphaned-files')->daily();
 // app.timezone is UTC; guests are in Zambia, so pin the 09:00 send to local time.
 Schedule::command('rsvp:send-reminders')->dailyAt('09:00')->timezone('Africa/Lusaka');
+Schedule::command('events:send-host-reminders')->dailyAt('09:00')->timezone('Africa/Lusaka');
 Schedule::command('events:send-whatsapp-reminders')->dailyAt('09:00')->timezone('Africa/Lusaka');
 Schedule::command('payments:poll-pending')
     ->everyFiveMinutes()
