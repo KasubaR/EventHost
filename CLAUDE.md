@@ -67,6 +67,7 @@ Laravel 12 application. Auth via Laravel Breeze (Blade stack). No Alpine.js — 
 | `public/css/media-uploader.css` | Upload-on-pick tiles (`.mup-*`) — pair with `js/media-uploader.js`; pushed by `events/edit.blade.php` |
 | `public/css/ticket-checkout.css` | Buyer-facing ticket flow (`.tkc-*`) — picker, checkout, order status, `/t/{token}` ticket page |
 | `public/css/ticket-event-public.css` | Fixed public landing page for ticketed events (`.tev-*`) — hero/about/location layout only; ticket-row text and card chrome reuse `.tkc-*` from `ticket-checkout.css` (loaded alongside) and the generic `.evt-public-*` shell from `events-public.css`. Pushed by `events/tickets/landing.blade.php` and `events/preview.blade.php` when the event is ticketed |
+| `public/css/guest-pass.css` | Guest invitation pass card (`.gpass-*`) — pushed by `rsvp/partials/pass-card.blade.php` itself (`@once` + `@push('head')`), so any page that includes the card gets it. Plan: `plans/invitation-pass-card.md` |
 | `public/css/contributions.css` | Contribute page, pay-installment status page (`.ctb-*`) and the invitation-page contribute banner — pairs with `ticket-checkout.css` (loaded alongside), which supplies the shared `.tkc-*` form/checkout chrome. Pushed by `events/contribute.blade.php`, `events/contribution-status.blade.php`, and by `events/public.blade.php` when the event accepts contributions |
 
 Layouts: `layouts/site.blade.php` loads `global.css` + `account-components.css` + Vite; `layouts/app.blade.php` adds `dashboard-shell.css` + `forms-app.css`. Tailwind ships via Vite (`resources/css/app.css`) alongside these files.
@@ -507,6 +508,55 @@ spends an event credit; unlike one, it's priced with a one-off admin-set quote i
   it. The route and every direct link into it (the Enterprise custom-quote banner on
   `public-dashboard.blade.php`, the remove-branding and public-registration checkout pages) are untouched.
   The Private portal keeps the link — Base/Pro/Pro+ subscriptions are still sold there
+
+### Guest Invitation Pass (private events)
+
+An accepted guest's entry pass is a themed invitation card, not a bare QR. Plan and phases:
+`plans/invitation-pass-card.md` — all five phases are built (card + page, PDF, PNG image, email/WhatsApp
+delivery, API fields).
+
+- `App\Support\GuestPassCard` is the single source of what the card says (event name as title, date/time, venue,
+  guest, plus one, table, state, theme). Web, and later PDF and PNG, all render from it. `fingerprint()` is the
+  future cache key — anything printed on the card must be in it
+- Eligibility is unchanged and **not** decided by the card: `Guest::hasEntryPassFor()`. The QR still encodes
+  `Guest::checkInQrUrl()`
+- `rsvp/partials/pass-card.blade.php` is the card; `rsvp/partials/entry-pass.blade.php` (the panel included by
+  `token-show`, `closed`, `thank-you` and the invitation `rsvp` section) wraps it. `GET /rsvp/{token}/pass`
+  (`RsvpController::pass()`) is the standalone page; an ineligible guest is redirected to `rsvp.token.show`,
+  not 404'd
+- Theme colours come from the merged invitation theme, are validated as `#rrggbb` (they land in an inline
+  `style`) and fall back to the platform colours when the header would be unreadable or the template can't be
+  resolved — a pass never 500s over paint
+- **PDF:** `GET /rsvp/{token}/pass/download` (`RsvpController::passDownload()`, `throttle:guest-pass-download`)
+  renders through `GuestPassPdfService` — a twin of `TicketPdfService`. The PDF omits the cover image (covers
+  are WebP, which DomPDF can't embed) and needs literal hex colours and tables, not CSS variables or flexbox
+- **Image:** `GET /rsvp/{token}/pass.png` (`passImage()`, `?download=1` for a filename) renders through
+  `GuestPassImageService`, pure GD: laid out in px, drawn at 2× and downsampled (GD doesn't antialias shapes),
+  QR pasted after the downsample so it stays sharp. GD font sizes are points at 96 dpi, hence the `0.75`.
+  Uses `resources/fonts/DejaVuSans{,-Bold}.ttf` and `resources/images/eventhost-icon.png` (the brand icon
+  pre-rendered from the SVG — GD can't rasterise SVG; re-render it if the icon changes). If it can't draw
+  (no FreeType, font missing) the route serves the plain QR PNG uncached instead of failing
+- **Caching (both formats):** `GuestPassFileCache` keys files on `GuestPassCard::fingerprint()` —
+  `{root}/{token}/{fingerprint}.{ext}` — because, unlike a ticket, what's printed can change after the first
+  render. Writing a new render deletes that guest's older file, so a folder holds one file, not one per edit.
+  Bump a root's version in `GuestPassFileCache::PDF` / `::IMAGE` when that renderer's *layout* changes (the
+  fingerprint covers content, not layout). `invitation:prune-orphaned-files` sweeps folders whose token no
+  longer belongs to a guest. Anything printed on the card must be in the fingerprint
+- **Delivery:** `RsvpConfirmationNotification` attaches the PDF and the card PNG (each independently — a
+  failed renderer is reported and skipped; only if neither works does it fall back to the bare QR) and its
+  button is "View your pass". WhatsApp sends the card PNG via `Guest::entryPassPngUrl()` (repointed at
+  `rsvp.token.pass-image`) with `Guest::passPageUrl()` in the caption. `pass.png` is **deliberately
+  unthrottled** — Twilio fetches every guest's image from a few IPs, so a per-IP limit would fail deliveries;
+  the PDF keeps `throttle:guest-pass-download`. The PDF must stay **one page** (title size scales with length,
+  free-text fields are capped) — a second page strands the QR; `GuestPassPdfTest` guards it
+- **API:** `RsvpResource::entry_pass` keeps `available` / `check_in_qr_url` unchanged (the Android contract is
+  additive-only) and adds `pass_url`, `pdf_url`, `image_url` and a `card` object built from `GuestPassCard`,
+  all null when there is no pass. Add new card fields to `GuestPassCard` first and let the API read them from
+  there, so web, PDF, image and API can't drift
+- **Party size:** an invitation RSVP is only ever 1 or 2, so the card shows "Guest + 1" (`partyLabel()`) when a
+  plus-one is coming and omits the row for a solo guest — there is no "Admits" row
+- Guest QRs use standard error correction, so state ("Checked in", cancelled, ended) is a pill **above** the
+  code and a dimmed QR, never an overlay — unlike ticket QRs, which are `ECC_HIGH` for exactly that reason
 
 ### Event Preview
 
