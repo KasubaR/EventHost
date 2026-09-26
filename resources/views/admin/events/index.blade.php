@@ -53,7 +53,16 @@
             <tbody>
             @forelse ($events as $event)
                 <tr>
-                    <td>{{ $event->name }}</td>
+                    <td>
+                        {{ $event->name }}
+                        @if ($event->trashed())
+                            @php $retention = \App\Support\EventRetentionNotice::for($event); @endphp
+                            <div class="admin-muted">
+                                <i class="fa-solid {{ $retention?->isKept() ? 'fa-lock' : 'fa-trash' }}" aria-hidden="true"></i>
+                                Deleted {{ $event->deleted_at->format('M j, Y') }}@if ($retention) · {{ $retention->label }}@endif
+                            </div>
+                        @endif
+                    </td>
                     <td>{{ $event->user?->email ?? '—' }}</td>
                     <td>{{ $event->audience->label() }}</td>
                     <td>{{ \App\Models\Event::TYPE_LABELS[$event->event_type] ?? $event->event_type }}</td>

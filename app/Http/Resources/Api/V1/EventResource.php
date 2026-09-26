@@ -4,6 +4,7 @@ namespace App\Http\Resources\Api\V1;
 
 use App\Models\Event;
 use App\Support\EventAccess;
+use App\Support\EventRetentionNotice;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -74,6 +75,7 @@ class EventResource extends JsonResource
             'publish_costs_credit' => ! $this->isTicketed() && ! $this->is_published && ! $this->hasConsumedPublishCredit(),
             'created_at' => $this->created_at?->toIso8601String(),
             'deleted_at' => $this->deleted_at?->toIso8601String(),
+            ...EventRetentionNotice::apiFields($this->resource),
             // Android scanner: keep the camera off without probing confirm when closed.
             'is_check_in_open' => $this->isCheckInOpen(),
             'check_in_closed_reason' => $this->isCheckInOpen() ? null : $this->checkInClosedReason(),

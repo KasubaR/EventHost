@@ -473,7 +473,8 @@ class EventController extends Controller
             }
 
             // Soft-delete only — keep cover/invitation media so restore works.
-            // A later prune job can hard-delete after a retention window.
+            // events:purge-deleted hard-deletes it once the retention window is over
+            // (plans/event-retention.md) — unless it has taken money, in which case it is kept.
             $locked->delete();
         });
 

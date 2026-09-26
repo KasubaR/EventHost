@@ -176,7 +176,8 @@ class EventController extends Controller
         $eventId = $event->id;
         $eventName = $event->name;
 
-        // Soft-delete only — keep media so restore works.
+        // Soft-delete only — keep media so restore works. events:purge-deleted removes it for
+        // good after the retention window (plans/event-retention.md), unless it has taken money.
         $event->delete();
 
         AdminActivity::log('Admin deleted event', [

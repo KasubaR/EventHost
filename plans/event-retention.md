@@ -1,7 +1,8 @@
 # Feature Plan: Permanent deletion of events 30 days after they are deleted
 
-Status: **In progress** — Phase 1 (the purge) built, disabled by default; Phases 2, 2c and 3 planned. All open
-questions are resolved (§10). **Do not enable purging until 2, 2c and 3 have shipped.**
+Status: **In progress** — Phases 1 (the purge) and 2 (countdown, API, admin) built, purging disabled by default;
+Phases 2c and 3 planned. All open questions are resolved (§10). **Do not enable purging until 2c and 3 have
+shipped.**
 
 Today "delete" on an event is a soft delete and nothing ever comes back to finish the job. A deleted event
 sits in **Recently deleted** forever, with its guest list, RSVPs, uploaded media and (for ticketed events)
@@ -172,6 +173,31 @@ just catches up. The warning runs first so the purge's "warned first" check (ste
 ---
 
 ## 4. Phase 2 — telling the user
+
+**Built.** As planned, with these specifics:
+
+- **`App\Support\EventRetentionNotice`** is the one place that words and dates it (`for($event)` → countdown or
+  kept, null when the event isn't deleted or purging is off; `apiFields()` for the API). The host list, both
+  admin pages and both API resources read it, so they cannot disagree. The label rounds days **up**, so "1 day"
+  means within the next 24 hours and it never reads 0 while the event is still restorable; past due reads
+  "Permanently deleted soon" (the next 03:00 run takes it)
+- **Nothing changes while purging is off** (`EVENT_TRASH_RETENTION_DAYS=0`): no countdown, no section note, and
+  the delete flash keeps its old wording. The UI only starts talking about a window when there is one
+- **Host list** (both portals share `my-events-groups.blade.php`): a countdown line on each card, or a lock and
+  "Kept for payment records" for an exempt one, plus a note under the heading that also tells the host that
+  events with ticket sales or contribution payments are kept. The delete flash gains "within 30 days". (Blade
+  does not treat `@if` glued to a word as a directive, so the flash uses an inline expression)
+- **API:** both `EventListResource` and `EventResource` gain `purge_at` (ISO 8601, null when it will never be
+  purged) and `retained_for_records` (bool) — added beyond the plan's single field because a client cannot tell
+  "purging is off" from "kept for records" from `purge_at: null` alone. Additive only. No query runs for a live event
+- **Admin:** the index now marks deleted events at all (it listed them with **no** indicator before) with the
+  date and the notice; the show page's Deleted callout states the purge date, or "Retained: payment records"
+- Cost: an exempt-check is two small `exists` queries per *deleted* event shown, and lists page at 10 (admin 20,
+  where only deleted rows pay it)
+- Tests: `tests/Feature/EventRetentionNoticeTest.php` (11). Checked in the browser on both portals against a
+  throwaway database
+- The launch-date grace (§5) needed no new code here: `scheduledPurgeDate()` from Phase 1 already pushes
+  pre-release trash out to `starts_at + N`, and the card shows that date
 
 - **Recently deleted** (`events/partials/my-events-groups.blade.php`, used by both portals): each card's meta
   becomes *"Deleted 3 weeks ago · permanently removed in 9 days"* from `purgeAt()`. An exempt event shows

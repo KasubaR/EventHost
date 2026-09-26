@@ -46,6 +46,12 @@
             <h2 class="evt-group-title"><i class="fa-solid fa-trash-can"></i> Recently deleted</h2>
             <span class="evt-group-count">{{ $deleted->total() }}</span>
         </div>
+        @if (\App\Models\Event::retentionDays() > 0)
+            <p class="evt-group-note">
+                Deleted events can be restored for {{ \App\Models\Event::retentionDays() }} days, then they are removed permanently.
+                Events with ticket sales or contribution payments are kept for our payment records.
+            </p>
+        @endif
         <div class="evt-list">
             @foreach ($deleted as $event)
                 <article class="evt-card">
@@ -57,6 +63,13 @@
                                 Deleted {{ $event->deleted_at?->diffForHumans() }}
                                 · <code>/e/{{ $event->slug }}</code>
                             </p>
+                            @php $retention = \App\Support\EventRetentionNotice::for($event); @endphp
+                            @if ($retention)
+                                <p class="evt-card-retention evt-card-retention--{{ $retention->state }}">
+                                    <i class="fa-solid {{ $retention->isKept() ? 'fa-lock' : 'fa-hourglass-half' }}" aria-hidden="true"></i>
+                                    {{ $retention->label }}
+                                </p>
+                            @endif
                         </div>
                     </div>
                     <div class="evt-card-actions">

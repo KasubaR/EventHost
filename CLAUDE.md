@@ -562,8 +562,8 @@ delivery, API fields).
 
 A deleted event is only soft-deleted and stays in "Recently deleted"; `events:purge-deleted` (daily 03:00
 Africa/Lusaka) permanently removes it once it is older than `events.retention.deleted_days`. Plan and phases:
-`plans/event-retention.md` — **Phase 1 (the purge) is built and disabled by default**; the countdown UI, the
-warning email, the launch-date grace in the UI and the Privacy copy are still planned. **Do not set
+`plans/event-retention.md` — **Phases 1 (the purge) and 2 (countdown UI, API field, admin display) are built;
+purging is disabled by default**; the warning email and the Privacy copy are still planned. **Do not set
 `EVENT_TRASH_RETENTION_DAYS` in production until those ship** — the "warned first" backstop is not built yet.
 
 - Off unless `EVENT_TRASH_RETENTION_DAYS` > 0 (default 0). `EVENT_TRASH_RETENTION_STARTS_AT` (YYYY-MM-DD) is the
@@ -583,6 +583,11 @@ warning email, the launch-date grace in the UI and the Privacy copy are still pl
   then `forceDelete()`s and lets the cascades run. `credit_transactions`, ticket revenue and payouts are
   `nullOnDelete` and survive with a null event id. **Files are deleted only after the transaction commits**, and a
   failed file delete is logged (`event.purge_file_failed`), never thrown
+- **What people are told** comes from `App\Support\EventRetentionNotice` and nowhere else: the host's Recently
+  deleted list (countdown, or "Kept for payment records"), both admin event pages, and the additive `purge_at` /
+  `retained_for_records` fields on `EventListResource` and `EventResource`. Days round **up** so it never says 0
+  while restorable. **Nothing is shown while purging is off** — the UI only mentions a window when one exists.
+  Add wording there, not in a view
 - **Slugs of purged events are freed** — a new event can later take a URL that was printed on an old invitation.
   Accepted deliberately (no tombstone table); see the plan §10
 

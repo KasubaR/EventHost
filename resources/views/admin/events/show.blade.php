@@ -90,6 +90,12 @@
                     <div>
                         <p class="admin-callout-kicker">Deleted</p>
                         <p class="admin-callout-body">Guests see “Invitation no longer available”. The slug <code>/e/{{ $ev->slug }}</code> stays reserved.</p>
+                        @php $retention = \App\Support\EventRetentionNotice::for($ev); @endphp
+                        @if ($retention?->isKept())
+                            <p class="admin-callout-body"><strong>Retained: payment records.</strong> This event has taken money (ticket orders or contribution payments), so it is never permanently deleted. It can still be restored.</p>
+                        @elseif ($retention)
+                            <p class="admin-callout-body"><strong>{{ $retention->label }}</strong> — on {{ $retention->purgeAt->format('M j, Y') }}, together with its guest list, RSVPs and uploaded media. Restore it before then to keep it.</p>
+                        @endif
                         @if(auth('admin')->user()?->can('events.delete'))
                             <div class="admin-callout-actions">
                                 <form method="post" action="{{ route('admin.events.restore', $ev) }}">

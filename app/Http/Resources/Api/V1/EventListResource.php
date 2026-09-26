@@ -4,6 +4,7 @@ namespace App\Http\Resources\Api\V1;
 
 use App\Models\Event;
 use App\Support\EventAccess;
+use App\Support\EventRetentionNotice;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -39,6 +40,9 @@ class EventListResource extends JsonResource
             'is_cancelled' => $this->isCancelled(),
             'is_invitation_paused' => $this->isInvitationPaused(),
             'deleted_at' => $this->deleted_at?->toIso8601String(),
+            // When a deleted event is permanently removed (null: never — live, purging off, or
+            // kept for payment records, which retained_for_records distinguishes). Additive.
+            ...EventRetentionNotice::apiFields($this->resource),
             // Android scanner: keep the camera off without probing confirm when closed.
             'is_check_in_open' => $this->isCheckInOpen(),
             'check_in_closed_reason' => $this->isCheckInOpen() ? null : $this->checkInClosedReason(),
