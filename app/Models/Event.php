@@ -570,6 +570,17 @@ class Event extends Model
     /** Days a pending/processing contribution payment can still be completed by a late webhook. */
     public const CONTRIBUTION_IN_FLIGHT_DAYS = 7;
 
+    /** How far ahead of the purge date the host is warned (events:warn-pending-purge). */
+    public const PURGE_WARNING_DAYS = 7;
+
+    /**
+     * The least notice a host must have had before the purge will delete. Normally the
+     * warning goes out a week early; this only bites when a run was missed or the
+     * feature shipped late, so an already-overdue event is warned first and then waits
+     * a day rather than being deleted in the same night's run.
+     */
+    public const PURGE_MIN_NOTICE_HOURS = 24;
+
     /**
      * Whether this event has ever taken money, so that permanently deleting it
      * would destroy a payment record the Privacy policy says we keep. This is the
@@ -612,6 +623,17 @@ class Event extends Model
                     });
             })
             ->exists();
+    }
+
+    /**
+     * Idempotency key of this deletion's purge warning. Keyed on deleted_at so a
+     * restore followed by a second delete is a new deletion and is warned about again.
+     * Shared by the warning command, the mailer and the purge's warned-first check so
+     * they cannot drift apart.
+     */
+    public function purgeWarningKey(): string
+    {
+        return 'event-purge-warning:'.$this->id.':'.($this->deleted_at?->timestamp ?? 0);
     }
 
     /** Days a deleted event stays restorable; 0 means purging is off. */
@@ -679,18 +701,19 @@ class Event extends Model
     }
 
     /**
-     * Deleted events whose retention window has run out. Does not filter the
-     * financial exemption in SQL — the purge re-checks that per event, under a row
-     * lock, because an order can settle between selecting and deleting.
+     * Deleted events whose retention window has run out — or, with $withinDays, will
+     * have within that many days (the warning email looks a week ahead). Does not
+     * filter the financial exemption in SQL — the purge re-checks that per event,
+     * under a row lock, because an order can settle between selecting and deleting.
      * Use as Event::onlyTrashed()->purgeable().
      *
      * @param  Builder<Event>  $query
      * @return Builder<Event>
      */
-    public function scopePurgeable(Builder $query): Builder
+    public function scopePurgeable(Builder $query, int $withinDays = 0): Builder
     {
         $days = self::retentionDays();
-        $cutoff = now()->subDays($days);
+        $cutoff = now()->addDays($withinDays)->subDays($days);
         $start = self::retentionStartsAt();
 
         // Eligible when deleted_at <= now-N and starts_at <= now-N; the second half

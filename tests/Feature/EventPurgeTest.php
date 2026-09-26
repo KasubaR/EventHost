@@ -43,16 +43,32 @@ class EventPurgeTest extends TestCase
         ]);
     }
 
-    /** A deleted event, with deleted_at set directly so the age is exact. */
-    private function trashed(int $daysAgo, array $attributes = [], bool $ticketed = false): Event
+    /**
+     * A deleted event, with deleted_at set directly so the age is exact. Warned about two
+     * days ago by default — the purge refuses anything unwarned (EventPurgeWarningTest
+     * covers that), so the tests in this file that are about something else start warned.
+     */
+    private function trashed(int $daysAgo, array $attributes = [], bool $ticketed = false, bool $warned = true): Event
     {
         $factory = $ticketed ? Event::factory()->ticketed() : Event::factory();
         $event = $factory->for(User::factory()->create())->create($attributes);
 
         $event->delete();
         Event::withTrashed()->whereKey($event->id)->update(['deleted_at' => now()->subDays($daysAgo)]);
+        $event = Event::withTrashed()->findOrFail($event->id);
 
-        return Event::withTrashed()->findOrFail($event->id);
+        if ($warned) {
+            $log = NotificationLog::query()->create([
+                'event_id' => $event->id,
+                'channel' => 'email',
+                'type' => 'event_purge_warning',
+                'status' => NotificationLog::STATUS_SENT,
+                'idempotency_key' => $event->purgeWarningKey(),
+            ]);
+            NotificationLog::query()->whereKey($log->id)->update(['created_at' => now()->subDays(2)]);
+        }
+
+        return $event;
     }
 
     private function gone(Event $event): bool

@@ -55,6 +55,13 @@ class EventPurgeService
                     return PurgeOutcome::skipped('kept for payment records');
                 }
 
+                // Never unannounced, whatever the schedule or a late deploy did: the host
+                // must have been emailed about this deletion, and long enough ago to act
+                // on it. events:warn-pending-purge is what writes that record.
+                if (! $this->hasBeenWarned($event)) {
+                    return PurgeOutcome::skipped('not yet warned');
+                }
+
                 $counts = [
                     'guests' => $event->guests()->count(),
                     'rsvps' => $event->rsvps()->count(),
@@ -100,6 +107,21 @@ class EventPurgeService
         }
 
         return $outcome;
+    }
+
+    /**
+     * Whether this deletion has been warned about, at least Event::PURGE_MIN_NOTICE_HOURS
+     * ago. A pending log counts: the warning is queued the moment it is logged. A failed
+     * one does not — the host was not told. Keyed on deleted_at, so a restore followed by
+     * a second delete needs a fresh warning.
+     */
+    private function hasBeenWarned(Event $event): bool
+    {
+        return NotificationLog::query()
+            ->where('idempotency_key', $event->purgeWarningKey())
+            ->whereIn('status', [NotificationLog::STATUS_PENDING, NotificationLog::STATUS_SENT])
+            ->where('created_at', '<=', now()->subHours(Event::PURGE_MIN_NOTICE_HOURS))
+            ->exists();
     }
 
     /**

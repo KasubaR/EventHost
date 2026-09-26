@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\EventAudience;
 use App\Enums\RsvpStatus;
 use App\Models\ContributionPayment;
 use App\Models\Event;
@@ -13,6 +14,7 @@ use App\Models\User;
 use App\Notifications\ContributionReceiptNotification;
 use App\Notifications\EventUpdatedNotification;
 use App\Notifications\HostEventReminderNotification;
+use App\Notifications\HostPurgeWarningNotification;
 use App\Notifications\NewContributionReceivedNotification;
 use App\Notifications\NewRsvpReceivedNotification;
 use App\Notifications\RsvpConfirmationNotification;
@@ -182,6 +184,70 @@ class CommunicationService
             $this->markFailed($log, $e);
             throw $e;
         }
+    }
+
+    /**
+     * One digest email telling a host which of their deleted events are about to be
+     * permanently removed (plans/event-retention.md §4b). Each event gets its own
+     * NotificationLog row, keyed on Event::purgeWarningKey(): that is what makes a
+     * re-run a no-op, what lets a restore-then-delete-again be warned about afresh,
+     * and what the purge itself checks before it will delete anything. Events already
+     * warned about are dropped from the digest. Returns how many were included.
+     *
+     * @param  iterable<Event>  $events  Deleted events with a purge date, all owned by $host
+     */
+    public function sendPurgeWarning(User $host, iterable $events): int
+    {
+        $logs = [];
+        $items = [];
+
+        foreach ($events as $event) {
+            $purgeAt = $event->scheduledPurgeDate();
+            if ($purgeAt === null) {
+                continue;
+            }
+
+            $log = $this->startLog($event, null, 'email', 'event_purge_warning', $event->purgeWarningKey(), [
+                'host_user_id' => $host->id,
+                'purge_at' => $purgeAt->toIso8601String(),
+            ]);
+            if ($log === null) {
+                continue;
+            }
+
+            $logs[] = $log;
+            $items[] = [
+                'purge_at' => $purgeAt,
+                'name' => (string) $event->name,
+                'deleted_on' => $event->deleted_at->format('M j, Y'),
+                'purge_on' => $purgeAt->format('M j, Y'),
+                'list_url' => route($event->audience === EventAudience::Public ? 'public-events.index' : 'events.index', absolute: true),
+            ];
+        }
+
+        if ($items === []) {
+            return 0;
+        }
+
+        // Soonest first, so the subject and the button lead with the most urgent one.
+        usort($items, fn (array $a, array $b): int => $a['purge_at'] <=> $b['purge_at']);
+        $items = array_map(fn (array $item): array => array_diff_key($item, ['purge_at' => true]), $items);
+
+        try {
+            $host->notify(new HostPurgeWarningNotification($items));
+
+            foreach ($logs as $log) {
+                $this->markSent($log);
+            }
+        } catch (\Throwable $e) {
+            foreach ($logs as $log) {
+                $this->markFailed($log, $e);
+            }
+
+            throw $e;
+        }
+
+        return count($items);
     }
 
     /**

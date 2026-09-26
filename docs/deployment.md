@@ -72,12 +72,18 @@ A missing manifest is the `Vite manifest not found at: .../public/build/manifest
 
 `events:purge-deleted` runs daily but does nothing while `EVENT_TRASH_RETENTION_DAYS=0` (the default). It
 **permanently deletes** events that have been in Recently deleted longer than that many days. Do not enable it
-until the countdown UI, the warning email and the Privacy-policy wording from `plans/event-retention.md` have
-shipped. To go live, in order:
+until the Privacy-policy wording from `plans/event-retention.md` (Phase 3) has shipped — the countdown UI and the
+warning email are already built. To go live, in order:
 
 1. Set `EVENT_TRASH_RETENTION_STARTS_AT=YYYY-MM-DD` (the release date) in `.env`
-2. `php artisan events:purge-deleted --dry-run` — read what it reports (it is never refused, and deletes nothing)
-3. Set `EVENT_TRASH_RETENTION_DAYS=30` and `php artisan config:cache`
+2. Set `EVENT_TRASH_RETENTION_DAYS=30` and `php artisan config:cache`
+3. `php artisan events:warn-pending-purge --dry-run` — lists who would be emailed about which events; nothing is sent
+4. The scheduler now does the rest: each night it emails hosts a week before removal (02:30) and then purges (03:00).
+   `events:purge-deleted` only deletes an event whose host was warned **at least 24 hours earlier**, so it will
+   correctly report nothing purgeable until the first warnings have gone out; `events:purge-deleted --dry-run`
+   is never refused and shows what it would take
+
+A suspended host, or one with no email, is never warned — and their deleted events are therefore never purged.
 
 With days > 0 and the date unset, the command refuses to run while old trash exists — deliberately.
 

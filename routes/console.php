@@ -15,6 +15,8 @@ Schedule::command('rsvp:send-reminders')->dailyAt('09:00')->timezone('Africa/Lus
 // Permanently removes events deleted more than EVENT_TRASH_RETENTION_DAYS ago. A no-op while that is 0
 // (the default), and it refuses to run against old trash until EVENT_TRASH_RETENTION_STARTS_AT is set.
 // See plans/event-retention.md.
+// The warning runs first: the purge will not delete an event that has no warning on record.
+Schedule::command('events:warn-pending-purge')->dailyAt('02:30')->timezone('Africa/Lusaka')->withoutOverlapping();
 Schedule::command('events:purge-deleted')->dailyAt('03:00')->timezone('Africa/Lusaka')->withoutOverlapping();
 Schedule::command('events:send-host-reminders')->dailyAt('09:00')->timezone('Africa/Lusaka');
 Schedule::command('events:send-whatsapp-reminders')->dailyAt('09:00')->timezone('Africa/Lusaka');

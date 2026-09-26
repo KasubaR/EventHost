@@ -562,9 +562,10 @@ delivery, API fields).
 
 A deleted event is only soft-deleted and stays in "Recently deleted"; `events:purge-deleted` (daily 03:00
 Africa/Lusaka) permanently removes it once it is older than `events.retention.deleted_days`. Plan and phases:
-`plans/event-retention.md` — **Phases 1 (the purge) and 2 (countdown UI, API field, admin display) are built;
-purging is disabled by default**; the warning email and the Privacy copy are still planned. **Do not set
-`EVENT_TRASH_RETENTION_DAYS` in production until those ship** — the "warned first" backstop is not built yet.
+`plans/event-retention.md` — **Phases 1 (the purge), 2 (countdown UI, API field, admin display) and 2c (warning
+email + warned-first backstop) are built; purging is disabled by default**; the Privacy policy wording and the
+account-deletion guard fix (Phase 3) are still planned. **Do not set `EVENT_TRASH_RETENTION_DAYS` in production
+until the Privacy copy ships** — the policy still says event data goes when you delete the event.
 
 - Off unless `EVENT_TRASH_RETENTION_DAYS` > 0 (default 0). `EVENT_TRASH_RETENTION_STARTS_AT` (YYYY-MM-DD) is the
   release date: anything already in the trash then is treated as deleted on that date, so it gets a full window
@@ -588,6 +589,14 @@ purging is disabled by default**; the warning email and the Privacy copy are sti
   `retained_for_records` fields on `EventListResource` and `EventResource`. Days round **up** so it never says 0
   while restorable. **Nothing is shown while purging is off** — the UI only mentions a window when one exists.
   Add wording there, not in a view
+- **The purge never deletes an event nobody was told about.** `events:warn-pending-purge` (daily 02:30, before the
+  03:00 purge) emails each host **one digest** of their deleted events due within 7 days
+  (`HostPurgeWarningNotification`, no preference toggle — it is a service notice about irreversible removal).
+  `EventPurgeService` then requires a **sent or pending** `event_purge_warning` log for *this deletion* that is at
+  least 24 h old (`Event::PURGE_MIN_NOTICE_HOURS`) — the age rule is what stops an already-overdue event being
+  warned at 02:30 and deleted at 03:00. The key, `Event::purgeWarningKey()`, includes `deleted_at`, so restore-then-
+  delete-again is warned afresh. A suspended or email-less host is not warned and so their events are *kept*
+  (erring towards keeping). Exempt events are never warned about
 - **Slugs of purged events are freed** — a new event can later take a URL that was printed on an old invitation.
   Accepted deliberately (no tombstone table); see the plan §10
 

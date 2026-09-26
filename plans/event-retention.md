@@ -1,8 +1,8 @@
 # Feature Plan: Permanent deletion of events 30 days after they are deleted
 
-Status: **In progress** — Phases 1 (the purge) and 2 (countdown, API, admin) built, purging disabled by default;
-Phases 2c and 3 planned. All open questions are resolved (§10). **Do not enable purging until 2c and 3 have
-shipped.**
+Status: **In progress** — Phases 1 (the purge), 2 (countdown, API, admin) and 2c (warning email, warned-first
+backstop) built, purging disabled by default; Phase 3 (Privacy wording, account-guard fix) planned. All open
+questions are resolved (§10). **Do not enable purging until Phase 3 has shipped.**
 
 Today "delete" on an event is a soft delete and nothing ever comes back to finish the job. A deleted event
 sits in **Recently deleted** forever, with its guest list, RSVPs, uploaded media and (for ticketed events)
@@ -212,6 +212,35 @@ just catches up. The warning runs first so the purge's "warned first" check (ste
 - Update the stale comment in `EventController::destroy()` / `Admin\EventController::destroy()` to point here
 
 ## 4b. Phase 2c — the warning email (decided: yes)
+
+**Built.** As below, with these specifics and one refinement:
+
+- **A minimum-notice rule replaces "the schedule order keeps it safe".** The plan relied on 02:30 (warn) running
+  before 03:00 (purge) and on the 7-day lead. That is *not* enough for an event that is already overdue when the
+  feature is first run (a late deploy, a missed run): it would be warned at 02:30 and purged at 03:00 the same night.
+  The purge now requires the warning to be at least `Event::PURGE_MIN_NOTICE_HOURS` (24) old, so an overdue event is
+  warned, waits a day, then goes. In the normal path the warning is a week old and this never bites
+- **Only a sent or pending warning counts**, never a failed one — the host was not told. Keyed on
+  `Event::purgeWarningKey()` (`event-purge-warning:{id}:{deleted_at unix}`), so a restore followed by a second
+  delete is a new deletion and needs a new warning. The key is shared by the command, the mailer and the purge so
+  they cannot drift
+- **`Event::scopePurgeable($withinDays)`** gained the look-ahead argument the command uses (7 days). The date and
+  launch-grace logic is unchanged
+- **The notification carries plain arrays** (name, dates, list URL), not Event models: the events are soft-deleted,
+  and a queued mail should describe what was warned about rather than the row's state when a worker runs
+- **Digest ordering and links:** soonest removal first, so the subject and the button lead with the most urgent
+  event; each line links to the portal the event belongs to (private list vs public list), since restoring needs
+  a login and a POST from the list page
+- **Nowhere to send it is not a silent purge:** a suspended host, or one with no email, is skipped and no warning is
+  logged — so the purge's warned-first check then *keeps* their events. They accumulate until someone fixes the
+  account. Deliberate: erring towards keeping
+- **One failing host does not stop the others**; the command exits non-zero so it shows up, and the host is retried
+  the next night (no log was written for a failed send)
+- **`--dry-run`** lists who would be emailed about which events, sending and logging nothing. Note that after this
+  phase `events:purge-deleted --dry-run` only reports *warned* events as purgeable, so on go-live the dry run shows
+  nothing until the first warnings have gone out
+- Tests: `tests/Feature/EventPurgeWarningTest.php` (20); the Phase 1 purge tests now start each event warned.
+  Mutation-checked: removing the warned-first check (5 tests fail), the minimum notice (1) and the exempt filter (1)
 
 `events:warn-pending-purge`, daily at 02:30 Africa/Lusaka (before the 03:00 purge, so an event is never purged
 in the same run that first warns about it — see the window rule below).
