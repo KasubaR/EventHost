@@ -39,7 +39,10 @@ class AccountController extends Controller
         // events.user_id cascades on delete, and so do ticket_orders/tickets/
         // ticket_reservations off the events it takes with it — deleting the
         // account would silently destroy paid buyers' tickets and orders.
+        // withTrashed(): an event in Recently deleted is still a row and the cascade
+        // takes it too (plans/event-retention.md §6) — same guard as the web controller.
         $hasPaidTicketSales = $user->events()
+            ->withTrashed()
             ->ticketed()
             ->whereHas('ticketOrders', fn ($query) => $query->where('status', TicketOrderStatus::Paid->value))
             ->exists();

@@ -32,14 +32,21 @@ class AccountController extends Controller
         // account would silently destroy paid buyers' tickets and orders.
         // Block it here rather than loosen those FKs: the ticket dashboard,
         // check-in and resend flows all assume a ticket's event still exists.
+        //
+        // withTrashed(): a deleted event is still a row, and events.user_id cascades over
+        // it just the same — a ticketed event sitting in Recently deleted with paid orders
+        // (deleted before the delete guard existed) must block this too, or deleting the
+        // account would destroy those orders. Same rule the event purge keeps to
+        // (plans/event-retention.md §6).
         $hasPaidTicketSales = $user->events()
+            ->withTrashed()
             ->ticketed()
             ->whereHas('ticketOrders', fn ($query) => $query->where('status', TicketOrderStatus::Paid->value))
             ->exists();
 
         if ($hasPaidTicketSales) {
             return redirect()->back()->withErrors([
-                'blocked' => 'You have ticketed events with paid orders. Contact support to wind down '
+                'blocked' => 'You have ticketed events with paid orders (including any in Recently deleted). Contact support to wind down '
                     .'ticket sales — and settle any pending payout — before deleting your account.',
             ], 'userDeletion');
         }

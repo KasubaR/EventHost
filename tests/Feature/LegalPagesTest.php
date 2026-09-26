@@ -22,6 +22,45 @@ class LegalPagesTest extends TestCase
         ];
     }
 
+    // ── Phase 3 of plans/event-retention.md: the retention wording follows the setting ──
+
+    public function test_privacy_describes_the_recovery_window_and_the_payment_exemption_once_purging_is_on(): void
+    {
+        config(['events.retention.deleted_days' => 30]);
+
+        $this->get(route('legal.privacy'))
+            ->assertOk()
+            ->assertSee('stays in')
+            ->assertSee('Recently deleted')
+            ->assertSee('for 30 days so you can restore it')
+            ->assertSee('permanently removed together with its guest list, RSVPs and uploaded photos and media')
+            ->assertSee('Deleting your account removes your events')
+            ->assertSee('Events with ticket sales or contribution payments')
+            ->assertSee('You can still restore such an event')
+            // The old promise it replaces must be gone, not left beside the new one.
+            ->assertDontSee('until you delete the event, or delete your account');
+    }
+
+    public function test_privacy_wording_uses_the_configured_number_of_days(): void
+    {
+        config(['events.retention.deleted_days' => 45]);
+
+        $this->get(route('legal.privacy'))->assertSee('for 45 days so you can restore it')->assertDontSee('for 30 days');
+    }
+
+    public function test_privacy_keeps_its_existing_wording_while_purging_is_off(): void
+    {
+        config(['events.retention.deleted_days' => 0]);
+
+        // The page must never promise a window the job is not enforcing.
+        $this->get(route('legal.privacy'))
+            ->assertOk()
+            ->assertSee('until you delete the event, or delete your account')
+            ->assertDontSee('so you can restore it')
+            ->assertDontSee('Events with ticket sales or contribution payments')
+            ->assertSee('Payment records');
+    }
+
     #[DataProvider('legalRoutes')]
     public function test_the_policy_pages_are_public(string $route): void
     {

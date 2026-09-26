@@ -71,9 +71,10 @@ A missing manifest is the `Vite manifest not found at: .../public/build/manifest
 ## 3b. Deleted-event purging (off by default — read before enabling)
 
 `events:purge-deleted` runs daily but does nothing while `EVENT_TRASH_RETENTION_DAYS=0` (the default). It
-**permanently deletes** events that have been in Recently deleted longer than that many days. Do not enable it
-until the Privacy-policy wording from `plans/event-retention.md` (Phase 3) has shipped — the countdown UI and the
-warning email are already built. To go live, in order:
+**permanently deletes** events that have been in Recently deleted longer than that many days. Everything it needs
+is built (countdown UI, warning email, Privacy wording, account guard — `plans/event-retention.md`); the Privacy
+page's retention section changes with this setting, so turning it on also publishes the 30-day wording. Get that
+wording reviewed first if you need it to be. To go live, in order:
 
 1. Set `EVENT_TRASH_RETENTION_STARTS_AT=YYYY-MM-DD` (the release date) in `.env`
 2. Set `EVENT_TRASH_RETENTION_DAYS=30` and `php artisan config:cache`

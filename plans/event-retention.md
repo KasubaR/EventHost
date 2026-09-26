@@ -1,8 +1,9 @@
 # Feature Plan: Permanent deletion of events 30 days after they are deleted
 
-Status: **In progress** — Phases 1 (the purge), 2 (countdown, API, admin) and 2c (warning email, warned-first
-backstop) built, purging disabled by default; Phase 3 (Privacy wording, account-guard fix) planned. All open
-questions are resolved (§10). **Do not enable purging until Phase 3 has shipped.**
+Status: **Built** — Phases 1 (the purge), 2 (countdown, API, admin), 2c (warning email, warned-first backstop) and 3
+(Privacy wording, account-guard fix) are all done. Purging is still **disabled by default**; it is switched on by
+following the go-live order in §11 / `docs/deployment.md`. §6b (widening the account-deletion guard) is a separate,
+deferred follow-up. All open questions are resolved (§10).
 
 Today "delete" on an event is a soft delete and nothing ever comes back to finish the job. A deleted event
 sits in **Recently deleted** forever, with its guest list, RSVPs, uploaded media and (for ticketed events)
@@ -289,6 +290,13 @@ backlog and exits 0, which is how to check before setting the date.
 
 ## 6. Phase 3 — close the gap in account deletion
 
+**Built.** Both `Settings\AccountController` and its JSON twin `Api\V1\Settings\AccountController` now query
+`$user->events()->withTrashed()`. The plan named only the web controller; the API one had the identical guard and
+the identical gap, so it got the same one-line fix (its 409 message is unchanged — the Android contract). The web
+error gains "(including any in Recently deleted)" so a user is not told about events they cannot see. Tests in
+`SettingsTest` and `Api\V1\Settings\AccountDeletionTest`: a trashed ticketed event with paid orders blocks; a trashed
+one with only cancelled/failed orders does not. Mutation-checked: removing `withTrashed()` fails both.
+
 `Settings\AccountController::destroy()` guards on `$user->events()`, which **excludes trashed events**, and
 `events.user_id` cascades. A user whose ticketed event with paid orders is sitting in the trash (legacy, or
 trashed before the delete guard existed) can delete their account and take those orders with them. Change the
@@ -307,6 +315,19 @@ reason it is a separate phase: it changes what stops a user deleting their own a
 release note and support wording. Until then `withTrashed()` (§6) is the only account-deletion change.
 
 ## 7. Phase 3 — the Privacy policy (and Terms)
+
+**Built, with one deliberate difference from the text below: the policy wording follows the setting.**
+`legal/privacy.blade.php` §7 branches on `Event::retentionDays()` — with purging on it states the N-day recovery
+window, the week-ahead email, the immediate removal on account deletion and the payment-records exemption (the N is
+the configured number, never hard-coded); with purging off it keeps *exactly* the wording it had, because a page
+that promises a 30-day window while the job is off would be wrong in the other direction. So the copy ships in the
+same deploy as the code but cannot get ahead of it, and flipping `EVENT_TRASH_RETENTION_DAYS` is what changes what
+the policy says. Terms §10 needed no change. Tests in `LegalPagesTest` cover on, a different N, and off.
+
+**Known gap, not part of this phase:** the *Payment records* bullet says they are kept "even after account
+deletion". That is only fully true once the account-deletion guard is widened (§6b) — today it blocks only Paid
+ticket orders, so an account with an event holding only Refunded orders or contribution payments can still be
+deleted and takes them with it. §6b is the fix; until then that sentence slightly overstates.
 
 `resources/views/legal/privacy.blade.php` §7 currently says event and guest data is kept *"until you delete the
 event, or delete your account"*. Replace that bullet and the paragraph under it so they match what the code

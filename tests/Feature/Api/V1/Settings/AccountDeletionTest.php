@@ -68,4 +68,35 @@ class AccountDeletionTest extends TestCase
 
         $this->assertNotNull($user->fresh());
     }
+
+    public function test_deletion_is_blocked_by_a_paid_ticketed_event_sitting_in_recently_deleted(): void
+    {
+        // plans/event-retention.md §6: a trashed event is still a row and events.user_id
+        // cascades over it, so it must block exactly like a live one.
+        $user = User::factory()->create(['password' => Hash::make('Password123')]);
+        $event = Event::factory()->for($user)->ticketed()->create();
+        TicketOrder::factory()->for($event)->create(['status' => TicketOrderStatus::Paid]);
+        $event->delete();
+
+        $this->withHeader('Authorization', 'Bearer '.$this->tokenFor($user))
+            ->deleteJson(route('api.v1.settings.account.destroy'), ['password' => 'Password123'])
+            ->assertStatus(409);
+
+        $this->assertNotNull($user->fresh());
+        $this->assertNotNull(Event::withTrashed()->find($event->id));
+    }
+
+    public function test_a_deleted_ticketed_event_with_no_paid_orders_does_not_block_deletion(): void
+    {
+        $user = User::factory()->create(['password' => Hash::make('Password123')]);
+        $event = Event::factory()->for($user)->ticketed()->create();
+        TicketOrder::factory()->for($event)->create(['status' => TicketOrderStatus::Cancelled]);
+        $event->delete();
+
+        $this->withHeader('Authorization', 'Bearer '.$this->tokenFor($user))
+            ->deleteJson(route('api.v1.settings.account.destroy'), ['password' => 'Password123'])
+            ->assertOk();
+
+        $this->assertNull($user->fresh());
+    }
 }

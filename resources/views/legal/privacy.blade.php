@@ -134,9 +134,29 @@
 
             <section>
                 <h2 id="retention">7. How long we keep it</h2>
+                {{-- Driven by the same setting as the purge job (plans/event-retention.md), so this page can
+                     never promise a 30-day window the job is not enforcing: while purging is off it says
+                     what it always did. Both branches want a lawyer's eye (see CLAUDE.md, Legal Pages). --}}
+                @php $retentionDays = \App\Models\Event::retentionDays(); @endphp
                 <ul>
                     <li><strong>Account data</strong> — until you delete your account</li>
-                    <li><strong>Event and guest data</strong> — until you delete the event, or delete your account</li>
+                    @if ($retentionDays > 0)
+                        <li>
+                            <strong>Event and guest data</strong> — until you delete the event. A deleted event stays in
+                            <em>Recently deleted</em> for {{ $retentionDays }} days so you can restore it, then it is
+                            permanently removed together with its guest list, RSVPs and uploaded photos and media. We
+                            email you about a week before that happens. Deleting your account removes your events
+                            straight away, without that waiting period.
+                        </li>
+                        <li>
+                            <strong>Events with ticket sales or contribution payments</strong> — not permanently removed
+                            when you delete them. We keep the event and its orders or payments, including the buyer or
+                            contributor details attached to them, for as long as needed for tax and accounting, in the
+                            same way as other payment records below. You can still restore such an event.
+                        </li>
+                    @else
+                        <li><strong>Event and guest data</strong> — until you delete the event, or delete your account</li>
+                    @endif
                     <li><strong>Payment records</strong> — kept as long as required for tax and accounting purposes, even after account deletion</li>
                 </ul>
                 <p>
