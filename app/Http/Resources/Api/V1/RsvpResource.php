@@ -5,6 +5,7 @@ namespace App\Http\Resources\Api\V1;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Models\Rsvp;
+use App\Support\GuestPassCard;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -59,10 +60,7 @@ class RsvpResource extends JsonResource
                 'song_request' => $this->rsvp->song_request,
             ],
             'max_attendees' => $this->maxAttendees,
-            'entry_pass' => [
-                'available' => $this->showEntryPass,
-                'check_in_qr_url' => $this->showEntryPass ? $this->guest->checkInQrUrl() : null,
-            ],
+            'entry_pass' => $this->entryPass(),
             'links' => [
                 'view_invitation_url' => $tokenOrPublicShowUrl,
                 'change_rsvp_url' => $hasToken
@@ -73,5 +71,56 @@ class RsvpResource extends JsonResource
                     : ($this->event->is_public ? route('events.public', ['slug' => $this->event->slug], absolute: true) : null),
             ],
         ];
+    }
+
+    /**
+     * `available` and `check_in_qr_url` are the original contract and never change
+     * meaning. Everything else is additive (plans/invitation-pass-card.md Phase 5):
+     * URLs for the web pass page, the PDF and the card image, and the card's own
+     * fields so a native client can render the pass itself instead of embedding a
+     * web view. All of it is null when there is no pass, mirroring check_in_qr_url.
+     *
+     * @return array<string, mixed>
+     */
+    private function entryPass(): array
+    {
+        $pass = [
+            'available' => $this->showEntryPass,
+            'check_in_qr_url' => $this->showEntryPass ? $this->guest->checkInQrUrl() : null,
+            'pass_url' => null,
+            'pdf_url' => null,
+            'image_url' => null,
+            'card' => null,
+        ];
+
+        if (! $this->showEntryPass || $this->guest->invitation_token === null) {
+            return $pass;
+        }
+
+        $token = $this->guest->invitation_token;
+        $card = GuestPassCard::for($this->guest, $this->event, $this->rsvp);
+        $startsAt = $this->event->startsAt();
+
+        return array_merge($pass, [
+            'pass_url' => route('rsvp.token.pass', ['token' => $token], absolute: true),
+            'pdf_url' => route('rsvp.token.pass-download', ['token' => $token], absolute: true),
+            'image_url' => route('rsvp.token.pass-image', ['token' => $token], absolute: true),
+            'card' => [
+                'event_name' => $card->eventName,
+                'event_type_label' => $card->eventTypeLabel,
+                // Bare calendar date when there is no start time — clients must not show
+                // the 00:00 that startsAt() falls back to, hence the flag.
+                'starts_at' => $startsAt?->toIso8601String(),
+                'has_start_time' => $card->timeLine !== null,
+                'venue' => $card->venue,
+                'guest_name' => $card->guestName,
+                'party_size' => $card->admits,
+                'party_label' => $card->partyLabel(),
+                'table' => $card->table,
+                'state' => $card->state,
+                'state_label' => $card->stateLabel(),
+                'theme' => $card->theme,
+            ],
+        ]);
     }
 }
