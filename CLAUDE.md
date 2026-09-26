@@ -558,6 +558,22 @@ delivery, API fields).
 - Guest QRs use standard error correction, so state ("Checked in", cancelled, ended) is a pill **above** the
   code and a dimmed QR, never an overlay — unlike ticket QRs, which are `ECC_HIGH` for exactly that reason
 
+### Guest Event Reminders
+
+Accepted guests are reminded 7 days before, 1 day before and on the day of a private (invitation-kind) event, by WhatsApp
+today (`events:send-whatsapp-reminders`, 09:00 Africa/Lusaka). An email version is planned — `plans/guest-email-reminders.md`;
+Phase 1 (the shared parts) is built.
+
+- `App\Support\EventReminderBuckets` owns the three reminder days, `forEvent()` and the wording (`lead()`), and
+  `Event::scopeDueForGuestEventReminder()` owns which events are candidates. Both channels must use them — don't
+  re-implement the day arithmetic or the event filter in a command
+- **A cancelled event is never reminded.** Cancelling sets `cancelled_at` and leaves `is_published` true, so "published" alone
+  is not enough; the scope and `sendWhatsAppEventReminder()` both check it. A *paused* invitation is still reminded
+- Send-once is the `notification_logs` idempotency key **including the event date**, plus the `guests` sent-markers column
+  for the WhatsApp channel. Changing `event_date` clears that column for the event's guests (`Event::booted()`), which is what
+  makes a moved event remind again
+- Automated reminders are Pro+ (`Event::ownerCanSendAutomatedReminders()`), invitation events only
+
 ### Deleted-Event Retention
 
 A deleted event is only soft-deleted and stays in "Recently deleted"; `events:purge-deleted` (daily 03:00

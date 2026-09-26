@@ -434,6 +434,12 @@ class CommunicationService
             return 'disabled';
         }
 
+        // A cancelled event stays published; the command's scope filters it, this keeps the rule
+        // true for any other caller of this method.
+        if ($event->isCancelled() || $event->trashed()) {
+            return 'skipped';
+        }
+
         if (! WhatsAppEventReminderBuckets::isAllowed($bucket)) {
             return 'skipped';
         }
@@ -470,7 +476,15 @@ class CommunicationService
             return 'rate_limited';
         }
 
-        $idempotencyKey = sprintf('wa-event-reminder:%d:%d:%s', $event->id, $guest->id, $bucket);
+        // The event date is part of the key: a moved event is a new reminder for the new date, and
+        // a key without it would treat the 7-day reminder as already sent (plans/guest-email-reminders.md §4.2).
+        $idempotencyKey = sprintf(
+            'wa-event-reminder:%d:%d:%s:%s',
+            $event->id,
+            $guest->id,
+            $bucket,
+            $event->event_date?->format('Y-m-d') ?? 'undated'
+        );
         $log = $this->startLog($event, $guest, 'whatsapp', 'guest_event_reminder_whatsapp', $idempotencyKey, [
             'bucket' => $bucket,
         ]);

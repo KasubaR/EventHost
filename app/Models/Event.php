@@ -13,7 +13,9 @@ use App\Enums\SubscriptionTier;
 use App\Enums\TicketingStatus;
 use App\Enums\TicketOrderStatus;
 use App\Support\BillingPlan;
+use App\Support\EventReminderBuckets;
 use App\Support\TicketingSettings;
+use Carbon\CarbonInterface;
 use Cviebrock\EloquentSluggable\Sluggable;
 use Database\Factories\EventFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -417,6 +419,19 @@ class Event extends Model
             // app runs on (dev is MySQL, the test suite is SQLite).
             if (! $event->exists && $event->audience_migration_notice_seen_at === null) {
                 $event->audience_migration_notice_seen_at = now();
+            }
+        });
+
+        // Moving the date starts the reminder countdown again: a guest who was sent the 7-day WhatsApp
+        // reminder for the old date must be reminded for the new one. Per-guest sent markers are
+        // only meaningful for the date they were sent against. Query-builder update on purpose —
+        // no need to hydrate every guest, and Guest has no observers that care.
+        static::updated(function (self $event): void {
+            if ($event->wasChanged('event_date')) {
+                Guest::query()
+                    ->where('event_id', $event->id)
+                    ->whereNotNull('whatsapp_event_reminders_sent')
+                    ->update(['whatsapp_event_reminders_sent' => null]);
             }
         });
     }
@@ -1259,6 +1274,29 @@ class Event extends Model
     public function scopeTicketed(Builder $query): Builder
     {
         return $query->where('product_kind', EventProductKind::Ticketed);
+    }
+
+    /**
+     * Invitation events a guest event-reminder could be due for today: published, dated within the
+     * reminder window, and **not cancelled** — a cancelled event stays published, and telling its
+     * guests it is a week away is the bug this scope exists to prevent. Soft-deleted events are
+     * already excluded by the model's global scope. Whether *today* is a reminder day for the event
+     * is EventReminderBuckets::forEvent(); the host's plan is checked per event by the sender.
+     *
+     * @param  Builder<Event>  $query
+     * @return Builder<Event>
+     */
+    public function scopeDueForGuestEventReminder(Builder $query, ?CarbonInterface $now = null): Builder
+    {
+        $today = ($now ?? now())->copy()->startOfDay();
+
+        return $query
+            ->where('product_kind', EventProductKind::Invitation)
+            ->where('is_published', true)
+            ->whereNull('cancelled_at')
+            ->whereNotNull('event_date')
+            ->whereDate('event_date', '>=', $today)
+            ->whereDate('event_date', '<=', $today->copy()->addDays(EventReminderBuckets::MAX_LEAD_DAYS));
     }
 
     public function getEventTypeLabelAttribute(): string

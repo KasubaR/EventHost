@@ -9,23 +9,26 @@ namespace App\Support;
  * - {@see self::BUCKET_7} — 7 calendar days before the event
  * - {@see self::BUCKET_1} — 1 day before (tomorrow)
  * - {@see self::BUCKET_0} — event day
+ *
+ * The bucket ids, their schedule and their wording live in {@see EventReminderBuckets}, shared with the
+ * email reminder; this class keeps only what is specific to the `guests` column (normalising it).
  */
 final class WhatsAppEventReminderBuckets
 {
-    public const BUCKET_7 = '7';
+    public const BUCKET_7 = EventReminderBuckets::BUCKET_7;
 
-    public const BUCKET_1 = '1';
+    public const BUCKET_1 = EventReminderBuckets::BUCKET_1;
 
-    public const BUCKET_0 = '0';
+    public const BUCKET_0 = EventReminderBuckets::BUCKET_0;
 
     /**
      * @var list<string>
      */
-    public const ALL = [self::BUCKET_7, self::BUCKET_1, self::BUCKET_0];
+    public const ALL = EventReminderBuckets::ALL;
 
     public static function isAllowed(string $value): bool
     {
-        return in_array($value, self::ALL, true);
+        return EventReminderBuckets::isAllowed($value);
     }
 
     /**
@@ -89,11 +92,6 @@ final class WhatsAppEventReminderBuckets
 
     public static function leadForBucket(string $eventName, string $bucket): string
     {
-        return match ($bucket) {
-            self::BUCKET_7 => $eventName.' is one week away!',
-            self::BUCKET_1 => 'Reminder: '.$eventName.' is tomorrow.',
-            self::BUCKET_0 => 'Today is the big day! We look forward to seeing you at '.$eventName.'.',
-            default => $eventName.' is coming up.',
-        };
+        return EventReminderBuckets::lead($eventName, $bucket);
     }
 }

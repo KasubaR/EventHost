@@ -8,6 +8,7 @@ use App\Models\Guest;
 use App\Models\NotificationLog;
 use App\Models\Rsvp;
 use App\Models\User;
+use App\Services\CommunicationService;
 use App\Services\WhatsAppService;
 use App\Support\WhatsAppEventReminderBuckets;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -129,6 +130,131 @@ class WhatsAppEventReminderTest extends TestCase
         $this->artisan('events:send-whatsapp-reminders')->assertSuccessful();
 
         $this->assertSame(0, $fake->calls);
+    }
+
+    // ── plans/guest-email-reminders.md Phase 1 ───────────────────────────────────────
+
+    public function test_a_cancelled_event_sends_no_reminders_and_an_uncancelled_one_does(): void
+    {
+        $fake = $this->bindWhatsAppFake();
+        [$event] = $this->seedAcceptedGuest(eventDate: '2026-12-12');
+        $event->forceFill(['cancelled_at' => now()])->save();
+
+        $this->artisan('events:send-whatsapp-reminders')->assertSuccessful();
+
+        $this->assertSame(0, $fake->calls, 'guests of a cancelled event must not be told it is a week away');
+        $this->assertDatabaseCount('notification_logs', 0);
+
+        $event->forceFill(['cancelled_at' => null])->save();
+
+        $this->artisan('events:send-whatsapp-reminders')->assertSuccessful();
+
+        $this->assertSame(1, $fake->calls);
+    }
+
+    public function test_the_sender_itself_refuses_a_cancelled_or_deleted_event(): void
+    {
+        $fake = $this->bindWhatsAppFake();
+        [$event, $guest] = $this->seedAcceptedGuest(eventDate: '2026-12-12');
+        $service = app(CommunicationService::class);
+
+        $event->forceFill(['cancelled_at' => now()])->save();
+        $this->assertSame('skipped', $service->sendWhatsAppEventReminder($event->fresh(), $guest, '7'));
+
+        $event->forceFill(['cancelled_at' => null])->save();
+        $event->delete();
+        $this->assertSame('skipped', $service->sendWhatsAppEventReminder(Event::withTrashed()->find($event->id), $guest, '7'));
+
+        $this->assertSame(0, $fake->calls);
+    }
+
+    public function test_drafts_and_ticketed_events_are_not_reminded(): void
+    {
+        $fake = $this->bindWhatsAppFake();
+        [$draft] = $this->seedAcceptedGuest(eventDate: '2026-12-12');
+        $draft->forceFill(['is_published' => false])->save();
+
+        $owner = User::factory()->proPlus()->create();
+        $ticketed = Event::factory()->for($owner)->ticketed()->create(['event_date' => '2026-12-12', 'is_published' => true]);
+        $guest = Guest::factory()->for($ticketed)->create(['phone' => '+260973333333']);
+        Rsvp::factory()->for($guest)->create(['event_id' => $ticketed->id, 'status' => RsvpStatus::Accepted, 'attendee_count' => 1]);
+
+        $this->artisan('events:send-whatsapp-reminders')->assertSuccessful();
+
+        $this->assertSame(0, $fake->calls);
+    }
+
+    public function test_a_paused_invitation_is_still_reminded(): void
+    {
+        $fake = $this->bindWhatsAppFake();
+        [$event] = $this->seedAcceptedGuest(eventDate: '2026-12-12');
+        $event->forceFill(['invitation_paused_at' => now()])->save();
+
+        $this->artisan('events:send-whatsapp-reminders')->assertSuccessful();
+
+        $this->assertSame(1, $fake->calls, 'pausing stops new responses; the event is still happening');
+    }
+
+    public function test_the_log_key_carries_the_event_date(): void
+    {
+        $this->bindWhatsAppFake();
+        [$event, $guest] = $this->seedAcceptedGuest(eventDate: '2026-12-12');
+
+        $this->artisan('events:send-whatsapp-reminders')->assertSuccessful();
+
+        $this->assertDatabaseHas('notification_logs', [
+            'guest_id' => $guest->id,
+            'idempotency_key' => 'wa-event-reminder:'.$event->id.':'.$guest->id.':7:2026-12-12',
+        ]);
+    }
+
+    public function test_a_moved_event_is_reminded_again_for_its_new_date(): void
+    {
+        $fake = $this->bindWhatsAppFake();
+        [$event, $guest] = $this->seedAcceptedGuest(eventDate: '2026-12-12');
+
+        $this->artisan('events:send-whatsapp-reminders')->assertSuccessful();
+        $this->assertSame(1, $fake->calls);
+        $this->assertContains('7', $guest->fresh()->whatsapp_event_reminders_sent);
+
+        // Same day, second run: still exactly once.
+        $this->artisan('events:send-whatsapp-reminders')->assertSuccessful();
+        $this->assertSame(1, $fake->calls);
+
+        // The host moves the event a day later; tomorrow it is 7 days away again.
+        $event->update(['event_date' => '2026-12-13']);
+        $this->assertSame([], $guest->fresh()->whatsapp_event_reminders_sent, 'moving the date re-arms the reminders');
+
+        Carbon::setTestNow(Carbon::parse('2026-12-06 10:00:00'));
+        $this->artisan('events:send-whatsapp-reminders')->assertSuccessful();
+
+        $this->assertSame(2, $fake->calls);
+        $this->assertSame('13 December 2026', $fake->lastVariables['2'] ?? null);
+    }
+
+    public function test_changing_something_other_than_the_date_does_not_re_arm_reminders(): void
+    {
+        $fake = $this->bindWhatsAppFake();
+        [$event, $guest] = $this->seedAcceptedGuest(eventDate: '2026-12-12');
+        $this->artisan('events:send-whatsapp-reminders')->assertSuccessful();
+
+        $event->update(['venue' => 'Somewhere else', 'event_time' => '16:00:00']);
+        $this->artisan('events:send-whatsapp-reminders')->assertSuccessful();
+
+        $this->assertSame(1, $fake->calls);
+        $this->assertContains('7', $guest->fresh()->whatsapp_event_reminders_sent);
+    }
+
+    public function test_moving_one_event_leaves_other_events_guests_alone(): void
+    {
+        $this->bindWhatsAppFake();
+        [$moved] = $this->seedAcceptedGuest(eventDate: '2026-12-12', phone: '+260971111111');
+        [, $other] = $this->seedAcceptedGuest(eventDate: '2026-12-12', phone: '+260972222222');
+        $this->artisan('events:send-whatsapp-reminders')->assertSuccessful();
+
+        $moved->update(['event_date' => '2026-12-20']);
+
+        $this->assertContains('7', $other->fresh()->whatsapp_event_reminders_sent);
     }
 
     /**

@@ -5,7 +5,7 @@ namespace App\Console\Commands;
 use App\Enums\RsvpStatus;
 use App\Models\Event;
 use App\Services\CommunicationService;
-use App\Support\WhatsAppEventReminderBuckets;
+use App\Support\EventReminderBuckets;
 use Illuminate\Console\Command;
 
 class SendWhatsAppEventRemindersCommand extends Command
@@ -22,34 +22,23 @@ class SendWhatsAppEventRemindersCommand extends Command
             return self::SUCCESS;
         }
 
-        $today = now()->startOfDay();
         $sentTotal = 0;
 
+        // Which events can be due at all (published, invitation, not cancelled, inside the 7-day window)
+        // is one shared scope, so this and the email reminder cannot disagree about it.
         Event::query()
-            ->whereNotNull('event_date')
-            ->where('is_published', true)
-            ->chunkById(50, function ($events) use ($today, $communication, &$sentTotal): void {
+            ->dueForGuestEventReminder()
+            ->chunkById(50, function ($events) use ($communication, &$sentTotal): void {
                 foreach ($events as $event) {
-                    if (! $event->isInvitation()) {
-                        continue;
-                    }
-
                     if (! $event->ownerCanSendAutomatedReminders()) {
                         continue;
                     }
 
-                    $eventDay = $event->event_date->copy()->startOfDay();
-                    $daysUntil = (int) $today->diffInDays($eventDay, false);
+                    $bucket = EventReminderBuckets::forEvent($event);
 
-                    if (! in_array($daysUntil, [7, 1, 0], true)) {
+                    if ($bucket === null) {
                         continue;
                     }
-
-                    $bucket = match ($daysUntil) {
-                        7 => WhatsAppEventReminderBuckets::BUCKET_7,
-                        1 => WhatsAppEventReminderBuckets::BUCKET_1,
-                        0 => WhatsAppEventReminderBuckets::BUCKET_0,
-                    };
 
                     $guests = $event->guests()
                         ->whereNotNull('phone')
