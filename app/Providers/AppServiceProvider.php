@@ -190,6 +190,12 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(10)->by((string) $request->ip());
         });
 
+        // Same reasoning as ticket-download: a DomPDF render plus a QR raster per
+        // uncached hit. The pass page itself stays unthrottled like rsvp.token.show.
+        RateLimiter::for('guest-pass-download', function (Request $request): Limit {
+            return Limit::perMinute(10)->by((string) $request->ip());
+        });
+
         RateLimiter::for('contribution-checkout', function (Request $request): Limit {
             return Limit::perMinute(5)->by((string) $request->ip());
         });

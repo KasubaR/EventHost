@@ -1,0 +1,229 @@
+/**
+ * Guest invitation pass card (.gpass-*). Rendered by rsvp/partials/pass-card.blade.php
+ * on the RSVP pages and on /rsvp/{token}/pass. Depends on global.css tokens.
+ * Theme colours arrive as inline custom properties (--gp-primary/--gp-accent/--gp-bg),
+ * already validated as #rrggbb literals and contrast-checked in App\Support\GuestPassCard.
+ * Plan: plans/invitation-pass-card.md
+ */
+
+.gpass {
+    --gp-primary: #1a2a4a;
+    --gp-accent: #1e47bb;
+    --gp-bg: #fafafa;
+
+    position: relative;
+    max-width: 380px;
+    margin: 0 auto;
+    background: var(--gp-bg);
+    color: var(--text-dark, #1a1a2e);
+    border: 1px solid rgba(13, 13, 43, 0.1);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(13, 13, 43, 0.14), 0 1px 3px rgba(13, 13, 43, 0.06);
+    text-align: left;
+}
+
+/* ── Header: the event name is the card's title ── */
+.gpass-header {
+    position: relative;
+    background: var(--gp-primary);
+    color: #fff;
+}
+
+.gpass-cover {
+    display: block;
+    width: 100%;
+    height: 96px;
+    object-fit: cover;
+    opacity: 0.55;
+}
+
+.gpass-header-body {
+    padding: 20px 22px 22px;
+}
+
+.gpass-cover + .gpass-header-body {
+    /* Lift the title onto the banner instead of stacking under it. */
+    margin-top: -44px;
+    position: relative;
+    background: linear-gradient(to top, var(--gp-primary) 55%, transparent);
+    padding-top: 40px;
+}
+
+.gpass-kicker {
+    margin: 0 0 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.85;
+}
+
+.gpass-title {
+    margin: 0;
+    font-size: 26px;
+    line-height: 1.2;
+    font-weight: 800;
+    color: #fff;
+    overflow-wrap: anywhere;
+}
+
+/* ── Body ── */
+.gpass-body {
+    padding: 18px 22px 8px;
+}
+
+.gpass-meta {
+    list-style: none;
+    margin: 0 0 16px;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.gpass-meta li {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.gpass-meta i {
+    color: var(--gp-accent);
+    width: 16px;
+    margin-top: 3px;
+    text-align: center;
+}
+
+.gpass-details {
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+    gap: 12px 16px;
+}
+
+.gpass-details dt {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--gray-mid, #8e8ea8);
+}
+
+.gpass-details dd {
+    margin: 2px 0 0;
+    font-size: 16px;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+/* ── Perforation ── */
+.gpass-tear {
+    position: relative;
+    margin: 18px 0 0;
+    border-top: 2px dashed rgba(13, 13, 43, 0.18);
+}
+
+.gpass-tear::before,
+.gpass-tear::after {
+    content: "";
+    position: absolute;
+    top: -11px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--gray-light, #f4f5f9);
+    border: 1px solid rgba(13, 13, 43, 0.1);
+}
+
+.gpass-tear::before { left: -11px; }
+.gpass-tear::after { right: -11px; }
+
+/* ── QR stub ── */
+.gpass-qr-wrap {
+    padding: 20px 22px 24px;
+    text-align: center;
+}
+
+.gpass-qr {
+    display: block;
+    width: 200px;
+    height: 200px;
+    max-width: 100%;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 12px;
+    padding: 12px;
+    box-shadow: 0 2px 10px rgba(13, 13, 43, 0.1);
+}
+
+.gpass-qr--dimmed {
+    opacity: 0.3;
+    filter: grayscale(1);
+}
+
+.gpass-hint {
+    margin: 12px 0 0;
+    font-size: 12px;
+    color: var(--gray-mid, #8e8ea8);
+}
+
+/* State sits above the code, never over it: guest QRs use standard error
+   correction, so an overlay could make them unscannable. */
+.gpass-state {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 14px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.gpass-state--checked-in { background: #e6f6ec; color: #1e7a3f; }
+.gpass-state--cancelled,
+.gpass-state--ended { background: #fdeaea; color: #b3261e; }
+
+/* ── Surrounding page chrome ── */
+.gpass-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.gpass-panel {
+    margin: 20px 0;
+    text-align: center;
+}
+
+.gpass-panel-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 12px;
+    color: var(--green, #27ae60);
+    font-weight: 700;
+    font-size: 13px;
+}
+
+.gpass-page {
+    min-height: calc(100vh - 56px);
+    background: var(--gray-light, #f4f5f9);
+    padding: 40px 16px 72px;
+}
+
+.gpass-page-back {
+    display: block;
+    margin: 18px auto 0;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent, #1e47bb);
+}
+
+@media (max-width: 420px) {
+    .gpass-title { font-size: 22px; }
+}

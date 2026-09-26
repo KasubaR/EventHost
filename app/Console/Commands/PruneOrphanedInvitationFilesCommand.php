@@ -3,7 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Models\Event;
+use App\Models\Guest;
 use App\Models\StagedMedia;
+use App\Services\GuestPassFileCache;
 use App\Support\InvitationVideoBackground;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -94,10 +96,50 @@ class PruneOrphanedInvitationFilesCommand extends Command
             }
         }
 
+        $this->prunePassPdfs($dryRun);
+
         $label = $dryRun ? 'Orphans found' : 'Orphans deleted';
         $this->info("{$label}: {$deleted}".($errors > 0 ? " | Errors: {$errors}" : ''));
 
         return $errors > 0 ? self::FAILURE : self::SUCCESS;
+    }
+
+    /**
+     * Cached guest-pass PDFs and images (GuestPassFileCache) live one directory per
+     * invitation token on the private disk. A guest deleted, or given a fresh
+     * token, leaves its directory behind holding their name — sweep any whose
+     * token no longer belongs to a guest. No grace window needed: a directory
+     * is only ever created for a token that already exists.
+     */
+    private function prunePassPdfs(bool $dryRun): void
+    {
+        $disk = Storage::disk('local');
+        $removed = 0;
+
+        foreach (GuestPassFileCache::ROOTS as $root) {
+            $dirs = $disk->directories($root);
+            if ($dirs === []) {
+                continue;
+            }
+
+            $live = Guest::query()
+                ->whereIn('invitation_token', array_map('basename', $dirs))
+                ->pluck('invitation_token')
+                ->all();
+
+            foreach ($dirs as $dir) {
+                if (in_array(basename($dir), $live, true)) {
+                    continue;
+                }
+
+                if (! $dryRun) {
+                    $disk->deleteDirectory($dir);
+                }
+                $removed++;
+            }
+        }
+
+        $this->line(($dryRun ? '[dry-run] ' : '')."Orphaned guest-pass file folders (PDF + image): {$removed}");
     }
 
     /**

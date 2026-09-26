@@ -39,7 +39,7 @@ class GuestEntryPassTest extends TestCase
 
         $response->assertOk();
         $response->assertSee(route('rsvp.token.entry-pass', $guest->invitation_token), false);
-        $response->assertSee('Download QR code', escape: false);
+        $response->assertSee('Download PDF', escape: false);
     }
 
     public function test_rsvp_page_hides_the_pass_when_the_host_is_not_premium(): void

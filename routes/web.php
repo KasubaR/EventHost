@@ -214,6 +214,14 @@ Route::get('/rsvp/{token}/thanks', [RsvpController::class, 'thanksByToken'])->na
 Route::get('/rsvp/{token}', [RsvpController::class, 'showByToken'])->name('rsvp.token.show');
 // Same trust model as the line above: the token in the URL is the only guard, no
 // login, no throttle — a guest reopens this repeatedly to show their entry pass.
+Route::get('/rsvp/{token}/pass', [RsvpController::class, 'pass'])->name('rsvp.token.pass');
+Route::get('/rsvp/{token}/pass/download', [RsvpController::class, 'passDownload'])
+    ->middleware('throttle:guest-pass-download')
+    ->name('rsvp.token.pass-download');
+// Deliberately unthrottled, unlike the PDF: Twilio fetches every WhatsApp pass image from
+// a handful of its own IPs, so a per-IP limit would start failing deliveries at any busy
+// event. Not an abuse vector either — it needs a 48-char token and is cached by content.
+Route::get('/rsvp/{token}/pass.png', [RsvpController::class, 'passImage'])->name('rsvp.token.pass-image');
 Route::get('/rsvp/{token}/entry-pass.svg', [RsvpController::class, 'entryPassQr'])->name('rsvp.token.entry-pass');
 Route::get('/rsvp/{token}/entry-pass.png', [RsvpController::class, 'entryPassQrPng'])->name('rsvp.token.entry-pass-png');
 Route::get('/e/{slug}/rsvp', [RsvpController::class, 'showOpen'])->name('rsvp.open.show');

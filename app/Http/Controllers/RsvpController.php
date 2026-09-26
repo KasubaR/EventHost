@@ -10,11 +10,14 @@ use App\Models\Event;
 use App\Models\Guest;
 use App\Models\Rsvp;
 use App\Services\CommunicationService;
+use App\Services\GuestPassImageService;
+use App\Services\GuestPassPdfService;
 use App\Services\InvitationCustomizationService;
 use App\Services\PublicInvitationResolver;
 use App\Services\QrCodeService;
 use App\Services\RsvpSubmissionService;
 use App\Support\EventCalendarLinks;
+use App\Support\GuestPassCard;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -80,6 +83,99 @@ class RsvpController extends Controller
             'maxAttendees' => $event->maxAttendeeSlotsForGuest($guest),
             'showEntryPass' => $showEntryPass,
         ]);
+    }
+
+    /**
+     * The guest's invitation pass as its own page — the twin of /t/{token} for
+     * tickets. Same trust model as showByToken(): the token in the URL is the only
+     * guard, no login. A guest who isn't (or is no longer) eligible is sent back
+     * to their RSVP page rather than 404'd, so a stale bookmark still lands
+     * somewhere useful. See plans/invitation-pass-card.md.
+     */
+    public function pass(string $token): View|RedirectResponse
+    {
+        $guest = Guest::query()
+            ->where('invitation_token', $token)
+            ->with(['event' => fn ($q) => $q->withTrashed(), 'rsvp', 'eventTable'])
+            ->firstOrFail();
+
+        $event = $guest->event;
+        abort_if($event === null || ! $event->isInvitation(), 404);
+
+        if (! $this->guestHasEntryPass($guest, $event)) {
+            return redirect()->route('rsvp.token.show', ['token' => $token]);
+        }
+
+        // The card resolves its own theme and falls back to the platform colours if
+        // the event's template can't be resolved — a pass must never 500 over paint.
+        return view('rsvp.pass', [
+            'guest' => $guest,
+            'event' => $event,
+            'card' => GuestPassCard::for($guest, $event, $guest->rsvp),
+        ]);
+    }
+
+    /**
+     * "Download pass" — the card as a self-contained PDF, like a ticket's
+     * /t/{token}/download. Same eligibility gate as the QR routes (a 404, not a
+     * redirect: this is a file, not a page). Generation and caching live in
+     * GuestPassPdfService; throttle:guest-pass-download caps uncached renders.
+     */
+    public function passDownload(string $token, GuestPassPdfService $pdfService): Response
+    {
+        $guest = Guest::query()
+            ->where('invitation_token', $token)
+            ->with(['event' => fn ($q) => $q->withTrashed(), 'rsvp', 'eventTable'])
+            ->first();
+
+        $event = $guest?->event;
+
+        abort_if($guest === null || $event === null || ! $event->isInvitation() || ! $this->guestHasEntryPass($guest, $event), 404);
+
+        $card = GuestPassCard::for($guest, $event, $guest->rsvp);
+
+        return response($pdfService->render($guest, $card), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.(Str::slug($event->name) ?: 'invitation').'-pass.pdf"',
+        ]);
+    }
+
+    /**
+     * The full card as a PNG — for saving to a phone gallery, and (Phase 4) what
+     * WhatsApp and email carry. Same eligibility gate as the PDF. If the image
+     * cannot be drawn (GD without FreeType, a missing font) it degrades to the
+     * plain QR PNG rather than failing: a guest standing at the door with no pass
+     * is a worse outcome than one with a plainer pass. `?download=1` sets
+     * Content-Disposition.
+     */
+    public function passImage(string $token, Request $request, GuestPassImageService $imageService, QrCodeService $qrCodeService): Response
+    {
+        $guest = Guest::query()
+            ->where('invitation_token', $token)
+            ->with(['event' => fn ($q) => $q->withTrashed(), 'rsvp', 'eventTable'])
+            ->first();
+
+        $event = $guest?->event;
+
+        abort_if($guest === null || $event === null || ! $event->isInvitation() || ! $this->guestHasEntryPass($guest, $event), 404);
+
+        try {
+            $png = $imageService->render($guest, GuestPassCard::for($guest, $event, $guest->rsvp));
+        } catch (\RuntimeException $e) {
+            report($e);
+
+            $url = $guest->checkInQrUrl();
+            abort_if($url === null, 404);
+            $png = $qrCodeService->png($url);
+        }
+
+        $headers = ['Content-Type' => 'image/png'];
+
+        if ($request->boolean('download')) {
+            $headers['Content-Disposition'] = 'attachment; filename="'.(Str::slug($event->name) ?: 'invitation').'-pass.png"';
+        }
+
+        return response($png, 200, $headers);
     }
 
     /**
