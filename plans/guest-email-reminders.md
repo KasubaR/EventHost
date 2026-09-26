@@ -1,7 +1,8 @@
 # Guest event reminders by email
 
-Status: **Phase 1 built** (shared schedule, the cancelled-event fix, date-aware WhatsApp keys). Phases 2–4 — the email
-itself — are still planned.
+Status: **Phases 1 and 2 built** (shared schedule and the cancelled-event fix; the email itself, shipping dark behind
+`COMM_GUEST_EMAIL_REMINDERS_ENABLED`). Phase 3 (a stop link) and Phase 4 (Privacy wording, go-live) are still planned — don't
+turn the flag on in production before Phase 4's copy is in.
 
 ## 1. What this is, and why
 
@@ -119,7 +120,7 @@ guest is wasted work and the pass page has both downloads.
 | Phase | Contents | Ships |
 |---|---|---|
 | 1 | **Built.** **Shared schedule + the cancelled fix.** `App\Support\EventReminderBuckets` (`ALL`, `forDaysUntil()`, `lead()`); `WhatsAppEventReminderBuckets` delegates its lead to it. One shared "events due a reminder today" selection used by the WhatsApp command (and later the email one) that excludes cancelled events. WhatsApp log/idempotency keyed on event date. Tests: cancelled event gets no WhatsApp reminder; a moved event is reminded again | Safe on its own; fixes a live bug |
-| 2 | **The email.** Config flag, `GuestEventReminderNotification`, `CommunicationService::sendGuestEventReminderEmail()`, `events:send-guest-email-reminders` + schedule, `NotificationLog` rows. Ships dark | Behind the flag |
+| 2 | **Built.** **The email.** Config flag, `GuestEventReminderNotification`, `CommunicationService::sendGuestEventReminderEmail()`, `events:send-guest-email-reminders` + schedule, `NotificationLog` rows. Ships dark | Behind the flag |
 | 3 | **Stop reminders link** (D4). `guests.email_reminders_stopped_at`, a signed no-login route, a confirmation page, a footer link on the email, and the command skips stopped guests. Also honoured by the deadline-reminder email | Before enabling for everyone |
 | 4 | **Copy, docs, go-live.** Privacy §4 wording, `CLAUDE.md`, `docs/deployment.md` go-live note, this plan marked built | With Phase 2 or 3 |
 
@@ -140,6 +141,28 @@ Order of work is 1 → 2 → (3) → 4. Phase 1 is worth doing even if the email
   for that event's guests when `event_date` changes (and only then). The two together are what re-arm a moved event —
   the key alone would not, because the column would still say "sent". Keys written before this change have no date
   and simply never match again; the column still protects the deploy day
+**Phase 2 as built:**
+
+- `config('communications.guest_email_reminders.enabled')` (env `COMM_GUEST_EMAIL_REMINDERS_ENABLED`, default false; `phpunit.xml`
+  turns it on). `.env.example` documents it
+- `App\Notifications\GuestEventReminderNotification` — queued, `default`, 3 tries / 120 s backoff, no attachments. Subject
+  `One week to go:` / `Tomorrow:` / `Today:` + event name; lead from `EventReminderBuckets::lead()`; date, time, venue; a Google
+  Maps link when the event has coordinates; button **View your pass** (`hasEntryPassFor()`), else **View invitation details**
+  (personal RSVP link, or `/e/{slug}` for a guest with no token); "update your response" only while RSVP is open; a closing line
+  saying why they got it
+- `CommunicationService::sendGuestEventReminderEmail()` returns `sent | disabled | skipped | rate_limited`, enforcing every rule
+  itself (flag, Pro+, not cancelled/deleted, valid bucket, email present, Accepted RSVP, day-of not after the start time, hourly
+  cap) so it is safe for any caller. Log: channel `email`, type `guest_event_reminder_email`, `meta.bucket`, key
+  `email-event-reminder:{event}:{guest}:{bucket}:{Y-m-d}`
+- `events:send-guest-email-reminders`, scheduled 09:00 Africa/Lusaka next to the WhatsApp one, using the shared
+  `dueForGuestEventReminder()` scope. It stops an event's run at the cap and the next run resumes
+- **Deviation — retry of a failed send:** §4.2 said a failed log allowed a retry. It did not: `idempotency_key` is unique, so
+  `startLog()` threw a unique-constraint error on the second attempt (and would have for the RSVP and WhatsApp reminders too).
+  `startLog()` now reuses a *failed* row for the same key (back to pending) and still refuses a pending or sent one. This
+  changes the shared method, for the better: nothing relied on the exception
+- The day-of skip uses `Event::startsAt()` (venue timezone). Not in the plan's tests: the command's scope is not separately
+  provable from the sender's own checks, which enforce the same rules
+
 - Not changed: `rsvp_deadline` reminders have the same "moved date" gap (`rsvp_reminders_sent` is never cleared when the
   deadline moves). Out of scope here; noted so it is not forgotten
 

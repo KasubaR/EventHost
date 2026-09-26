@@ -561,8 +561,9 @@ delivery, API fields).
 ### Guest Event Reminders
 
 Accepted guests are reminded 7 days before, 1 day before and on the day of a private (invitation-kind) event, by WhatsApp
-today (`events:send-whatsapp-reminders`, 09:00 Africa/Lusaka). An email version is planned — `plans/guest-email-reminders.md`;
-Phase 1 (the shared parts) is built.
+(`events:send-whatsapp-reminders`) and by email (`events:send-guest-email-reminders`), both 09:00 Africa/Lusaka. Plan:
+`plans/guest-email-reminders.md` — Phases 1–2 built; the email ships **off** (`COMM_GUEST_EMAIL_REMINDERS_ENABLED=false`) until
+Phase 4 (Privacy wording) and, ideally, Phase 3 (a guest stop link) are in.
 
 - `App\Support\EventReminderBuckets` owns the three reminder days, `forEvent()` and the wording (`lead()`), and
   `Event::scopeDueForGuestEventReminder()` owns which events are candidates. Both channels must use them — don't
@@ -573,6 +574,12 @@ Phase 1 (the shared parts) is built.
   for the WhatsApp channel. Changing `event_date` clears that column for the event's guests (`Event::booted()`), which is what
   makes a moved event remind again
 - Automated reminders are Pro+ (`Event::ownerCanSendAutomatedReminders()`), invitation events only
+- The email is `GuestEventReminderNotification` via `CommunicationService::sendGuestEventReminderEmail()`, which enforces every
+  rule itself — flag, plan, cancelled/deleted, Accepted RSVP, an email address, the hourly cap, and a day-of reminder is skipped
+  once the event has started. **No attachments** (the confirmation mail carried the pass; the reminder links to it). The
+  WhatsApp and email reminders are independent: a guest with both gets both
+- `startLog()` reuses a *failed* row for an existing idempotency key (back to pending) instead of inserting — the key is unique,
+  so a second insert used to throw. A pending or sent row still blocks
 
 ### Deleted-Event Retention
 

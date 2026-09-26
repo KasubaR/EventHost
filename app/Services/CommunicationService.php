@@ -13,12 +13,14 @@ use App\Models\Rsvp;
 use App\Models\User;
 use App\Notifications\ContributionReceiptNotification;
 use App\Notifications\EventUpdatedNotification;
+use App\Notifications\GuestEventReminderNotification;
 use App\Notifications\HostEventReminderNotification;
 use App\Notifications\HostPurgeWarningNotification;
 use App\Notifications\NewContributionReceivedNotification;
 use App\Notifications\NewRsvpReceivedNotification;
 use App\Notifications\RsvpConfirmationNotification;
 use App\Notifications\RsvpReminderNotification;
+use App\Support\EventReminderBuckets;
 use App\Support\WhatsAppEventReminderBuckets;
 use App\Support\ZambianPhone;
 use Illuminate\Support\Carbon;
@@ -527,6 +529,85 @@ class CommunicationService
     }
 
     /**
+     * Scheduled email reminder for Accepted guests (7 / 1 / 0 days before event_date) — the email twin of
+     * sendWhatsAppEventReminder(); plans/guest-email-reminders.md. Free per message, so it has no WhatsApp-style
+     * cost cap, only the shared per-event hourly limit.
+     *
+     * @return 'sent'|'disabled'|'skipped'|'rate_limited'|'failed'
+     */
+    public function sendGuestEventReminderEmail(Event $event, Guest $guest, string $bucket): string
+    {
+        if (! (bool) config('communications.guest_email_reminders.enabled', false)) {
+            return 'disabled';
+        }
+
+        if (! $event->ownerCanSendAutomatedReminders()) {
+            return 'disabled';
+        }
+
+        if ($event->isCancelled() || $event->trashed()) {
+            return 'skipped';
+        }
+
+        if (! EventReminderBuckets::isAllowed($bucket)) {
+            return 'skipped';
+        }
+
+        if (! is_string($guest->email) || trim($guest->email) === '') {
+            return 'skipped';
+        }
+
+        $guest->loadMissing('rsvp');
+        if ($guest->rsvp === null || $guest->rsvp->status !== RsvpStatus::Accepted) {
+            return 'skipped';
+        }
+
+        // The 09:00 run can land after an early event has started; "today is the big day" then reads as
+        // a mistake, and the 1-day reminder already covered it. Only applies to a day-of reminder with a
+        // start time — with none there is nothing to be late for.
+        if ($bucket === EventReminderBuckets::BUCKET_0 && $event->hasStartTime() && $event->startsAt()?->isPast()) {
+            return 'skipped';
+        }
+
+        $cap = max(1, (int) config('communications.reminder_hourly_cap_per_event', 500));
+        $queuedLastHour = NotificationLog::query()
+            ->where('event_id', $event->id)
+            ->where('channel', 'email')
+            ->where('type', 'guest_event_reminder_email')
+            ->where('created_at', '>=', now()->subHour())
+            ->count();
+        if ($queuedLastHour >= $cap) {
+            return 'rate_limited';
+        }
+
+        // The event date is in the key so a moved event is reminded again for its new date.
+        $idempotencyKey = sprintf(
+            'email-event-reminder:%d:%d:%s:%s',
+            $event->id,
+            $guest->id,
+            $bucket,
+            $event->event_date?->format('Y-m-d') ?? 'undated'
+        );
+        $log = $this->startLog($event, $guest, 'email', 'guest_event_reminder_email', $idempotencyKey, [
+            'bucket' => $bucket,
+        ]);
+        if ($log === null) {
+            return 'skipped';
+        }
+
+        try {
+            Notification::route('mail', trim($guest->email))
+                ->notify(new GuestEventReminderNotification($event, $guest, $bucket));
+            $this->markSent($log);
+
+            return 'sent';
+        } catch (\Throwable $e) {
+            $this->markFailed($log, $e);
+            throw $e;
+        }
+    }
+
+    /**
      * @param  array<string, mixed>|null  $meta
      */
     private function startLog(
@@ -540,11 +621,23 @@ class CommunicationService
         if ($idempotencyKey !== null) {
             $existing = NotificationLog::query()
                 ->where('idempotency_key', $idempotencyKey)
-                ->whereIn('status', [NotificationLog::STATUS_PENDING, NotificationLog::STATUS_SENT])
                 ->first();
 
             if ($existing !== null) {
-                return null;
+                if (in_array($existing->status, [NotificationLog::STATUS_PENDING, NotificationLog::STATUS_SENT], true)) {
+                    return null;
+                }
+
+                // A failed attempt may be tried again — but idempotency_key is unique, so it has to reuse the
+                // failed row rather than insert a second one (which used to throw a unique-constraint error).
+                $existing->forceFill([
+                    'status' => NotificationLog::STATUS_PENDING,
+                    'response' => null,
+                    'sent_at' => null,
+                    'meta' => $meta,
+                ])->save();
+
+                return $existing;
             }
         }
 

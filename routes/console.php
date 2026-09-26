@@ -20,6 +20,8 @@ Schedule::command('events:warn-pending-purge')->dailyAt('02:30')->timezone('Afri
 Schedule::command('events:purge-deleted')->dailyAt('03:00')->timezone('Africa/Lusaka')->withoutOverlapping();
 Schedule::command('events:send-host-reminders')->dailyAt('09:00')->timezone('Africa/Lusaka');
 Schedule::command('events:send-whatsapp-reminders')->dailyAt('09:00')->timezone('Africa/Lusaka');
+// Same days and slot as the WhatsApp reminder; a no-op until COMM_GUEST_EMAIL_REMINDERS_ENABLED is true.
+Schedule::command('events:send-guest-email-reminders')->dailyAt('09:00')->timezone('Africa/Lusaka');
 Schedule::command('payments:poll-pending')
     ->everyFiveMinutes()
     ->withoutOverlapping()
