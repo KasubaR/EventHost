@@ -23,7 +23,13 @@
             </div>
             <a href="{{ route('events.create', ['audience' => 'private']) }}" class="btn-primary dash-header-cta">
                 <i class="fa-solid fa-plus" aria-hidden="true"></i> New Event
-                <span class="billing-credit-pill">{{ auth()->user()->event_credits }} credit{{ auth()->user()->event_credits === 1 ? '' : 's' }}</span>
+                @php
+                    $planTier = auth()->user()->subscriptionTier();
+                @endphp
+                <span class="billing-credit-pill">
+                    {{ auth()->user()->event_credits }} credit{{ auth()->user()->event_credits === 1 ? '' : 's' }}
+                    · {{ $planTier === \App\Enums\SubscriptionTier::None ? 'No plan' : $planTier->label().' plan' }}
+                </span>
             </a>
         </div>
     </x-slot>
