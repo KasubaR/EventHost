@@ -51,6 +51,10 @@ class WhatsAppInboundRsvpTest extends TestCase
         $this->assertSame($guest->entryPassPngUrl(), $fake->lastMediaUrl);
         $this->assertStringContainsString('Thank you', (string) $fake->lastMediaCaption);
         $this->assertStringContainsString('entry pass', (string) $fake->lastMediaCaption);
+        // Phase 4 of plans/invitation-pass-card.md: the media is the full card, not the bare QR,
+        // and the caption carries the link to the pass page.
+        $this->assertStringEndsWith('/pass.png', (string) $fake->lastMediaUrl);
+        $this->assertStringContainsString($guest->passPageUrl(), (string) $fake->lastMediaCaption);
         $this->assertDatabaseHas('notification_logs', [
             'guest_id' => $guest->id,
             'type' => 'guest_rsvp_whatsapp_inbound',

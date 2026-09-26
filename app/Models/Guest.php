@@ -155,8 +155,10 @@ class Guest extends Model
     }
 
     /**
-     * Absolute PNG entry-pass URL for WhatsApp media (Twilio fetches it). Null when
-     * the guest has no invitation token — callers must still check hasEntryPassFor.
+     * Absolute PNG URL of the full invitation-pass card, for WhatsApp media (Twilio
+     * fetches it). Null when the guest has no invitation token — callers must still
+     * check hasEntryPassFor. The bare-QR `rsvp.token.entry-pass-png` route still
+     * exists for anything already sent, but nothing new points at it.
      */
     public function entryPassPngUrl(): ?string
     {
@@ -164,7 +166,19 @@ class Guest extends Model
             return null;
         }
 
-        return route('rsvp.token.entry-pass-png', ['token' => $this->invitation_token], absolute: true);
+        return route('rsvp.token.pass-image', ['token' => $this->invitation_token], absolute: true);
+    }
+
+    /**
+     * Absolute URL of the guest's invitation pass page (the bookmarkable card).
+     */
+    public function passPageUrl(): ?string
+    {
+        if ($this->invitation_token === null) {
+            return null;
+        }
+
+        return route('rsvp.token.pass', ['token' => $this->invitation_token], absolute: true);
     }
 
     /**
