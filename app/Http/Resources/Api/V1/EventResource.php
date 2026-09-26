@@ -46,6 +46,7 @@ class EventResource extends JsonResource
             'event_type' => $this->event_type,
             'event_type_label' => $this->event_type_label,
             'product_kind' => $this->product_kind?->value,
+            'audience' => $this->audience?->value,
             'event_date' => $this->event_date?->format('Y-m-d'),
             'event_time' => $this->event_time,
             'venue' => $this->venue,

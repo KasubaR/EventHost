@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\ContributionStatus;
+use App\Enums\EventAudience;
 use App\Enums\EventProductKind;
 use App\Enums\RsvpStatus;
 use App\Enums\TicketingStatus;
@@ -48,11 +49,15 @@ class EventController extends Controller
     {
         $status = (string) $request->query('status', 'published');
         $kind = EventProductKind::tryFrom((string) $request->query('kind'));
+        // Optional private/public portal split (web: events.index vs public-events.index).
+        // Omitted or unrecognised = no filter, so older app builds get every owned event.
+        $audience = EventAudience::tryFrom((string) $request->query('audience'));
         $userId = (int) $request->user()->id;
 
         $mine = fn () => Event::query()
             ->where('user_id', $userId)
             ->when($kind, fn ($query) => $query->where('product_kind', $kind))
+            ->when($audience, fn ($query) => $query->forAudience($audience))
             ->orderByDesc('event_date')
             ->orderByDesc('created_at');
 
@@ -61,12 +66,14 @@ class EventController extends Controller
             'deleted' => Event::onlyTrashed()
                 ->where('user_id', $userId)
                 ->when($kind, fn ($query) => $query->where('product_kind', $kind))
+                ->when($audience, fn ($query) => $query->forAudience($audience))
                 ->orderByDesc('deleted_at')
                 ->paginate(10),
             'staffing' => Event::query()
                 ->whereHas('staff', fn ($query) => $query
                     ->where('user_id', $userId)
                     ->whereNotNull('accepted_at'))
+                ->when($audience, fn ($query) => $query->forAudience($audience))
                 ->orderByDesc('event_date')
                 ->paginate(10),
             default => $mine()->where('is_published', true)->paginate(10),

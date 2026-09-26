@@ -91,4 +91,57 @@ class IndexTest extends TestCase
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.id', $ticketed->id);
     }
+
+    public function test_audience_filter_splits_private_and_public_events(): void
+    {
+        $user = User::factory()->create();
+        $private = Event::factory()->for($user)->published()->privateAudience()->create();
+        $public = Event::factory()->for($user)->published()->publicAudience()->create();
+        $token = $this->tokenFor($user);
+
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/v1/host/events?audience=private')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $private->id)
+            ->assertJsonPath('data.0.audience', 'private');
+
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/v1/host/events?audience=public')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $public->id)
+            ->assertJsonPath('data.0.audience', 'public');
+    }
+
+    public function test_audience_filter_applies_to_drafts_too(): void
+    {
+        $user = User::factory()->create();
+        $privateDraft = Event::factory()->for($user)->privateAudience()->create();
+        Event::factory()->for($user)->publicAudience()->create();
+
+        $this->withHeader('Authorization', 'Bearer '.$this->tokenFor($user))
+            ->getJson('/api/v1/host/events?status=draft&audience=private')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $privateDraft->id);
+    }
+
+    public function test_omitted_or_unknown_audience_returns_every_owned_event(): void
+    {
+        $user = User::factory()->create();
+        Event::factory()->for($user)->published()->privateAudience()->create();
+        Event::factory()->for($user)->published()->publicAudience()->create();
+        $token = $this->tokenFor($user);
+
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/v1/host/events')
+            ->assertOk()
+            ->assertJsonCount(2, 'data');
+
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/v1/host/events?audience=nonsense')
+            ->assertOk()
+            ->assertJsonCount(2, 'data');
+    }
 }

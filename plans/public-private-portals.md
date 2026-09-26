@@ -469,7 +469,16 @@ inventing new patterns, to keep the risk down.
    timestamp. `tests/Feature/AudienceMigrationNoticeTest.php` (6 tests) covers the model flag, both banner
    states, and that only the owner can dismiss it.
 
-**Phase 7 (Android API additions) — dropped, not planned.** The original idea was to add `audience` to
+**Phase 7 (Android API additions) — REVISITED 2026-09-26, shipped.** A real Android client now exists
+(`EventHostAndriodApp/`) and mixed private and public events on one dashboard, so the read side was added:
+`audience` on `EventListResource`/`EventResource`; optional `?audience=private|public` on
+`GET /api/v1/host/events` (all statuses) and `GET /api/v1/host/dashboard` (omitted or unknown = unfiltered, so
+older builds are unaffected); and for `?audience=public` the dashboard also returns `public_totals` (the same
+`PublicDashboardAnalyticsService` numbers as `/public-dashboard`: tickets sold, checked in, gross and host
+revenue). Tests: `tests/Feature/Api/V1/Events/IndexTest.php`, `Dashboard/IndexTest.php`. The app shows a
+Private | Public tab bar and remembers the last one. `EventPreviewResource` was not touched.
+
+*Original note, kept for history:* **dropped, not planned.** The original idea was to add `audience` to
 `EventResource`/`EventListResource`/`EventPreviewResource` and an optional `?audience=` filter on
 `GET /api/v1/host/events`. Cut because there's no real consumer to build it for — no native Android app is
 actually built or shipped; `/api/v1` is a JSON API built ahead of one, to the spec in

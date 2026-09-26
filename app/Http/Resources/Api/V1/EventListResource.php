@@ -32,6 +32,7 @@ class EventListResource extends JsonResource
             'event_date' => $this->event_date?->format('Y-m-d'),
             'event_time' => $this->event_time,
             'product_kind' => $this->product_kind?->value,
+            'audience' => $this->audience?->value,
             'is_published' => $this->is_published,
             'is_public' => $this->is_public,
             'is_locked' => $this->isLocked(),
