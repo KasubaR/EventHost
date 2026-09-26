@@ -2,11 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ReviewStatus;
 use App\Enums\TicketOrderStatus;
 use App\Models\Admin;
 use App\Models\Event;
 use App\Models\EventContribution;
 use App\Models\Payment;
+use App\Models\Review;
 use App\Models\TicketOrder;
 use App\Models\User;
 use App\Services\AccountDeletionService;
@@ -320,6 +322,106 @@ class AccountDeletionRecordsTest extends TestCase
         $this->assertNull($payment->notified_at);
     }
 
+    // ── Reviews: kept after the account, visible to admins ───────────────────────────
+
+    public function test_a_hosts_reviews_are_kept_when_their_account_and_event_are_deleted(): void
+    {
+        $user = User::factory()->create(['profile_photo' => 'profile-photos/me.webp']);
+        $event = Event::factory()->for($user)->published()->create();
+        $mine = Review::factory()->approved()->featured()->create([
+            'user_id' => $user->id,
+            'event_id' => $event->id,
+            'author_name' => 'Thandiwe Mwale',
+            'author_context' => 'Wedding · Lusaka',
+            'author_photo' => 'profile-photos/me.webp',
+        ]);
+        $someoneElses = Review::factory()->approved()->featured()->create();
+        $adminVideo = Review::factory()->approved()->featured()->video()->create();
+
+        $this->deleteAccount($user)->assertRedirect('/');
+
+        $this->assertNull($user->fresh());
+        $this->assertNull(Event::query()->find($event->id), 'the event itself still goes with the account');
+
+        $kept = Review::query()->find($mine->id);
+        $this->assertNotNull($kept, 'the review must outlive the account and its event');
+        $this->assertNull($kept->user_id);
+        $this->assertNull($kept->event_id);
+        $this->assertSame('Thandiwe Mwale', $kept->author_name);
+        $this->assertSame('Wedding · Lusaka', $kept->author_context);
+        $this->assertSame(ReviewStatus::Approved, $kept->status);
+        $this->assertTrue($kept->is_featured);
+        $this->assertNotNull(Review::query()->find($someoneElses->id));
+        $this->assertNotNull(Review::query()->find($adminVideo->id));
+    }
+
+    public function test_the_kept_reviews_photo_reference_goes_with_the_profile_photo(): void
+    {
+        $user = User::factory()->create(['profile_photo' => 'profile-photos/me.webp']);
+        $review = Review::factory()->approved()->create([
+            'user_id' => $user->id, 'event_id' => null, 'author_photo' => 'profile-photos/me.webp',
+        ]);
+        // An admin-uploaded avatar on a host review is not the profile photo and is left alone.
+        $custom = Review::factory()->approved()->create([
+            'user_id' => $user->id, 'event_id' => null, 'author_photo' => 'reviews/avatar_custom.webp',
+        ]);
+
+        $this->deleteAccount($user)->assertRedirect('/');
+
+        $this->assertNull($review->fresh()->author_photo);
+        $this->assertSame('reviews/avatar_custom.webp', $custom->fresh()->author_photo);
+    }
+
+    public function test_a_featured_review_stays_on_the_homepage_after_its_author_deletes_their_account(): void
+    {
+        $user = User::factory()->create();
+        Review::factory()->approved()->featured()->create([
+            'user_id' => $user->id, 'event_id' => null, 'author_name' => 'Chipo Zulu', 'body' => 'Set up in minutes.',
+        ]);
+
+        $this->deleteAccount($user)->assertRedirect('/');
+        auth()->logout();
+
+        $this->get('/')->assertOk()->assertSee('Chipo Zulu')->assertSee('Set up in minutes.');
+    }
+
+    public function test_admins_can_still_see_and_moderate_a_kept_review(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $admin = Admin::factory()->create();
+        $admin->assignRole('super_admin');
+
+        $user = User::factory()->create();
+        $event = Event::factory()->for($user)->published()->create();
+        $pending = Review::factory()->create(['user_id' => $user->id, 'event_id' => $event->id, 'author_name' => 'Pending Person']);
+        $approved = Review::factory()->approved()->create(['user_id' => $user->id, 'event_id' => null, 'author_name' => 'Approved Person']);
+        $this->deleteAccount($user);
+        auth()->logout();
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.reviews.index'))
+            ->assertOk()
+            ->assertSee('Pending Person')
+            ->assertSee('Approved Person')
+            ->assertSee('(account deleted)')
+            ->assertSee('Event removed');
+
+        $this->actingAs($admin, 'admin')
+            ->delete(route('admin.reviews.destroy', $approved))
+            ->assertRedirect(route('admin.reviews.index'));
+
+        $this->assertNull(Review::query()->find($approved->id));
+        $this->assertNotNull(Review::query()->find($pending->id));
+    }
+
+    public function test_privacy_says_reviews_are_kept_and_the_photo_is_not(): void
+    {
+        $this->get(route('legal.privacy'))
+            ->assertOk()
+            ->assertSee('Reviews you have written are kept when you delete')
+            ->assertSee('Your profile photo is not kept with them')
+            ->assertDontSee('are deleted with your account');
+    }
     // ── What admins see ───────────────────────────────────────────────────────────────
 
     public function test_admin_sees_who_paid_for_a_payment_whose_account_is_gone(): void

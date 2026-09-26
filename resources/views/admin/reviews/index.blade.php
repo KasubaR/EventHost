@@ -89,10 +89,12 @@
                     @endif
                     <span class="admin-review-source">
                         <i class="fa-solid {{ $review->isFromHost() ? 'fa-user' : 'fa-user-shield' }}"></i>
-                        {{ $review->isFromHost() ? 'Host' : 'Added by admin' }}
+                        {{ $review->isFromHost() ? 'Host' : 'Added by admin' }}@if ($review->hasDeletedAuthor()) (account deleted)@endif
                     </span>
                     @if ($review->event)
                         <span><i class="fa-solid fa-calendar-day"></i> {{ $review->event->name }}</span>
+                    @elseif ($review->isFromHost())
+                        <span><i class="fa-solid fa-calendar-day"></i> Event removed</span>
                     @endif
                     <span>{{ $review->created_at?->format('j M Y') }}</span>
                     @if ($review->rating)

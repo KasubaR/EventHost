@@ -74,10 +74,10 @@ class EventPurgeService
 
                 $files = $this->collectFiles($event);
 
-                // Published testimonials outlive the event they were written about:
-                // reviews.event_id cascades, so without this the purge would delete a
-                // review that may be featured on the homepage. The review already
-                // snapshots the author name and context for exactly this reason.
+                // Published testimonials outlive the event they were written about. The
+                // reviews.event_id FK nulls on delete now, but hosts that came up without
+                // the constraint would neither null nor cascade, so this stays explicit.
+                // The review already snapshots the author name and context for this reason.
                 Review::query()->where('event_id', $event->id)->update(['event_id' => null]);
 
                 // notification_logs is nullOnDelete — left alone it would outlive its

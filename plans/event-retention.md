@@ -346,6 +346,19 @@ way whichever it is), Terms §10 and the Settings → Account warning. Tests: `A
 the wording tests in `LegalPagesTest`; each mutation of the guard, the delete-non-money step, the snapshot, the
 trashed-events scope, the refunded status and both null-user guards fails at least one test.
 
+### 6c. Reviews outlive the account (added after §6b)
+
+**Built.** Privacy said approved reviews "keep the name and context" after account deletion, but `reviews.user_id`
+cascaded, so the review was deleted — and so was any review on an event the account deleted, via `reviews.event_id`.
+Decided: keep them, and keep them reachable in the admin panel. Migration `2026_09_27_110000_keep_reviews_after_account_deletion`
+makes both keys `nullOnDelete` (both columns were already nullable). `author_name` / `author_context` snapshot who wrote
+it, so the row still renders. `author_photo` is the user's *profile photo path*, not a copy, so
+`AccountDeletionService::detachReviewPhotos()` nulls it when it matches — the photo goes with the account and a kept
+review never points at a deleted file (an admin-uploaded avatar on the same review is left alone). The admin list marks
+such a review "(account deleted)" / "Event removed". Privacy §7 now says reviews are kept under the name and business
+details given, without the photo, and can be deleted on request. Pending and rejected reviews are kept as well — an admin
+deletes them from `/admin/reviews`. Tests in `AccountDeletionRecordsTest`.
+
 ## 7. Phase 3 — the Privacy policy (and Terms)
 
 **Built, with one deliberate difference from the text below: the policy wording follows the setting.**

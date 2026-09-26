@@ -103,6 +103,12 @@ class Review extends Model
         return $this->source === self::SOURCE_USER;
     }
 
+    /** A host review whose account has since been deleted — the row is kept, user_id is null. */
+    public function hasDeletedAuthor(): bool
+    {
+        return $this->isFromHost() && $this->user_id === null;
+    }
+
     /**
      * `author_photo` is snapshotted from the host's profile photo at submit time
      * (or uploaded by an admin), so rendering the strip never has to touch the

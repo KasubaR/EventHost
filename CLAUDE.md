@@ -580,8 +580,8 @@ setting, so it can never promise a window the job is not enforcing. Account dele
 - `Event::scheduledPurgeDate()` is pure date math (safe on a list page); `purgeAt()` is the same date or null when
   exempt; `scopePurgeable()` selects candidates. The **exemption is re-checked per event inside
   `EventPurgeService`'s transaction, under a row lock** — an order can settle between selecting and deleting
-- The purge detaches reviews first (`reviews.event_id` cascades — a purge would otherwise delete a featured
-  testimonial), deletes the event's `notification_logs` (they're `nullOnDelete` and would outlive their guests),
+- The purge detaches reviews first (`reviews.event_id` is now `nullOnDelete`, but the explicit detach stays for hosts whose
+  DB came up without the constraint — a purge must never delete a featured testimonial), deletes the event's `notification_logs` (they're `nullOnDelete` and would outlive their guests),
   then `forceDelete()`s and lets the cascades run. `credit_transactions`, ticket revenue and payouts are
   `nullOnDelete` and survive with a null event id. **Files are deleted only after the transaction commits**, and a
   failed file delete is logged (`event.purge_file_failed`), never thrown
@@ -671,6 +671,13 @@ The homepage testimonial strip is database-driven and admin-curated. One `review
 - Video cards are **click-to-play**: the blade renders a poster and a button with the embed URL in `data-testi-video`, and `homepage.js` builds the iframe only on click, so no third-party frame loads on first paint. `InvitationVideoBackground::playerEmbedUrl()` is the unmuted, controls-on embed — distinct from `embedUrl()`, which stays muted and chrome-less for invitation hero backgrounds
 - Editing a video review with a blank link keeps the stored video, so the admin can fix wording without re-pasting. Removing the poster does **not** unfeature the review — the video is the requirement, the poster is decoration
 - `Review::featuredForHomepage()` returns approved + featured rows in `featured_sort_order`; `HomeController` limits to `HOMEPAGE_FEATURED_LIMIT` (6) and the section is hidden entirely when the collection is empty. A video review with no `video_ref` cannot be featured — enforced in the scope and again in `Admin\UpdateReviewRequest`
+- **A host's reviews outlive their account and their events.** `reviews.user_id` and `reviews.event_id` are `nullOnDelete`
+  (migration `2026_09_27_110000`), so an approved/featured testimonial stays on the homepage and every kept review stays
+  in `/admin/reviews`, where a host review with no `user_id` reads "(account deleted)" and one with no event "Event
+  removed" (`Review::hasDeletedAuthor()`). `AccountDeletionService` clears `author_photo` when it equals the deleted
+  profile photo — that column holds the *same file path*, not a copy, and the controller deletes the file. Name and context
+  stay. Pending and rejected reviews are kept too; an admin deletes them from the moderation page. Privacy §7 says this —
+  change both together. Don't assume `$review->user` / `->event` exist
 - `author_name` / `author_context` / `author_photo` are **snapshotted at submit time**, so the homepage renders without joining `users`/`events` and a profile rename never rewrites a published testimonial
 - A host editing an approved review resets it to `pending` and clears `is_featured` — otherwise a mild review could be approved, featured, then rewritten on a live homepage
 - Review bodies are plain text — rendered with `{{ }}`, never `{!! !!}`

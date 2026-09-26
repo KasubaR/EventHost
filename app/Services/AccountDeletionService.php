@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Payment;
+use App\Models\Review;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
@@ -82,11 +83,30 @@ class AccountDeletionService
             }
 
             $this->settlePayments($locked);
+            $this->detachReviewPhotos($locked);
 
             $locked->delete();
 
             return null;
         });
+    }
+
+    /**
+     * The user's reviews are kept (reviews.user_id nulls on delete), but a review's author_photo is
+     * the user's own profile photo path, not a copy — and the controller deletes that file. Clear
+     * the reference so a kept review does not point at a file that is gone, and so the photo goes
+     * with the account. Name and context stay: they are what the review is published under.
+     */
+    private function detachReviewPhotos(User $user): void
+    {
+        if ($user->profile_photo === null || $user->profile_photo === '') {
+            return;
+        }
+
+        Review::query()
+            ->where('user_id', $user->getKey())
+            ->where('author_photo', $user->profile_photo)
+            ->update(['author_photo' => null]);
     }
 
     /**

@@ -168,8 +168,9 @@
                     Deleting your account from account settings removes your profile, your events and their
                     guest lists. We cannot delete an account while one of its events has ticket sales, refunds or
                     contribution payments on record, or while a payment is still being processed — those records are
-                    kept, so contact support to wind the event down first. Approved reviews you have published keep the name and context captured at
-                    the time you submitted them, because they are part of a public page.
+                    kept, so contact support to wind the event down first. Reviews you have written are kept when you delete
+                    your account, under the name and business details you gave when you wrote them — including any published
+                    on our homepage. Your profile photo is not kept with them. Ask us and we will delete a review.
                 </p>
             </section>
 
