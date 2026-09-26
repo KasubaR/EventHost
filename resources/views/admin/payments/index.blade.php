@@ -102,7 +102,15 @@
             <tbody>
             @forelse ($payments as $payment)
                 <tr>
-                    <td>{{ $payment->user?->name ?? '—' }}</td>
+                    <td>
+                        @if ($payment->user)
+                            {{ $payment->user->name }}
+                        @elseif ($payment->payer_name)
+                            {{ $payment->payer_name }} <span class="admin-muted">(deleted account)</span>
+                        @else
+                            —
+                        @endif
+                    </td>
                     <td>{{ $plans[$payment->plan_key]['label'] ?? $payment->plan_key }}</td>
                     <td>{{ $payment->currency }} {{ number_format((float) $payment->amount, 2) }}</td>
                     <td>{{ str_replace('_', ' ', $payment->payment_method) }}</td>

@@ -189,7 +189,9 @@
                 <h2 id="suspension">10. Suspension and closure</h2>
                 <p>
                     You can delete your account at any time from account settings. Deletion is permanent and
-                    removes your events and guest lists.
+                    removes your events and guest lists. Records of payments are the exception: we keep those, and
+                    we cannot delete an account while one of its events has ticket sales, refunds or contribution
+                    payments on record. Contact support and we will wind the event down with you first.
                 </p>
                 <p>
                     We may suspend or close an account that breaches these terms, that is being used

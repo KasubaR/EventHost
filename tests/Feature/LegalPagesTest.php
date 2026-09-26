@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -59,6 +60,43 @@ class LegalPagesTest extends TestCase
             ->assertDontSee('so you can restore it')
             ->assertDontSee('Events with ticket sales or contribution payments')
             ->assertSee('Payment records');
+    }
+
+    /** @return array<string, array{0: int}> */
+    public static function retentionSettings(): array
+    {
+        return ['purging on' => [30], 'purging off' => [0]];
+    }
+
+    // plans/event-retention.md §6b: account deletion behaves this way whatever the purge setting is,
+    // so the wording that describes it must not depend on it.
+    #[DataProvider('retentionSettings')]
+    public function test_privacy_describes_what_happens_to_payments_and_paid_events_on_account_deletion(int $days): void
+    {
+        config(['events.retention.deleted_days' => $days]);
+
+        $this->get(route('legal.privacy'))
+            ->assertOk()
+            ->assertSee('your own subscription and credit purchases')
+            ->assertSee('with the name and email address you paid')
+            ->assertSee('We cannot delete an account while one of its events has ticket sales, refunds or')
+            ->assertSee('or while a payment is still being processed');
+    }
+
+    public function test_terms_say_payment_records_and_paid_events_are_the_exception_to_deletion(): void
+    {
+        $this->get(route('legal.terms'))
+            ->assertOk()
+            ->assertSee('Records of payments are the exception')
+            ->assertSee('we cannot delete an account while one of its events has ticket sales, refunds or contribution');
+    }
+
+    public function test_the_delete_account_page_warns_about_the_same_exception(): void
+    {
+        $this->actingAs(User::factory()->create())
+            ->get('/settings/account')
+            ->assertOk()
+            ->assertSee('Payment records we are required to keep are the exception');
     }
 
     #[DataProvider('legalRoutes')]

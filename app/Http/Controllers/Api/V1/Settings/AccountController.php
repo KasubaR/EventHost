@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Api\V1\Settings;
 
-use App\Enums\TicketOrderStatus;
 use App\Http\Controllers\Controller;
+use App\Services\AccountDeletionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -12,7 +12,7 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * JSON sibling of App\Http\Controllers\Settings\AccountController (Slice E).
- * Same paid-ticket-sales block as the web controller, verbatim. Password
+ * Same guard and deletion as the web controller (AccountDeletionService). Password
  * re-check uses the same Auth::guard('web')->validate() trick as
  * SecurityController (the implicit `current_password` rule assumes the
  * `web` guard). Revokes only the token used for this request — a delete
@@ -36,22 +36,12 @@ class AccountController extends Controller
             ]);
         }
 
-        // events.user_id cascades on delete, and so do ticket_orders/tickets/
-        // ticket_reservations off the events it takes with it — deleting the
-        // account would silently destroy paid buyers' tickets and orders.
-        // withTrashed(): an event in Recently deleted is still a row and the cascade
-        // takes it too (plans/event-retention.md §6) — same guard as the web controller.
-        $hasPaidTicketSales = $user->events()
-            ->withTrashed()
-            ->ticketed()
-            ->whereHas('ticketOrders', fn ($query) => $query->where('status', TicketOrderStatus::Paid->value))
-            ->exists();
+        // Same guard, same deletion, as the web controller — see AccountDeletionService.
+        // Still a 409 with a `message` key; only the wording widened.
+        $blocker = app(AccountDeletionService::class)->delete($user);
 
-        if ($hasPaidTicketSales) {
-            return response()->json([
-                'message' => 'You have ticketed events with paid orders. Contact support to wind down '
-                    .'ticket sales — and settle any pending payout — before deleting your account.',
-            ], 409);
+        if ($blocker !== null) {
+            return response()->json(['message' => AccountDeletionService::messageFor($blocker)], 409);
         }
 
         if ($user->profile_photo) {
@@ -59,8 +49,6 @@ class AccountController extends Controller
         }
 
         $request->user()->currentAccessToken()->delete();
-
-        $user->delete();
 
         return response()->json(['message' => 'Account deleted.']);
     }

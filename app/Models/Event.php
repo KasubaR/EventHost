@@ -598,31 +598,45 @@ class Event extends Model
      */
     public function hasRetainedFinancialRecords(): bool
     {
+        return static::withTrashed()
+            ->whereKey($this->getKey())
+            ->withRetainedFinancialRecords()
+            ->exists();
+    }
+
+    /**
+     * The query form of hasRetainedFinancialRecords() — that method and the account-deletion
+     * guard (AccountDeletionService) both read it, so "has this event taken money" has one
+     * definition. Combine with withTrashed() to include Recently deleted events.
+     *
+     * @param  Builder<Event>  $query
+     * @return Builder<Event>
+     */
+    public function scopeWithRetainedFinancialRecords(Builder $query): Builder
+    {
         $orderStatuses = [
             ...TicketOrderStatus::inFlight(),
             TicketOrderStatus::Paid,
             TicketOrderStatus::Refunded,
         ];
 
-        if ($this->ticketOrders()->whereIn('status', $orderStatuses)->exists()) {
-            return true;
-        }
-
-        return $this->eventContributions()
-            ->where(function (Builder $contribution): void {
-                $contribution
-                    ->where('amount_paid', '>', 0)
-                    ->orWhereHas('payments', function (Builder $payment): void {
-                        $payment
-                            ->whereIn('status', ['completed', 'refunded'])
-                            ->orWhere(function (Builder $recent): void {
-                                $recent
-                                    ->whereIn('status', ['pending', 'processing'])
-                                    ->where('created_at', '>=', now()->subDays(self::CONTRIBUTION_IN_FLIGHT_DAYS));
-                            });
-                    });
-            })
-            ->exists();
+        return $query->where(function (Builder $event) use ($orderStatuses): void {
+            $event
+                ->whereHas('ticketOrders', fn (Builder $order) => $order->whereIn('status', $orderStatuses))
+                ->orWhereHas('eventContributions', function (Builder $contribution): void {
+                    $contribution
+                        ->where('amount_paid', '>', 0)
+                        ->orWhereHas('payments', function (Builder $payment): void {
+                            $payment
+                                ->whereIn('status', ['completed', 'refunded'])
+                                ->orWhere(function (Builder $recent): void {
+                                    $recent
+                                        ->whereIn('status', ['pending', 'processing'])
+                                        ->where('created_at', '>=', now()->subDays(self::CONTRIBUTION_IN_FLIGHT_DAYS));
+                                });
+                        });
+                });
+        });
     }
 
     /**

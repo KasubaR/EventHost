@@ -44,6 +44,15 @@ class PaymentCompletionService
                 return null;
             }
 
+            // The account was deleted while this payment was still open (a kept `processing`
+            // row that settled late). There is nobody to credit; the row stays as the record
+            // and an admin reconciles it from payer_name / payer_email.
+            if ($locked->user_id === null) {
+                PaymentLog::forPayment($locked, 'complete.skipped_account_deleted');
+
+                return null;
+            }
+
             /** @var User $user */
             $user = User::query()->whereKey($locked->user_id)->lockForUpdate()->firstOrFail();
 
@@ -246,14 +255,19 @@ class PaymentCompletionService
                 return $locked;
             }
 
-            /** @var User $user */
-            $user = User::query()->whereKey($locked->user_id)->lockForUpdate()->firstOrFail();
+            // A kept payment can be refunded after its account is gone (user_id is null);
+            // there is no balance to debit, so it is only marked refunded below.
+            /** @var User|null $user */
+            $user = $locked->user_id === null
+                ? null
+                : User::query()->whereKey($locked->user_id)->lockForUpdate()->firstOrFail();
 
             // remove_branding, public_registration_quote, and unused-credit
             // top-ups (credits_granted = 0) never touch the credit ledger —
             // reversePurchase() would just write a pointless 0-credit refund
             // row for those.
-            if ($locked->credits_fulfilled_at !== null
+            if ($user !== null
+                && $locked->credits_fulfilled_at !== null
                 && (int) $locked->credits_granted >= 1
                 && ! in_array($locked->plan_key, ['remove_branding', 'public_registration_quote'], true)) {
                 $this->credits->reversePurchase(
@@ -318,7 +332,8 @@ class PaymentCompletionService
             // Unused-credit top-up: restore the prior tier only when the
             // account is still on the tier this payment raised them to —
             // otherwise a later higher purchase would be clobbered.
-            if ($locked->credits_fulfilled_at !== null
+            if ($user !== null
+                && $locked->credits_fulfilled_at !== null
                 && (bool) data_get($locked->metadata, 'upgrade')
                 && is_string(data_get($locked->metadata, 'previous_tier'))) {
                 $purchasedTier = BillingPlan::tierForPlan($locked->plan_key);

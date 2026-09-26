@@ -565,8 +565,8 @@ Africa/Lusaka) permanently removes it once it is older than `events.retention.de
 `plans/event-retention.md` — **all phases are built (purge, countdown UI/API/admin, warning email, Privacy copy,
 account-guard fix); purging is disabled by default.** It is switched on by setting `EVENT_TRASH_RETENTION_DAYS` —
 follow the go-live order in `docs/deployment.md` §3b. The Privacy page's retention wording follows that same
-setting, so it can never promise a window the job is not enforcing. Widening the account-deletion guard to the full
-"has taken money" rule is a deferred follow-up (plan §6b).
+setting, so it can never promise a window the job is not enforcing. Account deletion has its own guard on the same
+"has taken money" rule, and keeps the user's payment records (plan §6b, built — see the two account-deletion bullets below).
 
 - Off unless `EVENT_TRASH_RETENTION_DAYS` > 0 (default 0). `EVENT_TRASH_RETENTION_STARTS_AT` (YYYY-MM-DD) is the
   release date: anything already in the trash then is treated as deleted on that date, so it gets a full window
@@ -602,10 +602,19 @@ setting, so it can never promise a window the job is not enforcing. Widening the
   states the N-day window (the configured number), the warning email, immediate removal on account deletion and the
   payment-records exemption; off, it keeps its original wording. Change one and the other follows — don't hard-code
   "30 days" in the copy. Still unreviewed by a lawyer (see Legal Pages)
-- **Account deletion is blocked by trashed events too**: both `Settings\AccountController` and
-  `Api\V1\Settings\AccountController` use `$user->events()->withTrashed()` in the paid-ticket-sales guard, because
-  `events.user_id` cascades over deleted rows just the same. It still checks **Paid orders only** — Refunded and
-  contribution payments are the deferred §6b
+- **Account deletion** goes through `App\Services\AccountDeletionService` (both `Settings\AccountController` and
+  `Api\V1\Settings\AccountController` call it; the API keeps its 409 + `message`). `events.user_id` cascades over
+  trashed rows too, so `blocker()` refuses when any event **including Recently deleted** matches
+  `Event::scopeWithRetainedFinancialRecords()` — the query form `hasRetainedFinancialRecords()` also reads, so the
+  purge and the account guard share one definition — or when the user has a `pending`/`processing` payment younger
+  than `Payment::IN_FLIGHT_HOURS` (24). Always on, whatever `EVENT_TRASH_RETENTION_DAYS` is. Check and delete share one
+  transaction under the user's row lock (`PaymentController::initiate()` takes the same lock)
+- **The user's own `payments` survive their account** (`payments.user_id` is nullable + `nullOnDelete`, migration
+  `2026_09_27_100000`). On deletion, payments that moved money (`completed`, `refunded`, `processing`) are kept with a
+  `payer_name`/`payer_email` snapshot; `failed`, `cancelled` and never-finished `pending` ones are deleted with the
+  account. `PaymentCompletionService::reverse()` and `complete()` tolerate a null `user_id` — don't reintroduce a
+  `User::...->firstOrFail()` on `$payment->user_id`. `credit_transactions` and `custom_quotes` still cascade. Privacy §7,
+  Terms §10 and the Settings → Account warning describe this; keep them in step
 - **Slugs of purged events are freed** — a new event can later take a URL that was printed on an old invitation.
   Accepted deliberately (no tombstone table); see the plan §10
 

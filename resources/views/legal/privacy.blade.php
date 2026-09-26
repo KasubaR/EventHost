@@ -157,11 +157,18 @@
                     @else
                         <li><strong>Event and guest data</strong> — until you delete the event, or delete your account</li>
                     @endif
-                    <li><strong>Payment records</strong> — kept as long as required for tax and accounting purposes, even after account deletion</li>
+                    <li>
+                        <strong>Payment records</strong> — kept as long as required for tax and accounting purposes, even
+                        after account deletion. That includes your own subscription and credit purchases: when you delete
+                        your account we keep the payments that went through, with the name and email address you paid
+                        under, and delete the ones that never did.
+                    </li>
                 </ul>
                 <p>
                     Deleting your account from account settings removes your profile, your events and their
-                    guest lists. Approved reviews you have published keep the name and context captured at
+                    guest lists. We cannot delete an account while one of its events has ticket sales, refunds or
+                    contribution payments on record, or while a payment is still being processed — those records are
+                    kept, so contact support to wind the event down first. Approved reviews you have published keep the name and context captured at
                     the time you submitted them, because they are part of a public page.
                 </p>
             </section>

@@ -21,6 +21,8 @@ class Payment extends Model
         'plan_key',
         'credits_granted',
         'user_ref',
+        'payer_name',
+        'payer_email',
         'payment_method',
         'provider',
         'amount',
@@ -78,6 +80,25 @@ class Payment extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * How long a pending/processing payment can still be completed by the customer or a
+     * late webhook — matches the expires_at every payment is created with.
+     */
+    public const IN_FLIGHT_HOURS = 24;
+
+    /**
+     * Payments that may still resolve to taken money. Account deletion waits for these:
+     * a payment that settled after its user vanished would be money with nobody to credit.
+     *
+     * @param  Builder<Payment>  $query
+     * @return Builder<Payment>
+     */
+    public function scopeStillResolving(Builder $query): Builder
+    {
+        return $query->inProgress()
+            ->where('created_at', '>=', now()->subHours(self::IN_FLIGHT_HOURS));
     }
 
     /**

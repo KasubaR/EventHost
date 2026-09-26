@@ -2,8 +2,8 @@
 
 Status: **Built** — Phases 1 (the purge), 2 (countdown, API, admin), 2c (warning email, warned-first backstop) and 3
 (Privacy wording, account-guard fix) are all done. Purging is still **disabled by default**; it is switched on by
-following the go-live order in §11 / `docs/deployment.md`. §6b (widening the account-deletion guard) is a separate,
-deferred follow-up. All open questions are resolved (§10).
+following the go-live order in §11 / `docs/deployment.md`. §6b (widening the account-deletion guard, and keeping the
+user's own payment records) is built as its own phase 4. All open questions are resolved (§10).
 
 Today "delete" on an event is a soft delete and nothing ever comes back to finish the job. A deleted event
 sits in **Recently deleted** forever, with its guest list, RSVPs, uploaded media and (for ticketed events)
@@ -29,7 +29,7 @@ account"*, so as written today the honest reading is that deleting an event remo
 | Contribution payments | **Protect the event** (confirmed) — a completed or pending contribution payment exempts it, same as a paid order |
 | Reused URLs after a purge | **Accepted** (confirmed). Note it in CLAUDE.md, build no tombstone table |
 | Launch-date safety | **The command refuses to run** when purging is on, trash older than the window exists and `starts_at` is unset (§5). Decided: the failure mode it prevents is silent and unrecoverable. `--allow-backlog` is the deliberate override |
-| Widening the account-deletion guard | **Deferred to a follow-up phase** (§6b). This plan only adds `withTrashed()` |
+| Widening the account-deletion guard | **Built as phase 4** (§6b). Phase 3 only added `withTrashed()` |
 | Existing trash at deploy time | **Must not be purged on day one.** See §5 — the clock for anything deleted before launch starts at launch |
 
 ---
@@ -302,17 +302,49 @@ one with only cancelled/failed orders does not. Mutation-checked: removing `with
 trashed before the delete guard existed) can delete their account and take those orders with them. Change the
 guard to `$user->events()->withTrashed()` — one line, and it makes the account guard and the purge agree that
 paid ticket sales are never destroyed. It does **not** widen the guard to Refunded/contribution (that would
-change account-deletion behaviour beyond this feature) — that is the deferred follow-up in §6b.
+change account-deletion behaviour beyond this feature) — that is the follow-up built as §6b.
 
-### 6b. Follow-up phase (deferred, separate change) — widen the account-deletion guard
+### 6b. Phase 4 — the account-deletion guard and the user's own payment records
 
-Confirmed as its own phase, not part of this release. Scope when it is picked up: make
-`AccountController::destroy()` use the **same** `Event::hasRetainedFinancialRecords()` definition as the purge
-(Paid, Refunded and in-flight ticket orders, plus completed/pending contribution payments) instead of its own
-Paid-only, ticketed-only query, over `withTrashed()` events; update the error copy (it currently says "ticketed
-events with paid orders"); update the Privacy/Terms account-deletion wording; and test each blocking case. The
-reason it is a separate phase: it changes what stops a user deleting their own account, which deserves its own
-release note and support wording. Until then `withTrashed()` (§6) is the only account-deletion change.
+**Built.** Its own release, separate from the one that turned purging on, because it changes what stops a user
+deleting their own account. Two problems, one fix, because both are "what does deleting an account destroy that we
+said we keep":
+
+**1. The guard now uses the purge's definition.** `Event::scopeWithRetainedFinancialRecords()` is the single query
+form of "has this event taken money"; `hasRetainedFinancialRecords()` (the purge, the warning command, the countdown
+notice) reads it too, so the two cannot drift. `AccountDeletionService::blocker()` refuses when
+`$user->events()->withTrashed()->withRetainedFinancialRecords()` finds anything: Paid, Refunded and in-flight ticket
+orders, and contributions with a completed/refunded payment, any `amount_paid`, or a pending payment under 7 days
+old. It replaces the old Paid-only, ticketed-only query in **both** controllers, which now share one service and one
+message (`AccountDeletionService::messageFor()`). The API keeps its 409 + `message`; only the wording widened.
+
+**2. The user's own `payments` survive.** `payments.user_id` used to `cascadeOnDelete`, so deleting an account deleted
+its subscription/credit billing history — contradicting Privacy's "payment records are kept … even after account
+deletion". Migration `2026_09_27_100000_keep_payments_after_account_deletion`:
+
+- `payments.user_id` becomes nullable + `nullOnDelete` (the posture `ticket_revenue_entries` and both payout tables
+  already take), and `payer_name` / `payer_email` are added
+- on deletion (`AccountDeletionService::settlePayments()`, inside the same transaction as the guard, under the user's
+  row lock — `PaymentController::initiate()` takes the same lock, so a checkout cannot start between the guard passing
+  and the cascade): payments that **never moved money** (`failed`, `cancelled`, never-finished `pending`) are deleted
+  with the account; the ones that did (`completed`, `refunded`, and `processing` — money may be mid-flight at the
+  provider) are kept, and get the name + email snapshot, because `user_id` is about to become null and an unlabelled
+  payment is useless to an accountant. Nothing is written for a deletion that is refused
+- **A payment that can still settle blocks the deletion**: `pending`/`processing` and created within
+  `Payment::IN_FLIGHT_HOURS` (24, matching the `expires_at` every payment is created with). Otherwise a payment could
+  complete after its user vanished — money with nobody to credit. The message says to wait up to 24 hours
+- `PaymentCompletionService::reverse()` tolerates a null user (a chargeback on a kept payment: status → `refunded`, no
+  balance to debit) and `complete()` records `complete.skipped_account_deleted` and returns for one (a kept
+  `processing` payment that settles late). Both used to `firstOrFail()` a user that no longer exists, which would have
+  turned every provider retry into a 500
+- Admin payment list/detail show `payer_name` / `payer_email` with "deleted account" when `user_id` is null
+
+**Deliberately not changed:** `credit_transactions` still cascade with the user — that is a balance history, not a
+payment record; the *purchase* is in `payments`. `custom_quotes` still cascade too; a paid quote's amount survives on
+its payment. Copy updated to match: Privacy §7 (both purge-on and purge-off branches — account deletion behaves this
+way whichever it is), Terms §10 and the Settings → Account warning. Tests: `AccountDeletionRecordsTest` (22) plus
+the wording tests in `LegalPagesTest`; each mutation of the guard, the delete-non-money step, the snapshot, the
+trashed-events scope, the refunded status and both null-user guards fails at least one test.
 
 ## 7. Phase 3 — the Privacy policy (and Terms)
 
@@ -324,10 +356,9 @@ that promises a 30-day window while the job is off would be wrong in the other d
 same deploy as the code but cannot get ahead of it, and flipping `EVENT_TRASH_RETENTION_DAYS` is what changes what
 the policy says. Terms §10 needed no change. Tests in `LegalPagesTest` cover on, a different N, and off.
 
-**Known gap, not part of this phase:** the *Payment records* bullet says they are kept "even after account
-deletion". That is only fully true once the account-deletion guard is widened (§6b) — today it blocks only Paid
-ticket orders, so an account with an event holding only Refunded orders or contribution payments can still be
-deleted and takes them with it. §6b is the fix; until then that sentence slightly overstates.
+**Known gap — closed by §6b:** the *Payment records* bullet said they are kept "even after account
+deletion", which was only true for ticket orders on a paid event. Phase 4 made it true for the rest (refunded orders,
+contribution payments, the user's own billing history) and reworded the bullet to say so.
 
 `resources/views/legal/privacy.blade.php` §7 currently says event and guest data is kept *"until you delete the
 event, or delete your account"*. Replace that bullet and the paragraph under it so they match what the code
@@ -394,8 +425,8 @@ so it should get looked at before it ships. It must ship in the **same release**
    exempts the event, same as a paid order (§2). Contributions are switched off platform-wide today, but the rows
    exist and `contribution_payments` cascade off `events`, so purging would destroy a money trail the Privacy
    policy says we keep
-2. **Widen the account-deletion guard to Refunded orders / contributions?** **Later, as its own phase** (§6b).
-   This release only adds `withTrashed()`
+2. **Widen the account-deletion guard to Refunded orders / contributions?** **Yes, as its own phase** (§6b, built).
+   The release that turned purging on only added `withTrashed()`
 3. **Warning email before purge?** **Yes, decided** — a digest per host 7 days before (§4b). Purging is
    irreversible and takes other people's data with it; a countdown on a page the host may never open is not
    enough notice. It is a service notice, so it has no preference toggle, and the purge itself refuses to delete
@@ -414,7 +445,7 @@ so it should get looked at before it ships. It must ship in the **same release**
 | 2 | UI countdown, delete flash, API `purge_at`, admin display, launch-date grace (§5) | Must ship **with or before** enabling |
 | 2c | `events:warn-pending-purge` + `HostPurgeWarningNotification`, and the purge's "warned first" backstop | Must ship **with or before** enabling; without it the backstop makes the purge skip everything |
 | 3 | `withTrashed()` account guard, Privacy copy, CLAUDE.md, `docs/deployment.md`, `.env.example` | Ships in the same release that turns purging on |
-| 4 (later) | Widen the account-deletion guard to the full "has taken money" definition (§6b) | Separate change, separate release note |
+| 4 | Widen the account-deletion guard to the full "has taken money" definition, keep the user's own payments (§6b) | **Built.** Separate change, separate release note; ships with a migration |
 
 Never enable purging in production before the warning email, the policy copy and the grace date are all in. The
 order to go live: deploy phases 1–3 dark → set `EVENT_TRASH_RETENTION_STARTS_AT` to the deploy date → run

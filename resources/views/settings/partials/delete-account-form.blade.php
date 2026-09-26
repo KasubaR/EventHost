@@ -1,6 +1,7 @@
 <div class="danger-zone">
     <p class="danger-zone-desc">
-        Once your account is deleted, all events, invitations, guest data and settings will be <strong>permanently removed</strong>. This cannot be undone.
+        Once your account is deleted, all events, invitations, guest data and settings will be <strong>permanently removed</strong>. This cannot be undone. Payment records we are required to keep are the exception, and an
+        account with ticket sales or contribution payments on record cannot be deleted until support has wound those events down.
     </p>
 
     <button type="button" class="danger-delete-btn" id="openDeleteModal">

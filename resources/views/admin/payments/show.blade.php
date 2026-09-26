@@ -36,6 +36,9 @@
                     @if ($payment->user)
                         <a href="{{ route('admin.users.show', $payment->user) }}" class="admin-link">{{ $payment->user->name }}</a>
                         <span class="admin-muted">({{ $payment->user->email }})</span>
+                    @elseif ($payment->payer_name || $payment->payer_email)
+                        {{ $payment->payer_name }}
+                        <span class="admin-muted">({{ $payment->payer_email }}) — account deleted; details kept for accounting</span>
                     @else
                         —
                     @endif
