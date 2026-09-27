@@ -26,6 +26,7 @@ use App\Http\Controllers\EventTicketRevenueController;
 use App\Http\Controllers\EventTicketTypeController;
 use App\Http\Controllers\GuestBulkActionController;
 use App\Http\Controllers\GuestController;
+use App\Http\Controllers\GuestEmailReminderPreferenceController;
 use App\Http\Controllers\GuestGroupController;
 use App\Http\Controllers\GuestImportController;
 use App\Http\Controllers\HomeController;
@@ -215,6 +216,19 @@ Route::get('/rsvp/{token}', [RsvpController::class, 'showByToken'])->name('rsvp.
 // Same trust model as the line above: the token in the URL is the only guard, no
 // login, no throttle — a guest reopens this repeatedly to show their entry pass.
 Route::get('/rsvp/{token}/pass', [RsvpController::class, 'pass'])->name('rsvp.token.pass');
+// "Stop these reminder emails" link in every guest reminder email. Signed (relative), not token-keyed, so it works
+// for guests with no RSVP token. GET only shows a page — mail scanners prefetch links; the POST is the change, and is
+// what a mail client's one-click unsubscribe sends, hence no CSRF (the signature authorises it).
+Route::middleware(['signed:relative', 'throttle:30,1'])->group(function () {
+    Route::get('/reminders/{guest}/stop', [GuestEmailReminderPreferenceController::class, 'show'])
+        ->name('guest.email-reminders.show');
+    Route::post('/reminders/{guest}/stop', [GuestEmailReminderPreferenceController::class, 'stop'])
+        ->withoutMiddleware([VerifyCsrfToken::class])
+        ->name('guest.email-reminders.stop');
+    Route::post('/reminders/{guest}/resume', [GuestEmailReminderPreferenceController::class, 'resume'])
+        ->withoutMiddleware([VerifyCsrfToken::class])
+        ->name('guest.email-reminders.resume');
+});
 Route::get('/rsvp/{token}/pass/download', [RsvpController::class, 'passDownload'])
     ->middleware('throttle:guest-pass-download')
     ->name('rsvp.token.pass-download');

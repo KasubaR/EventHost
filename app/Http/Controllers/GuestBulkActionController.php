@@ -91,6 +91,10 @@ class GuestBulkActionController extends Controller
                     if ($guest->rsvp()->exists()) {
                         continue;
                     }
+                    // The guest asked not to get these; skipped before the bucket is marked sent or counted.
+                    if ($guest->hasStoppedEmailReminders()) {
+                        continue;
+                    }
                     $daysUntil = (int) ($validated['days_until'] ?? 3);
                     $bucket = (string) $daysUntil;
                     /** @var list<string> $sentBuckets */

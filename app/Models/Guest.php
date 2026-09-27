@@ -14,8 +14,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\URL;
 
 /**
+ * @property Carbon|null $email_reminders_stopped_at When the guest stopped reminder emails from the link in one; null = still receiving them.
  * @property list<string> $rsvp_reminders_sent Reminder buckets sent; shape enforced by {@see AsRsvpRemindersSent} / {@see RsvpReminderBuckets}.
  * @property list<string> $whatsapp_event_reminders_sent Event-day WhatsApp buckets; {@see AsWhatsAppEventRemindersSent} / {@see WhatsAppEventReminderBuckets}.
  */
@@ -128,6 +131,32 @@ class Guest extends Model
         return $this->invitation_token !== null
             && $rsvp->status === RsvpStatus::Accepted
             && $event->ownerHasPremiumEventTools();
+    }
+
+    /** The guest opted out of reminder emails from the link in one of them — see stopEmailRemindersUrl(). */
+    public function hasStoppedEmailReminders(): bool
+    {
+        return $this->email_reminders_stopped_at !== null;
+    }
+
+    /**
+     * Signed **relative** paths for the stop / resume pages. Relative on purpose: the signature then covers
+     * only the path, so it survives the bare-domain to www redirect and any proxy host rewriting.
+     */
+    public function stopEmailRemindersPath(): string
+    {
+        return URL::signedRoute('guest.email-reminders.stop', ['guest' => $this->getKey()], absolute: false);
+    }
+
+    public function resumeEmailRemindersPath(): string
+    {
+        return URL::signedRoute('guest.email-reminders.resume', ['guest' => $this->getKey()], absolute: false);
+    }
+
+    /** Absolute, for an email. */
+    public function stopEmailRemindersUrl(): string
+    {
+        return url($this->stopEmailRemindersPath());
     }
 
     public function isCheckedIn(): bool
@@ -286,6 +315,7 @@ class Guest extends Model
             'invitation_sent_at' => 'datetime',
             'rsvp_reminders_sent' => AsRsvpRemindersSent::class,
             'whatsapp_event_reminders_sent' => AsWhatsAppEventRemindersSent::class,
+            'email_reminders_stopped_at' => 'datetime',
             'checked_in_at' => 'datetime',
             'checked_in_by' => 'integer',
         ];

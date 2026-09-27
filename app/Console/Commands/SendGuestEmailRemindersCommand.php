@@ -43,6 +43,7 @@ class SendGuestEmailRemindersCommand extends Command
                     $guests = $event->guests()
                         ->whereNotNull('email')
                         ->where('email', '!=', '')
+                        ->whereNull('email_reminders_stopped_at')
                         ->whereHas('rsvp', fn ($q) => $q->where('status', RsvpStatus::Accepted))
                         ->with('rsvp')
                         ->cursor();

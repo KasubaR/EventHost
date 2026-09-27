@@ -93,7 +93,8 @@ With days > 0 and the date unset, the command refuses to run while old trash exi
 `events:send-guest-email-reminders` runs daily at 09:00 Africa/Lusaka and does nothing while
 `COMM_GUEST_EMAIL_REMINDERS_ENABLED=false` (the default). It emails Accepted guests of Pro+ hosts 7 days, 1 day and 0 days
 before an event. Needs the scheduler and a queue worker running, like the WhatsApp reminder. To turn it on, set the flag to `true`
-and `php artisan config:cache`. Don't do it before the Privacy wording for guest reminders has shipped
+and `php artisan config:cache`. Every reminder email carries a "Stop reminder emails" link (a signed URL — needs `APP_KEY` unchanged and `APP_URL` correct) and
+`List-Unsubscribe` headers. Don't turn it on before the Privacy wording for guest reminders has shipped
 (`plans/guest-email-reminders.md` Phase 4). Check it with `php artisan events:send-guest-email-reminders` — it prints how many it
 queued — and look at `notification_logs` rows of type `guest_event_reminder_email`.
 

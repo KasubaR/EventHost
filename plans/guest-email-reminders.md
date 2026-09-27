@@ -1,8 +1,8 @@
 # Guest event reminders by email
 
-Status: **Phases 1 and 2 built** (shared schedule and the cancelled-event fix; the email itself, shipping dark behind
-`COMM_GUEST_EMAIL_REMINDERS_ENABLED`). Phase 3 (a stop link) and Phase 4 (Privacy wording, go-live) are still planned — don't
-turn the flag on in production before Phase 4's copy is in.
+Status: **Phases 1–3 built** (shared schedule and the cancelled-event fix; the email itself, shipping dark behind
+`COMM_GUEST_EMAIL_REMINDERS_ENABLED`; the guest stop link). Phase 4 (Privacy wording, go-live) is still planned — don't turn
+the flag on in production before Phase 4's copy is in.
 
 ## 1. What this is, and why
 
@@ -121,7 +121,7 @@ guest is wasted work and the pass page has both downloads.
 |---|---|---|
 | 1 | **Built.** **Shared schedule + the cancelled fix.** `App\Support\EventReminderBuckets` (`ALL`, `forDaysUntil()`, `lead()`); `WhatsAppEventReminderBuckets` delegates its lead to it. One shared "events due a reminder today" selection used by the WhatsApp command (and later the email one) that excludes cancelled events. WhatsApp log/idempotency keyed on event date. Tests: cancelled event gets no WhatsApp reminder; a moved event is reminded again | Safe on its own; fixes a live bug |
 | 2 | **Built.** **The email.** Config flag, `GuestEventReminderNotification`, `CommunicationService::sendGuestEventReminderEmail()`, `events:send-guest-email-reminders` + schedule, `NotificationLog` rows. Ships dark | Behind the flag |
-| 3 | **Stop reminders link** (D4). `guests.email_reminders_stopped_at`, a signed no-login route, a confirmation page, a footer link on the email, and the command skips stopped guests. Also honoured by the deadline-reminder email | Before enabling for everyone |
+| 3 | **Built.** **Stop reminders link** (D4). `guests.email_reminders_stopped_at`, a signed no-login route, a confirmation page, a footer link on the email, and the command skips stopped guests. Also honoured by the deadline-reminder email | Before enabling for everyone |
 | 4 | **Copy, docs, go-live.** Privacy §4 wording, `CLAUDE.md`, `docs/deployment.md` go-live note, this plan marked built | With Phase 2 or 3 |
 
 Order of work is 1 → 2 → (3) → 4. Phase 1 is worth doing even if the email is never built.
@@ -162,6 +162,25 @@ Order of work is 1 → 2 → (3) → 4. Phase 1 is worth doing even if the email
   changes the shared method, for the better: nothing relied on the exception
 - The day-of skip uses `Event::startsAt()` (venue timezone). Not in the plan's tests: the command's scope is not separately
   provable from the sender's own checks, which enforce the same rules
+
+**Phase 3 as built:**
+
+- `guests.email_reminders_stopped_at` (nullable timestamp). It stops **both** reminder emails — the RSVP-deadline reminder and the
+  event reminder — and nothing else: the RSVP confirmation, event-update emails and WhatsApp are unaffected (a WhatsApp opt-out is
+  the guest replying STOP to Twilio, not this)
+- **A relative signed URL keyed on the guest id, not the RSVP token** (`signed:relative`): it never exposes the private token, works
+  for guests who have none, and survives the bare-domain → www redirect, which an absolute signature would not
+- **GET shows a page, POST changes it.** Mail scanners prefetch links; opting every guest out because a scanner opened the email
+  would be worse than no link. The POST route is CSRF-exempt because it is also the RFC 8058 one-click endpoint a mail client's
+  "Unsubscribe" button posts to — the signature is the authorisation. Throttled 30/min. The page can undo (resume). It echoes only the
+  event name, never the guest
+- Both emails end with `[Stop reminder emails](url)` and carry `List-Unsubscribe` + `List-Unsubscribe-Post: List-Unsubscribe=One-Click`
+  (`App\Notifications\Concerns\OffersReminderOptOut`)
+- Honoured in **every** reminder path: the sender for each email, both scheduled commands' queries, and the host's bulk "send
+  reminder" action in the web and API controllers (which skip a stopped guest *before* marking the bucket sent or counting them).
+  Stopping keeps the guest's original timestamp if done twice
+- Not built: a host-facing indicator that a guest stopped reminders (worth a small badge on the guest list later). Nothing in the API
+  changed
 
 - Not changed: `rsvp_deadline` reminders have the same "moved date" gap (`rsvp_reminders_sent` is never cleared when the
   deadline moves). Out of scope here; noted so it is not forgotten

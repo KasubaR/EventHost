@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\Event;
 use App\Models\Guest;
+use App\Notifications\Concerns\OffersReminderOptOut;
 use App\Support\EventReminderBuckets;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -21,6 +22,7 @@ use Illuminate\Support\Carbon;
  */
 class GuestEventReminderNotification extends Notification implements ShouldQueue
 {
+    use OffersReminderOptOut;
     use Queueable;
 
     public int $tries = 3;
@@ -83,8 +85,9 @@ class GuestEventReminderNotification extends Notification implements ShouldQueue
             $mail->line('Can\'t make it any more? You can [update your response]('.$rsvpUrl.') any time.');
         }
 
-        return $mail
-            ->line('You are receiving this because you accepted the invitation to '.$name.'.')
+        $mail->line('You are receiving this because you accepted the invitation to '.$name.'.');
+
+        return $this->withReminderOptOut($mail, $this->guest, $name)
             ->salutation('The '.config('app.name').' Team');
     }
 }

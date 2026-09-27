@@ -562,8 +562,8 @@ delivery, API fields).
 
 Accepted guests are reminded 7 days before, 1 day before and on the day of a private (invitation-kind) event, by WhatsApp
 (`events:send-whatsapp-reminders`) and by email (`events:send-guest-email-reminders`), both 09:00 Africa/Lusaka. Plan:
-`plans/guest-email-reminders.md` — Phases 1–2 built; the email ships **off** (`COMM_GUEST_EMAIL_REMINDERS_ENABLED=false`) until
-Phase 4 (Privacy wording) and, ideally, Phase 3 (a guest stop link) are in.
+`plans/guest-email-reminders.md` — Phases 1–3 built; the email ships **off** (`COMM_GUEST_EMAIL_REMINDERS_ENABLED=false`) until
+Phase 4 (Privacy wording) is in.
 
 - `App\Support\EventReminderBuckets` owns the three reminder days, `forEvent()` and the wording (`lead()`), and
   `Event::scopeDueForGuestEventReminder()` owns which events are candidates. Both channels must use them — don't
@@ -578,6 +578,11 @@ Phase 4 (Privacy wording) and, ideally, Phase 3 (a guest stop link) are in.
   rule itself — flag, plan, cancelled/deleted, Accepted RSVP, an email address, the hourly cap, and a day-of reminder is skipped
   once the event has started. **No attachments** (the confirmation mail carried the pass; the reminder links to it). The
   WhatsApp and email reminders are independent: a guest with both gets both
+- **Guests can stop reminder emails** from a link at the foot of both reminder emails (RSVP-deadline and event). `guests.email_reminders_stopped_at`;
+  a relative signed URL by guest id (`Guest::stopEmailRemindersPath()`), GET shows a page and **POST changes it** so mail scanners
+  cannot opt people out — that POST is also the one-click `List-Unsubscribe` endpoint, hence CSRF-exempt. Any new reminder email must
+  use `OffersReminderOptOut` and check `Guest::hasStoppedEmailReminders()`; the RSVP confirmation, event-update email and WhatsApp
+  are deliberately not covered
 - `startLog()` reuses a *failed* row for an existing idempotency key (back to pending) instead of inserting — the key is unique,
   so a second insert used to throw. A pending or sent row still blocks
 

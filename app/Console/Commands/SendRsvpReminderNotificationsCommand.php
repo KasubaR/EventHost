@@ -52,6 +52,7 @@ class SendRsvpReminderNotificationsCommand extends Command
 
                     $guests = $event->guests()
                         ->whereNotNull('email')
+                        ->whereNull('email_reminders_stopped_at')
                         ->whereDoesntHave('rsvp')
                         ->cursor();
 

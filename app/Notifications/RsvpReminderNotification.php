@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\Event;
 use App\Models\Guest;
+use App\Notifications\Concerns\OffersReminderOptOut;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -11,6 +12,7 @@ use Illuminate\Notifications\Notification;
 
 class RsvpReminderNotification extends Notification implements ShouldQueue
 {
+    use OffersReminderOptOut;
     use Queueable;
 
     public int $tries = 3;
@@ -58,6 +60,7 @@ class RsvpReminderNotification extends Notification implements ShouldQueue
             );
         }
 
-        return $mail->salutation('The '.config('app.name').' Team');
+        return $this->withReminderOptOut($mail, $this->guest, $this->event->name)
+            ->salutation('The '.config('app.name').' Team');
     }
 }

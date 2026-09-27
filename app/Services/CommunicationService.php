@@ -43,6 +43,11 @@ class CommunicationService
             return;
         }
 
+        // The guest turned reminder emails off from the link in one.
+        if ($guest->hasStoppedEmailReminders()) {
+            return;
+        }
+
         $meta = ['days_until_deadline' => $daysUntilDeadline];
         $log = $this->startLog($event, $guest, 'email', 'rsvp_reminder', $idempotencyKey, $meta);
         if ($log === null) {
@@ -554,6 +559,11 @@ class CommunicationService
         }
 
         if (! is_string($guest->email) || trim($guest->email) === '') {
+            return 'skipped';
+        }
+
+        // The guest turned reminder emails off from the link in one of them (plans/guest-email-reminders.md Phase 3).
+        if ($guest->hasStoppedEmailReminders()) {
             return 'skipped';
         }
 
