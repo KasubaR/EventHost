@@ -92,11 +92,28 @@ With days > 0 and the date unset, the command refuses to run while old trash exi
 
 `events:send-guest-email-reminders` runs daily at 09:00 Africa/Lusaka and does nothing while
 `COMM_GUEST_EMAIL_REMINDERS_ENABLED=false` (the default). It emails Accepted guests of Pro+ hosts 7 days, 1 day and 0 days
-before an event. Needs the scheduler and a queue worker running, like the WhatsApp reminder. To turn it on, set the flag to `true`
-and `php artisan config:cache`. Every reminder email carries a "Stop reminder emails" link (a signed URL — needs `APP_KEY` unchanged and `APP_URL` correct) and
-`List-Unsubscribe` headers. Don't turn it on before the Privacy wording for guest reminders has shipped
-(`plans/guest-email-reminders.md` Phase 4). Check it with `php artisan events:send-guest-email-reminders` — it prints how many it
-queued — and look at `notification_logs` rows of type `guest_event_reminder_email`.
+before an event. Everything it needs is built (the email, the guest "stop reminders" link, the Privacy wording —
+`plans/guest-email-reminders.md`), and the Privacy page's reminder text changes with this flag, so turning it on also publishes
+that wording. Get that wording reviewed first if you need it to be. To go live, in order:
+
+1. `composer deploy` has run the `guests.email_reminders_stopped_at` migration (part of the normal deploy)
+2. The scheduler and a queue worker are running — the emails are queued on `default`, exactly like the WhatsApp reminder
+3. `APP_KEY` is the production key and `APP_URL` is right: every email carries a signed "Stop reminder emails" link and
+   `List-Unsubscribe` headers, and a wrong `APP_URL` makes those links point at the wrong host
+4. Rehearse — works while the flag is still off, sends and logs nothing:
+
+   ```bash
+   php artisan events:send-guest-email-reminders --dry-run
+   ```
+
+   It prints how many guests of which events would be emailed today (add `-v` for the addresses). An empty result is normal
+   unless an event is exactly 7, 1 or 0 days away
+5. Set `COMM_GUEST_EMAIL_REMINDERS_ENABLED=true` and `php artisan config:cache`. The scheduler does the rest at 09:00. Each guest
+   gets each reminder once, and a moved event is reminded again for its new date
+
+Check it afterwards in `notification_logs` (type `guest_event_reminder_email`). To turn it off, set the flag back to `false` and
+`config:cache`; the Privacy wording reverts with it. The RSVP-deadline reminder email is separate and is already on for Pro+ hosts —
+it now carries the same stop link.
 
 ## 4. If something in this checklist was skipped and a page is now 500ing
 

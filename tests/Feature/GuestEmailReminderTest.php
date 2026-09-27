@@ -17,6 +17,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
@@ -328,6 +329,67 @@ class GuestEmailReminderTest extends TestCase
         $event->event_time = ''; // in memory: hasStartTime() is false, so there is nothing to be late for
 
         $this->assertSame('sent', app(CommunicationService::class)->sendGuestEventReminderEmail($event, $guest, '0'));
+    }
+
+    // ── --dry-run (plans/guest-email-reminders.md Phase 4) ───────────────────────────
+
+    public function test_a_dry_run_reports_what_would_go_out_without_sending_or_logging_and_works_while_the_flag_is_off(): void
+    {
+        config()->set('communications.guest_email_reminders.enabled', false);
+        [$event] = $this->seedAcceptedGuest('2026-12-12', 'a@example.test');
+        $second = Guest::factory()->for($event)->create(['email' => 'b@example.test']);
+        Rsvp::factory()->for($second)->create(['event_id' => $event->id, 'status' => RsvpStatus::Accepted, 'attendee_count' => 1]);
+
+        $this->artisan('events:send-guest-email-reminders --dry-run')
+            ->expectsOutputToContain('7-day reminder — 2 guest(s)')
+            ->expectsOutputToContain('2 guest reminder email(s) would be sent today')
+            ->assertSuccessful();
+
+        Notification::assertNothingSent();
+        $this->assertDatabaseCount('notification_logs', 0);
+    }
+
+    public function test_a_dry_run_applies_the_same_rules_as_a_real_run(): void
+    {
+        [$event] = $this->seedAcceptedGuest('2026-12-12', 'counts@example.test');
+
+        $stopped = Guest::factory()->for($event)->create(['email' => 'stopped@example.test', 'email_reminders_stopped_at' => now()]);
+        Rsvp::factory()->for($stopped)->create(['event_id' => $event->id, 'status' => RsvpStatus::Accepted, 'attendee_count' => 1]);
+        $declined = Guest::factory()->for($event)->create(['email' => 'declined@example.test']);
+        Rsvp::factory()->for($declined)->create(['event_id' => $event->id, 'status' => RsvpStatus::Declined, 'attendee_count' => 0]);
+
+        $this->seedAcceptedGuest('2026-12-12', 'base@example.test', owner: User::factory()->create());
+        [$cancelled] = $this->seedAcceptedGuest('2026-12-12', 'cancelled@example.test');
+        $cancelled->forceFill(['cancelled_at' => now()])->save();
+
+        $this->artisan('events:send-guest-email-reminders --dry-run')
+            ->expectsOutputToContain('1 guest reminder email(s) would be sent today')
+            ->assertSuccessful();
+    }
+
+    public function test_a_dry_run_does_not_count_a_reminder_that_was_already_sent(): void
+    {
+        $this->seedAcceptedGuest('2026-12-12');
+        $this->run09();
+
+        $this->artisan('events:send-guest-email-reminders --dry-run')
+            ->expectsOutputToContain('0 guest reminder email(s) would be sent today')
+            ->assertSuccessful();
+
+        Notification::assertSentOnDemandTimes(GuestEventReminderNotification::class, 1);
+    }
+
+    public function test_a_dry_run_lists_addresses_only_when_verbose(): void
+    {
+        $this->seedAcceptedGuest('2026-12-12', 'secret-guest@example.test');
+
+        Artisan::call('events:send-guest-email-reminders', ['--dry-run' => true]);
+        $quiet = Artisan::output(); // read once: fetching the buffer empties it
+        $this->assertStringContainsString('1 guest(s)', $quiet);
+        $this->assertStringNotContainsString('secret-guest@example.test', $quiet);
+
+        Artisan::call('events:send-guest-email-reminders', ['--dry-run' => true, '-v' => true]);
+        $this->assertStringContainsString('secret-guest@example.test', Artisan::output());
     }
 
     // ── Volume ───────────────────────────────────────────────────────────────────────

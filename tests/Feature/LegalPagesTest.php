@@ -83,6 +83,37 @@ class LegalPagesTest extends TestCase
             ->assertSee('or while a payment is still being processed');
     }
 
+    // plans/guest-email-reminders.md Phase 4: like §7 and the purge, the reminder wording follows what is switched
+    // on, so the page never promises a message the platform is not sending.
+    public function test_privacy_says_only_what_is_true_about_guest_reminders(): void
+    {
+        $deadline = 'an email before the RSVP deadline to guests who have not replied';
+        $eventEmail = 'an email a week before, the day before and on the day to guests who have accepted';
+        $whatsApp = 'a WhatsApp message on that same schedule to guests who have accepted';
+
+        // Deadline reminders are live whatever else is on; both new channels off.
+        config(['communications.guest_email_reminders.enabled' => false, 'communications.whatsapp.enabled' => false]);
+        $this->get(route('legal.privacy'))->assertOk()
+            ->assertSee($deadline)
+            ->assertSee('stops further reminder emails to that guest for that event')
+            ->assertSee('remind guests about your event and run check-in')
+            ->assertDontSee('a week before')
+            ->assertDontSee('WhatsApp')
+            ->assertDontSee('Twilio');
+
+        config(['communications.guest_email_reminders.enabled' => true]);
+        $this->get(route('legal.privacy'))->assertSee($deadline.' and '.$eventEmail)->assertDontSee('WhatsApp')->assertDontSee('Twilio');
+
+        config(['communications.guest_email_reminders.enabled' => false, 'communications.whatsapp.enabled' => true]);
+        $this->get(route('legal.privacy'))->assertSee($deadline.' and '.$whatsApp)->assertSee('Twilio')->assertDontSee('a week before');
+
+        config(['communications.guest_email_reminders.enabled' => true]);
+        $this->get(route('legal.privacy'))
+            ->assertSee($deadline.', '.$eventEmail.' and '.$whatsApp)
+            ->assertSee('Twilio')
+            ->assertSee('To send WhatsApp messages about your event');
+    }
+
     public function test_terms_say_payment_records_and_paid_events_are_the_exception_to_deletion(): void
     {
         $this->get(route('legal.terms'))

@@ -1,8 +1,7 @@
 # Guest event reminders by email
 
-Status: **Phases 1–3 built** (shared schedule and the cancelled-event fix; the email itself, shipping dark behind
-`COMM_GUEST_EMAIL_REMINDERS_ENABLED`; the guest stop link). Phase 4 (Privacy wording, go-live) is still planned — don't turn
-the flag on in production before Phase 4's copy is in.
+Status: **Built, all four phases.** The email ships dark behind `COMM_GUEST_EMAIL_REMINDERS_ENABLED`; switching it on is a
+config change (go-live order in `docs/deployment.md` §3c). Privacy wording follows the flag, so it goes live with it.
 
 ## 1. What this is, and why
 
@@ -122,7 +121,7 @@ guest is wasted work and the pass page has both downloads.
 | 1 | **Built.** **Shared schedule + the cancelled fix.** `App\Support\EventReminderBuckets` (`ALL`, `forDaysUntil()`, `lead()`); `WhatsAppEventReminderBuckets` delegates its lead to it. One shared "events due a reminder today" selection used by the WhatsApp command (and later the email one) that excludes cancelled events. WhatsApp log/idempotency keyed on event date. Tests: cancelled event gets no WhatsApp reminder; a moved event is reminded again | Safe on its own; fixes a live bug |
 | 2 | **Built.** **The email.** Config flag, `GuestEventReminderNotification`, `CommunicationService::sendGuestEventReminderEmail()`, `events:send-guest-email-reminders` + schedule, `NotificationLog` rows. Ships dark | Behind the flag |
 | 3 | **Built.** **Stop reminders link** (D4). `guests.email_reminders_stopped_at`, a signed no-login route, a confirmation page, a footer link on the email, and the command skips stopped guests. Also honoured by the deadline-reminder email | Before enabling for everyone |
-| 4 | **Copy, docs, go-live.** Privacy §4 wording, `CLAUDE.md`, `docs/deployment.md` go-live note, this plan marked built | With Phase 2 or 3 |
+| 4 | **Built.** **Copy, docs, go-live.** Privacy §4 wording, `CLAUDE.md`, `docs/deployment.md` go-live note, this plan marked built | With Phase 2 or 3 |
 
 Order of work is 1 → 2 → (3) → 4. Phase 1 is worth doing even if the email is never built.
 
@@ -181,6 +180,21 @@ Order of work is 1 → 2 → (3) → 4. Phase 1 is worth doing even if the email
   Stopping keeps the guest's original timestamp if done twice
 - Not built: a host-facing indicator that a guest stopped reminders (worth a small badge on the guest list later). Nothing in the API
   changed
+
+**Phase 4 as built:**
+
+- **Privacy §3, §4, §5** (`legal/privacy.blade.php`) now describe guest reminders, and — like §7 and the purge — **what they say follows
+  what is switched on**, so the page never promises a message the platform is not sending. §4's reminder bullet always names the
+  RSVP-deadline email (live regardless) and the stop link, adds the 7 / 1 / 0-day event email when
+  `communications.guest_email_reminders.enabled`, and a WhatsApp message on the same schedule when `communications.whatsapp.enabled`;
+  a separate WhatsApp bullet (invitation, reply confirmation) and a **Twilio** entry in §5 appear only when WhatsApp is on. §3's "for
+  nothing else" line now includes reminding guests. Note this fixes an existing omission: the policy said nothing about WhatsApp or
+  Twilio although WhatsApp invitations already exist. Still unreviewed by a lawyer
+- **`events:send-guest-email-reminders --dry-run`** — the go-live rehearsal, modelled on `events:purge-deleted --dry-run`. Applies every
+  rule the real run does (via `sendGuestEventReminderEmail(..., dryRun: true)`, which returns `would_send`), **works while the flag is
+  off**, sends and logs nothing, counts an already-sent reminder as not due, and prints per-event counts (addresses only with `-v`). It
+  cannot model the hourly cap building up across a real run
+- `CLAUDE.md`, `docs/deployment.md` §3c (the go-live order) and the plan updated
 
 - Not changed: `rsvp_deadline` reminders have the same "moved date" gap (`rsvp_reminders_sent` is never cleared when the
   deadline moves). Out of scope here; noted so it is not forgotten

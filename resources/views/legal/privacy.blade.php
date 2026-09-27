@@ -85,17 +85,41 @@
                 <p>
                     <strong>You are responsible for that data.</strong> You must have a legitimate reason to
                     hold your guests' contact details and to pass them to us for the purpose of inviting
-                    them. We process that data on your instructions — to deliver invitations, collect RSVPs
-                    and run check-in — and for nothing else. We do not use your guest list to market to
+                    them. We process that data on your instructions — to deliver invitations, collect RSVPs,
+                    remind guests about your event and run check-in — and for nothing else. We do not use your guest list to market to
                     those guests, and we do not sell it.
                 </p>
             </section>
 
             <section>
                 <h2 id="how-we-use">4. How we use it</h2>
+                {{-- What is described here follows what is switched on, the same way section 7 follows the retention
+                     setting — the page must not promise a reminder the platform is not sending. Both wordings want a
+                     lawyer's eye (see CLAUDE.md, Legal Pages). plans/guest-email-reminders.md Phase 4. --}}
+                @php
+                    $whatsAppOn = (bool) config('communications.whatsapp.enabled');
+                    $reminderKinds = ['an email before the RSVP deadline to guests who have not replied'];
+                    if (config('communications.guest_email_reminders.enabled')) {
+                        $reminderKinds[] = 'an email a week before, the day before and on the day to guests who have accepted';
+                    }
+                    if ($whatsAppOn) {
+                        $reminderKinds[] = 'a WhatsApp message on that same schedule to guests who have accepted';
+                    }
+                @endphp
                 <ul>
                     <li>To create, host and display your event invitation pages</li>
                     <li>To deliver invitations and RSVP confirmations, and to collect responses</li>
+                    <li>
+                        To remind your guests about your event: {{ \Illuminate\Support\Arr::join($reminderKinds, ', ', ' and ') }}.
+                        Every reminder email has a link that stops further reminder emails to that guest for that event.
+                        Reminders are only sent for events on plans that include them
+                    </li>
+                    @if ($whatsAppOn)
+                        <li>
+                            To send WhatsApp messages about your event: an invitation when you send one from your guest
+                            list, and a confirmation when a guest replies to it
+                        </li>
+                    @endif
                     <li>To run guest check-in, QR badges and table photo uploads</li>
                     <li>To process event credit purchases and keep a billing history</li>
                     <li>To send service email you cannot opt out of — email verification, password resets, and notices when your account email is changed</li>
@@ -110,7 +134,13 @@
                 <p>We do not sell personal information. We share it only with the service providers we need to run the platform:</p>
                 <ul>
                     <li><strong>Lenco</strong> — payment processing for event credits</li>
-                    <li><strong>Our email delivery provider</strong> — delivery of invitation and account email</li>
+                    <li><strong>Our email delivery provider</strong> — delivery of invitation, reminder and account email</li>
+                    @if (config('communications.whatsapp.enabled'))
+                        <li>
+                            <strong>Twilio</strong> — delivery of WhatsApp invitations, confirmations and reminders. It receives
+                            the guest's phone number and the message, and their replies come back through it
+                        </li>
+                    @endif
                     <li><strong>Our hosting provider</strong> — servers and database storage</li>
                 </ul>
                 <p>

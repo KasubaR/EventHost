@@ -538,11 +538,15 @@ class CommunicationService
      * sendWhatsAppEventReminder(); plans/guest-email-reminders.md. Free per message, so it has no WhatsApp-style
      * cost cap, only the shared per-event hourly limit.
      *
-     * @return 'sent'|'disabled'|'skipped'|'rate_limited'|'failed'
+     * With $dryRun it applies every rule, sends nothing and writes nothing, and answers 'would_send' for a
+     * reminder that a real run would queue. It ignores the feature flag on purpose — the point is to see what
+     * switching the flag on would do — and it cannot model the hourly cap building up across a run.
+     *
+     * @return 'sent'|'would_send'|'disabled'|'skipped'|'rate_limited'|'failed'
      */
-    public function sendGuestEventReminderEmail(Event $event, Guest $guest, string $bucket): string
+    public function sendGuestEventReminderEmail(Event $event, Guest $guest, string $bucket, bool $dryRun = false): string
     {
-        if (! (bool) config('communications.guest_email_reminders.enabled', false)) {
+        if (! $dryRun && ! (bool) config('communications.guest_email_reminders.enabled', false)) {
             return 'disabled';
         }
 
@@ -598,6 +602,15 @@ class CommunicationService
             $bucket,
             $event->event_date?->format('Y-m-d') ?? 'undated'
         );
+        if ($dryRun) {
+            $alreadyHandled = NotificationLog::query()
+                ->where('idempotency_key', $idempotencyKey)
+                ->whereIn('status', [NotificationLog::STATUS_PENDING, NotificationLog::STATUS_SENT])
+                ->exists();
+
+            return $alreadyHandled ? 'skipped' : 'would_send';
+        }
+
         $log = $this->startLog($event, $guest, 'email', 'guest_event_reminder_email', $idempotencyKey, [
             'bucket' => $bucket,
         ]);

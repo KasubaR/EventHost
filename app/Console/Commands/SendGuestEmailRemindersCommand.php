@@ -10,25 +10,28 @@ use Illuminate\Console\Command;
 
 class SendGuestEmailRemindersCommand extends Command
 {
-    protected $signature = 'events:send-guest-email-reminders';
+    protected $signature = 'events:send-guest-email-reminders
+        {--dry-run : List what would be emailed today without sending or logging anything (works while the feature is off)}';
 
     protected $description = 'Email Accepted guests a reminder 7 days before, 1 day before, and on event day';
 
     public function handle(CommunicationService $communication): int
     {
-        if (! (bool) config('communications.guest_email_reminders.enabled', false)) {
+        $dryRun = (bool) $this->option('dry-run');
+
+        if (! $dryRun && ! (bool) config('communications.guest_email_reminders.enabled', false)) {
             $this->info('Guest email reminders are disabled; nothing to send.');
 
             return self::SUCCESS;
         }
 
-        $sentTotal = 0;
+        $total = 0;
 
         // Same candidate events as the WhatsApp reminder — one shared scope, so the two channels cannot
         // disagree about what is reminded (a cancelled event is never one of them).
         Event::query()
             ->dueForGuestEventReminder()
-            ->chunkById(50, function ($events) use ($communication, &$sentTotal): void {
+            ->chunkById(50, function ($events) use ($communication, $dryRun, &$total): void {
                 foreach ($events as $event) {
                     if (! $event->ownerCanSendAutomatedReminders()) {
                         continue;
@@ -48,17 +51,25 @@ class SendGuestEmailRemindersCommand extends Command
                         ->with('rsvp')
                         ->cursor();
 
+                    $forThisEvent = 0;
+
                     foreach ($guests as $guest) {
                         try {
-                            $outcome = $communication->sendGuestEventReminderEmail($event, $guest, $bucket);
+                            $outcome = $communication->sendGuestEventReminderEmail($event, $guest, $bucket, $dryRun);
                         } catch (\Throwable $e) {
                             report($e);
 
                             continue;
                         }
 
-                        if ($outcome === 'sent') {
-                            $sentTotal++;
+                        if ($outcome === 'sent' || $outcome === 'would_send') {
+                            $total++;
+                            $forThisEvent++;
+
+                            // Addresses only on request (-v): a dry run is for counts first.
+                            if ($dryRun && $this->output->isVerbose()) {
+                                $this->line('    '.$guest->email);
+                            }
                         }
 
                         // Next run picks the rest up; the log key makes it safe to resume.
@@ -66,10 +77,16 @@ class SendGuestEmailRemindersCommand extends Command
                             break;
                         }
                     }
+
+                    if ($dryRun && $forThisEvent > 0) {
+                        $this->line(sprintf('  #%d %s — %d-day reminder — %d guest(s)', $event->id, $event->name, (int) $bucket, $forThisEvent));
+                    }
                 }
             });
 
-        $this->info("Guest email reminders sent: {$sentTotal}");
+        $this->info($dryRun
+            ? "Dry run: {$total} guest reminder email(s) would be sent today. Nothing was sent or logged."
+            : "Guest email reminders sent: {$total}");
 
         return self::SUCCESS;
     }
