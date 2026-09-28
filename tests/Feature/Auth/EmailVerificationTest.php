@@ -57,6 +57,62 @@ class EmailVerificationTest extends TestCase
         $this->assertFalse($user->fresh()->hasVerifiedEmail());
     }
 
+    public function test_expired_verification_link_is_rejected(): void
+    {
+        $user = User::factory()->unverified()->create();
+
+        $verificationUrl = URL::temporarySignedRoute(
+            'verification.verify',
+            now()->addMinutes(60),
+            ['id' => $user->id, 'hash' => sha1($user->email)]
+        );
+
+        $this->travel(61)->minutes();
+
+        $this->actingAs($user)->get($verificationUrl)->assertForbidden();
+
+        $this->assertFalse($user->fresh()->hasVerifiedEmail());
+    }
+
+    public function test_verification_link_can_be_clicked_twice(): void
+    {
+        $user = User::factory()->unverified()->create();
+
+        $verificationUrl = URL::temporarySignedRoute(
+            'verification.verify',
+            now()->addMinutes(60),
+            ['id' => $user->id, 'hash' => sha1($user->email)]
+        );
+
+        $this->actingAs($user)->get($verificationUrl)
+            ->assertRedirect(route('dashboard', absolute: false).'?verified=1');
+
+        $this->assertTrue($user->fresh()->hasVerifiedEmail());
+
+        Event::fake();
+
+        $this->actingAs($user)->get($verificationUrl)
+            ->assertRedirect(route('dashboard', absolute: false).'?verified=1');
+
+        Event::assertNotDispatched(Verified::class);
+        $this->assertTrue($user->fresh()->hasVerifiedEmail());
+    }
+
+    public function test_the_seventh_verification_resend_in_a_minute_is_throttled(): void
+    {
+        $user = User::factory()->unverified()->create();
+
+        for ($i = 0; $i < 6; $i++) {
+            $this->actingAs($user)
+                ->post(route('verification.send'))
+                ->assertRedirect();
+        }
+
+        $this->actingAs($user)
+            ->post(route('verification.send'))
+            ->assertStatus(429);
+    }
+
     public function test_settings_profile_is_reachable_while_unverified(): void
     {
         // ProfileService nulls email_verified_at the moment a user changes

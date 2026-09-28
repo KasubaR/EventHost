@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Http\Requests\Concerns\ValidatesRsvpPayload;
 use App\Models\Event;
 use App\Models\Guest;
+use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -96,7 +97,30 @@ class StoreOpenRsvpRequest extends FormRequest
             // that the guest gets a personal invitation link back, and WhatsApp is
             // one of the two channels that delivers it (RsvpController::storeOpen()).
             // A public/free-registration signup keeps phone optional, unchanged.
-            'phone' => $event->is_public ? ['nullable', 'string', 'max:50'] : ['required', 'string', 'max:50'],
+            'phone' => array_merge(
+                $event->is_public ? ['nullable', 'string', 'max:50'] : ['required', 'string', 'max:50'],
+                // The duplicate-phone check below only makes sense for a private
+                // event's real guest list — a public/free-registration signup is
+                // token-less by design (a headcount, not a guest list; see the
+                // comment on $isPrivate in RsvpController::storeOpen()), so there
+                // is no "personal link" to point a match back to.
+                $event->is_public ? [] : [
+                    // A phone matching a DIFFERENT guest (the email above didn't
+                    // already resolve to them) means someone is likely already on
+                    // the list under this number — block rather than silently
+                    // spinning up a second guest row for the same person. Never
+                    // hands back that guest's own link here: the phone in this
+                    // request is unverified, typed by whoever is submitting, so
+                    // revealing another guest's personal RSVP link to it would be
+                    // a privacy leak. They're pointed back to the link already
+                    // promised on this form (see rsvp/open-show.blade.php).
+                    function (string $attribute, mixed $value, Closure $fail) use ($event, $existingGuestId): void {
+                        if (Guest::matchingPhone($event, is_string($value) ? $value : null, ignoreGuestId: $existingGuestId) !== null) {
+                            $fail('This phone number is already on the guest list. If that\'s you, use the personal link we emailed you to view or update your RSVP.');
+                        }
+                    },
+                ]
+            ),
         ], $this->rsvpFieldRules($event, plusOneAllowed: ! $event->is_public));
     }
 

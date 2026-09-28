@@ -1,8 +1,9 @@
 # WhatsApp Invitations via Twilio
 
 Status: **built** (single-guest outbound send with cover image header + inbound quick-reply
-RSVP + Accepted entry-pass QR confirmation + post-RSVP event-day reminders). Bulk Twilio send
-and delivery-status webhooks are still future work.
+RSVP + Accepted entry-pass QR confirmation + post-RSVP event-day reminders). **Web/API RSVP
+confirmation is planned, not built** — see that section below. Bulk Twilio send and
+delivery-status webhooks are still future work.
 
 Ops checklist: [docs/twilio.md](../docs/twilio.md).
 
@@ -49,6 +50,80 @@ Separate Content Template + scheduled command, timed off `event_date` (not `rsvp
 - `NotificationLog` type `guest_event_reminder_whatsapp`
 - Declined/Maybe guests are never reminded; no email equivalent of this message exists; no host UI
   to trigger it manually — see [docs/twilio.md](../docs/twilio.md) §5b for the ops-facing writeup
+
+## Web/API RSVP confirmation (planned)
+
+**The gap:** `CommunicationService::dispatchRsvpNotifications()` — the one path shared by web RSVP,
+API RSVP and WhatsApp inbound quick-reply — only ever sends **email**
+(`sendRsvpConfirmation`) + notifies the host. The WhatsApp confirmation-with-pass described above
+under "Guest taps a button…" only fires for the **inbound quick-reply** path, as a session reply
+inside `WhatsAppInboundRsvpService`. A guest who opens their personal `rsvp/{token}` link and
+submits the web form — regardless of how they were originally invited — gets email only, today,
+by omission rather than design. Reported live 2026-09-28.
+
+**The fix:** a third business-initiated send, `CommunicationService::sendWhatsAppRsvpConfirmation
+(Event, Guest, Rsvp)`, called from `dispatchRsvpNotifications()` right after the email send. Unlike
+the inbound flow it cannot rely on an open session (a web-form submit never talks to Twilio), so it
+needs its **own approved Content Template** — same constraint that already applies to the invitation
+and reminder sends.
+
+- **Eligibility mirrors `Guest::hasEntryPassFor($rsvp, $event)` exactly** — Accepted, has an
+  `invitation_token`, host on a plan with `ownerHasPremiumEventTools()`. Declined/Maybe RSVPs and
+  non-premium hosts get **email only**, same as today; there is no text-only fallback template for
+  those, unlike the inbound flow's `sendText` branch — one new template, not two, matches what was
+  actually asked for
+- **Template type:** `whatsapp/card` (image header + body), mirroring the invitation card exactly,
+  category Utility. Header image points at the guest's **own pass**, not the event cover
+- New content SID: `TWILIO_RSVP_CONFIRMATION_CONTENT_SID` → `config('services.twilio.rsvp_confirmation_content_sid')`
+- New `NotificationLog` type: `guest_rsvp_confirmation_whatsapp` (distinct from the inbound flow's
+  `guest_rsvp_whatsapp_inbound` and from `guest_invitation_whatsapp`)
+- Same guard shape as `sendWhatsAppInvitation`/`sendWhatsAppEventReminder`: `communications.whatsapp.enabled`,
+  phone → `ZambianPhone::toE164()`, `communications.whatsapp.hourly_cap_per_event` event-scoped guard,
+  `startLog()`/`markFailed()` bookkeeping. No idempotency key — same posture as `sendRsvpConfirmation`
+  (email) already has, so an edited/resubmitted RSVP can notify again exactly like the email side does
+- **New `Guest::whatsAppPassMediaPath()`** — the "path after the app origin" twin of
+  `Event::whatsAppInviteHeaderMediaPath()`, pointing at `rsvp.token.pass-image` (the same
+  `GuestPassImageService`-rendered PNG the inbound flow's `sendMedia` already fetches, and the
+  bookmarkable pass page already shows) rather than a static file. Twilio doesn't care that the URL
+  is a dynamic route instead of a stored asset — it only needs to resolve to an image at send time,
+  and that route already degrades to a plain QR PNG rather than failing (see Guest Invitation Pass
+  in CLAUDE.md), so this send is never blocked by a broken renderer. Returns null (caller must skip)
+  when `invitation_token` is null, same contract as `entryPassPngUrl()`
+- Template body (variables numbered to match `sendWhatsAppInvitation`'s convention — media last):
+
+  ```
+  Hello {{1}} 👋
+
+  You're confirmed for {{2}}! 🎉
+
+  📅 {{3}}
+  🕐 {{4}}
+  📍 {{5}}
+
+  Your entry pass is attached above — view or save it anytime here:
+  {{6}}
+
+  We can't wait to see you there. Thank you!
+  ```
+
+  | Slot | Source |
+  |---|---|
+  | `1` | `filled($guest->name) ? $guest->name : 'Guest'` |
+  | `2` | `$event->name` |
+  | `3` | `$event->event_date?->format('j F Y')` |
+  | `4` | `$event->hasStartTime() ? … : 'TBA'` |
+  | `5` | `filled($event->venue) ? $event->venue : 'Venue TBA'` |
+  | `6` | `$guest->passPageUrl()` |
+  | `7` (media, `https://HOST/{{7}}`) | `$guest->whatsAppPassMediaPath()` |
+
+  Static opening/closing lines are deliberate — Meta rejected the reminder template once already
+  for being too short relative to its variable count (error `2388293`); do not trim them to make
+  the template "cleaner."
+
+**Ops steps (once built):** create the template in Content Template Builder exactly as above →
+submit for Meta approval → `TWILIO_RSVP_CONFIRMATION_CONTENT_SID` in `.env` → `config:clear`. Add
+to [docs/twilio.md](../docs/twilio.md) as a new §4c once implemented, alongside §4 (invitation) and
+§5b (reminders) — including a "How to verify" and "Common failures" entry for this path.
 
 ## Key classes
 

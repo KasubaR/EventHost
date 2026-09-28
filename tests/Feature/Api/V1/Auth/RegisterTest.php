@@ -73,11 +73,70 @@ class RegisterTest extends TestCase
             ->assertJsonValidationErrors('email');
     }
 
+    public function test_duplicate_email_with_different_capitalization_is_rejected(): void
+    {
+        User::factory()->create(['email' => 'john@email.com']);
+
+        $this->postJson('/api/v1/auth/register', $this->payload([
+            'email' => 'John@Email.com',
+        ]))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('email');
+    }
+
+    public function test_mixed_case_email_is_stored_lowercase(): void
+    {
+        Notification::fake();
+
+        $this->postJson('/api/v1/auth/register', $this->payload([
+            'email' => '  John@Email.com  ',
+        ]))
+            ->assertCreated()
+            ->assertJsonPath('user.email', 'john@email.com');
+
+        $this->assertDatabaseHas('users', [
+            'email' => 'john@email.com',
+        ]);
+    }
+
+    public function test_invalid_email_is_rejected(): void
+    {
+        $this->postJson('/api/v1/auth/register', $this->payload([
+            'email' => 'not-an-email',
+        ]))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('email');
+    }
+
     public function test_missing_required_fields_are_rejected(): void
     {
         $this->postJson('/api/v1/auth/register', [])
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['account_type', 'name', 'email', 'password']);
+    }
+
+    public function test_password_below_minimum_length_is_rejected(): void
+    {
+        $this->postJson('/api/v1/auth/register', $this->payload([
+            'password' => 'Ab1',
+            'password_confirmation' => 'Ab1',
+        ]))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('password');
+
+        $this->assertNull(User::where('email', 'jane@example.com')->first());
+    }
+
+    public function test_password_confirmation_mismatch_is_rejected(): void
+    {
+        $this->postJson('/api/v1/auth/register', $this->payload([
+            'password' => 'Password123',
+            'password_confirmation' => 'Password456',
+        ]))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('password');
+
+        $this->assertNull(User::where('email', 'jane@example.com')->first());
     }
 
     public function test_registration_is_throttled_per_ip(): void

@@ -16,7 +16,7 @@
 @section('title', 'Thank you | '.config('app.name'))
 
 @section('content')
-    <article class="rsvp-page evt-public-inner rsvp-thanks">
+    <article class="rsvp-page rsvp-thanks">
         @if ($event && $guest && $rsvp)
             <div class="evt-rsvp-banner evt-rsvp-banner--open rsvp-thanks-banner">
                 <i class="fa-solid fa-circle-check" aria-hidden="true"></i>

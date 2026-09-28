@@ -194,6 +194,62 @@ class RsvpFlowTest extends TestCase
         $this->assertNull($publicGuest->invitation_token);
     }
 
+    public function test_open_rsvp_blocks_a_phone_already_on_the_private_guest_list(): void
+    {
+        $event = Event::factory()->published()->create(['is_public' => false, 'rsvp_deadline' => null]);
+        Guest::factory()->for($event)->create(['name' => 'Existing Guest', 'email' => 'existing@example.test', 'phone' => '0971234567']);
+
+        $payload = array_merge([
+            'name' => 'New Name Same Number',
+            'email' => 'different@example.test',
+            // Same Zambian number, international format instead of local.
+            'phone' => '+260 97 123 4567',
+        ], $this->rsvpPayload(RsvpStatus::Accepted, 1));
+
+        $this->post(route('rsvp.open.store', ['slug' => $event->slug]), $payload)
+            ->assertSessionHasErrors('phone');
+
+        $this->assertDatabaseMissing('guests', ['event_id' => $event->id, 'email' => 'different@example.test']);
+        $this->assertSame(1, Guest::query()->where('event_id', $event->id)->count());
+    }
+
+    public function test_open_rsvp_lets_a_guest_resubmit_with_their_own_matching_phone(): void
+    {
+        Notification::fake();
+
+        $event = Event::factory()->published()->create(['is_public' => false, 'rsvp_deadline' => null]);
+        $guest = Guest::factory()->for($event)->create(['name' => 'Returning Guest', 'email' => 'returning@example.test', 'phone' => '0971234567']);
+
+        $payload = array_merge([
+            'name' => 'Returning Guest',
+            'email' => 'returning@example.test',
+            'phone' => '+260 97 123 4567',
+        ], $this->rsvpPayload(RsvpStatus::Declined, 0));
+
+        $this->post(route('rsvp.open.store', ['slug' => $event->slug]), $payload)
+            ->assertSessionDoesntHaveErrors('phone');
+
+        $this->assertSame(1, Guest::query()->where('event_id', $event->id)->count());
+        $this->assertSame(RsvpStatus::Declined, $guest->rsvp?->fresh()->status);
+    }
+
+    public function test_open_rsvp_allows_a_duplicate_phone_on_a_public_event(): void
+    {
+        $event = Event::factory()->published()->create(['is_public' => true, 'rsvp_deadline' => null]);
+        Guest::factory()->for($event)->create(['email' => 'first@example.test', 'phone' => '0971234567']);
+
+        $payload = array_merge([
+            'name' => 'Second Household Member',
+            'email' => 'second@example.test',
+            'phone' => '+260 97 123 4567',
+        ], $this->rsvpPayload(RsvpStatus::Accepted, 1));
+
+        $this->post(route('rsvp.open.store', ['slug' => $event->slug]), $payload)
+            ->assertSessionDoesntHaveErrors('phone');
+
+        $this->assertDatabaseHas('guests', ['event_id' => $event->id, 'email' => 'second@example.test']);
+    }
+
     public function test_open_rsvp_respects_the_plan_guest_capacity_for_a_private_event(): void
     {
         $owner = User::factory()->create(); // Base tier, cap 150

@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Event;
 use App\Models\Guest;
+use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -62,7 +63,14 @@ class UpdateGuestRequest extends FormRequest
                     ->where(fn ($q) => $q->where('event_id', $event->id))
                     ->ignore($guest->id),
             ],
-            'phone' => ['nullable', 'string', 'max:50'],
+            'phone' => [
+                'nullable', 'string', 'max:50',
+                function (string $attribute, mixed $value, Closure $fail) use ($event, $guest): void {
+                    if (Guest::phoneAlreadyUsed($event, (string) $value, ignoreGuestId: $guest->id)) {
+                        $fail('This phone number is already used by another guest for this event.');
+                    }
+                },
+            ],
             'guest_group_id' => [
                 'nullable',
                 'integer',

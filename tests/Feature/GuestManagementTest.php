@@ -51,6 +51,42 @@ class GuestManagementTest extends TestCase
         $this->assertNotNull($guest->invitation_token);
     }
 
+    public function test_storing_a_guest_with_a_phone_already_on_the_event_is_rejected(): void
+    {
+        $owner = User::factory()->create();
+        $event = Event::factory()->for($owner)->create();
+        Guest::factory()->for($event)->create(['name' => 'Existing Guest', 'phone' => '0971234567']);
+
+        $this->actingAs($owner)
+            ->post(route('events.guests.store', $event), [
+                'name' => 'Duplicate Phone Guest',
+                // Same Zambian number, international format instead of local —
+                // the most common way the same guest ends up typed twice.
+                'phone' => '+260 97 123 4567',
+            ])
+            ->assertSessionHasErrors('phone');
+
+        $this->assertDatabaseMissing('guests', ['name' => 'Duplicate Phone Guest']);
+    }
+
+    public function test_storing_a_guest_with_a_phone_used_on_a_different_event_is_allowed(): void
+    {
+        $owner = User::factory()->create();
+        $otherEvent = Event::factory()->for($owner)->create();
+        Guest::factory()->for($otherEvent)->create(['phone' => '0971234567']);
+
+        $event = Event::factory()->for($owner)->create();
+
+        $this->actingAs($owner)
+            ->post(route('events.guests.store', $event), [
+                'name' => 'Same Number New Event',
+                'phone' => '0971234567',
+            ])
+            ->assertRedirect(route('events.guests.index', $event));
+
+        $this->assertDatabaseHas('guests', ['name' => 'Same Number New Event', 'event_id' => $event->id]);
+    }
+
     public function test_guest_index_search_filters_by_query(): void
     {
         $owner = User::factory()->create();
@@ -147,6 +183,40 @@ class GuestManagementTest extends TestCase
             ->assertRedirect(route('events.guests.index', $event));
 
         $this->assertDatabaseMissing('guests', ['id' => $guest->id]);
+    }
+
+    public function test_updating_a_guest_to_another_guests_phone_is_rejected(): void
+    {
+        $owner = User::factory()->create();
+        $event = Event::factory()->for($owner)->create();
+        Guest::factory()->for($event)->create(['phone' => '0971234567']);
+        $guest = Guest::factory()->for($event)->create(['phone' => '0969999999']);
+
+        $this->actingAs($owner)
+            ->patch(route('events.guests.update', ['event' => $event, 'guest' => $guest->id]), [
+                'name' => $guest->name,
+                // Same digits as the other guest, different punctuation/spacing.
+                'phone' => '097-123-4567',
+            ])
+            ->assertSessionHasErrors('phone');
+
+        $this->assertSame('0969999999', $guest->fresh()->phone);
+    }
+
+    public function test_updating_a_guest_with_its_own_unchanged_phone_is_allowed(): void
+    {
+        $owner = User::factory()->create();
+        $event = Event::factory()->for($owner)->create();
+        $guest = Guest::factory()->for($event)->create(['name' => 'Original Name', 'phone' => '0971234567']);
+
+        $this->actingAs($owner)
+            ->patch(route('events.guests.update', ['event' => $event, 'guest' => $guest->id]), [
+                'name' => 'Updated Name',
+                'phone' => '0971234567',
+            ])
+            ->assertRedirect(route('events.guests.index', $event));
+
+        $this->assertSame('Updated Name', $guest->fresh()->name);
     }
 
     public function test_host_can_manage_guest_groups(): void

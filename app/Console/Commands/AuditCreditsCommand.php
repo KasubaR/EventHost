@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\CreditTransaction;
 use App\Models\User;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 
 class AuditCreditsCommand extends Command
 {
@@ -23,6 +24,12 @@ class AuditCreditsCommand extends Command
 
                 if ($sum !== $balance) {
                     $this->error("user {$user->id} ({$user->email}): balance {$balance}, ledger {$sum}");
+                    Log::error('credits.audit.mismatch', [
+                        'user_id' => $user->id,
+                        'email' => $user->email,
+                        'balance' => $balance,
+                        'ledger_sum' => $sum,
+                    ]);
                     $mismatched++;
                 }
             }
@@ -30,6 +37,7 @@ class AuditCreditsCommand extends Command
 
         if ($mismatched > 0) {
             $this->error("{$mismatched} user(s) have a credit balance that does not match the ledger.");
+            Log::error('credits.audit.summary', ['mismatched_count' => $mismatched]);
 
             return self::FAILURE;
         }

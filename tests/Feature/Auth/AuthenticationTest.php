@@ -75,6 +75,47 @@ class AuthenticationTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_unverified_users_can_log_in_but_are_gated_from_the_dashboard(): void
+    {
+        $user = User::factory()->unverified()->create();
+
+        $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticated();
+
+        $this->get('/dashboard')
+            ->assertRedirect(route('verification.notice', absolute: false));
+    }
+
+    public function test_the_sixth_failed_login_attempt_in_a_minute_is_locked_out(): void
+    {
+        $user = User::factory()->create();
+
+        for ($i = 0; $i < 5; $i++) {
+            $this->post('/login', [
+                'email' => $user->email,
+                'password' => 'wrong-password',
+            ]);
+
+            $this->assertGuest();
+        }
+
+        $response = $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertGuest();
+        $response->assertSessionHasErrors('email');
+        $this->assertStringContainsString(
+            'Too many login attempts',
+            (string) session('errors')->first('email')
+        );
+    }
+
     public function test_suspended_users_can_not_authenticate(): void
     {
         $user = User::factory()->suspended()->create();

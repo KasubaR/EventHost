@@ -150,6 +150,41 @@
 /* Forms inside cards */
 .profile-form { padding: 24px; }
 
+/* Reset native fieldset/legend chrome (border, inset padding, min-width)
+   wherever a form groups fields under a legend — admin publish/contribution
+   toggles, ticketing terms — so it reads as part of the card, not a boxed
+   HTML default. */
+.profile-form fieldset {
+  border: none;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.profile-form legend {
+  padding: 0;
+  margin-bottom: 4px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+.profile-form legend.admin-muted { font-weight: 600; }
+
+.profile-form fieldset > label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-dark);
+  cursor: pointer;
+}
+.profile-form fieldset > label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
 .profile-success {
   display: flex;
   align-items: center;

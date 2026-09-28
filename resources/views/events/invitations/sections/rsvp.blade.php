@@ -42,9 +42,6 @@
                 'rsvpFormConfig' => $invitation['rsvp_form'] ?? [],
                 'phoneRequired'  => $inlineIsPrivate,
             ])
-            <p class="evt-inline-rsvp-alt">
-                <a href="{{ route('rsvp.open.show', $event->slug) }}" class="evt-inline-rsvp-alt-link">Prefer a dedicated RSVP page</a>
-            </p>
         </div>
     @else
         <div class="evt-rsvp-banner evt-rsvp-banner--open">

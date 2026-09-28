@@ -229,6 +229,56 @@ class Guest extends Model
     }
 
     /**
+     * Compares by subscriber number, not raw digits, so "0971234567" and
+     * "+260971234567" — the same Zambian number in local vs. country-code
+     * form, the single most common way the same guest ends up typed twice —
+     * are recognised as one guest, not two. Also swallows punctuation/spacing
+     * ("+260 97 123 4567", "097-123-4567"). Used by StoreGuestRequest,
+     * UpdateGuestRequest (passes $ignoreGuestId) and EventGuestsImport, so all
+     * three guest-creation paths agree on what counts as a duplicate.
+     */
+    public static function phoneAlreadyUsed(Event $event, ?string $phone, ?int $ignoreGuestId = null): bool
+    {
+        return static::matchingPhone($event, $phone, $ignoreGuestId) !== null;
+    }
+
+    /**
+     * The other guest (if any) on this event sharing $phone's subscriber
+     * number — used by StoreOpenRsvpRequest to tell "you're editing your own
+     * RSVP again" (same phone AND email) apart from "someone already on the
+     * list has this phone" (blocked; see storeOpen()'s comment on why it
+     * doesn't just hand back that guest's personal link).
+     */
+    public static function matchingPhone(Event $event, ?string $phone, ?int $ignoreGuestId = null): ?self
+    {
+        $key = static::phoneComparisonKey($phone);
+        if ($key === null) {
+            return null;
+        }
+
+        return static::query()
+            ->where('event_id', $event->id)
+            ->whereNotNull('phone')
+            ->when($ignoreGuestId !== null, fn (Builder $q) => $q->where('id', '!=', $ignoreGuestId))
+            ->get(['id', 'phone', 'email', 'name'])
+            ->first(fn (Guest $g): bool => static::phoneComparisonKey($g->phone) === $key);
+    }
+
+    private static function phoneComparisonKey(?string $phone): ?string
+    {
+        $digits = is_string($phone) ? (preg_replace('/\D+/', '', $phone) ?? '') : '';
+        if ($digits === '') {
+            return null;
+        }
+
+        // A Zambian mobile number is a 9-digit subscriber number behind either
+        // a local trunk "0" or the "260" country code — keep just that
+        // subscriber number so both forms compare equal. Shorter strings
+        // (test data, other-country numbers) are compared as-is.
+        return strlen($digits) > 9 ? substr($digits, -9) : $digits;
+    }
+
+    /**
      * @param  Builder<$this>  $query
      * @return Builder<$this>
      */

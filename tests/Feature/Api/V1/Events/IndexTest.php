@@ -144,4 +144,29 @@ class IndexTest extends TestCase
             ->assertOk()
             ->assertJsonCount(2, 'data');
     }
+
+    public function test_paginated_response_carries_the_meta_the_android_lists_read(): void
+    {
+        $user = User::factory()->create();
+        Event::factory()->for($user)->count(12)->published()->privateAudience()->create();
+
+        $this->withHeader('Authorization', 'Bearer '.$this->tokenFor($user))
+            ->getJson('/api/v1/host/events?audience=private&page=2')
+            ->assertOk()
+            ->assertJsonCount(2, 'data')
+            ->assertJsonPath('meta.current_page', 2)
+            ->assertJsonPath('meta.last_page', 2)
+            ->assertJsonPath('meta.total', 12);
+    }
+
+    public function test_ticketed_events_expose_their_ticketing_status_for_the_my_events_badge(): void
+    {
+        $user = User::factory()->create();
+        Event::factory()->for($user)->published()->ticketed()->create();
+
+        $this->withHeader('Authorization', 'Bearer '.$this->tokenFor($user))
+            ->getJson('/api/v1/host/events?audience=public')
+            ->assertOk()
+            ->assertJsonStructure(['data' => [['ticketing_status' => ['value', 'label']]]]);
+    }
 }

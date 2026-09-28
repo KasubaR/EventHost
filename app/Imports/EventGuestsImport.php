@@ -89,17 +89,7 @@ class EventGuestsImport implements ToCollection, WithHeadingRow
                         continue;
                     }
 
-                    $duplicatePhone = Guest::query()
-                        ->where('event_id', $this->event->id)
-                        ->whereNotNull('phone')
-                        ->get(['id', 'phone'])
-                        ->contains(function (Guest $g) use ($phoneDigits): bool {
-                            $d = preg_replace('/\D+/', '', (string) $g->phone) ?? '';
-
-                            return $d !== '' && $d === $phoneDigits;
-                        });
-
-                    if ($duplicatePhone) {
+                    if (Guest::phoneAlreadyUsed($this->event, $phone)) {
                         $this->skippedCount++;
 
                         continue;

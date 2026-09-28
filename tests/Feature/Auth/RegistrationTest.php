@@ -55,6 +55,102 @@ class RegistrationTest extends TestCase
         ])->assertSessionHasErrors('email');
     }
 
+    public function test_duplicate_email_with_different_capitalization_is_rejected(): void
+    {
+        User::factory()->create(['email' => 'john@email.com']);
+
+        $this->post('/register', [
+            'account_type' => 'individual',
+            'name' => 'Other User',
+            'email' => 'John@Email.com',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
+        ])->assertSessionHasErrors([
+            'email' => 'An account with this email already exists.',
+        ]);
+
+        $this->assertSame(1, User::where('email', 'john@email.com')->count());
+    }
+
+    public function test_mixed_case_email_is_stored_lowercase(): void
+    {
+        Notification::fake();
+
+        $this->post('/register', [
+            'account_type' => 'individual',
+            'name' => 'John Doe',
+            'email' => '  John@Email.com  ',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertNotNull(User::where('email', 'john@email.com')->first());
+        $this->assertSame(1, User::count());
+
+        $this->post('/logout');
+
+        $this->post('/register', [
+            'account_type' => 'individual',
+            'name' => 'Other User',
+            'email' => 'john@email.com',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
+        ])->assertSessionHasErrors('email');
+    }
+
+    public function test_invalid_email_is_rejected(): void
+    {
+        $this->post('/register', [
+            'account_type' => 'individual',
+            'name' => 'Test User',
+            'email' => 'not-an-email',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
+        ])->assertSessionHasErrors('email');
+
+        $this->assertNull(User::where('email', 'not-an-email')->first());
+        $this->assertSame(0, User::count());
+    }
+
+    public function test_empty_required_fields_are_rejected(): void
+    {
+        $this->post('/register', [
+            'account_type' => 'individual',
+            'name' => '',
+            'email' => '',
+            'password' => '',
+            'password_confirmation' => '',
+        ])->assertSessionHasErrors(['name', 'email', 'password']);
+
+        $this->assertSame(0, User::count());
+    }
+
+    public function test_password_below_minimum_length_is_rejected(): void
+    {
+        $this->post('/register', [
+            'account_type' => 'individual',
+            'name' => 'Test User',
+            'email' => 'shortpw@example.com',
+            'password' => 'Ab1',
+            'password_confirmation' => 'Ab1',
+        ])->assertSessionHasErrors('password');
+
+        $this->assertNull(User::where('email', 'shortpw@example.com')->first());
+    }
+
+    public function test_password_confirmation_mismatch_is_rejected(): void
+    {
+        $this->post('/register', [
+            'account_type' => 'individual',
+            'name' => 'Test User',
+            'email' => 'mismatch@example.com',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password456!',
+        ])->assertSessionHasErrors('password');
+
+        $this->assertNull(User::where('email', 'mismatch@example.com')->first());
+    }
+
     public function test_invalid_zambian_phone_number_is_rejected(): void
     {
         $this->post('/register', [
