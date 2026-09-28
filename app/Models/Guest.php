@@ -211,6 +211,25 @@ class Guest extends Model
     }
 
     /**
+     * Path after the app origin for the WhatsApp RSVP-confirmation Content Template IMAGE header
+     * (Twilio/Meta only allow media URL variables after the domain — see docs/twilio.md, and
+     * Event::whatsAppInviteHeaderMediaPath() for the invitation card's identical constraint). Points
+     * at this guest's own dynamically-rendered pass image (rsvp.token.pass-image), not a stored
+     * asset — Twilio only needs the URL to resolve to an image at send time, and that route already
+     * degrades to a plain QR PNG rather than failing (see Guest Invitation Pass in CLAUDE.md), so
+     * this send is never blocked by a broken renderer. Null when there is no token to build a route
+     * from; callers must also check hasEntryPassFor() first, same contract as entryPassPngUrl().
+     */
+    public function whatsAppPassMediaPath(): ?string
+    {
+        if ($this->invitation_token === null) {
+            return null;
+        }
+
+        return ltrim(route('rsvp.token.pass-image', ['token' => $this->invitation_token], absolute: false), '/');
+    }
+
+    /**
      * URL encoded into the guest's printable/emailed QR code. It targets the staff-only,
      * auth-protected check-in confirm endpoint — not the public RSVP link — so a guest
      * scanning their own invitation cannot self-check-in before arriving; only a logged-in

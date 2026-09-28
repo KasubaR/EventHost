@@ -1,9 +1,10 @@
 # WhatsApp Invitations via Twilio
 
 Status: **built** (single-guest outbound send with cover image header + inbound quick-reply
-RSVP + Accepted entry-pass QR confirmation + post-RSVP event-day reminders). **Web/API RSVP
-confirmation is planned, not built** — see that section below. Bulk Twilio send and
-delivery-status webhooks are still future work.
+RSVP + Accepted entry-pass QR confirmation + post-RSVP event-day reminders + web/API RSVP
+confirmation). The web/API RSVP confirmation's Content Template is submitted for Meta approval
+but not yet approved as of 2026-09-28 — code is live behind it (see that section below). Bulk
+Twilio send and delivery-status webhooks are still future work.
 
 Ops checklist: [docs/twilio.md](../docs/twilio.md).
 
@@ -51,21 +52,26 @@ Separate Content Template + scheduled command, timed off `event_date` (not `rsvp
 - Declined/Maybe guests are never reminded; no email equivalent of this message exists; no host UI
   to trigger it manually — see [docs/twilio.md](../docs/twilio.md) §5b for the ops-facing writeup
 
-## Web/API RSVP confirmation (planned)
+## Web/API RSVP confirmation (built 2026-09-28, template pending Meta approval)
 
-**The gap:** `CommunicationService::dispatchRsvpNotifications()` — the one path shared by web RSVP,
-API RSVP and WhatsApp inbound quick-reply — only ever sends **email**
-(`sendRsvpConfirmation`) + notifies the host. The WhatsApp confirmation-with-pass described above
+**The gap this closed:** `CommunicationService::dispatchRsvpNotifications()` — the one path shared
+by web RSVP, API RSVP and WhatsApp inbound quick-reply — used to only ever send **email**
+(`sendRsvpConfirmation`) + notify the host. The WhatsApp confirmation-with-pass described above
 under "Guest taps a button…" only fires for the **inbound quick-reply** path, as a session reply
-inside `WhatsAppInboundRsvpService`. A guest who opens their personal `rsvp/{token}` link and
-submits the web form — regardless of how they were originally invited — gets email only, today,
-by omission rather than design. Reported live 2026-09-28.
+inside `WhatsAppInboundRsvpService`. A guest who opened their personal `rsvp/{token}` link and
+submitted the web form — regardless of how they were originally invited — got email only, by
+omission rather than design. Reported live 2026-09-28.
 
 **The fix:** a third business-initiated send, `CommunicationService::sendWhatsAppRsvpConfirmation
 (Event, Guest, Rsvp)`, called from `dispatchRsvpNotifications()` right after the email send. Unlike
 the inbound flow it cannot rely on an open session (a web-form submit never talks to Twilio), so it
 needs its **own approved Content Template** — same constraint that already applies to the invitation
 and reminder sends.
+
+**Anti-duplicate guard:** `dispatchRsvpNotifications()` takes a `viaWhatsAppInbound` flag (default
+`false`); `WhatsAppInboundRsvpService` is the one caller that passes `true`, since that path already
+sends its own (better — free, immediate) session-reply confirmation right after this call returns.
+Without the flag a quick-reply guest would get two WhatsApp messages for one RSVP tap.
 
 - **Eligibility mirrors `Guest::hasEntryPassFor($rsvp, $event)` exactly** — Accepted, has an
   `invitation_token`, host on a plan with `ownerHasPremiumEventTools()`. Declined/Maybe RSVPs and
@@ -120,15 +126,18 @@ and reminder sends.
   for being too short relative to its variable count (error `2388293`); do not trim them to make
   the template "cleaner."
 
-**Ops steps (once built):** create the template in Content Template Builder exactly as above →
-submit for Meta approval → `TWILIO_RSVP_CONFIRMATION_CONTENT_SID` in `.env` → `config:clear`. Add
-to [docs/twilio.md](../docs/twilio.md) as a new §4c once implemented, alongside §4 (invitation) and
-§5b (reminders) — including a "How to verify" and "Common failures" entry for this path.
+**Ops:** full checklist in [docs/twilio.md](../docs/twilio.md) §4c, including how to build a
+throwaway Pro-tier demo guest for Meta's media-sample review (factories don't work for this on
+production — `fakerphp/faker` is `require-dev`-only) and the "How to verify"/"Common failures"
+entries for this path. Content SID submitted 2026-09-28
+(`HX5f6891719b4d747a999d847744eaba02`); not yet approved.
 
 ## Key classes
 
 - `WhatsAppService` — `sendTemplate`, `sendText`, `sendMedia`
-- `CommunicationService::sendWhatsAppInvitation`, `sendWhatsAppEventReminder`
+- `CommunicationService::sendWhatsAppInvitation`, `sendWhatsAppEventReminder`,
+  `sendWhatsAppRsvpConfirmation`, `dispatchRsvpNotifications`
+- `Guest::whatsAppPassMediaPath`
 - `WhatsAppInboundRsvpService`
 - `TwilioWhatsAppWebhookController`
 - `RsvpController::entryPassQrPng`

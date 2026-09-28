@@ -113,15 +113,24 @@ class CommunicationService
     }
 
     /**
-     * Shared by web RSVP, API RSVP, and WhatsApp inbound quick-reply — keep side effects identical.
+     * Shared by web RSVP, API RSVP, and WhatsApp inbound quick-reply — keep side effects identical,
+     * with one deliberate exception: $viaWhatsAppInbound. A quick-reply tap never opens a web
+     * request that could also fire the business-initiated WhatsApp confirmation below — it already
+     * gets a *better* one, a free session reply with the pass attached, sent directly by
+     * WhatsAppInboundRsvpService right after this call returns. Without the flag, that guest would
+     * get two WhatsApp messages for one RSVP.
      */
-    public function dispatchRsvpNotifications(Event $event, Guest $guest, Rsvp $rsvp): void
+    public function dispatchRsvpNotifications(Event $event, Guest $guest, Rsvp $rsvp, bool $viaWhatsAppInbound = false): void
     {
         try {
             $rsvp->loadMissing('guest');
 
             if (is_string($guest->email) && $guest->email !== '') {
                 $this->sendRsvpConfirmation($event, $guest, $rsvp);
+            }
+
+            if (! $viaWhatsAppInbound) {
+                $this->sendWhatsAppRsvpConfirmation($event, $guest, $rsvp);
             }
 
             $event->loadMissing('user');
@@ -419,6 +428,96 @@ class CommunicationService
             }
 
             return 'failed';
+        } catch (\Throwable $e) {
+            $this->markFailed($log, $e);
+            throw $e;
+        }
+    }
+
+    /**
+     * WhatsApp entry-pass confirmation for the web/API RSVP path — the business-initiated
+     * counterpart to the inbound-quick-reply session confirmation in WhatsAppInboundRsvpService.
+     * A web-form submit never talks to Twilio, so there is no open session to reply into; this
+     * sends its own approved whatsapp/card template instead, same as sendWhatsAppInvitation.
+     *
+     * Eligibility mirrors Guest::hasEntryPassFor() exactly — Accepted, has invitation_token, host
+     * on a plan with ownerHasPremiumEventTools(). Declined/Maybe RSVPs and non-premium hosts get
+     * email only (unchanged); there is no text-only fallback template for those, unlike the inbound
+     * flow's sendText branch — see plans/whatsapp-invitations.md for why that's a deliberate choice,
+     * not an oversight.
+     *
+     * @return 'sent'|'disabled'|'skipped'|'invalid_phone'|'rate_limited'|'failed'
+     */
+    public function sendWhatsAppRsvpConfirmation(Event $event, Guest $guest, Rsvp $rsvp): string
+    {
+        if (! (bool) config('communications.whatsapp.enabled', false)) {
+            return 'disabled';
+        }
+
+        if (! $guest->hasEntryPassFor($rsvp, $event)) {
+            return 'skipped';
+        }
+
+        $toE164 = ZambianPhone::toE164($guest->phone);
+        if ($toE164 === null) {
+            return 'invalid_phone';
+        }
+
+        $mediaPath = $guest->whatsAppPassMediaPath();
+        if ($mediaPath === null) {
+            // hasEntryPassFor() already checked invitation_token !== null, so this is unreachable in
+            // practice — kept because whatsAppPassMediaPath()'s own contract returns nullable.
+            return 'skipped';
+        }
+
+        $contentSid = (string) config('services.twilio.rsvp_confirmation_content_sid', '');
+        if ($contentSid === '') {
+            return 'disabled';
+        }
+
+        $cap = max(1, (int) config('communications.whatsapp.hourly_cap_per_event', 100));
+        $sentLastHour = NotificationLog::query()
+            ->where('event_id', $event->id)
+            ->where('channel', 'whatsapp')
+            ->where('status', NotificationLog::STATUS_SENT)
+            ->where('created_at', '>=', now()->subHour())
+            ->count();
+        if ($sentLastHour >= $cap) {
+            return 'rate_limited';
+        }
+
+        // No idempotency key — same posture as sendRsvpConfirmation() (email) above: an
+        // edited/resubmitted RSVP notifies again exactly like the email side already does.
+        $log = $this->startLog($event, $guest, 'whatsapp', 'guest_rsvp_confirmation_whatsapp', null, null);
+        if ($log === null) {
+            return 'failed';
+        }
+
+        try {
+            // Numbered slots match the approved whatsapp/card template (plans/whatsapp-invitations.md
+            // "Web/API RSVP confirmation"): body {{1}}..{{6}}, {{7}} = media path after production host.
+            $result = $this->whatsAppService->sendTemplate(
+                $toE164,
+                $contentSid,
+                [
+                    '1' => filled($guest->name) ? $guest->name : 'Guest',
+                    '2' => $event->name,
+                    '3' => $event->event_date?->format('j F Y') ?? '',
+                    '4' => $event->hasStartTime() ? Carbon::parse($event->event_time)->format('H:i') : 'TBA',
+                    '5' => filled($event->venue) ? $event->venue : 'Venue TBA',
+                    '6' => (string) $guest->passPageUrl(),
+                    '7' => $mediaPath,
+                ]
+            );
+            $status = $result['status'] === 'sent' ? NotificationLog::STATUS_SENT : NotificationLog::STATUS_FAILED;
+            $log->forceFill([
+                'status' => $status,
+                'provider_message_id' => $result['provider_message_id'],
+                'response' => $result['response'],
+                'sent_at' => $status === NotificationLog::STATUS_SENT ? now() : null,
+            ])->save();
+
+            return $status === NotificationLog::STATUS_SENT ? 'sent' : 'failed';
         } catch (\Throwable $e) {
             $this->markFailed($log, $e);
             throw $e;

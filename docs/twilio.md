@@ -149,6 +149,113 @@ Accepted via WhatsApp always records **1** attendee. Plus-ones use the web link 
 
 ---
 
+## 4c. Web/API RSVP confirmation (whatsapp/card, guest's own pass)
+
+Separate from both the invitation card above and the inbound session confirmation in §5.
+`CommunicationService::dispatchRsvpNotifications()` — shared by web RSVP, API RSVP and (with
+`viaWhatsAppInbound: true`, which skips this) WhatsApp quick-reply — sends this after the email
+confirmation, only when `Guest::hasEntryPassFor($rsvp, $event)` is true (Accepted + Pro+ host).
+Declined/Maybe RSVPs and non-premium hosts get email only; there is no text-only fallback
+template for this path.
+
+A web-form submit never opens a Twilio session, so this needs its **own approved template** —
+same constraint as the invitation card.
+
+### In Twilio Console
+
+1. Content Template Builder → Create new → **WhatsApp card**
+2. **Name:** `eventhost_rsvp_confirmation`, **Category:** Utility
+3. **Media** URL pattern: `https://YOUR_PRODUCTION_HOST/{{7}}`. The sample value for Meta's
+   review must be a **real, live guest's pass URL** on your production domain — Meta's reviewer
+   fetches it. There is no static fallback image for this one (unlike `images/default-event-wa.jpg`
+   for the invitation card), so create a throwaway Pro-tier user/event/Accepted-guest first if none
+   exists yet:
+
+   ```bash
+   php artisan tinker --execute="
+   \$user = App\Models\User::create([
+       'name' => 'EventHost Demo',
+       'email' => 'wa-template-demo-' . Illuminate\Support\Str::random(8) . '@YOUR_DOMAIN',
+       'password' => Illuminate\Support\Str::random(24),
+   ]);
+   \$user->forceFill([
+       'subscription_tier' => App\Enums\SubscriptionTier::Pro,
+       'status' => 'active',
+   ])->save();
+   \$event = App\Models\Event::create([
+       'user_id' => \$user->id, 'name' => 'EventHost Template Demo', 'event_type' => 'wedding',
+       'product_kind' => App\Enums\EventProductKind::Invitation,
+       'event_date' => now()->addMonths(2)->format('Y-m-d'), 'event_time' => '14:00:00',
+       'venue' => 'Demo Venue', 'slug' => 'eventhost-template-demo-' . Illuminate\Support\Str::random(6),
+       'is_published' => true,
+   ]);
+   \$guest = App\Models\Guest::create([
+       'event_id' => \$event->id, 'name' => 'Demo Guest',
+       'invitation_token' => Illuminate\Support\Str::random(48),
+   ]);
+   App\Models\Rsvp::create(['event_id' => \$event->id, 'guest_id' => \$guest->id, 'status' => 'accepted', 'attendee_count' => 1]);
+   echo 'Owner premium tools: ' . (\$event->fresh()->ownerHasPremiumEventTools() ? 'yes' : 'no') . PHP_EOL;
+   echo 'Sample media value: rsvp/' . \$guest->invitation_token . '/pass.png';
+   "
+   ```
+
+   Two gotchas that both produce a silent 404 on the resulting URL, not an obvious error:
+
+   - **Do not use `Model::factory()`** for this on production — `fakerphp/faker` is
+     `require-dev`-only and is not installed after `composer install --no-dev`
+     (`Call to undefined function Database\Factories\fake()`).
+   - **`User::create()` defaults `status` to `pending`, not `active`.**
+     `Guest::hasEntryPassFor()` → `ownerHasPremiumEventTools()` → `User::canUsePremiumEventTools()`
+     requires **both** Pro tier **and** `isActive()` (`status === 'active'`) — setting
+     `subscription_tier` alone is not enough, the pass route 404s regardless of tier. `forceFill`
+     both in one call, as above. The `Owner premium tools` line the script prints is the
+     canary — if it says `no`, nothing else here will work.
+
+   Open the printed URL in a browser first and confirm it actually renders a pass image before
+   using it as the sample — a real app 404 (styled "We couldn't find that page" page) here almost
+   always means the `status`/tier gotcha above, not a hosting/firewall issue.
+
+4. **Body** — paste exactly:
+
+```
+Hello {{1}} 👋
+
+You're confirmed for {{2}}! 🎉
+
+📅 {{3}}
+🕐 {{4}}
+📍 {{5}}
+
+Your entry pass is attached above — view or save it anytime here:
+{{6}}
+
+We can't wait to see you there. Thank you!
+```
+
+   Static opening/closing lines are deliberate — see §4's "Length matters" lesson from the
+   reminder template (Meta error `2388293`, "too many variables for its length").
+
+5. No buttons — this message confirms, it doesn't ask a question.
+6. Submit for Meta approval. When approved, copy the Content SID (`HX…`) →
+   `TWILIO_RSVP_CONFIRMATION_CONTENT_SID`.
+
+### What Laravel fills in
+
+| Slot | Meaning | Source |
+|---|---|---|
+| `{{1}}` | Guest name | `filled($guest->name) ? $guest->name : 'Guest'` |
+| `{{2}}` | Event name | `$event->name` |
+| `{{3}}` | Date | `$event->event_date?->format('j F Y')` |
+| `{{4}}` | Time (`TBA` if none) | `$event->hasStartTime() ? … : 'TBA'` |
+| `{{5}}` | Venue (`Venue TBA` if none) | `filled($event->venue) ? $event->venue : 'Venue TBA'` |
+| `{{6}}` | Full pass page URL | `$guest->passPageUrl()` |
+| `{{7}}` | Guest's own pass image path after host | `$guest->whatsAppPassMediaPath()` (`rsvp.token.pass-image`, not a stored asset) |
+
+`NotificationLog` type: `guest_rsvp_confirmation_whatsapp` — distinct from `guest_invitation_whatsapp`
+and the inbound flow's `guest_rsvp_whatsapp_inbound`.
+
+---
+
 ## 5. Inbound webhook (RSVP replies)
 
 1. In Twilio Console → your WhatsApp sender / Messaging Service → **A message comes in**:
@@ -229,6 +336,7 @@ Still missing:
 ```env
 TWILIO_AUTH_TOKEN=xxxxxxxx
 TWILIO_EVENT_REMINDER_CONTENT_SID=HXxxxxxxxx
+TWILIO_RSVP_CONFIRMATION_CONTENT_SID=HXxxxxxxxx
 ```
 
 Optional: `COMM_WHATSAPP_HOURLY_CAP_PER_EVENT=100` (app default applies if unset).
@@ -269,13 +377,23 @@ Base / none hosts can still use the manual `wa.me` link.
 3. Guest receives a confirmation WhatsApp with the web link
 4. `notification_logs` type `guest_rsvp_whatsapp_inbound`
 
+### Web/API RSVP confirmation (§4c)
+
+1. Pro host, Accepted-eligible guest (Zambian phone + `invitation_token`)
+2. Guest submits the web RSVP form (or the API) as Accepted — **not** via a WhatsApp tap
+3. Guest receives a WhatsApp card with their pass image + `{{6}}` pass link
+4. `notification_logs` type `guest_rsvp_confirmation_whatsapp`
+5. Repeat via a WhatsApp quick-reply tap instead — confirm the guest gets **only one** WhatsApp
+   message (the inbound session reply from §5), not a second one from this path too
+
 ### Remaining ops checklist
 
 - [ ] `TWILIO_AUTH_TOKEN` in secrets / server `.env` (webhook signatures)
 - [ ] Event reminder template approved (`{{1}}`–`{{4}}`) → `TWILIO_EVENT_REMINDER_CONTENT_SID`
+- [ ] RSVP confirmation template approved (`{{1}}`–`{{7}}`) → `TWILIO_RSVP_CONFIRMATION_CONTENT_SID`
 - [ ] Webhook URL points at HTTPS `/webhooks/twilio/whatsapp`
 - [ ] Scheduler runs `events:send-whatsapp-reminders` (via `schedule:run`)
-- [ ] One live send + button tap + reminder smoke-tested end-to-end
+- [ ] One live send + button tap + reminder + web-RSVP-confirmation smoke-tested end-to-end
 
 ---
 
@@ -292,6 +410,8 @@ Base / none hosts can still use the manual `wa.me` link.
 | “Event is full” reply | `guest_limit` reached for Accepted |
 | RSVP closed reply | Past `rsvp_deadline` / paused / cancelled |
 | No event-day WhatsApp reminders | Not Pro+, WhatsApp off, wrong SID, guest not Accepted, or bucket already sent |
+| No WhatsApp after web/API RSVP | Not Pro+ (`hasEntryPassFor`), no `TWILIO_RSVP_CONFIRMATION_CONTENT_SID`, template not yet approved, or invalid phone — email still goes out regardless, check `notification_logs` type `guest_rsvp_confirmation_whatsapp` for the actual outcome |
+| Guest gets two WhatsApp messages for one RSVP | `dispatchRsvpNotifications()` was called without `viaWhatsAppInbound: true` from the inbound webhook path — only `WhatsAppInboundRsvpService` should pass that flag |
 
 ---
 

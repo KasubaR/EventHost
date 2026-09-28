@@ -82,6 +82,9 @@ return [
         'invitation_content_sid' => env('TWILIO_INVITATION_CONTENT_SID'),
         // Approved Content Template SID for post-RSVP event reminders (7 / 1 / 0 days).
         'event_reminder_content_sid' => env('TWILIO_EVENT_REMINDER_CONTENT_SID'),
+        // Approved whatsapp/card Content Template SID for the web/API RSVP confirmation (image
+        // header = guest's own pass; see plans/whatsapp-invitations.md "Web/API RSVP confirmation").
+        'rsvp_confirmation_content_sid' => env('TWILIO_RSVP_CONFIRMATION_CONTENT_SID'),
     ],
 
 ];

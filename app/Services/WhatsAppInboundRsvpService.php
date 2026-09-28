@@ -101,7 +101,7 @@ class WhatsAppInboundRsvpService
             'rsvp_id' => $rsvp->id,
         ]);
 
-        $this->communication->dispatchRsvpNotifications($event, $guest, $rsvp);
+        $this->communication->dispatchRsvpNotifications($event, $guest, $rsvp, viaWhatsAppInbound: true);
 
         if ($fromE164 !== null) {
             $this->sendConfirmation($fromE164, $event, $guest, $rsvp, $status);

@@ -5,9 +5,11 @@ namespace Tests\Feature;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Models\NotificationLog;
+use App\Models\Rsvp;
 use App\Models\User;
 use App\Notifications\EventUpdatedNotification;
 use App\Notifications\RsvpReminderNotification;
+use App\Services\CommunicationService;
 use App\Services\WhatsAppService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -298,5 +300,198 @@ class CommunicationFeaturesTest extends TestCase
 
         $this->assertSame(0, $fake->calls);
         $this->assertDatabaseMissing('notification_logs', ['guest_id' => $secondGuest->id]);
+    }
+
+    public function test_whatsapp_rsvp_confirmation_sent_for_accepted_guest_on_premium_event(): void
+    {
+        config()->set('communications.whatsapp.enabled', true);
+        config()->set('services.twilio.rsvp_confirmation_content_sid', 'HXconfirm');
+
+        $fake = new class implements WhatsAppService
+        {
+            public int $calls = 0;
+
+            public array $lastVariables = [];
+
+            public function sendTemplate(string $toE164Phone, string $contentSid, array $templateVariables): array
+            {
+                $this->calls++;
+                $this->lastVariables = $templateVariables;
+
+                return ['status' => 'sent', 'provider_message_id' => 'SM456', 'response' => null];
+            }
+
+            public function sendText(string $toE164Phone, string $body): array
+            {
+                return ['status' => 'sent', 'provider_message_id' => null, 'response' => null];
+            }
+
+            public function sendMedia(string $toE164Phone, string $mediaUrl, ?string $caption = null): array
+            {
+                return ['status' => 'sent', 'provider_message_id' => null, 'response' => null];
+            }
+        };
+        $this->app->instance(WhatsAppService::class, $fake);
+
+        $owner = User::factory()->pro()->create();
+        $event = Event::factory()->for($owner)->create();
+        $guest = Guest::factory()->for($event)->create(['phone' => '+260971234567']);
+        $rsvp = Rsvp::create([
+            'event_id' => $event->id,
+            'guest_id' => $guest->id,
+            'status' => 'accepted',
+            'attendee_count' => 1,
+        ]);
+
+        $outcome = app(CommunicationService::class)->sendWhatsAppRsvpConfirmation($event, $guest, $rsvp);
+
+        $this->assertSame('sent', $outcome);
+        $this->assertSame(1, $fake->calls);
+        $this->assertArrayHasKey('7', $fake->lastVariables);
+        $this->assertStringContainsString('/pass.png', $fake->lastVariables['7']);
+        $this->assertDatabaseHas('notification_logs', [
+            'event_id' => $event->id,
+            'guest_id' => $guest->id,
+            'channel' => 'whatsapp',
+            'type' => 'guest_rsvp_confirmation_whatsapp',
+            'status' => NotificationLog::STATUS_SENT,
+        ]);
+    }
+
+    public function test_whatsapp_rsvp_confirmation_skipped_for_base_host(): void
+    {
+        config()->set('communications.whatsapp.enabled', true);
+        config()->set('services.twilio.rsvp_confirmation_content_sid', 'HXconfirm');
+
+        $fake = new class implements WhatsAppService
+        {
+            public int $calls = 0;
+
+            public function sendTemplate(string $toE164Phone, string $contentSid, array $templateVariables): array
+            {
+                $this->calls++;
+
+                return ['status' => 'sent', 'provider_message_id' => 'SM456', 'response' => null];
+            }
+
+            public function sendText(string $toE164Phone, string $body): array
+            {
+                return ['status' => 'sent', 'provider_message_id' => null, 'response' => null];
+            }
+
+            public function sendMedia(string $toE164Phone, string $mediaUrl, ?string $caption = null): array
+            {
+                return ['status' => 'sent', 'provider_message_id' => null, 'response' => null];
+            }
+        };
+        $this->app->instance(WhatsAppService::class, $fake);
+
+        // No ->pro() — Guest::hasEntryPassFor() requires ownerHasPremiumEventTools().
+        $owner = User::factory()->create();
+        $event = Event::factory()->for($owner)->create();
+        $guest = Guest::factory()->for($event)->create(['phone' => '+260971234567']);
+        $rsvp = Rsvp::create([
+            'event_id' => $event->id,
+            'guest_id' => $guest->id,
+            'status' => 'accepted',
+            'attendee_count' => 1,
+        ]);
+
+        $outcome = app(CommunicationService::class)->sendWhatsAppRsvpConfirmation($event, $guest, $rsvp);
+
+        $this->assertSame('skipped', $outcome);
+        $this->assertSame(0, $fake->calls);
+    }
+
+    public function test_whatsapp_rsvp_confirmation_skipped_for_declined_rsvp(): void
+    {
+        config()->set('communications.whatsapp.enabled', true);
+        config()->set('services.twilio.rsvp_confirmation_content_sid', 'HXconfirm');
+
+        $fake = new class implements WhatsAppService
+        {
+            public int $calls = 0;
+
+            public function sendTemplate(string $toE164Phone, string $contentSid, array $templateVariables): array
+            {
+                $this->calls++;
+
+                return ['status' => 'sent', 'provider_message_id' => 'SM456', 'response' => null];
+            }
+
+            public function sendText(string $toE164Phone, string $body): array
+            {
+                return ['status' => 'sent', 'provider_message_id' => null, 'response' => null];
+            }
+
+            public function sendMedia(string $toE164Phone, string $mediaUrl, ?string $caption = null): array
+            {
+                return ['status' => 'sent', 'provider_message_id' => null, 'response' => null];
+            }
+        };
+        $this->app->instance(WhatsAppService::class, $fake);
+
+        $owner = User::factory()->pro()->create();
+        $event = Event::factory()->for($owner)->create();
+        $guest = Guest::factory()->for($event)->create(['phone' => '+260971234567']);
+        $rsvp = Rsvp::create([
+            'event_id' => $event->id,
+            'guest_id' => $guest->id,
+            'status' => 'declined',
+            'attendee_count' => 0,
+        ]);
+
+        $outcome = app(CommunicationService::class)->sendWhatsAppRsvpConfirmation($event, $guest, $rsvp);
+
+        $this->assertSame('skipped', $outcome);
+        $this->assertSame(0, $fake->calls);
+    }
+
+    public function test_dispatch_rsvp_notifications_skips_whatsapp_confirmation_for_inbound_source(): void
+    {
+        config()->set('communications.whatsapp.enabled', true);
+        config()->set('services.twilio.rsvp_confirmation_content_sid', 'HXconfirm');
+        Notification::fake();
+
+        $fake = new class implements WhatsAppService
+        {
+            public int $calls = 0;
+
+            public function sendTemplate(string $toE164Phone, string $contentSid, array $templateVariables): array
+            {
+                $this->calls++;
+
+                return ['status' => 'sent', 'provider_message_id' => 'SM456', 'response' => null];
+            }
+
+            public function sendText(string $toE164Phone, string $body): array
+            {
+                return ['status' => 'sent', 'provider_message_id' => null, 'response' => null];
+            }
+
+            public function sendMedia(string $toE164Phone, string $mediaUrl, ?string $caption = null): array
+            {
+                return ['status' => 'sent', 'provider_message_id' => null, 'response' => null];
+            }
+        };
+        $this->app->instance(WhatsAppService::class, $fake);
+
+        $owner = User::factory()->pro()->create();
+        $event = Event::factory()->for($owner)->create();
+        $guest = Guest::factory()->for($event)->create(['phone' => '+260971234567']);
+        $rsvp = Rsvp::create([
+            'event_id' => $event->id,
+            'guest_id' => $guest->id,
+            'status' => 'accepted',
+            'attendee_count' => 1,
+        ]);
+
+        app(CommunicationService::class)->dispatchRsvpNotifications($event, $guest, $rsvp, viaWhatsAppInbound: true);
+
+        $this->assertSame(0, $fake->calls);
+        $this->assertDatabaseMissing('notification_logs', [
+            'guest_id' => $guest->id,
+            'type' => 'guest_rsvp_confirmation_whatsapp',
+        ]);
     }
 }
