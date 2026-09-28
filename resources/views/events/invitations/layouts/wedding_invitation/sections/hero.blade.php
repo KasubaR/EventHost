@@ -1,25 +1,6 @@
 @php
-    $nameTrim = trim((string) $event->name);
-    $nameLower = strtolower($nameTrim);
-    $forPos = strpos($nameLower, ' for ');
-    $nameBefore = $nameTrim;
-    $nameAfter = '';
-    if ($forPos !== false) {
-        $nameBefore = trim(substr($nameTrim, 0, $forPos)) ?: $nameTrim;
-        $nameAfter = trim(substr($nameTrim, $forPos + 4));
-    } else {
-        $ampersandPos = strpos($nameTrim, '&');
-        if ($ampersandPos !== false) {
-            $nameBefore = trim(substr($nameTrim, 0, $ampersandPos)) ?: $nameTrim;
-            $nameAfter = trim(substr($nameTrim, $ampersandPos + 1));
-        } elseif (str_contains($nameTrim, ' and ')) {
-            $parts = preg_split('/\s+and\s+/i', $nameTrim, 2);
-            if (is_array($parts) && count($parts) === 2) {
-                $nameBefore = trim($parts[0]);
-                $nameAfter = trim($parts[1]);
-            }
-        }
-    }
+    $w = \App\Support\WeddingInvitationView::for($event, $invitation);
+    [$nameBefore, $nameAfter] = $w->names();
 
     $eyebrow = trim((string) ($invitation['content']['wi_hero_eyebrow'] ?? ''));
     if ($eyebrow === '') {
@@ -33,7 +14,7 @@
 <div class="wi-hero" id="home">
     <div
         class="wi-hero-img"
-        style="background-image: url('{{ e($coverUrl) }}');"
+        style="background-image: url('{{ $coverUrl }}');"
         aria-hidden="true"
     ></div>
     <div class="wi-hero-overlay" aria-hidden="true"></div>

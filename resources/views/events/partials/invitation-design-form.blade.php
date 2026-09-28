@@ -48,17 +48,27 @@
         $sectionLabels['description'] = 'Contact & closing';
         $sectionLabels['gallery'] = 'Speaker grid';
     }
+    $isWeddingLayout = InvitationLayoutVariant::isProWedding($layoutVariant);
+    if ($isWeddingLayout || $layoutVariant === InvitationLayoutVariant::BASE_WEDDING) {
+        $sectionLabels['details'] = 'Celebration details (date, time, venue)';
+        $sectionLabels['schedule'] = "Day's programme timeline";
+    }
+    if ($layoutVariant === InvitationLayoutVariant::BASE_WEDDING) {
+        $sectionLabels['hero'] = 'Opening names & date';
+        $sectionLabels['description'] = 'Invitation wording';
+    }
     if ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION) {
         $sectionLabels['description'] = 'Save the date & couple photos';
-        $sectionLabels['details'] = 'Celebration details cards';
-        $sectionLabels['schedule'] = 'Detail cards (schedule data)';
     }
     if ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION_NOIR) {
         $sectionLabels['hero'] = 'Opening hero';
-        $sectionLabels['description'] = 'Formal invitation card';
-        $sectionLabels['story'] = 'Quote interlude';
-        $sectionLabels['schedule'] = "Day's programme timeline";
+        $sectionLabels['description'] = 'Formal invitation card & couple photos';
+        $sectionLabels['story'] = 'Story (or quote interlude)';
         $sectionLabels['gallery'] = 'Photo gallery (two rows)';
+    }
+    if ($layoutVariant === InvitationLayoutVariant::MODERN_MINIMAL) {
+        $sectionLabels['hero'] = 'Names, date & framed cover';
+        $sectionLabels['description'] = 'Invitation wording & couple photos';
     }
     $blockedSections = InvitationLayoutVariant::blockedSections($layoutVariant);
     $sectionLabels = array_diff_key($sectionLabels, array_flip($blockedSections));
@@ -373,7 +383,7 @@
             @if ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION_NOIR)
                 <fieldset class="evt-design-fieldset">
                     <legend class="profile-label">Noir wedding — copy &amp; footer</legend>
-                    <p class="evt-muted evt-design-hint">Headlines for the split hero, formal card, photo quote, and closing monogram.</p>
+                    <p class="evt-muted evt-design-hint">Headlines for the split hero, formal card, couple grid caption, and closing monogram. The photo quote shows when the Story is empty.</p>
 
                     <div class="evt-grid-2 profile-fields">
                         <div class="profile-field">
@@ -392,6 +402,12 @@
                         <label for="wi2_invite_body" class="profile-label">Formal card body</label>
                         <textarea id="wi2_invite_body" name="wi2_invite_body" rows="3" maxlength="600" class="profile-input"
                                   placeholder="request the honour of your presence…">{{ old('wi2_invite_body', $invitationMerged['content']['wi2_invite_body'] ?? '') }}</textarea>
+                    </div>
+                    <div class="profile-field">
+                        <label for="wi_couple_caption" class="profile-label">Couple photo caption</label>
+                        <input id="wi_couple_caption" name="wi_couple_caption" type="text" maxlength="160" class="profile-input"
+                               value="{{ old('wi_couple_caption', $invitationMerged['content']['wi_couple_caption'] ?? '') }}"
+                               placeholder="Two souls, one promise">
                     </div>
                     <div class="profile-field">
                         <label for="wi2_photo_quote" class="profile-label">Photo quote</label>
@@ -437,6 +453,40 @@
                     </div>
                     <div class="profile-field">
                         <label for="wi_footer_quote" class="profile-label">Footer quote</label>
+                        <input id="wi_footer_quote" name="wi_footer_quote" type="text" maxlength="300" class="profile-input"
+                               value="{{ old('wi_footer_quote', $invitationMerged['content']['wi_footer_quote'] ?? '') }}"
+                               placeholder="A short closing line for guests">
+                    </div>
+                </fieldset>
+            @endif
+
+            @if ($layoutVariant === InvitationLayoutVariant::MODERN_MINIMAL)
+                <fieldset class="evt-design-fieldset">
+                    <legend class="profile-label">Modern minimal — caption</legend>
+                    <p class="evt-muted evt-design-hint">Optional line under the three couple portraits — a dress code works well here. Leave it empty to show no caption.</p>
+
+                    <div class="profile-field">
+                        <label for="wi_couple_caption" class="profile-label">Couple photo caption</label>
+                        <input id="wi_couple_caption" name="wi_couple_caption" type="text" maxlength="160" class="profile-input"
+                               value="{{ old('wi_couple_caption', $invitationMerged['content']['wi_couple_caption'] ?? '') }}"
+                               placeholder="Smart casual · Modern elegance">
+                    </div>
+                </fieldset>
+            @endif
+
+            @if ($layoutVariant === InvitationLayoutVariant::BASE_WEDDING)
+                <fieldset class="evt-design-fieldset">
+                    <legend class="profile-label">Wedding invitation — wording</legend>
+                    <p class="evt-muted evt-design-hint">This layout is text only. The invitation wording comes from your event description; these lines frame it.</p>
+
+                    <div class="profile-field">
+                        <label for="wi_hero_eyebrow" class="profile-label">Opening line</label>
+                        <input id="wi_hero_eyebrow" name="wi_hero_eyebrow" type="text" maxlength="120" class="profile-input"
+                               value="{{ old('wi_hero_eyebrow', $invitationMerged['content']['wi_hero_eyebrow'] ?? '') }}"
+                               placeholder="Together with their families">
+                    </div>
+                    <div class="profile-field">
+                        <label for="wi_footer_quote" class="profile-label">Closing line</label>
                         <input id="wi_footer_quote" name="wi_footer_quote" type="text" maxlength="300" class="profile-input"
                                value="{{ old('wi_footer_quote', $invitationMerged['content']['wi_footer_quote'] ?? '') }}"
                                placeholder="A short closing line for guests">
@@ -664,7 +714,7 @@
             @if (($heroPortraitSlots > 0 || $couplePhotoSlots > 0) && $layoutVariant !== InvitationLayoutVariant::BEAUTY_FOR_ASHES)
                 <fieldset class="evt-design-fieldset">
                     <legend class="profile-label">
-                        @if ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION)
+                        @if ($isWeddingLayout)
                             Couple portrait grid
                         @elseif ($layoutVariant === InvitationLayoutVariant::BOTANICAL_GRADUATION)
                             Hero portraits
@@ -673,8 +723,8 @@
                         @endif
                     </legend>
                     <p class="evt-muted evt-design-hint">
-                        @if ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION)
-                            Upload three separate photos for the "Two hearts, one story" portrait grid — left portrait, centre portrait, and right portrait. When fewer than three are uploaded, the last image repeats to fill the grid.
+                        @if ($isWeddingLayout)
+                            Upload three separate photos for the couple portrait grid — left portrait, centre portrait, and right portrait. When fewer than three are uploaded, the last image repeats to fill the grid.
                         @elseif ($layoutVariant === InvitationLayoutVariant::BOTANICAL_GRADUATION)
                             Optional. Two photos create the side-by-side framed look; one shows a single frame. Select both at once or upload one then the other.
                         @else
@@ -745,7 +795,7 @@
                             <div class="evt-design-inset-panel">
                                 <div class="evt-design-inset-head-row">
                                     <span class="evt-design-inset-title">
-                                        @if ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION)
+                                        @if ($isWeddingLayout)
                                             {{ $currentCouple !== [] ? 'Add more portraits' : 'Couple portraits (3 slots — left, centre, right)' }}
                                         @elseif ($layoutVariant === InvitationLayoutVariant::BOTANICAL_GRADUATION)
                                             {{ $currentCouple !== [] ? 'Add more portraits' : 'Portrait photos (up to 2)' }}
@@ -763,7 +813,7 @@
                                                data-upload-max-bytes="{{ InvitationMediaRules::IMAGE_MAX_KB * 1024 }}"
                                                @if ($coupleSlotsRemaining === 0) disabled @endif>
                                         <p class="evt-muted evt-design-hint">
-                                            @if ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION)
+                                            @if ($isWeddingLayout)
                                                 Select up to 3 different images — they fill the left, centre, and right columns of the portrait grid. You can select all three at once or upload in batches.
                                             @else
                                                 Displayed as one or two framed portraits in the hero.
@@ -795,9 +845,9 @@
                 </legend>
                 <p class="evt-muted evt-design-hint">
                     @if ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION_NOIR)
-                        Up to {{ $galleryMaxWord }} photos in two rows of three. One of these also appears behind the quote section (or the hero photo if the gallery is empty). Stored as WebP after upload.
+                        Up to {{ $galleryMaxWord }} photos in two rows of three. One of these also appears behind the story or quote section (or the hero photo if the gallery is empty). Stored as WebP after upload.
                     @elseif ($layoutVariant === InvitationLayoutVariant::MODERN_MINIMAL)
-                        Up to {{ $galleryMaxWord }} photos in the photo grid. Stored as WebP after upload (converted from JPG/PNG).
+                        Up to {{ $galleryMaxWord }} photos — six fill two rows of three. Stored as WebP after upload (converted from JPG/PNG).
                     @elseif ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION)
                         Up to {{ $galleryMaxWord }} photos for the masonry gallery. The story panel can also use a gallery photo when one is available. Stored as WebP after upload.
                     @else
@@ -848,6 +898,7 @@
             </fieldset>
             @endif
 
+            @unless (InvitationLayoutVariant::isImageFree($layoutVariant))
             <fieldset class="evt-design-fieldset">
                 <legend class="profile-label">Background video</legend>
                 <p class="evt-muted evt-design-hint">Optional looping video behind the hero. Paste a public YouTube link or video ID — it plays muted, similar to an uploaded clip. Use <strong>Remove</strong> to clear.</p>
@@ -890,6 +941,7 @@
                     </div>
                 </div>
             </fieldset>
+            @endunless
 
             <fieldset class="evt-design-fieldset">
                 <legend class="profile-label">Background music</legend>

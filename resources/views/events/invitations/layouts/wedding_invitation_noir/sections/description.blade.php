@@ -1,18 +1,6 @@
 @php
-    $nameTrim = trim((string) $event->name);
-    $nameBefore = $nameTrim;
-    $nameAfter = '';
-    $ampersandPos = strpos($nameTrim, '&');
-    if ($ampersandPos !== false) {
-        $nameBefore = trim(substr($nameTrim, 0, $ampersandPos)) ?: $nameTrim;
-        $nameAfter = trim(substr($nameTrim, $ampersandPos + 1));
-    } elseif (str_contains($nameTrim, ' and ')) {
-        $parts = preg_split('/\s+and\s+/i', $nameTrim, 2);
-        if (is_array($parts) && count($parts) === 2) {
-            $nameBefore = trim($parts[0]);
-            $nameAfter = trim($parts[1]);
-        }
-    }
+    $w = \App\Support\WeddingInvitationView::for($event, $invitation);
+    [$nameBefore, $nameAfter] = $w->names();
 
     $formal = trim((string) ($invitation['content']['wi2_invite_formal'] ?? ''));
     if ($formal === '') {
@@ -24,13 +12,15 @@
         $body = "request the honour of your presence\nas they exchange vows and begin\ntheir life together in love";
     }
 
-    $timePhrase = '';
-    if ($event->event_time) {
-        $timePhrase = 'at '.\Carbon\Carbon::parse('2000-01-01 '.substr((string) $event->event_time, 0, 8))->format('g:i A');
-    }
+    $timeLine = $w->timeLine();
+    $venueLine = $w->venueLine();
+    $locationLine = $w->locationLine();
 
-    $venueLine = trim((string) $event->venue) ?: trim((string) $event->location_name);
-    $locationLine = trim((string) $event->location_name);
+    $couplePhotos = $w->couplePhotos();
+    $caption = trim((string) ($invitation['content']['wi_couple_caption'] ?? ''));
+    if ($caption === '') {
+        $caption = 'Two souls, one promise';
+    }
 @endphp
 
 <section class="wi2-invite-section wi2-reveal" data-wi2-reveal>
@@ -50,16 +40,27 @@
         <div class="wi2-invite-detail">
             <span>{{ $event->event_date->format('l') }}</span>
             <span class="wi2-highlight">{{ $event->event_date->format('jS F, Y') }}</span>
-            @if ($timePhrase !== '')
-                <span>{{ $timePhrase }}</span>
+            @if ($timeLine !== null)
+                <span>at {{ $timeLine }}</span>
             @endif
             @if ($venueLine !== '')
                 <span class="wi2-highlight">{{ $venueLine }}</span>
             @endif
-            @if ($locationLine !== '' && $locationLine !== $venueLine)
+            @if ($locationLine !== '')
                 <span>{{ $locationLine }}</span>
             @endif
         </div>
-        <div class="wi2-invite-ornament" style="margin-top:2rem;margin-bottom:0;" aria-hidden="true">✦ &nbsp; &nbsp; ✦ &nbsp; &nbsp; ✦</div>
+        <div class="wi2-invite-ornament wi2-invite-ornament--end" aria-hidden="true">✦ &nbsp; &nbsp; ✦ &nbsp; &nbsp; ✦</div>
     </div>
+</section>
+
+<section class="wi2-couple-section wi2-reveal" data-wi2-reveal>
+    <div class="wi2-couple-grid">
+        @foreach ($couplePhotos as $idx => $src)
+            <div class="wi2-couple-frame wi2-couple-frame--{{ $idx + 1 }}">
+                <img src="{{ $src }}" alt="" loading="lazy" width="600" height="800">
+            </div>
+        @endforeach
+    </div>
+    <p class="wi2-couple-caption">{{ $caption }}</p>
 </section>

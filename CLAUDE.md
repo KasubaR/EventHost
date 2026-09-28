@@ -441,14 +441,16 @@ combination never reaches `Event::save()` at all.
 - `EventFactory` defaults to a **private** invitation event; use `->publicAudience()` (or `->ticketed()`)
   when a test needs the public page, discover or open RSVP
 
-**Private event types are template-derived, not hardcoded.** `Event::privateEventTypes()` reads active
-`InvitationTemplateCategory` rows (a category counts once any of its templates is active — categories have
-no active flag of their own) through the explicit `Event::CATEGORY_SLUG_TO_TYPE` map, because category slugs
-use hyphens and event types use underscores. A category with no active template disappears from the private
-type list; a category slug missing from the map is skipped, never guessed at. Falls back to the static
-`INVITATION_EVENT_TYPES` constant if the query is empty. Adding a template category (e.g. `anniversary`,
-`kitchen_party` — see `plans/public-private-portals.md` §6) needs a `CATEGORY_SLUG_TO_TYPE` entry too before
-it becomes selectable. `Event::eventTypesFor()` still takes only `?EventProductKind`, not audience — nothing
+**Private event types always include the seven static types.** Each template carries **one category** for
+now (Wedding: Classic, Wedding Standard, Ivory & Gold, Noir & Gold, Modern Minimal, Pro Magazine; Graduation:
+Blush Celebration Card, Botanical; Church: Beauty for Ashes), so most types have no template of their own.
+`Event::privateEventTypes()` therefore returns every `INVITATION_EVENT_TYPES` entry, plus any further category
+that has an active template, read through the explicit `Event::CATEGORY_SLUG_TO_TYPE` map (category slugs use
+hyphens, event types underscores; a slug missing from the map is skipped, never guessed at). The wizard's
+template picker lists every active template regardless of type, so a type with no template is not a dead end.
+Adding a template category (e.g. `anniversary`, `kitchen_party` — see `plans/public-private-portals.md` §6)
+needs a `CATEGORY_SLUG_TO_TYPE` entry before it becomes selectable. The `/templates` category dropdown lists only
+categories with an active template on the current plan tab. `Event::eventTypesFor()` still takes only `?EventProductKind`, not audience — nothing
 has an audience to pass until Phase 4 wires it into the create/update forms.
 
 Public event types (`Event::PUBLIC_EVENT_TYPES`) are not template-constrained — ticketed events render one

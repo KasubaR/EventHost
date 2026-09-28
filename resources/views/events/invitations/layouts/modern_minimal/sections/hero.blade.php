@@ -1,23 +1,7 @@
 @php
-    $nameTrim = trim((string) $event->name);
-    $nameBefore = $nameTrim;
-    $nameAfter = '';
-    $ampersandPos = strpos($nameTrim, '&');
-    if ($ampersandPos !== false) {
-        $nameBefore = trim(substr($nameTrim, 0, $ampersandPos)) ?: $nameTrim;
-        $nameAfter = trim(substr($nameTrim, $ampersandPos + 1));
-    } elseif (str_contains($nameTrim, ' and ')) {
-        $parts = preg_split('/\s+and\s+/i', $nameTrim, 2);
-        if (is_array($parts) && count($parts) === 2) {
-            $nameBefore = trim($parts[0]);
-            $nameAfter = trim($parts[1]);
-        }
-    }
-
-    $location = trim((string) $event->location_name);
-    if ($location === '') {
-        $location = trim((string) $event->venue);
-    }
+    $w = \App\Support\WeddingInvitationView::for($event, $invitation);
+    [$nameBefore, $nameAfter] = $w->names();
+    $location = trim((string) $event->location_name) ?: $w->venueLine();
 @endphp
 
 <section class="mm-hero" id="top">
@@ -32,5 +16,8 @@
     @if ($location !== '')
         <p class="mm-hero-location">{{ $location }}</p>
     @endif
+    <figure class="mm-hero-photo">
+        <img src="{{ $event->cover_image_url }}" alt="" width="900" height="1125">
+    </figure>
     <a href="#countdown" class="mm-scroll-hint">Scroll</a>
 </section>

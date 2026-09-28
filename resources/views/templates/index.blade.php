@@ -1,6 +1,11 @@
 <x-app-layout>
     @push('styles')
         <link rel="stylesheet" href="{{ asset('css/templates.css') }}">
+        <link rel="stylesheet" href="{{ asset('css/custom-select.css') }}">
+    @endpush
+    @push('scripts')
+        <script src="{{ asset('js/custom-select.js') }}" defer></script>
+        <script src="{{ asset('js/templates-library.js') }}" defer></script>
     @endpush
 
     <x-slot name="title">Templates</x-slot>
@@ -14,26 +19,45 @@
         </div>
     </x-slot>
 
+    @php
+        $planTabs = ['' => 'All templates', 'base' => 'Base', 'pro' => 'Pro'];
+        $keepFilters = array_filter(['q' => $q, 'category' => $categorySlug], fn ($v) => filled($v));
+    @endphp
+
+    <nav class="tpl-plan-tabs" aria-label="Filter by plan">
+        @foreach ($planTabs as $tabKey => $tabLabel)
+            @php $isActive = ($plan ?? '') === $tabKey; @endphp
+            <a href="{{ route('templates.index', array_filter($keepFilters + ['plan' => $tabKey], fn ($v) => filled($v))) }}"
+               class="tpl-plan-tab {{ $isActive ? 'is-active' : '' }}"
+               @if ($isActive) aria-current="page" @endif>
+                {{ $tabLabel }}
+            </a>
+        @endforeach
+    </nav>
+
     <form method="get" action="{{ route('templates.index') }}" class="tpl-filters">
+        @if ($plan)
+            <input type="hidden" name="plan" value="{{ $plan }}">
+        @endif
         <label class="tpl-search">
             <span class="tpl-sr-only">Search templates</span>
             <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
             <input type="search" name="q" value="{{ $q }}" placeholder="Search by name or description" maxlength="120">
         </label>
 
-        <label class="tpl-category-label">
-            <span class="tpl-sr-only">Category</span>
-            <select name="category">
+        <div class="tpl-category-label">
+            <label for="tpl-category" class="tpl-sr-only">Category</label>
+            <select id="tpl-category" name="category" data-cs data-cs-search="never" data-cs-icon="fa-solid fa-layer-group" data-tpl-autosubmit>
                 <option value="">All categories</option>
                 @foreach ($categories as $cat)
                     <option value="{{ $cat->slug }}" @selected($categorySlug === $cat->slug)>{{ $cat->name }}</option>
                 @endforeach
             </select>
-        </label>
+        </div>
 
         <button type="submit" class="btn-primary">Search</button>
         @if ($q !== '' || $categorySlug)
-            <a href="{{ route('templates.index') }}" class="btn-outline">Clear</a>
+            <a href="{{ route('templates.index', array_filter(['plan' => $plan])) }}" class="btn-outline">Clear</a>
         @endif
     </form>
 
@@ -44,45 +68,23 @@
                     @if ($tpl->preview_image_url)
                         <img src="{{ $tpl->preview_image_url }}" alt="{{ $tpl->name }} thumbnail" width="640" height="800" loading="lazy" decoding="async">
                     @else
-                        <div class="tpl-card-placeholder">
-                            <a href="{{ route('templates.preview', $tpl) }}" class="btn-outline tpl-placeholder-preview-btn">
-                                <i class="fa-regular fa-eye" aria-hidden="true"></i>
-                                Preview
-                                <span class="tpl-sr-only">{{ $tpl->name }}</span>
-                            </a>
-                        </div>
+                        <div class="tpl-card-placeholder"></div>
                     @endif
+                    <span class="tpl-tier-badge tpl-thumb-tier tpl-tier-{{ str_replace('_', '-', $tpl->requiredTier()->value) }}">
+                        <span class="tpl-sr-only">Plan:</span> {{ $tpl->requiredTier()->label() }}
+                    </span>
+                    <a href="{{ route('templates.preview', $tpl) }}" class="btn-outline tpl-placeholder-preview-btn">
+                        <i class="fa-regular fa-eye" aria-hidden="true"></i>
+                        Preview
+                        <span class="tpl-sr-only">{{ $tpl->name }}</span>
+                    </a>
                 </div>
 
                 <div class="tpl-gallery-body">
                     <h2 class="tpl-gallery-title">{{ $tpl->name }}</h2>
 
-                    <div class="tpl-gallery-block">
-                        <span class="tpl-gallery-label" id="tpl-cat-label-{{ $tpl->id }}">Categories</span>
-                        <div class="tpl-gallery-categories" role="group" aria-labelledby="tpl-cat-label-{{ $tpl->id }}">
-                            @forelse ($tpl->categories as $cat)
-                                <span class="tpl-tag">{{ $cat->name }}</span>
-                            @empty
-                                <span class="tpl-gallery-empty">—</span>
-                            @endforelse
-                        </div>
-                    </div>
-
-                    <div class="tpl-gallery-block tpl-gallery-tier-row">
-                        <span class="tpl-gallery-label">Plan</span>
-                        <span class="tpl-tier-badge tpl-tier-{{ str_replace('_', '-', $tpl->requiredTier()->value) }}">{{ $tpl->requiredTier()->label() }}</span>
-                    </div>
-
-                    <div class="tpl-gallery-actions">
-                        @if ($tpl->preview_image_url)
-                            <a href="{{ route('templates.preview', $tpl) }}" class="btn-outline tpl-gallery-preview-btn">
-                                <i class="fa-regular fa-eye" aria-hidden="true"></i>
-                                Preview
-                            </a>
-                        @endif
-                        @if (auth()->user()?->canUseInvitationTemplate($tpl))
-                            <a href="{{ route('events.create', ['template' => $tpl->slug]) }}" class="btn-primary tpl-btn-small tpl-gallery-use-btn">Use template</a>
-                        @else
+                    @unless (auth()->user()?->canUseInvitationTemplate($tpl))
+                        <div class="tpl-gallery-actions">
                             <span class="tpl-gallery-lock-hint">Requires {{ $tpl->requiredTier()->label() }} to apply.</span>
                             <div class="tpl-tier-actions tpl-gallery-tier-actions">
                                 <a href="{{ \App\Support\BillingPlan::checkoutUrlForTier($tpl->requiredTier()) }}" class="btn-outline tpl-btn-small">Upgrade to {{ $tpl->requiredTier()->label() }}</a>
@@ -90,8 +92,8 @@
                                     <a href="{{ route('register') }}" class="btn-primary tpl-btn-small">Get started</a>
                                 @endguest
                             </div>
-                        @endif
-                    </div>
+                        </div>
+                    @endunless
                 </div>
             </article>
         @empty

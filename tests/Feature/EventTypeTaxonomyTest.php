@@ -10,16 +10,17 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Phase 2 of plans/public-private-portals.md: private event types are derived
- * from the template library instead of a hardcoded list; public types stay a
- * plain constant. Categories are seeded by InvitationTemplateSeeder (see
- * TestCase::$seed), so this exercises the real seeded data, not a fixture.
+ * Private event types: the static INVITATION_EVENT_TYPES list is always offered,
+ * whether or not a template is tagged with the matching category (templates carry
+ * one category each for now). Public types stay a plain constant. Categories are
+ * seeded by InvitationTemplateSeeder (see TestCase::$seed), so this exercises the
+ * real seeded data, not a fixture.
  */
 class EventTypeTaxonomyTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_private_event_types_match_todays_seven_categories(): void
+    public function test_private_event_types_are_the_seven_static_types(): void
     {
         $this->assertSame(
             Event::INVITATION_EVENT_TYPES,
@@ -32,7 +33,7 @@ class EventTypeTaxonomyTest extends TestCase
         $this->assertSame(Event::TICKETED_EVENT_TYPES, Event::PUBLIC_EVENT_TYPES);
     }
 
-    public function test_event_types_for_invitation_is_unchanged_by_the_refactor(): void
+    public function test_event_types_for_invitation_is_the_private_list(): void
     {
         $this->assertSame(
             Event::INVITATION_EVENT_TYPES,
@@ -48,25 +49,23 @@ class EventTypeTaxonomyTest extends TestCase
         );
     }
 
-    public function test_a_category_with_no_active_template_is_not_offered(): void
+    public function test_a_type_with_no_template_in_its_category_is_still_offered(): void
     {
-        InvitationTemplate::query()->whereHas('categories', fn ($q) => $q->where('slug', 'church'))
-            ->update(['is_active' => false]);
+        $withTemplates = InvitationTemplateCategory::query()
+            ->whereHas('invitationTemplates', fn ($q) => $q->where('is_active', true))
+            ->pluck('slug')
+            ->all();
 
-        $this->assertNotContains('church', Event::privateEventTypes());
+        // Funeral/Memorial has no template of its own today.
+        $this->assertNotContains('funeral-memorial', $withTemplates);
+        $this->assertContains('funeral', Event::privateEventTypes());
     }
 
-    public function test_a_category_reactivated_by_a_new_template_reappears(): void
+    public function test_every_type_stays_offered_when_no_template_is_active(): void
     {
-        InvitationTemplate::query()->whereHas('categories', fn ($q) => $q->where('slug', 'church'))
-            ->update(['is_active' => false]);
-        $this->assertNotContains('church', Event::privateEventTypes());
+        InvitationTemplate::query()->update(['is_active' => false]);
 
-        $category = InvitationTemplateCategory::query()->where('slug', 'church')->firstOrFail();
-        $template = InvitationTemplate::factory()->create(['is_active' => true]);
-        $template->categories()->attach($category->id);
-
-        $this->assertContains('church', Event::privateEventTypes());
+        $this->assertSame(Event::INVITATION_EVENT_TYPES, Event::privateEventTypes());
     }
 
     public function test_a_category_slug_with_no_map_entry_is_skipped_not_guessed(): void
@@ -79,24 +78,13 @@ class EventTypeTaxonomyTest extends TestCase
         $this->assertSame(Event::INVITATION_EVENT_TYPES, Event::privateEventTypes());
     }
 
-    public function test_falls_back_to_the_static_list_when_no_categories_have_active_templates(): void
+    public function test_a_stored_private_type_outside_the_list_still_validates_for_that_event(): void
     {
-        InvitationTemplate::query()->update(['is_active' => false]);
+        // eventTypesFor()'s $includeCurrent grandfathering.
+        $types = Event::eventTypesFor(EventProductKind::Invitation, 'kitchen_party');
 
-        $this->assertSame(Event::INVITATION_EVENT_TYPES, Event::privateEventTypes());
-    }
-
-    public function test_a_stored_private_type_with_no_matching_template_still_validates_for_that_event(): void
-    {
-        // eventTypesFor()'s $includeCurrent grandfathering, exercised through the
-        // template-derived list instead of the old static one.
-        InvitationTemplate::query()->whereHas('categories', fn ($q) => $q->where('slug', 'church'))
-            ->update(['is_active' => false]);
-
-        $types = Event::eventTypesFor(EventProductKind::Invitation, 'church');
-
-        $this->assertContains('church', $types);
-        $this->assertNotContains('church', Event::privateEventTypes());
+        $this->assertContains('kitchen_party', $types);
+        $this->assertNotContains('kitchen_party', Event::privateEventTypes());
     }
 
     public function test_every_seven_categories_map_to_a_type(): void

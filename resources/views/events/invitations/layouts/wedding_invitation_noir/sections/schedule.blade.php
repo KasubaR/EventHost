@@ -1,5 +1,5 @@
 @php
-    $schedule = array_values($invitation['content']['schedule'] ?? []);
+    $schedule = \App\Support\WeddingInvitationView::for($event, $invitation)->scheduleRows();
     $icons = ['fa-wine-glass', 'fa-ring', 'fa-champagne-glasses', 'fa-utensils', 'fa-music', 'fa-star'];
 @endphp
 
@@ -11,27 +11,20 @@
         </div>
         <div class="wi2-timeline">
             @foreach ($schedule as $idx => $row)
-                @php
-                    $time = trim((string) ($row['time'] ?? ''));
-                    $title = trim((string) ($row['title'] ?? ''));
-                    $detail = trim((string) ($row['detail'] ?? ''));
-                @endphp
-                @if ($title !== '')
-                    <div class="wi2-tl-item wi2-reveal" data-wi2-reveal>
-                        <div class="wi2-tl-content">
-                            @if ($time !== '')
-                                <p class="wi2-tl-time">{{ $time }}</p>
-                            @endif
-                            <p class="wi2-tl-title">{{ $title }}</p>
-                            @if ($detail !== '')
-                                <p class="wi2-tl-desc">{{ $detail }}</p>
-                            @endif
-                        </div>
-                        <div class="wi2-tl-dot" aria-hidden="true">
-                            <i class="fa-solid {{ $icons[$idx % count($icons)] }}" aria-hidden="true"></i>
-                        </div>
+                <div class="wi2-tl-item wi2-reveal" data-wi2-reveal>
+                    <div class="wi2-tl-content">
+                        @if ($row['time'] !== '')
+                            <p class="wi2-tl-time">{{ $row['time'] }}</p>
+                        @endif
+                        <p class="wi2-tl-title">{{ $row['title'] }}</p>
+                        @if ($row['detail'] !== '')
+                            <p class="wi2-tl-desc">{{ $row['detail'] }}</p>
+                        @endif
                     </div>
-                @endif
+                    <div class="wi2-tl-dot" aria-hidden="true">
+                        <i class="fa-solid {{ $icons[$idx % count($icons)] }}" aria-hidden="true"></i>
+                    </div>
+                </div>
             @endforeach
         </div>
     </section>

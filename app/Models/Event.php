@@ -36,11 +36,9 @@ class Event extends Model
 
     /**
      * The invitation/RSVP flavor of EVENT_TYPES — personal and family events.
-     * Fallback only: privateEventTypes() is the live source of truth (see
-     * plans/public-private-portals.md §4) and normally returns this same set,
-     * derived from the template library instead of hardcoded here. This
-     * constant is what privateEventTypes() falls back to if that query ever
-     * comes back empty, and is what a caller not yet updated to it sees.
+     * Always selectable for a private event, whether or not a template is
+     * tagged with the matching category; privateEventTypes() starts from this
+     * list and only adds to it.
      */
     public const INVITATION_EVENT_TYPES = [
         'wedding',
@@ -53,10 +51,9 @@ class Event extends Model
     ];
 
     /**
-     * A private event's type must match a template category — you can't pick
-     * a type nobody has designed an invitation for. Category slugs use
-     * hyphens, event types use underscores, so this is an explicit map rather
-     * than string munging. Adding a template category (e.g. anniversary,
+     * Template category slug → private event type. Category slugs use hyphens,
+     * event types use underscores, so this is an explicit map rather than
+     * string munging. Adding a template category (e.g. anniversary,
      * kitchen_party — see plans/public-private-portals.md §6) needs an entry
      * here too before privateEventTypes() will offer it.
      *
@@ -163,9 +160,8 @@ class Event extends Model
      * Still keyed on product_kind, not audience: audience isn't part of the
      * create/update forms until Phase 4 of plans/public-private-portals.md,
      * and every current caller only has a product_kind to give it. The
-     * Invitation branch is template-derived (privateEventTypes()) rather than
-     * the old hardcoded list, but for today's data that's the same 7 values,
-     * so this is a no-visible-change refactor, not a behavior change.
+     * Invitation branch is privateEventTypes(): the 7 static types plus any
+     * further mapped category that has an active template.
      *
      * @return list<string>
      */
@@ -185,14 +181,12 @@ class Event extends Model
     }
 
     /**
-     * Private event types, derived from template categories that have at
-     * least one active template — the template library is the single source
-     * of truth (plans/public-private-portals.md §4): you cannot pick a type
-     * nobody has designed an invitation for. Categories have no active flag
-     * of their own; a category counts once any of its templates does. Falls
-     * back to the static INVITATION_EVENT_TYPES list if the query comes back
-     * empty (no categories seeded, e.g. an environment that skipped
-     * InvitationTemplateSeeder), so validation never has zero valid options.
+     * Private event types: every INVITATION_EVENT_TYPES entry, always, plus any
+     * further mapped category that has at least one active template. Templates
+     * carry one category each for now, so most types have no template of their
+     * own — they stay selectable anyway, and the template picker lists every
+     * active template regardless of type. Categories have no active flag of
+     * their own; a category counts once any of its templates does.
      *
      * A category slug with no entry in CATEGORY_SLUG_TO_TYPE is skipped
      * rather than guessed at — adding a new category (anniversary, kitchen
@@ -202,18 +196,16 @@ class Event extends Model
      */
     public static function privateEventTypes(): array
     {
-        $types = InvitationTemplateCategory::query()
+        $fromTemplates = InvitationTemplateCategory::query()
             ->whereHas('invitationTemplates', fn (Builder $query) => $query->where('is_active', true))
             ->orderBy('sort_order')
             ->orderBy('id')
             ->get(['slug'])
             ->map(fn (InvitationTemplateCategory $category) => self::CATEGORY_SLUG_TO_TYPE[$category->slug] ?? null)
             ->filter()
-            ->unique()
-            ->values()
             ->all();
 
-        return $types === [] ? self::INVITATION_EVENT_TYPES : $types;
+        return array_values(array_unique([...self::INVITATION_EVENT_TYPES, ...$fromTemplates]));
     }
 
     /**

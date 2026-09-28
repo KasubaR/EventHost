@@ -76,6 +76,22 @@
     letter-spacing: 0.125em;
 }
 
+.evt-layout-modern-minimal .mm-hero-photo {
+    width: min(360px, 100%);
+    aspect-ratio: 4 / 5;
+    margin: 2.5rem auto 3rem;
+    padding: 10px;
+    background: var(--evt-background, #ffffff);
+    border: 1px solid var(--mm-border);
+}
+
+.evt-layout-modern-minimal .mm-hero-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
 .evt-layout-modern-minimal .mm-scroll-hint {
     position: absolute;
     bottom: 1.875rem;
@@ -147,7 +163,103 @@
     color: var(--mm-muted);
 }
 
+/* Invitation wording + couple portraits */
+.evt-layout-modern-minimal .mm-invitation-text {
+    max-width: 520px;
+    margin: 0 auto;
+    font-size: 1.05rem;
+    font-weight: 300;
+    color: color-mix(in srgb, var(--mm-text) 75%, white);
+}
+
+.evt-layout-modern-minimal .mm-couple-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 3rem;
+}
+
+.evt-layout-modern-minimal .mm-couple-item {
+    aspect-ratio: 3 / 4;
+    overflow: hidden;
+    border-radius: 2px;
+    background: color-mix(in srgb, var(--mm-border) 40%, var(--mm-surface));
+}
+
+.evt-layout-modern-minimal .mm-couple-item:nth-child(2) {
+    transform: translateY(1.5rem);
+}
+
+.evt-layout-modern-minimal .mm-couple-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.evt-layout-modern-minimal .mm-couple-caption {
+    margin-top: 2.75rem;
+    font-size: 0.8rem;
+    letter-spacing: 0.1875em;
+    text-transform: uppercase;
+    color: var(--mm-muted);
+}
+
 /* Details */
+.evt-layout-modern-minimal .mm-detail-link {
+    display: inline-block;
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    letter-spacing: 0.125em;
+    text-transform: uppercase;
+    color: var(--mm-accent);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+/* Programme */
+.evt-layout-modern-minimal .mm-timeline {
+    max-width: 460px;
+    margin: 0 auto;
+    padding: 0;
+    list-style: none;
+    text-align: left;
+}
+
+.evt-layout-modern-minimal .mm-timeline-row {
+    display: grid;
+    grid-template-columns: 6rem 1fr;
+    gap: 1.5rem;
+    padding: 1.1rem 0;
+    border-bottom: 1px solid var(--mm-border);
+}
+
+.evt-layout-modern-minimal .mm-timeline-row:last-child {
+    border-bottom: none;
+}
+
+.evt-layout-modern-minimal .mm-timeline-time {
+    margin: 0;
+    font-size: 0.8rem;
+    letter-spacing: 0.125em;
+    text-transform: uppercase;
+    text-align: right;
+    color: var(--mm-accent);
+}
+
+.evt-layout-modern-minimal .mm-timeline-title {
+    margin: 0;
+    font-family: var(--evt-font-heading, "DM Sans", system-ui, sans-serif);
+    font-weight: 500;
+    color: var(--mm-text);
+}
+
+.evt-layout-modern-minimal .mm-timeline-detail {
+    margin: 0.25rem 0 0;
+    font-size: 0.9rem;
+    color: var(--mm-muted);
+}
+
 .evt-layout-modern-minimal .mm-details-row {
     display: flex;
     justify-content: center;
@@ -194,9 +306,14 @@
     overflow: hidden;
 }
 
-.evt-layout-modern-minimal .mm-gallery-item:first-child {
+/* Odd counts lead with one wide tile; even counts fill clean rows (six = two rows of three). */
+.evt-layout-modern-minimal .mm-gallery--odd .mm-gallery-item:first-child {
     grid-column: span 2;
     aspect-ratio: 16 / 9;
+}
+
+.evt-layout-modern-minimal .mm-gallery:has(> .mm-gallery-item:nth-child(6)) {
+    grid-template-columns: repeat(3, 1fr);
 }
 
 .evt-layout-modern-minimal .mm-gallery-item a {
@@ -266,5 +383,18 @@
 
     .evt-layout-modern-minimal .mm-countdown .evt-inv-countdown-grid {
         gap: 1.5rem;
+    }
+
+    .evt-layout-modern-minimal .mm-gallery:has(> .mm-gallery-item:nth-child(6)) {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .evt-layout-modern-minimal .mm-timeline-row {
+        grid-template-columns: 1fr;
+        gap: 0.25rem;
+    }
+
+    .evt-layout-modern-minimal .mm-timeline-time {
+        text-align: left;
     }
 }

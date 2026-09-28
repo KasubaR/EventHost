@@ -230,7 +230,7 @@ class EventManagementTest extends TestCase
 
     public function test_cover_image_waits_until_a_layout_that_uses_one_is_chosen(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->pro()->create();
 
         $this->actingAs($user)->get(route('events.create', ['audience' => 'private']))
             ->assertOk()
@@ -244,14 +244,14 @@ class EventManagementTest extends TestCase
             ->assertSee('Choose invitation layout', false)
             ->assertDontSee('Cover Image', false);
 
-        $withoutCover = InvitationTemplate::query()->where('slug', 'modern-minimal')->firstOrFail();
+        $withoutCover = InvitationTemplate::query()->where('slug', 'graduation-template-2-botanical-blush')->firstOrFail();
         $event->update(['invitation_template_id' => $withoutCover->id]);
 
         $this->actingAs($user)->get(route('events.edit', $event))
             ->assertOk()
             ->assertDontSee('Upload cover', false);
 
-        $withCover = InvitationTemplate::query()->where('slug', 'slate-minimal')->firstOrFail();
+        $withCover = InvitationTemplate::query()->where('slug', 'pro-magazine')->firstOrFail();
         $event->update(['invitation_template_id' => $withCover->id]);
 
         $this->actingAs($user)->get(route('events.edit', $event))
@@ -306,7 +306,7 @@ class EventManagementTest extends TestCase
         $response->assertDontSee('id="gallery_images"', false);
     }
 
-    public function test_noir_wedding_edit_page_matches_cover_and_six_gallery_slots(): void
+    public function test_noir_wedding_edit_page_matches_cover_couple_and_six_gallery_slots(): void
     {
         $user = User::factory()->pro()->create();
         $tpl = InvitationTemplate::query()->where('slug', 'wedding-invitation-2')->firstOrFail();
@@ -324,14 +324,39 @@ class EventManagementTest extends TestCase
         $response->assertSee('two rows of three', false);
         $response->assertSee('Up to six', false);
         $response->assertSee('data-upload-slot="gallery"', false);
+        $response->assertSee('Couple portraits (3 slots', false);
+        $response->assertSee('data-upload-slot="couple"', false);
+        $response->assertSee('3 slot(s) left.', false);
         $response->assertDontSee('Portrait photos (up to 2)', false);
-        $response->assertDontSee('Couple portraits (3 slots', false);
-        $response->assertDontSee('data-upload-slot="couple"', false);
         $response->assertDontSee('data-upload-slot="hero_portrait"', false);
         $response->assertDontSee('event cover photo', false);
     }
 
-    public function test_classic_edit_page_matches_cover_only_no_gallery(): void
+    public function test_base_wedding_edit_page_asks_for_no_images_at_all(): void
+    {
+        $user = User::factory()->create();
+        $tpl = InvitationTemplate::query()->where('slug', 'base-wedding')->firstOrFail();
+        $event = Event::factory()->for($user)->create([
+            'invitation_template_id' => $tpl->id,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('events.edit', $event));
+
+        $response->assertOk();
+        $response->assertSee('Wedding invitation — wording', false);
+        $response->assertSee('name="wi_hero_eyebrow"', false);
+        $response->assertSee('name="wi_footer_quote"', false);
+        $response->assertSee('Background music', false);
+        $response->assertDontSee('Upload cover', false);
+        $response->assertDontSee('name="cover_image"', false);
+        $response->assertDontSee('data-upload-slot="gallery"', false);
+        $response->assertDontSee('data-upload-slot="couple"', false);
+        $response->assertDontSee('data-upload-slot="hero_portrait"', false);
+        $response->assertDontSee('name="video_background_youtube"', false);
+        $response->assertDontSee('event cover photo', false);
+    }
+
+    public function test_classic_edit_page_asks_for_no_images(): void
     {
         $user = User::factory()->create();
         $tpl = InvitationTemplate::query()->where('slug', 'slate-minimal')->firstOrFail();
@@ -342,10 +367,9 @@ class EventManagementTest extends TestCase
         $response = $this->actingAs($user)->get(route('events.edit', $event));
 
         $response->assertOk();
-        $response->assertSee('Cover Image', false);
-        $response->assertSee('Wide banner across the top of the invitation', false);
-        $response->assertSee('1200×630', false);
-        $response->assertSee('Upload cover', false);
+        $response->assertDontSee('Upload cover', false);
+        $response->assertDontSee('name="video_background_youtube"', false);
+        $response->assertSee('Background music', false);
         $response->assertDontSee('data-upload-slot="gallery"', false);
         $response->assertDontSee('id="gallery_images"', false);
         $response->assertDontSee('Up to six WebP', false);
@@ -357,7 +381,7 @@ class EventManagementTest extends TestCase
         $response->assertDontSee('event cover photo', false);
     }
 
-    public function test_modern_minimal_edit_page_matches_five_gallery_no_cover(): void
+    public function test_modern_minimal_edit_page_matches_cover_couple_and_six_gallery_slots(): void
     {
         $user = User::factory()->pro()->create();
         $tpl = InvitationTemplate::query()->where('slug', 'modern-minimal')->firstOrFail();
@@ -368,11 +392,16 @@ class EventManagementTest extends TestCase
         $response = $this->actingAs($user)->get(route('events.edit', $event));
 
         $response->assertOk();
-        $response->assertSee('Up to five photos in the photo grid', false);
+        $response->assertSee('Framed portrait under your names and date', false);
+        $response->assertSee('Upload cover', false);
+        $response->assertSee('Up to six photos', false);
         $response->assertSee('data-upload-slot="gallery"', false);
-        $response->assertDontSee('Cover Image', false);
-        $response->assertDontSee('Upload cover', false);
-        $response->assertDontSee('data-upload-slot="couple"', false);
+        $response->assertSee('Couple portrait grid', false);
+        $response->assertSee('Couple portraits (3 slots', false);
+        $response->assertSee('data-upload-slot="couple"', false);
+        $response->assertSee('3 slot(s) left.', false);
+        $response->assertSee('name="wi_couple_caption"', false);
+        $response->assertSee('name="countdown_enabled"', false);
         $response->assertDontSee('data-upload-slot="hero_portrait"', false);
         $response->assertDontSee('event cover photo', false);
     }

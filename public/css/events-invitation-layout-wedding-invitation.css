@@ -10,6 +10,8 @@
     --wi-gold: var(--evt-accent, #b8965a);
     --wi-gold-light: color-mix(in srgb, var(--evt-accent, #b8965a) 75%, white);
     --wi-gold-pale: color-mix(in srgb, var(--evt-accent, #b8965a) 45%, white);
+    /* Small gold text on the light sections — the plain accent is too faint at 9–10px. */
+    --wi-gold-deep: color-mix(in srgb, var(--evt-accent, #b8965a) 55%, var(--evt-primary, #2c2520));
     --wi-charcoal: var(--evt-primary, #2c2520);
     --wi-brown: color-mix(in srgb, var(--evt-primary, #2c2520) 80%, var(--evt-accent, #b8965a));
     --wi-taupe: color-mix(in srgb, var(--evt-primary, #2c2520) 55%, white);
@@ -196,12 +198,12 @@
 
 /* Shared section typography */
 .evt-layout-wedding-invitation .wi-section-tag {
-    font-size: 0.5625rem;
+    font-size: 0.6875rem;
     letter-spacing: 0.3125em;
     text-transform: uppercase;
-    color: var(--wi-gold);
+    color: var(--wi-gold-deep);
     margin-bottom: 1rem;
-    font-weight: 400;
+    font-weight: 500;
 }
 
 .evt-layout-wedding-invitation .wi-section-title {
@@ -221,8 +223,8 @@
 .evt-layout-wedding-invitation .wi-section-body {
     font-family: "Cormorant Garamond", Georgia, serif;
     font-size: 1.25rem;
-    font-weight: 300;
-    color: var(--wi-taupe);
+    font-weight: 400;
+    color: var(--wi-brown);
     line-height: 1.8;
     max-width: 520px;
     margin: 0 auto 2rem;
@@ -235,6 +237,78 @@
     letter-spacing: 0.5em;
     margin: 0 auto 1.75rem;
     opacity: 0.7;
+}
+
+/* Countdown */
+.evt-layout-wedding-invitation .wi-countdown-section {
+    background: var(--wi-ivory);
+    padding: 5.625rem 1.5rem;
+    text-align: center;
+}
+
+.evt-layout-wedding-invitation .wi-countdown-section .evt-inv-countdown {
+    max-width: 620px;
+    margin: 2rem auto 0;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.evt-layout-wedding-invitation .wi-countdown-section .evt-inv-countdown-heading {
+    display: none;
+}
+
+.evt-layout-wedding-invitation .wi-countdown-section .evt-inv-countdown-grid {
+    gap: 0;
+}
+
+.evt-layout-wedding-invitation .wi-countdown-section .evt-inv-countdown-unit {
+    padding: 0.5rem 0.75rem;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+}
+
+.evt-layout-wedding-invitation .wi-countdown-section .evt-inv-countdown-unit + .evt-inv-countdown-unit {
+    border-left: 1px solid var(--wi-gold-pale);
+}
+
+.evt-layout-wedding-invitation .wi-countdown-section .evt-inv-countdown-value {
+    font-family: var(--evt-font-heading, "Playfair Display", Georgia, serif);
+    font-size: clamp(2.25rem, 7vw, 3.5rem);
+    font-weight: 400;
+    line-height: 1;
+    color: var(--wi-gold);
+}
+
+.evt-layout-wedding-invitation .wi-countdown-section .evt-inv-countdown-label {
+    margin-top: 0.6rem;
+    font-size: 0.5625rem;
+    font-weight: 400;
+    letter-spacing: 0.3em;
+    color: var(--wi-taupe);
+}
+
+.evt-layout-wedding-invitation .wi-countdown-section .evt-inv-countdown-done,
+.evt-layout-wedding-invitation .wi-countdown-section .evt-inv-countdown-static {
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-size: 1.25rem;
+    font-weight: 400;
+    font-style: italic;
+    color: var(--wi-brown);
+}
+
+/* events-invitation.css drops the grid to two columns at 600px */
+@media (max-width: 600px) {
+    .evt-layout-wedding-invitation .wi-countdown-section .evt-inv-countdown-grid {
+        row-gap: 1.25rem;
+    }
+
+    .evt-layout-wedding-invitation .wi-countdown-section .evt-inv-countdown-unit:nth-child(3) {
+        border-left: none;
+    }
 }
 
 /* Save the date */
@@ -383,7 +457,7 @@
 
 .evt-layout-wedding-invitation .wi-story-text .wi-section-body {
     text-align: left;
-    font-size: 1.125rem;
+    font-size: 1.1875rem;
     margin: 0;
 }
 
@@ -414,7 +488,7 @@
 .evt-layout-wedding-invitation .wi-details-section {
     background: var(--wi-charcoal);
     padding: 5.625rem 1.5rem;
-    color: var(--wi-ivory);
+    color: #ffffff;
     text-align: center;
     position: relative;
     overflow: hidden;
@@ -435,19 +509,20 @@
     z-index: 1;
 }
 
-.evt-layout-wedding-invitation .wi-details-section .wi-section-tag {
-    color: var(--wi-gold-light);
-}
-
-.evt-layout-wedding-invitation .wi-details-section .wi-section-title {
-    color: var(--wi-ivory);
+/* Every line of text and every icon on the dark details panel is white. */
+.evt-layout-wedding-invitation .wi-details-section .wi-section-tag,
+.evt-layout-wedding-invitation .wi-details-section .wi-section-title,
+.evt-layout-wedding-invitation .wi-details-section .wi-section-title em,
+.evt-layout-wedding-invitation .wi-details-section .wi-orn {
+    color: #ffffff;
 }
 
 .evt-layout-wedding-invitation .wi-details-grid {
     max-width: 800px;
     margin: 3rem auto 0;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
     gap: 2px;
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(201, 169, 110, 0.2);
@@ -472,13 +547,14 @@
 .evt-layout-wedding-invitation .wi-detail-icon {
     font-size: 1.5rem;
     margin-bottom: 0.875rem;
+    color: #ffffff;
 }
 
 .evt-layout-wedding-invitation .wi-detail-label {
     font-size: 0.5625rem;
     letter-spacing: 0.25em;
     text-transform: uppercase;
-    color: var(--wi-gold-light);
+    color: #ffffff;
     margin-bottom: 0.625rem;
 }
 
@@ -486,7 +562,7 @@
     font-family: var(--evt-font-heading, "Playfair Display", Georgia, serif);
     font-size: 1.25rem;
     font-weight: 400;
-    color: var(--wi-ivory);
+    color: #ffffff;
     line-height: 1.3;
 }
 
@@ -494,7 +570,96 @@
     font-family: "Cormorant Garamond", Georgia, serif;
     font-size: 0.9375rem;
     font-style: italic;
-    color: var(--wi-gold-pale);
+    color: #ffffff;
+    margin-top: 0.375rem;
+}
+
+.evt-layout-wedding-invitation .wi-detail-link {
+    display: inline-block;
+    margin-top: 0.75rem;
+    font-size: 0.625rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: #ffffff;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    text-decoration-color: rgba(255, 255, 255, 0.5);
+}
+
+.evt-layout-wedding-invitation .wi-detail-link:hover {
+    color: #ffffff;
+    text-decoration-color: #ffffff;
+}
+
+/* Programme timeline */
+.evt-layout-wedding-invitation .wi-schedule-section {
+    background: var(--wi-warm-white);
+    padding: 5.625rem 1.5rem;
+    text-align: center;
+}
+
+.evt-layout-wedding-invitation .wi-timeline {
+    list-style: none;
+    max-width: 520px;
+    margin: 1rem auto 0;
+    padding: 0;
+    position: relative;
+}
+
+.evt-layout-wedding-invitation .wi-timeline::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 1px;
+    background: linear-gradient(to bottom, transparent, var(--wi-gold-pale) 10%, var(--wi-gold-pale) 90%, transparent);
+}
+
+.evt-layout-wedding-invitation .wi-timeline-item {
+    position: relative;
+    padding: 1.75rem 1.5rem;
+    background: var(--wi-warm-white);
+    margin: 0 auto;
+    max-width: 380px;
+}
+
+.evt-layout-wedding-invitation .wi-timeline-item + .wi-timeline-item {
+    margin-top: 1.25rem;
+}
+
+.evt-layout-wedding-invitation .wi-timeline-item::before {
+    content: '◆';
+    display: block;
+    font-size: 0.5rem;
+    color: var(--wi-gold);
+    margin-bottom: 0.75rem;
+}
+
+.evt-layout-wedding-invitation .wi-timeline-time {
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.3125em;
+    text-transform: uppercase;
+    color: var(--wi-gold-deep);
+    margin-bottom: 0.5rem;
+}
+
+.evt-layout-wedding-invitation .wi-timeline-title {
+    font-family: var(--evt-font-heading, "Playfair Display", Georgia, serif);
+    font-size: 1.625rem;
+    font-weight: 400;
+    font-style: italic;
+    color: var(--wi-charcoal);
+    line-height: 1.2;
+}
+
+.evt-layout-wedding-invitation .wi-timeline-detail {
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--wi-brown);
+    line-height: 1.6;
     margin-top: 0.375rem;
 }
 
@@ -825,6 +990,7 @@
     }
 
     .evt-layout-wedding-invitation .wi-details-grid {
+        grid-auto-flow: row;
         grid-template-columns: 1fr;
         gap: 0;
     }

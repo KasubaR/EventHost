@@ -1,66 +1,46 @@
 @php
-    $schedule = array_slice($invitation['content']['schedule'] ?? [], 0, 3);
-    $icons = ['💍', '🌿', '🌸'];
-
-    if (count($schedule) === 0) {
-        $schedule = [
-            [
-                'title' => 'Ceremony',
-                'detail' => $event->venue ?: ($event->location_name ?: 'Venue to be announced'),
-                'time' => $event->event_time
-                    ? \Carbon\Carbon::parse('2000-01-01 '.substr((string) $event->event_time, 0, 8))->format('g:i A')
-                    : null,
-            ],
-        ];
-        if ($event->venue && $event->location_name && $event->venue !== $event->location_name) {
-            $schedule[] = [
-                'title' => 'Location',
-                'detail' => $event->location_name,
-                'time' => null,
-            ];
-        }
-    }
-
+    $w = \App\Support\WeddingInvitationView::for($event, $invitation);
     $coverUrl = $event->cover_image_url;
+    $timeLine = $w->timeLine();
+    $venueLine = $w->venueLine();
+    $locationLine = $w->locationLine();
 @endphp
 
-@if (count($schedule) > 0)
-    <section
-        class="wi-details-section wi-reveal"
-        data-wi-reveal
-        @if ($coverUrl) style="--wi-details-bg: url('{{ e($coverUrl) }}');" @endif
-    >
-        <div class="wi-details-inner">
-            <p class="wi-section-tag">Event Details</p>
-            <h2 class="wi-section-title">The <em>Celebration</em></h2>
-            <div class="wi-orn" aria-hidden="true">— ◆ —</div>
-            <div class="wi-details-grid">
-                @foreach ($schedule as $idx => $row)
-                    @php
-                        $label = trim((string) ($row['title'] ?? ''));
-                        $value = trim((string) ($row['detail'] ?? ''));
-                        $sub = trim((string) ($row['time'] ?? ''));
-                        if ($value === '' && $label !== '') {
-                            $value = $label;
-                            $label = 'Details';
-                        }
-                    @endphp
-                    @if ($label !== '' || $value !== '')
-                        <div class="wi-detail-card">
-                            <div class="wi-detail-icon" aria-hidden="true">{{ $icons[$idx] ?? '✦' }}</div>
-                            @if ($label !== '')
-                                <p class="wi-detail-label">{{ $label }}</p>
-                            @endif
-                            @if ($value !== '')
-                                <p class="wi-detail-value">{{ $value }}</p>
-                            @endif
-                            @if ($sub !== '')
-                                <p class="wi-detail-sub">{{ $sub }}</p>
-                            @endif
-                        </div>
-                    @endif
-                @endforeach
+<section
+    class="wi-details-section wi-reveal"
+    data-wi-reveal
+    @if ($coverUrl) style="--wi-details-bg: url('{{ $coverUrl }}');" @endif
+>
+    <div class="wi-details-inner">
+        <p class="wi-section-tag">Event Details</p>
+        <h2 class="wi-section-title">The <em>Celebration</em></h2>
+        <div class="wi-orn" aria-hidden="true">— ◆ —</div>
+        <div class="wi-details-grid">
+            <div class="wi-detail-card">
+                <div class="wi-detail-icon" aria-hidden="true"><i class="fa-regular fa-calendar"></i></div>
+                <p class="wi-detail-label">When</p>
+                <p class="wi-detail-value">{{ $w->dateLine() }}</p>
+                @if ($timeLine !== null)
+                    <p class="wi-detail-sub">{{ $timeLine }}</p>
+                @endif
             </div>
+            @if ($venueLine !== '')
+                <div class="wi-detail-card">
+                    <div class="wi-detail-icon" aria-hidden="true"><i class="fa-solid fa-location-dot"></i></div>
+                    <p class="wi-detail-label">Venue</p>
+                    <p class="wi-detail-value">{{ $venueLine }}</p>
+                </div>
+            @endif
+            @if ($locationLine !== '' || ($event->latitude !== null && $event->longitude !== null))
+                <div class="wi-detail-card">
+                    <div class="wi-detail-icon" aria-hidden="true"><i class="fa-regular fa-map"></i></div>
+                    <p class="wi-detail-label">Location</p>
+                    @if ($locationLine !== '')
+                        <p class="wi-detail-value">{{ $locationLine }}</p>
+                    @endif
+                    @include('events.invitations.partials.map-link', ['class' => 'wi-detail-link'])
+                </div>
+            @endif
         </div>
-    </section>
-@endif
+    </div>
+</section>

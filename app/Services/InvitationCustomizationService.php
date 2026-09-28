@@ -573,12 +573,19 @@ class InvitationCustomizationService
             $ordered[] = $row;
         }
 
+        // A type the saved order lacks (e.g. a section a layout gained later) goes right
+        // after the nearest earlier template section, not at the end — some layouts close
+        // the page inside their last section, so appending would land below the footer.
+        $previousType = null;
         foreach ($templateFallback as $row) {
-            if (isset($seen[$row['type']])) {
-                continue;
+            if (! isset($seen[$row['type']])) {
+                $seen[$row['type']] = true;
+                $anchor = $previousType === null
+                    ? false
+                    : array_search($previousType, array_column($ordered, 'type'), true);
+                array_splice($ordered, $anchor === false ? 0 : $anchor + 1, 0, [$row]);
             }
-            $seen[$row['type']] = true;
-            $ordered[] = $row;
+            $previousType = $row['type'];
         }
 
         return $ordered;

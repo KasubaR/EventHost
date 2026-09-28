@@ -15,6 +15,53 @@
 }
 
 /* ── Filters bar ── */
+/* ── Plan tabs (All / Base / Pro) ──
+   A bare <nav> picks up global.css's site-header `nav {}` rule, hence the reset. */
+nav.tpl-plan-tabs {
+    display: inline-flex;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 4px;
+    position: static;
+    z-index: auto;
+    height: auto;
+    margin: 0 0 16px;
+    padding: 4px;
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.tpl-plan-tab {
+    display: inline-flex;
+    align-items: center;
+    padding: 9px 18px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gray-mid);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.tpl-plan-tab:hover {
+    background: var(--gray-light);
+    color: var(--text-dark);
+}
+
+.tpl-plan-tab.is-active {
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    color: var(--accent);
+}
+
+.tpl-plan-tab:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+}
+
 .tpl-filters {
     display: flex;
     flex-wrap: wrap;
@@ -52,14 +99,28 @@
     color: var(--gray-mid);
 }
 
-.tpl-category-label select {
+.tpl-category-label {
+    position: relative;
+    flex: 0 0 220px;
+    max-width: 100%;
+}
+
+/* Match the search box beside it. */
+.tpl-category-label .cs-trigger {
+    padding: 10px 14px;
+    font-size: 15px;
+    border: 1px solid var(--line);
+}
+
+/* The plain <select>, shown only if custom-select.js hasn't enhanced it. */
+.tpl-category-label select:not(.cs-native) {
+    width: 100%;
     border-radius: var(--radius-sm);
     border: 1px solid var(--line);
     background: var(--white);
     color: var(--text-dark);
     padding: 10px 14px;
     font-size: 15px;
-    min-width: 180px;
 }
 
 /* ── Card grid ── */
@@ -90,15 +151,39 @@
     box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12);
 }
 
+/* Library cards: only the thumbnail is a card; name and action sit on the page. */
+.tpl-card.tpl-gallery-card {
+    border: none;
+    border-radius: 0;
+    overflow: visible;
+    background: transparent;
+    box-shadow: none;
+    transition: none;
+}
+
+.tpl-card.tpl-gallery-card:hover {
+    transform: none;
+    box-shadow: none;
+}
+
 .tpl-gallery-card .tpl-gallery-thumb {
     flex-shrink: 0;
+    border-radius: var(--radius);
+    border: 1px solid var(--line, #e0e0e8);
+    box-shadow: var(--card-shadow);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.tpl-gallery-card:hover .tpl-gallery-thumb {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12);
 }
 
 .tpl-gallery-body {
-    padding: 16px 18px 18px;
+    padding: 14px 2px 0;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 12px;
     flex: 1;
 }
 
@@ -110,70 +195,11 @@
     line-height: 1.25;
 }
 
-.tpl-gallery-block {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.tpl-gallery-label {
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--gray-mid, #64748b);
-}
-
-.tpl-gallery-categories {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    align-items: center;
-    min-height: 26px;
-}
-
-.tpl-gallery-empty {
-    font-size: 14px;
-    color: var(--gray-mid, #94a3b8);
-}
-
-/* Push Plan row + actions to bottom regardless of category count */
-.tpl-gallery-body > .tpl-gallery-block:not(.tpl-gallery-tier-row) {
-    flex: 1;
-}
-
-.tpl-gallery-tier-row {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 10px;
-}
-
-.tpl-gallery-tier-row .tpl-gallery-label {
-    margin: 0;
-}
-
 .tpl-gallery-actions {
     margin-top: auto;
     display: flex;
     flex-direction: column;
     gap: 10px;
-    padding-top: 4px;
-}
-
-.tpl-gallery-preview-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
-    text-decoration: none;
-}
-
-.tpl-gallery-use-btn {
-    width: 100%;
-    justify-content: center;
-    text-decoration: none;
 }
 
 .tpl-gallery-lock-hint {
@@ -308,6 +334,16 @@
     color: #a21caf;
 }
 
+/* Badge pinned over the card thumbnail — solid so the tier tint stays readable on any photo. */
+.tpl-card-visual .tpl-tier-badge.tpl-thumb-tier {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 1;
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.14);
+}
+
 .tpl-tier-lock-msg {
     margin: 0;
     font-size: 13px;
@@ -384,8 +420,8 @@
         min-width: 0;
     }
 
-    .tpl-category-label select {
-        width: 100%;
+    .tpl-category-label {
+        flex: 0 0 auto;
     }
 }
 

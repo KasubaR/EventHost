@@ -1,13 +1,13 @@
 @php
-    $nameTrim = trim((string) $event->name);
-    $footerNames = preg_replace('/\s*&\s*/', ' ✦ ', $nameTrim) ?? $nameTrim;
+    $w = \App\Support\WeddingInvitationView::for($event, $invitation);
+    [$nameBefore, $nameAfter] = $w->names();
+    $footerNames = $nameAfter !== '' ? $nameBefore.' ✦ '.$nameAfter : $nameBefore;
 
     $monogram = trim((string) ($invitation['content']['wi2_footer_monogram'] ?? ''));
     if ($monogram === '') {
-        $parts = preg_split('/\s*(?:&|and)\s*/i', $nameTrim, -1, PREG_SPLIT_NO_EMPTY);
         $letters = '';
-        foreach (array_slice($parts, 0, 2) as $part) {
-            $letters .= mb_strtoupper(mb_substr(trim($part), 0, 1));
+        foreach (array_filter([$nameBefore, $nameAfter]) as $part) {
+            $letters .= mb_strtoupper(mb_substr($part, 0, 1));
         }
         $monogram = $letters !== '' ? $letters : '♥';
     }

@@ -1,7 +1,7 @@
 @php
-    $nameTrim = trim((string) $event->name);
-    $footerNames = str_replace([' and ', ' And '], ' & ', $nameTrim);
-    $footerNames = preg_replace('/\s*&\s*/', ' & ', $footerNames) ?? $footerNames;
+    $w = \App\Support\WeddingInvitationView::for($event, $invitation);
+    [$nameBefore, $nameAfter] = $w->names();
+    $footerNames = $nameAfter !== '' ? $nameBefore.' & '.$nameAfter : $nameBefore;
 
     $footerQuote = trim((string) ($invitation['content']['wi_footer_quote'] ?? ''));
     if ($footerQuote === '') {

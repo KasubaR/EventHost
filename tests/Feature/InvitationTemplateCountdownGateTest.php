@@ -78,11 +78,12 @@ class InvitationTemplateCountdownGateTest extends TestCase
         $this->assertTrue(InvitationLayoutVariant::hasCountdownSection(InvitationLayoutVariant::MODERN_MINIMAL));
         $this->assertTrue(InvitationLayoutVariant::hasCountdownSection(InvitationLayoutVariant::PRO_MAGAZINE));
         $this->assertTrue(InvitationLayoutVariant::hasCountdownSection(InvitationLayoutVariant::BOTANICAL_GRADUATION));
+        $this->assertTrue(InvitationLayoutVariant::hasCountdownSection(InvitationLayoutVariant::WEDDING_INVITATION));
+        $this->assertTrue(InvitationLayoutVariant::hasCountdownSection(InvitationLayoutVariant::WEDDING_INVITATION_NOIR));
 
         $this->assertFalse(InvitationLayoutVariant::hasCountdownSection(InvitationLayoutVariant::STANDARD));
         $this->assertFalse(InvitationLayoutVariant::hasCountdownSection(InvitationLayoutVariant::BEAUTY_FOR_ASHES));
         $this->assertFalse(InvitationLayoutVariant::hasCountdownSection(InvitationLayoutVariant::EVENT_INVITE));
-        $this->assertFalse(InvitationLayoutVariant::hasCountdownSection(InvitationLayoutVariant::WEDDING_INVITATION));
-        $this->assertFalse(InvitationLayoutVariant::hasCountdownSection(InvitationLayoutVariant::WEDDING_INVITATION_NOIR));
+        $this->assertFalse(InvitationLayoutVariant::hasCountdownSection(InvitationLayoutVariant::BASE_WEDDING));
     }
 }

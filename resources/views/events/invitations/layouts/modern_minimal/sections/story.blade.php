@@ -1,5 +1,5 @@
 @php
-    $story = trim((string) ($invitation['content']['story'] ?? ''));
+    $story = \App\Support\WeddingInvitationView::for($event, $invitation)->story();
 @endphp
 
 @if ($story !== '')

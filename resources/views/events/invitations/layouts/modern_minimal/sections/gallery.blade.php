@@ -4,12 +4,13 @@
     $galleryMax = \App\Support\InvitationLayoutVariant::maxGalleryImages(
         \App\Support\InvitationLayoutVariant::MODERN_MINIMAL
     );
+    $galleryCount = min(count($gallery), $galleryMax);
 @endphp
 
 @if (count($gallery) > 0)
     <section class="mm-section">
         <h2 class="mm-section-title">Moments</h2>
-        <div class="mm-gallery">
+        <div class="mm-gallery mm-gallery--{{ $galleryCount % 2 === 0 ? 'even' : 'odd' }}">
             @foreach (array_slice($gallery, 0, $galleryMax) as $path)
                 <div class="mm-gallery-item">
                     <a

@@ -164,6 +164,38 @@
     mix-blend-mode: normal;
 }
 
+/* Classic (standard layout) hero — text only, no cover image. */
+.evt-inv-std-hero {
+    padding: 44px 24px;
+    border-radius: 16px;
+    text-align: center;
+    color: var(--evt-background, #fff);
+    background:
+        radial-gradient(circle at 15% 20%, color-mix(in srgb, var(--evt-accent, #0ea5e9) 45%, transparent) 0, transparent 55%),
+        linear-gradient(135deg, var(--evt-primary, #1e293b) 0%, color-mix(in srgb, var(--evt-primary, #1e293b) 70%, var(--evt-accent, #0ea5e9)) 100%);
+    box-shadow: var(--card-shadow, 0 4px 24px rgba(0, 0, 0, 0.1));
+}
+
+.evt-inv-std-hero-eyebrow {
+    margin: 0 0 10px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    opacity: 0.85;
+}
+
+.evt-inv-std-hero-date {
+    margin: 0;
+    font-family: var(--evt-font-heading, inherit);
+    font-size: clamp(1.25rem, 4vw, 1.75rem);
+    font-weight: 600;
+}
+
+.evt-inv-std-hero-audio {
+    margin-top: 20px;
+}
+
 .evt-inv-audio-wrap {
     position: absolute;
     bottom: 14px;

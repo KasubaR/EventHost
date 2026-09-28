@@ -202,20 +202,28 @@ class InvitationTemplate extends Model
             $event->invitation_customization = [
                 'schema_version' => InvitationCustomizationService::CURRENT_SCHEMA_VERSION,
                 'media' => [
+                    'couple_photos' => [
+                        self::unsplash('1591604466107-ec97de577aff', 1000),
+                        self::unsplash('1606216794074-735e91aa2c92', 1000),
+                        self::unsplash('1583939003579-730e3918a45a', 1000),
+                    ],
                     'gallery' => [
                         self::unsplash('1606216794074-735e91aa2c92', 1000),
                         self::unsplash('1591604466107-ec97de577aff', 1000),
                         self::unsplash('1519657337289-077653f724ed', 1000),
                         self::unsplash('1465495976277-4387d4b0b4c6', 1000),
+                        self::unsplash('1523438885200-e635ba2c371e', 1000),
+                        self::unsplash('1519741497674-611481863552', 1000),
                     ],
                 ],
                 'content' => [
                     'story' => $event->description,
                     'schedule' => [
-                        ['title' => 'Ceremony', 'time' => '4:00 PM', 'detail' => "The Greenhouse\nBotanical Gardens"],
-                        ['title' => 'Reception', 'time' => '6:00 PM', 'detail' => "The Atrium\nCocktails & Dinner"],
-                        ['title' => 'Attire', 'time' => 'Cocktail', 'detail' => "Smart Casual\nModern Elegance"],
+                        ['title' => 'Ceremony', 'time' => '4:00 PM', 'detail' => 'The Greenhouse, Botanical Gardens'],
+                        ['title' => 'Cocktail hour', 'time' => '5:00 PM', 'detail' => 'Garden terrace'],
+                        ['title' => 'Reception', 'time' => '6:00 PM', 'detail' => 'The Atrium — dinner & dancing'],
                     ],
+                    'wi_couple_caption' => 'Smart casual · Modern elegance',
                 ],
             ];
         } elseif ($this->slug === 'wedding-invitation-2') {
@@ -231,6 +239,11 @@ class InvitationTemplate extends Model
             $event->invitation_customization = [
                 'schema_version' => InvitationCustomizationService::CURRENT_SCHEMA_VERSION,
                 'media' => [
+                    'couple_photos' => [
+                        self::unsplash('1591604466107-ec97de577aff', 1000),
+                        self::unsplash('1583939003579-730e3918a45a', 1000),
+                        self::unsplash('1606216794074-735e91aa2c92', 1000),
+                    ],
                     'gallery' => [
                         self::unsplash('1583939003579-730e3918a45a', 1000),
                         self::unsplash('1606216794074-735e91aa2c92', 1000),
@@ -279,6 +292,8 @@ class InvitationTemplate extends Model
                         self::unsplash('1519167758481-83f550bb49b3', 1000),
                         self::unsplash('1465495976277-4387d4b0b4c6', 1000),
                         self::unsplash('1519657337289-077653f724ed', 1000),
+                        self::unsplash('1606216794074-735e91aa2c92', 1000),
+                        self::unsplash('1520854221256-17451cc331bf', 1000),
                     ],
                 ],
                 'content' => [
@@ -291,6 +306,28 @@ class InvitationTemplate extends Model
                     'wi_hero_eyebrow' => 'Together with their families',
                     'wi_couple_caption' => 'Two hearts, one story',
                     'wi_footer_quote' => '"To love and to be loved is to feel the sun from both sides."',
+                ],
+            ];
+        } elseif ($this->slug === 'base-wedding') {
+            $event->name = 'Chanda Phiri & Mwila Banda';
+            $event->event_type = 'wedding';
+            $event->description = "Together with their families, Chanda and Mwila invite you to share in their joy as they exchange vows.\n\nYour presence will make the day complete.";
+            $event->venue = 'Lusaka Cathedral of the Holy Cross';
+            $event->location_name = 'Longacres, Lusaka';
+            $event->event_date = now()->addMonths(2)->next('Saturday')->startOfDay();
+            $event->event_time = '10:00:00';
+            $event->rsvp_deadline = now()->addMonths(1);
+            $event->invitation_customization = [
+                'schema_version' => InvitationCustomizationService::CURRENT_SCHEMA_VERSION,
+                'content' => [
+                    'story' => 'We met at a friend\'s kitchen party and talked until the lights went out. Six years, two cities and one proposal later, we are ready to say "I do" — and we would love you there.',
+                    'schedule' => [
+                        ['time' => '10:00 AM', 'title' => 'Wedding ceremony', 'detail' => 'Lusaka Cathedral of the Holy Cross'],
+                        ['time' => '1:00 PM', 'title' => 'Photographs', 'detail' => 'Cathedral gardens'],
+                        ['time' => '4:00 PM', 'title' => 'Reception', 'detail' => 'Dinner, speeches and dancing'],
+                    ],
+                    'wi_hero_eyebrow' => 'Together with their families',
+                    'wi_footer_quote' => 'Love is patient, love is kind.',
                 ],
             ];
         } elseif ($this->slug === 'event-invite') {

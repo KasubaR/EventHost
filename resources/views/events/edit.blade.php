@@ -112,9 +112,9 @@
                 </div>
             @else
                 {{-- After a layout is chosen, and only when that layout renders
-                     a cover. Modern Minimal and Event Invite never use
-                     $event->cover_image_url, so the field stays hidden for
-                     them. The input still posts with the details form via
+                     a cover. The image-free Base layouts, Botanical and Beauty
+                     for Ashes never use $event->cover_image_url, so the field
+                     stays hidden for them. The input still posts with the details form via
                      form="event-update-form" — see cover-image-field.blade.php. --}}
                 @if (\App\Support\InvitationLayoutVariant::usesCoverImage($event->invitationTemplate?->layout_variant))
                     @php
@@ -125,15 +125,15 @@
                         if ($coverVariant === \App\Support\InvitationLayoutVariant::WEDDING_INVITATION_NOIR) {
                             $coverField['heading'] = 'Hero photo';
                             $coverField['description'] = 'Tall portrait on the left of the opening screen. Also used for link sharing.';
-                        } elseif ($coverVariant === \App\Support\InvitationLayoutVariant::STANDARD) {
-                            $coverField['heading'] = 'Cover Image';
-                            $coverField['description'] = 'Wide banner across the top of the invitation. We crop to 1200×630 for the hero and for link sharing.';
                         } elseif ($coverVariant === \App\Support\InvitationLayoutVariant::PRO_MAGAZINE) {
                             $coverField['heading'] = 'Cover Image';
                             $coverField['description'] = 'Full-bleed magazine hero. We crop to 1200×630 for the hero and for link sharing.';
                         } elseif ($coverVariant === \App\Support\InvitationLayoutVariant::WEDDING_INVITATION) {
                             $coverField['heading'] = 'Cover Image';
                             $coverField['description'] = 'Cinematic hero and details backdrop. Also used for link sharing and as a fallback when couple or gallery photos are missing.';
+                        } elseif ($coverVariant === \App\Support\InvitationLayoutVariant::MODERN_MINIMAL) {
+                            $coverField['heading'] = 'Cover Image';
+                            $coverField['description'] = 'Framed portrait under your names and date. Also used for link sharing and as a fallback when couple photos are missing.';
                         }
                     @endphp
                     @include('events.partials.cover-image-field', $coverField)

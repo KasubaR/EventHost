@@ -1,4 +1,6 @@
 @php
+    $w = \App\Support\WeddingInvitationView::for($event, $invitation);
+
     $intro = trim((string) $event->description);
     if ($intro === '') {
         $intro = 'We joyfully invite you to celebrate the union of two souls as they begin their forever journey together in love and laughter.';
@@ -10,18 +12,7 @@
         }
     }
 
-    $wiMediaSrc = static fn (string $pathOrUrl): string => \App\Support\InvitationMediaUrl::resolve($pathOrUrl) ?? '';
-
-    $couplePaths = array_values(array_filter(array_map('strval', $invitation['media']['couple_photos'] ?? [])));
-    $fallback = $event->cover_image_url;
-    if (count($couplePaths) === 0) {
-        $couplePaths = [$fallback, $fallback, $fallback];
-    } else {
-        while (count($couplePaths) < 3) {
-            $couplePaths[] = $couplePaths[count($couplePaths) - 1] ?? $fallback;
-        }
-    }
-    $couplePaths = array_slice($couplePaths, 0, 3);
+    $couplePhotos = $w->couplePhotos();
 
     $caption = trim((string) ($invitation['content']['wi_couple_caption'] ?? ''));
     if ($caption === '') {
@@ -45,7 +36,7 @@
     <div class="wi-couple-grid">
         @foreach (['wi-couple-img-1', 'wi-couple-img-2', 'wi-couple-img-3'] as $idx => $class)
             <div class="wi-couple-img-wrap {{ $class }}">
-                <img src="{{ $wiMediaSrc($couplePaths[$idx]) }}" alt="" loading="lazy" width="600" height="420">
+                <img src="{{ $couplePhotos[$idx] }}" alt="" loading="lazy" width="600" height="420">
             </div>
         @endforeach
     </div>

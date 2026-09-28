@@ -1,6 +1,7 @@
 @php
-    $nameTrim = trim((string) $event->name);
-    $footerLine = preg_replace('/\s*&\s*/', ' & ', $nameTrim).' — '.$event->event_date->format('Y');
+    [$nameBefore, $nameAfter] = \App\Support\WeddingInvitationView::for($event, $invitation)->names();
+    $footerNames = $nameAfter !== '' ? $nameBefore.' & '.$nameAfter : $nameBefore;
+    $footerLine = $footerNames.' — '.$event->event_date->format('Y');
 
     $rsvpNote = '';
     if ($event->rsvp_deadline) {

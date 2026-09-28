@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $__env->yieldContent('title', 'Event Host — Create Beautiful Digital Invitations') }}</title>
+    {{-- @yield, not {{ }}: @section('title', $value) already escapes $value, so {{ }} here double-escapes "&" into a visible "&amp;". --}}
+    <title>@yield('title', 'Event Host — Create Beautiful Digital Invitations')</title>
     <link rel="icon" type="image/svg+xml" href="{{ asset('images/logo/EventHost Logo_Icon.svg') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://images.unsplash.com" crossorigin>

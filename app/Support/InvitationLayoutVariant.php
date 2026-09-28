@@ -20,12 +20,32 @@ final class InvitationLayoutVariant
 
     public const MODERN_MINIMAL = 'modern_minimal';
 
+    /** Base-plan wedding standard: same sections as the Pro weddings, but text only — no images of any kind. */
+    public const BASE_WEDDING = 'base_wedding';
+
     /**
      * @return list<string>
      */
     public static function keys(): array
     {
-        return [self::STANDARD, self::PRO_MAGAZINE, self::BOTANICAL_GRADUATION, self::BEAUTY_FOR_ASHES, self::EVENT_INVITE, self::WEDDING_INVITATION, self::WEDDING_INVITATION_NOIR, self::MODERN_MINIMAL];
+        return [self::STANDARD, self::PRO_MAGAZINE, self::BOTANICAL_GRADUATION, self::BEAUTY_FOR_ASHES, self::EVENT_INVITE, self::WEDDING_INVITATION, self::WEDDING_INVITATION_NOIR, self::MODERN_MINIMAL, self::BASE_WEDDING];
+    }
+
+    /**
+     * The Pro wedding standard: these layouts share one section list, one countdown,
+     * and the same uploads (cover, 3 couple portraits, up to 6 gallery photos).
+     * They differ only in styling — keep every limit below reading from this list.
+     *
+     * @return list<string>
+     */
+    public static function proWeddingLayouts(): array
+    {
+        return [self::WEDDING_INVITATION, self::WEDDING_INVITATION_NOIR, self::MODERN_MINIMAL];
+    }
+
+    public static function isProWedding(?string $variant): bool
+    {
+        return in_array(self::normalize($variant), self::proWeddingLayouts(), true);
     }
 
     public static function normalize(?string $value): string
@@ -45,13 +65,15 @@ final class InvitationLayoutVariant
      */
     public static function blockedSections(string $variant): array
     {
+        if (self::isProWedding($variant)) {
+            return [];
+        }
+
         return match (self::normalize($variant)) {
             self::STANDARD => ['gallery', 'countdown'],
             self::BEAUTY_FOR_ASHES => ['countdown'],
             self::EVENT_INVITE => ['gallery', 'countdown', 'details', 'description', 'story', 'schedule'],
-            self::WEDDING_INVITATION => ['countdown', 'schedule'],
-            self::WEDDING_INVITATION_NOIR => ['countdown', 'details'],
-            self::MODERN_MINIMAL => ['description', 'schedule'],
+            self::BASE_WEDDING => ['gallery', 'countdown'],
             default => [],
         };
     }
@@ -83,6 +105,7 @@ final class InvitationLayoutVariant
             self::WEDDING_INVITATION => 'events-invitation-layout-wedding-invitation.css',
             self::WEDDING_INVITATION_NOIR => 'events-invitation-layout-wedding-invitation-noir.css',
             self::MODERN_MINIMAL => 'events-invitation-layout-modern-minimal.css',
+            self::BASE_WEDDING => 'events-invitation-layout-base-wedding.css',
             default => null,
         };
     }
@@ -95,7 +118,7 @@ final class InvitationLayoutVariant
     public static function pinnedFirst(string $variant): ?string
     {
         return match ($variant) {
-            self::PRO_MAGAZINE, self::BOTANICAL_GRADUATION, self::BEAUTY_FOR_ASHES, self::EVENT_INVITE, self::WEDDING_INVITATION, self::WEDDING_INVITATION_NOIR, self::MODERN_MINIMAL => 'hero',
+            self::PRO_MAGAZINE, self::BOTANICAL_GRADUATION, self::BEAUTY_FOR_ASHES, self::EVENT_INVITE, self::WEDDING_INVITATION, self::WEDDING_INVITATION_NOIR, self::MODERN_MINIMAL, self::BASE_WEDDING => 'hero',
             default => null,
         };
     }
@@ -118,40 +141,59 @@ final class InvitationLayoutVariant
     /** Optional couple / dual portrait slots in the hero area (layout-specific). */
     public static function maxCouplePhotoSlots(string $variant): int
     {
+        if (self::isProWedding($variant)) {
+            return WeddingInvitationView::COUPLE_PHOTO_SLOTS;
+        }
+
         return match (self::normalize($variant)) {
             self::BOTANICAL_GRADUATION => 2,
             self::BEAUTY_FOR_ASHES => 4,
-            self::WEDDING_INVITATION => 3,
             default => 0,
         };
     }
 
     /**
-     * How many gallery images this layout can usefully show. Botanical and
-     * Modern Minimal mosaics are five tiles; other layouts use the platform cap.
+     * How many gallery images this layout can usefully show. The Botanical
+     * mosaic is five tiles; other layouts use the platform cap.
      */
     public static function maxGalleryImages(?string $variant): int
     {
         return match (self::normalize($variant)) {
-            self::BOTANICAL_GRADUATION, self::MODERN_MINIMAL => 5,
+            self::BOTANICAL_GRADUATION => 5,
             default => InvitationMediaRules::GALLERY_MAX,
         };
     }
 
     /**
      * Whether this layout should collect a host Cover Image on the edit page.
-     * Modern Minimal and Event Invite never render cover in the invitation.
      * Botanical Blush uses up to two hero portraits instead — cover was only a
      * redundant single-frame fallback / share image. Beauty for Ashes uses a
      * CSS hero and four speaker portraits — cover is not the invitation photo path.
+     * The Base layouts are image-free throughout (see isImageFree()).
      */
     public static function usesCoverImage(?string $variant): bool
     {
+        if (self::isImageFree($variant)) {
+            return false;
+        }
+
         return ! in_array(self::normalize($variant), [
-            self::MODERN_MINIMAL,
-            self::EVENT_INVITE,
             self::BOTANICAL_GRADUATION,
             self::BEAUTY_FOR_ASHES,
+        ], true);
+    }
+
+    /**
+     * Layouts that render no host imagery at all — no cover, gallery, portraits
+     * or background video. These are the Base-plan layouts; photos are a Pro feature.
+     * The design form hides every visual-media upload for these.
+     */
+    public static function isImageFree(?string $variant): bool
+    {
+        return in_array(self::normalize($variant), [
+            self::STANDARD,
+            self::EVENT_INVITE,
+            self::BASE_WEDDING,
         ], true);
     }
 }

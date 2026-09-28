@@ -12,6 +12,33 @@ use Illuminate\Support\Facades\Cache;
 
 class InvitationTemplateSeeder extends Seeder
 {
+    /**
+     * The Pro wedding standard (InvitationLayoutVariant::proWeddingLayouts()): Ivory & Gold,
+     * Noir & Gold and Modern Minimal render these same sections in this order; only their CSS differs.
+     */
+    private const WEDDING_SECTIONS = [
+        ['type' => 'hero', 'visible' => true],
+        ['type' => 'countdown', 'visible' => true],
+        ['type' => 'description', 'visible' => true],
+        ['type' => 'story', 'visible' => true],
+        ['type' => 'details', 'visible' => true],
+        ['type' => 'schedule', 'visible' => true],
+        ['type' => 'gallery', 'visible' => true],
+        ['type' => 'rsvp', 'visible' => true],
+    ];
+
+    /**
+     * The Base Wedding standard: the Pro wedding sections minus gallery (and countdown, which is Pro-only).
+     */
+    private const BASE_WEDDING_SECTIONS = [
+        ['type' => 'hero', 'visible' => true],
+        ['type' => 'description', 'visible' => true],
+        ['type' => 'story', 'visible' => true],
+        ['type' => 'details', 'visible' => true],
+        ['type' => 'schedule', 'visible' => true],
+        ['type' => 'rsvp', 'visible' => true],
+    ];
+
     public function run(): void
     {
         $categories = collect([
@@ -35,12 +62,12 @@ class InvitationTemplateSeeder extends Seeder
             [
                 'slug' => 'modern-minimal',
                 'name' => 'Modern Minimal',
-                'description' => 'Clean white wedding layout with stacked names, live countdown, detail columns, story, photo grid, and minimal RSVP. Pro minimum.',
+                'description' => 'Clean white wedding layout with stacked names, framed cover photo, live countdown, couple portraits, story, celebration details, programme, photo grid, and minimal RSVP. Pro minimum.',
                 'skin' => 'classic',
                 'sort_order' => 57,
                 'min_subscription_tier' => SubscriptionTier::Pro->value,
                 'layout_variant' => InvitationLayoutVariant::MODERN_MINIMAL,
-                'category_slugs' => ['wedding', 'corporate', 'birthday'],
+                'category_slugs' => ['wedding'],
                 'default_theme' => [
                     'primary' => '#1a1a1a',
                     'accent' => '#c0a080',
@@ -49,19 +76,12 @@ class InvitationTemplateSeeder extends Seeder
                     'font_body_key' => 'inter',
                     'animation_subtle' => false,
                 ],
-                'default_sections' => [
-                    ['type' => 'hero', 'visible' => true],
-                    ['type' => 'countdown', 'visible' => true],
-                    ['type' => 'details', 'visible' => true],
-                    ['type' => 'story', 'visible' => true],
-                    ['type' => 'gallery', 'visible' => true],
-                    ['type' => 'rsvp', 'visible' => true],
-                ],
+                'default_sections' => self::WEDDING_SECTIONS,
             ],
             [
                 'slug' => 'wedding-invitation',
                 'name' => 'Ivory & Gold Wedding',
-                'description' => 'Elegant full-page wedding layout with a cinematic hero, save-the-date band, couple portrait grid, story panel, celebration details, and masonry gallery. Pro minimum.',
+                'description' => 'Elegant full-page wedding layout with a cinematic hero, live countdown, save-the-date band, couple portrait grid, story panel, celebration details, programme, and masonry gallery. Pro minimum.',
                 'skin' => 'classic',
                 'sort_order' => 55,
                 'min_subscription_tier' => SubscriptionTier::Pro->value,
@@ -75,19 +95,12 @@ class InvitationTemplateSeeder extends Seeder
                     'font_body_key' => 'jost',
                     'animation_subtle' => true,
                 ],
-                'default_sections' => [
-                    ['type' => 'hero', 'visible' => true],
-                    ['type' => 'description', 'visible' => true],
-                    ['type' => 'story', 'visible' => true],
-                    ['type' => 'details', 'visible' => true],
-                    ['type' => 'gallery', 'visible' => true],
-                    ['type' => 'rsvp', 'visible' => true],
-                ],
+                'default_sections' => self::WEDDING_SECTIONS,
             ],
             [
                 'slug' => 'wedding-invitation-2',
                 'name' => 'Noir & Gold Wedding',
-                'description' => 'Dramatic art-deco wedding with split hero, formal invitation card, quote interlude, vertical timeline programme, and split gallery on an onyx-and-gold palette. Pro minimum.',
+                'description' => 'Dramatic art-deco wedding with split hero, live countdown, formal invitation card, quote interlude, celebration details, vertical timeline programme, and split gallery on an onyx-and-gold palette. Pro minimum.',
                 'skin' => 'classic',
                 'sort_order' => 56,
                 'min_subscription_tier' => SubscriptionTier::Pro->value,
@@ -101,14 +114,25 @@ class InvitationTemplateSeeder extends Seeder
                     'font_body_key' => 'eb_garamond',
                     'animation_subtle' => true,
                 ],
-                'default_sections' => [
-                    ['type' => 'hero', 'visible' => true],
-                    ['type' => 'description', 'visible' => true],
-                    ['type' => 'story', 'visible' => true],
-                    ['type' => 'schedule', 'visible' => true],
-                    ['type' => 'gallery', 'visible' => true],
-                    ['type' => 'rsvp', 'visible' => true],
+                'default_sections' => self::WEDDING_SECTIONS,
+            ],
+            [
+                'slug' => 'base-wedding',
+                'name' => 'Wedding Standard',
+                'description' => 'Text-only wedding invitation: names and date, invitation wording, your story, celebration details, the day\'s programme, and RSVP. No photos needed. Included on the base plan.',
+                'skin' => 'classic',
+                'sort_order' => 12,
+                'layout_variant' => InvitationLayoutVariant::BASE_WEDDING,
+                'category_slugs' => ['wedding'],
+                'default_theme' => [
+                    'primary' => '#3a2f2a',
+                    'accent' => '#a8864f',
+                    'background' => '#fbf8f3',
+                    'font_heading_key' => 'cormorant_garamond',
+                    'font_body_key' => 'jost',
+                    'animation_subtle' => false,
                 ],
+                'default_sections' => self::BASE_WEDDING_SECTIONS,
             ],
             [
                 'slug' => 'event-invite',
@@ -117,14 +141,7 @@ class InvitationTemplateSeeder extends Seeder
                 'skin' => 'classic',
                 'sort_order' => 15,
                 'layout_variant' => InvitationLayoutVariant::EVENT_INVITE,
-                'category_slugs' => [
-                    'wedding',
-                    'birthday',
-                    'graduation',
-                    'corporate',
-                    'baby-shower',
-                    'church',
-                ],
+                'category_slugs' => ['graduation'],
                 'default_theme' => [
                     'primary' => '#5a1a20',
                     'accent' => '#e8b4b8',
@@ -141,18 +158,10 @@ class InvitationTemplateSeeder extends Seeder
             [
                 'slug' => 'slate-minimal',
                 'name' => 'Classic',
-                'description' => 'Standard invitation layout shared by all base accounts. Differentiate your page with colors, fonts, and sections under Design.',
+                'description' => 'Text-only standard invitation — no photos needed. Differentiate your page with colors, fonts, and sections under Design. Included on the base plan.',
                 'skin' => 'classic',
                 'sort_order' => 10,
-                'category_slugs' => [
-                    'wedding',
-                    'birthday',
-                    'graduation',
-                    'corporate',
-                    'baby-shower',
-                    'funeral-memorial',
-                    'church',
-                ],
+                'category_slugs' => ['wedding'],
                 'default_theme' => [
                     'primary' => '#1e293b',
                     'accent' => '#0ea5e9',
@@ -178,7 +187,7 @@ class InvitationTemplateSeeder extends Seeder
                 'sort_order' => 60,
                 'min_subscription_tier' => SubscriptionTier::Pro->value,
                 'layout_variant' => InvitationLayoutVariant::PRO_MAGAZINE,
-                'category_slugs' => ['wedding', 'corporate', 'graduation', 'church'],
+                'category_slugs' => ['wedding'],
                 'default_theme' => [
                     'primary' => '#1c1917',
                     'accent' => '#dc2626',
@@ -206,7 +215,7 @@ class InvitationTemplateSeeder extends Seeder
                 'sort_order' => 65,
                 'min_subscription_tier' => SubscriptionTier::Pro->value,
                 'layout_variant' => InvitationLayoutVariant::BOTANICAL_GRADUATION,
-                'category_slugs' => ['graduation', 'wedding', 'birthday'],
+                'category_slugs' => ['graduation'],
                 'default_theme' => [
                     'primary' => '#2C2420',
                     'accent' => '#C4847A',
