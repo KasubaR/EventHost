@@ -51,7 +51,7 @@
                     <td>{{ $user->email }}</td>
                     <td>{{ $user->phone ?? '—' }}</td>
                     <td>{{ $user->events_count }}</td>
-                    <td>{{ $user->subscription_tier instanceof \BackedEnum ? $user->subscription_tier->value : $user->subscription_tier }}</td>
+                    <td>{{ $user->subscriptionTier()->label() }}</td>
                     <td>{{ $user->status }}</td>
                     <td>{{ $user->created_at->format('M j, Y') }}</td>
                     <td><a href="{{ route('admin.users.show', $user) }}" class="evt-btn-outline evt-btn-tiny">View</a></td>
