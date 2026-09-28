@@ -72,6 +72,10 @@ final class InvitationFonts
             'font_stack' => '"Great Vibes", cursive',
             'google_family' => 'Great+Vibes',
         ],
+        'mrs_saint_delafield' => [
+            'font_stack' => '"Mrs Saint Delafield", "Snell Roundhand", cursive',
+            'google_family' => 'Mrs+Saint+Delafield',
+        ],
         'bodoni_moda' => [
             'font_stack' => '"Bodoni Moda", Georgia, serif',
             'google_family' => 'Bodoni+Moda:ital,wght@0,400;0,600;1,400;1,600',

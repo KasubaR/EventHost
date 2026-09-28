@@ -353,7 +353,7 @@
     box-shadow: none;
 }
 
-.evt-layout-base-wedding .bw-rsvp .rsvp-submit:hover {
+.evt-layout-base-wedding .bw-rsvp .rsvp-submit:hover:not(:disabled) {
     background: color-mix(in srgb, var(--bw-ink) 85%, var(--bw-gold));
     box-shadow: none;
 }

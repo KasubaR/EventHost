@@ -1,0 +1,531 @@
+/**
+ * Midnight Gold wedding layout — scoped under .evt-layout-wedding-midnight-gold
+ * Visual reference: docs/Amelia & James Wedding.html
+ */
+
+.evt-layout-wedding-midnight-gold.evt-invitation {
+    --mg-bg: var(--evt-background, #20233f);
+    --mg-bg-alt: color-mix(in srgb, var(--evt-background, #20233f) 80%, black);
+    --mg-gold: var(--evt-accent, #d9a566);
+    --mg-text: var(--evt-primary, #e9e4da);
+    --mg-muted: color-mix(in srgb, var(--evt-primary, #e9e4da) 72%, var(--evt-background, #20233f));
+    --mg-line: color-mix(in srgb, var(--evt-accent, #d9a566) 50%, transparent);
+    --mg-slot: color-mix(in srgb, var(--evt-background, #20233f) 85%, white);
+
+    background: var(--mg-bg);
+    color: var(--mg-text);
+    font-family: var(--evt-font-body, Poppins, system-ui, sans-serif);
+    font-weight: 300;
+    font-size: 15px;
+    line-height: 1.8;
+}
+
+.evt-layout-wedding-midnight-gold .evt-public-inner.evt-public-page,
+.evt-layout-wedding-midnight-gold .evt-invitation-page {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+}
+
+.evt-layout-wedding-midnight-gold .evt-preview-banner {
+    max-width: 680px;
+    margin: 1rem auto;
+}
+
+/* Shared building blocks */
+.evt-layout-wedding-midnight-gold .mg-wrap {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.evt-layout-wedding-midnight-gold .mg-wrap--narrow {
+    max-width: 680px;
+}
+
+.evt-layout-wedding-midnight-gold .mg-wrap--text {
+    max-width: 640px;
+    text-align: center;
+}
+
+.evt-layout-wedding-midnight-gold .mg-wrap--form {
+    max-width: 560px;
+}
+
+.evt-layout-wedding-midnight-gold .mg-section {
+    padding: 5rem 1.5rem;
+    background: var(--mg-bg);
+}
+
+.evt-layout-wedding-midnight-gold .mg-section--alt {
+    background: var(--mg-bg-alt);
+}
+
+.evt-layout-wedding-midnight-gold .mg-title {
+    font-family: var(--evt-font-heading, "Dancing Script", cursive);
+    font-weight: 600;
+    font-size: clamp(2.2rem, 6vw, 3.2rem);
+    line-height: 1.2;
+    color: var(--mg-gold);
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
+
+.evt-layout-wedding-midnight-gold .mg-rule {
+    border: 0;
+    border-top: 1px solid var(--mg-gold);
+    margin: 1.2rem 0;
+}
+
+.evt-layout-wedding-midnight-gold .mg-eyebrow {
+    color: var(--mg-gold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+/* Hero */
+.evt-layout-wedding-midnight-gold .mg-hero {
+    position: relative;
+    min-height: 88vh;
+    display: grid;
+    place-items: center;
+    padding: 3rem 1rem;
+    overflow: hidden;
+    background: var(--mg-slot);
+}
+
+.evt-layout-wedding-midnight-gold .mg-hero-bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.evt-layout-wedding-midnight-gold .mg-hero-frame {
+    position: relative;
+    z-index: 1;
+    width: min(92%, 520px);
+    padding: 3rem 2rem;
+    border: 1px solid var(--mg-gold);
+    background: color-mix(in srgb, var(--mg-bg) 82%, transparent);
+    text-align: center;
+}
+
+.evt-layout-wedding-midnight-gold .mg-hero-names {
+    font-family: var(--evt-font-heading, "Dancing Script", cursive);
+    font-weight: 600;
+    font-size: clamp(2.8rem, 10vw, 4.2rem);
+    line-height: 1.1;
+    color: var(--mg-gold);
+}
+
+.evt-layout-wedding-midnight-gold .mg-hero-amp {
+    display: inline-block;
+}
+
+.evt-layout-wedding-midnight-gold .mg-hero-tag,
+.evt-layout-wedding-midnight-gold .mg-hero-date {
+    margin: 0.8rem 0;
+    color: var(--mg-gold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+/* Countdown */
+.evt-layout-wedding-midnight-gold .mg-countdown {
+    padding: 4rem 1.5rem;
+    background: var(--mg-bg);
+    text-align: center;
+}
+
+.evt-layout-wedding-midnight-gold .mg-countdown .evt-inv-countdown {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.evt-layout-wedding-midnight-gold .mg-countdown .evt-inv-countdown-heading,
+.evt-layout-wedding-midnight-gold .mg-countdown .evt-inv-countdown-done {
+    display: none;
+}
+
+.evt-layout-wedding-midnight-gold .mg-countdown .evt-inv-countdown-grid {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.evt-layout-wedding-midnight-gold .mg-countdown .evt-inv-countdown-unit {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+}
+
+.evt-layout-wedding-midnight-gold .mg-countdown .evt-inv-countdown-value {
+    font-family: var(--evt-font-heading, "Dancing Script", cursive);
+    font-weight: 600;
+    font-size: clamp(2.4rem, 9vw, 3.4rem);
+    line-height: 1.2;
+    color: var(--mg-gold);
+}
+
+.evt-layout-wedding-midnight-gold .mg-countdown .evt-inv-countdown-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--mg-gold);
+}
+
+.evt-layout-wedding-midnight-gold .mg-countdown .evt-inv-countdown-static {
+    color: var(--mg-text);
+}
+
+/* Invitation */
+.evt-layout-wedding-midnight-gold .mg-invite-text,
+.evt-layout-wedding-midnight-gold .mg-invite-note {
+    margin-bottom: 1rem;
+}
+
+.evt-layout-wedding-midnight-gold .mg-signature {
+    margin-top: 1.5rem;
+    font-family: var(--evt-font-heading, "Dancing Script", cursive);
+    font-weight: 600;
+    font-size: 1.8rem;
+    color: var(--mg-gold);
+}
+
+/* Love story: text beside a round portrait, sides alternating */
+.evt-layout-wedding-midnight-gold .mg-story-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    align-items: center;
+    max-width: 900px;
+    margin: 0 auto 3.5rem;
+}
+
+.evt-layout-wedding-midnight-gold .mg-story-row:last-child {
+    margin-bottom: 0;
+}
+
+.evt-layout-wedding-midnight-gold .mg-story-text {
+    padding-right: 2rem;
+    border-right: 1px solid var(--mg-gold);
+}
+
+.evt-layout-wedding-midnight-gold .mg-story-row:nth-of-type(even) .mg-story-photo {
+    order: -1;
+}
+
+.evt-layout-wedding-midnight-gold .mg-story-row:nth-of-type(even) .mg-story-text {
+    padding: 0 0 0 2rem;
+    border-right: 0;
+    border-left: 1px solid var(--mg-gold);
+}
+
+.evt-layout-wedding-midnight-gold .mg-story-photo {
+    width: min(100%, 240px);
+    aspect-ratio: 1;
+    margin: 0 auto;
+    overflow: hidden;
+    border-radius: 50%;
+    border: 1px solid var(--mg-gold);
+    outline: 8px solid var(--mg-bg);
+    background: var(--mg-slot);
+}
+
+.evt-layout-wedding-midnight-gold .mg-story-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* Details */
+.evt-layout-wedding-midnight-gold .mg-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+.evt-layout-wedding-midnight-gold .mg-card {
+    padding: 2rem 1.5rem;
+    border: 1px solid var(--mg-line);
+    text-align: center;
+}
+
+.evt-layout-wedding-midnight-gold .mg-card-title {
+    font-family: var(--evt-font-heading, "Dancing Script", cursive);
+    font-weight: 600;
+    font-size: 1.7rem;
+    color: var(--mg-gold);
+    margin-bottom: 0.5rem;
+}
+
+.evt-layout-wedding-midnight-gold .mg-map-link {
+    display: inline-block;
+    margin-top: 0.6rem;
+    font-size: 0.8rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--mg-gold);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+/* Programme */
+.evt-layout-wedding-midnight-gold .mg-timeline {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 0;
+    list-style: none;
+    border-left: 1px solid var(--mg-gold);
+}
+
+.evt-layout-wedding-midnight-gold .mg-timeline-item {
+    position: relative;
+    padding: 0 0 2rem 2rem;
+}
+
+.evt-layout-wedding-midnight-gold .mg-timeline-item:last-child {
+    padding-bottom: 0;
+}
+
+.evt-layout-wedding-midnight-gold .mg-timeline-item::before {
+    content: "";
+    position: absolute;
+    left: -5px;
+    top: 0.65rem;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--mg-gold);
+}
+
+.evt-layout-wedding-midnight-gold .mg-timeline-time {
+    color: var(--mg-gold);
+    font-weight: 500;
+}
+
+.evt-layout-wedding-midnight-gold .mg-timeline-title {
+    font-family: var(--evt-font-heading, "Dancing Script", cursive);
+    font-weight: 600;
+    font-size: 1.5rem;
+    line-height: 1.3;
+    color: var(--mg-gold);
+}
+
+.evt-layout-wedding-midnight-gold .mg-timeline-detail {
+    color: var(--mg-muted);
+}
+
+/* Gallery: two columns (odd counts lead wide); six tiles zigzag across three columns */
+.evt-layout-wedding-midnight-gold .mg-gallery {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.8rem;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.evt-layout-wedding-midnight-gold .mg-gallery-item {
+    display: block;
+    aspect-ratio: 1;
+    overflow: hidden;
+    background: var(--mg-slot);
+}
+
+.evt-layout-wedding-midnight-gold .mg-gallery--count-1 .mg-gallery-item:first-child,
+.evt-layout-wedding-midnight-gold .mg-gallery--count-3 .mg-gallery-item:first-child,
+.evt-layout-wedding-midnight-gold .mg-gallery--count-5 .mg-gallery-item:first-child {
+    grid-column: span 2;
+    aspect-ratio: 2 / 1;
+}
+
+.evt-layout-wedding-midnight-gold .mg-gallery--count-6 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.evt-layout-wedding-midnight-gold .mg-gallery--count-6 .mg-gallery-item:nth-child(1),
+.evt-layout-wedding-midnight-gold .mg-gallery--count-6 .mg-gallery-item:nth-child(4),
+.evt-layout-wedding-midnight-gold .mg-gallery--count-6 .mg-gallery-item:nth-child(5) {
+    grid-column: span 2;
+    aspect-ratio: auto;
+}
+
+.evt-layout-wedding-midnight-gold .mg-gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.4s ease;
+}
+
+.evt-layout-wedding-midnight-gold .mg-gallery-item:hover img {
+    transform: scale(1.03);
+}
+
+/* RSVP — restyles the shared inline form */
+.evt-layout-wedding-midnight-gold .mg-rsvp-lead {
+    margin: -1.5rem 0 1.5rem;
+    text-align: center;
+    color: var(--mg-muted);
+}
+
+.evt-layout-wedding-midnight-gold .mg-rsvp-panel .evt-inline-rsvp {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+}
+
+.evt-layout-wedding-midnight-gold .mg-rsvp-panel .evt-inline-rsvp-heading {
+    display: none;
+}
+
+.evt-layout-wedding-midnight-gold .mg-rsvp-panel .evt-inline-rsvp-lead {
+    text-align: center;
+    color: var(--mg-muted);
+}
+
+.evt-layout-wedding-midnight-gold .mg-rsvp-panel .rsvp-field-label {
+    color: var(--mg-gold);
+    font-size: 0.85rem;
+    font-weight: 400;
+}
+
+.evt-layout-wedding-midnight-gold .mg-rsvp-panel .rsvp-optional,
+.evt-layout-wedding-midnight-gold .mg-rsvp-panel .rsvp-field-hint,
+.evt-layout-wedding-midnight-gold .mg-rsvp-panel .rsvp-preview-note {
+    color: var(--mg-muted);
+}
+
+.evt-layout-wedding-midnight-gold .mg-rsvp-panel .rsvp-input,
+.evt-layout-wedding-midnight-gold .mg-rsvp-panel .rsvp-select,
+.evt-layout-wedding-midnight-gold .mg-rsvp-panel .rsvp-textarea {
+    border: 1px solid color-mix(in srgb, var(--mg-gold) 60%, transparent);
+    border-radius: 0;
+    background-color: transparent;
+    color: var(--mg-text);
+    font-family: inherit;
+    font-weight: 300;
+    box-shadow: none;
+}
+
+.evt-layout-wedding-midnight-gold .mg-rsvp-panel .rsvp-select option {
+    color: #111111;
+}
+
+.evt-layout-wedding-midnight-gold .mg-rsvp-panel .rsvp-input:focus,
+.evt-layout-wedding-midnight-gold .mg-rsvp-panel .rsvp-select:focus,
+.evt-layout-wedding-midnight-gold .mg-rsvp-panel .rsvp-textarea:focus {
+    border-color: var(--mg-gold);
+    outline: 2px solid var(--mg-gold);
+    outline-offset: 2px;
+    box-shadow: none;
+}
+
+.evt-layout-wedding-midnight-gold .mg-rsvp-panel .rsvp-radio {
+    border: 1px solid color-mix(in srgb, var(--mg-gold) 60%, transparent);
+    border-radius: 0;
+    background: transparent;
+    color: var(--mg-muted);
+    font-weight: 400;
+}
+
+.evt-layout-wedding-midnight-gold .mg-rsvp-panel .rsvp-radio:hover {
+    border-color: var(--mg-gold);
+    background: transparent;
+    color: var(--mg-text);
+}
+
+.evt-layout-wedding-midnight-gold .mg-rsvp-panel .rsvp-radio-icon {
+    color: var(--mg-gold);
+}
+
+.evt-layout-wedding-midnight-gold .mg-rsvp-panel .rsvp-radio:has(input:checked) {
+    border-color: var(--mg-gold);
+    background: color-mix(in srgb, var(--mg-gold) 14%, transparent);
+    color: var(--mg-text);
+    box-shadow: none;
+}
+
+.evt-layout-wedding-midnight-gold .mg-rsvp-panel .rsvp-submit {
+    border: 0;
+    border-radius: 0;
+    background: var(--mg-gold);
+    color: var(--mg-bg);
+    font-family: inherit;
+    font-weight: 500;
+    box-shadow: none;
+}
+
+.evt-layout-wedding-midnight-gold .mg-rsvp-panel .rsvp-submit:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--mg-gold) 85%, white);
+    filter: none;
+}
+
+.evt-layout-wedding-midnight-gold .mg-rsvp-panel .evt-rsvp-banner {
+    border: 1px solid var(--mg-gold);
+    border-radius: 0;
+    background: transparent;
+    color: var(--mg-text);
+    text-align: center;
+}
+
+/* Footer */
+.evt-layout-wedding-midnight-gold .mg-footer {
+    padding: 3rem 1rem;
+    background: var(--mg-bg);
+    text-align: center;
+    color: var(--mg-muted);
+    font-size: 0.85rem;
+}
+
+.evt-layout-wedding-midnight-gold .mg-footer-names {
+    font-family: var(--evt-font-heading, "Dancing Script", cursive);
+    font-weight: 600;
+    font-size: 2rem;
+    color: var(--mg-gold);
+}
+
+@media (max-width: 700px) {
+    .evt-layout-wedding-midnight-gold .mg-story-row {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+        text-align: center;
+    }
+
+    .evt-layout-wedding-midnight-gold .mg-story-text,
+    .evt-layout-wedding-midnight-gold .mg-story-row:nth-of-type(even) .mg-story-text {
+        padding: 0 0 1.5rem;
+        border: 0;
+        border-bottom: 1px solid var(--mg-gold);
+    }
+
+    .evt-layout-wedding-midnight-gold .mg-story-row:nth-of-type(even) .mg-story-photo {
+        order: 0;
+    }
+
+    .evt-layout-wedding-midnight-gold .mg-gallery--count-6 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .evt-layout-wedding-midnight-gold .mg-gallery--count-6 .mg-gallery-item:nth-child(n) {
+        grid-column: auto;
+        aspect-ratio: 1;
+    }
+}
+
+@media (max-width: 420px) {
+    .evt-layout-wedding-midnight-gold .mg-countdown .evt-inv-countdown-grid {
+        gap: 0.5rem;
+    }
+}

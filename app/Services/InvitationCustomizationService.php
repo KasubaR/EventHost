@@ -302,6 +302,22 @@ class InvitationCustomizationService
                 }
             }
         }
+        if ($layoutVariant === InvitationLayoutVariant::WEDDING_MIDNIGHT_GOLD) {
+            foreach (['dancing_script', 'poppins'] as $fontKey) {
+                $spec = InvitationFonts::MAP[$fontKey]['google_family'] ?? null;
+                if (is_string($spec) && $spec !== '' && ! in_array($spec, $googleFonts, true)) {
+                    $googleFonts[] = $spec;
+                }
+            }
+        }
+        if ($layoutVariant === InvitationLayoutVariant::WEDDING_DUSTY_BLUE) {
+            foreach (['cormorant_garamond', 'mrs_saint_delafield'] as $fontKey) {
+                $spec = InvitationFonts::MAP[$fontKey]['google_family'] ?? null;
+                if (is_string($spec) && $spec !== '' && ! in_array($spec, $googleFonts, true)) {
+                    $googleFonts[] = $spec;
+                }
+            }
+        }
 
         $rsvpFormDefaults = self::defaultRsvpForm($layoutVariant);
         $rsvpForm = [];

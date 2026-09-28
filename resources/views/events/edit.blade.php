@@ -134,6 +134,12 @@
                         } elseif ($coverVariant === \App\Support\InvitationLayoutVariant::MODERN_MINIMAL) {
                             $coverField['heading'] = 'Cover Image';
                             $coverField['description'] = 'Framed portrait under your names and date. Also used for link sharing and as a fallback when couple photos are missing.';
+                        } elseif ($coverVariant === \App\Support\InvitationLayoutVariant::WEDDING_MIDNIGHT_GOLD) {
+                            $coverField['heading'] = 'Cover Image';
+                            $coverField['description'] = 'Full-screen photo behind your framed names and date. Also used for link sharing and as a fallback when couple photos are missing.';
+                        } elseif ($coverVariant === \App\Support\InvitationLayoutVariant::WEDDING_DUSTY_BLUE) {
+                            $coverField['heading'] = 'Cover Image';
+                            $coverField['description'] = 'Soft, faded backdrop behind the save-the-date opening. Also used for link sharing and as a fallback when couple photos are missing.';
                         }
                     @endphp
                     @include('events.partials.cover-image-field', $coverField)

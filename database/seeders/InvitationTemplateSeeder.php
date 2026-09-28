@@ -13,8 +13,9 @@ use Illuminate\Support\Facades\Cache;
 class InvitationTemplateSeeder extends Seeder
 {
     /**
-     * The Pro wedding standard (InvitationLayoutVariant::proWeddingLayouts()): Ivory & Gold,
-     * Noir & Gold and Modern Minimal render these same sections in this order; only their CSS differs.
+     * The Pro wedding standard (InvitationLayoutVariant::proWeddingLayouts()): every Pro wedding
+     * renders these same sections. Ivory & Gold, Noir & Gold, Modern Minimal and Midnight Gold use
+     * this order; a template may order them differently to suit its design (Dusty Blue does), hero first.
      */
     private const WEDDING_SECTIONS = [
         ['type' => 'hero', 'visible' => true],
@@ -59,6 +60,63 @@ class InvitationTemplateSeeder extends Seeder
         });
 
         $templates = [
+            [
+                'slug' => 'wedding-midnight-gold',
+                'name' => 'Midnight Gold Wedding',
+                'description' => 'Navy-and-gold script wedding with a framed full-bleed cover, live countdown, round-portrait love story, bordered detail cards, dotted programme, mosaic gallery, and RSVP. Pro minimum.',
+                'skin' => 'classic',
+                'sort_order' => 58,
+                'min_subscription_tier' => SubscriptionTier::Pro->value,
+                'layout_variant' => InvitationLayoutVariant::WEDDING_MIDNIGHT_GOLD,
+                'category_slugs' => ['wedding'],
+                'default_theme' => [
+                    'primary' => '#e9e4da',
+                    'accent' => '#d9a566',
+                    'background' => '#20233f',
+                    'font_heading_key' => 'dancing_script',
+                    'font_body_key' => 'poppins',
+                    'animation_subtle' => false,
+                ],
+                'default_sections' => [
+                    ['type' => 'hero', 'visible' => true],
+                    ['type' => 'countdown', 'visible' => true],
+                    ['type' => 'description', 'visible' => true],
+                    ['type' => 'story', 'visible' => true],
+                    ['type' => 'details', 'visible' => true],
+                    ['type' => 'schedule', 'visible' => true],
+                    ['type' => 'gallery', 'visible' => true],
+                    ['type' => 'rsvp', 'visible' => true],
+                ],
+            ],
+            [
+                'slug' => 'wedding-dusty-blue',
+                'name' => 'Dusty Blue Wedding',
+                'description' => 'Powder-blue save-the-date wedding with a tilted couple photo strip, script names, date and place panel, heart dividers, portrait story, countdown, polaroid gallery, and RSVP. Pro minimum.',
+                'skin' => 'classic',
+                'sort_order' => 59,
+                'min_subscription_tier' => SubscriptionTier::Pro->value,
+                'layout_variant' => InvitationLayoutVariant::WEDDING_DUSTY_BLUE,
+                'category_slugs' => ['wedding'],
+                'default_theme' => [
+                    'primary' => '#13285a',
+                    'accent' => '#b9cade',
+                    'background' => '#c6d4e4',
+                    'font_heading_key' => 'cormorant_garamond',
+                    'font_body_key' => 'cormorant_garamond',
+                    'animation_subtle' => false,
+                ],
+                // The hero already carries the date and place, so the invitation follows it directly.
+                'default_sections' => [
+                    ['type' => 'hero', 'visible' => true],
+                    ['type' => 'description', 'visible' => true],
+                    ['type' => 'story', 'visible' => true],
+                    ['type' => 'countdown', 'visible' => true],
+                    ['type' => 'gallery', 'visible' => true],
+                    ['type' => 'details', 'visible' => true],
+                    ['type' => 'schedule', 'visible' => true],
+                    ['type' => 'rsvp', 'visible' => true],
+                ],
+            ],
             [
                 'slug' => 'modern-minimal',
                 'name' => 'Modern Minimal',

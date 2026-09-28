@@ -8,6 +8,7 @@
 
 @push('head')
     <link rel="stylesheet" href="{{ asset('css/templates.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/rsvp-public.css') }}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/glightbox/dist/css/glightbox.min.css">
     <link rel="stylesheet" href="{{ asset('css/events-public.css') }}">

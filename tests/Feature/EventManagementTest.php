@@ -406,6 +406,56 @@ class EventManagementTest extends TestCase
         $response->assertDontSee('event cover photo', false);
     }
 
+    public function test_midnight_gold_edit_page_matches_cover_couple_and_six_gallery_slots(): void
+    {
+        $user = User::factory()->pro()->create();
+        $tpl = InvitationTemplate::query()->where('slug', 'wedding-midnight-gold')->firstOrFail();
+        $event = Event::factory()->for($user)->create([
+            'invitation_template_id' => $tpl->id,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('events.edit', $event));
+
+        $response->assertOk();
+        $response->assertSee('Full-screen photo behind your framed names and date', false);
+        $response->assertSee('Upload cover', false);
+        $response->assertSee('Up to six photos in a mosaic', false);
+        $response->assertSee('data-upload-slot="gallery"', false);
+        $response->assertSee('Couple portrait grid', false);
+        $response->assertSee('round frame beside one paragraph of your story', false);
+        $response->assertSee('data-upload-slot="couple"', false);
+        $response->assertSee('Dress code (optional)', false);
+        $response->assertSee('name="wi_couple_caption"', false);
+        $response->assertSee('name="countdown_enabled"', false);
+        $response->assertSee('Love story &amp; couple portraits', false);
+        $response->assertDontSee('data-upload-slot="hero_portrait"', false);
+        $response->assertDontSee('event cover photo', false);
+    }
+
+    public function test_dusty_blue_edit_page_matches_cover_couple_and_six_gallery_slots(): void
+    {
+        $user = User::factory()->pro()->create();
+        $tpl = InvitationTemplate::query()->where('slug', 'wedding-dusty-blue')->firstOrFail();
+        $event = Event::factory()->for($user)->create([
+            'invitation_template_id' => $tpl->id,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('events.edit', $event));
+
+        $response->assertOk();
+        $response->assertSee('Soft, faded backdrop behind the save-the-date opening', false);
+        $response->assertSee('Upload cover', false);
+        $response->assertSee('tilted white-bordered prints', false);
+        $response->assertSee('data-upload-slot="gallery"', false);
+        $response->assertSee('tilted photo strip in the opening screen', false);
+        $response->assertSee('data-upload-slot="couple"', false);
+        $response->assertSee('Dress code (optional)', false);
+        $response->assertSee('name="wi_couple_caption"', false);
+        $response->assertSee('name="countdown_enabled"', false);
+        $response->assertDontSee('data-upload-slot="hero_portrait"', false);
+        $response->assertDontSee('event cover photo', false);
+    }
+
     public function test_pro_magazine_edit_page_matches_cover_and_gallery(): void
     {
         $user = User::factory()->pro()->create();

@@ -878,7 +878,7 @@
     pointer-events: none;
 }
 
-.evt-layout-wedding-invitation .wi-rsvp-section .rsvp-submit:hover {
+.evt-layout-wedding-invitation .wi-rsvp-section .rsvp-submit:hover:not(:disabled) {
     background: var(--wi-brown);
     box-shadow: none;
 }

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Amelia & James — Wedding</title>
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500;600&family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#20233f;--bg2:#191c33;--gold:#d9a566;--txt:#e9e4da;--mute:#b3b1c2;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-behavior:smooth;scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--txt);font:300 15px/1.8 Poppins,system-ui,sans-serif}
+h1,h2,h3{font-family:'Dancing Script',cursive;color:var(--gold);font-weight:500;margin:0}
+h2{font-size:clamp(2.2rem,6vw,3.2rem);text-align:center;margin-bottom:2.5rem}
+h3{font-size:1.7rem}
+section{padding:5rem 1.5rem}
+.wrap{max-width:1000px;margin:0 auto}
+.slot{position:relative;overflow:hidden;background:linear-gradient(135deg,#2c3054,#161830);cursor:pointer;display:grid;place-items:center;color:var(--mute);font-size:.8rem;text-align:center}
+.slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.slot input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.slot:focus-within{outline:2px solid var(--gold);outline-offset:-2px}
+.slot span{pointer-events:none;padding:.5rem}
+.slot.has span{display:none}
+/* hero */
+#hero{padding:0;min-height:88vh;display:grid;place-items:center;position:relative}
+#hero .slot{position:absolute;inset:0}
+#hero .frame{position:relative;z-index:1;border:1px solid var(--gold);background:rgba(32,35,63,.82);padding:3rem 2rem;text-align:center;width:min(92%,520px);pointer-events:none}
+#hero h1{font-size:clamp(2.8rem,10vw,4.2rem);line-height:1.1}
+#hero p{margin:.8rem 0;color:var(--gold);letter-spacing:.06em}
+#hero hr,#count hr{border:0;border-top:1px solid var(--gold);margin:1.2rem 0}
+/* countdown */
+#count{background:var(--bg);text-align:center;padding:4rem 1.5rem}
+#count .wrap{max-width:680px}
+#count p{color:var(--gold);margin:0}
+.units{display:flex;justify-content:space-between}
+.units b{display:block;font:500 clamp(2.4rem,9vw,3.4rem)/1.2 'Dancing Script',cursive;color:var(--gold)}
+.units small{color:var(--gold);font-size:.7rem;letter-spacing:.08em}
+/* invitation */
+#invite{background:var(--bg2);text-align:center}
+#invite .wrap{max-width:640px}
+#invite .sig{font:500 1.8rem 'Dancing Script',cursive;color:var(--gold);margin-top:1.5rem}
+/* story */
+.story{display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:center;max-width:900px;margin:0 auto 3.5rem}
+.story:nth-of-type(even) .slot{order:-1}
+.story .txt{padding-right:2rem;border-right:1px solid var(--gold)}
+.story:nth-of-type(even) .txt{padding:0 0 0 2rem;border:0;border-left:1px solid var(--gold)}
+.story .date{color:var(--gold);font-size:.85rem;margin:.2rem 0 .8rem}
+.story .slot{width:min(100%,240px);aspect-ratio:1;border-radius:50%;border:1px solid var(--gold);outline:8px solid var(--bg);margin:0 auto}
+/* details + program */
+#details{background:var(--bg2)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1.5rem}
+.card{border:1px solid rgba(217,165,102,.5);padding:2rem 1.5rem;text-align:center}
+.card p{margin:.5rem 0 0}
+.tl{max-width:640px;margin:0 auto;list-style:none;padding:0;border-left:1px solid var(--gold)}
+.tl li{position:relative;padding:0 0 2rem 2rem}
+.tl li::before{content:"";position:absolute;left:-5px;top:.65rem;width:9px;height:9px;border-radius:50%;background:var(--gold)}
+.tl time{color:var(--gold);font-weight:500}
+.tl h3{font-size:1.5rem}
+.tl p{margin:0;color:var(--mute)}
+/* gallery */
+#gallery{background:var(--bg2)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem;max-width:1000px;margin:0 auto}
+.grid .slot{aspect-ratio:1}
+.grid .slot:nth-child(1),.grid .slot:nth-child(6){grid-column:span 2;aspect-ratio:2/1}
+/* rsvp */
+#rsvp .wrap{max-width:520px}
+label{display:block;margin-bottom:1.1rem;color:var(--gold);font-size:.85rem}
+input[type=text],input[type=email],select,textarea{width:100%;margin-top:.3rem;background:transparent;border:1px solid rgba(217,165,102,.6);color:var(--txt);padding:.7rem .9rem;font:inherit}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+select option{color:#111}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+button.go{background:var(--gold);color:var(--bg);border:0;padding:.9rem 2.2rem;font:500 .9rem Poppins,sans-serif;cursor:pointer;width:100%}
+#thanks{display:none;text-align:center;border:1px solid var(--gold);padding:2.5rem 1.5rem}
+footer{text-align:center;padding:3rem 1rem;color:var(--mute);font-size:.85rem}
+footer .n{font:500 2rem 'Dancing Script',cursive;color:var(--gold)}
+@media(max-width:700px){
+ .story{grid-template-columns:1fr;gap:1.5rem;text-align:center}
+ .story .txt,.story:nth-of-type(even) .txt{padding:0 0 1.5rem;border:0;border-bottom:1px solid var(--gold)}
+ .story:nth-of-type(even) .slot{order:0}
+ .grid{grid-template-columns:1fr 1fr}
+ .grid .slot:nth-child(1),.grid .slot:nth-child(6){grid-column:span 2}
+ .row{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<section id="hero">
+  <label class="slot" id="cover"><span>Tap to add cover photo</span><input type="file" accept="image/*" aria-label="Upload cover photo"></label>
+  <div class="frame">
+    <h1>Amelia &amp; James</h1>
+    <p>WE'RE GETTING MARRIED!</p>
+    <hr>
+    <p>SUNDAY, NOVEMBER 19TH, 2027</p>
+  </div>
+</section>
+
+<section id="count">
+  <div class="wrap">
+    <p>COMING SOON!</p><hr>
+    <div class="units" aria-live="off">
+      <div><b id="d">00</b><small>DAYS</small></div>
+      <div><b id="h">00</b><small>HOURS</small></div>
+      <div><b id="m">00</b><small>MINUTES</small></div>
+      <div><b id="s">00</b><small>SECONDS</small></div>
+    </div>
+  </div>
+</section>
+
+<section id="invite">
+  <div class="wrap">
+    <h2>You're Invited</h2>
+    <p>Together with their families, Amelia and James joyfully invite you to celebrate their wedding. Join us for a ceremony, dinner and dancing, and help us begin our next chapter with the people we love most.</p>
+    <p>Please reply by October 15th.</p>
+    <div class="sig">Amelia &amp; James</div>
+  </div>
+</section>
+
+<section id="story">
+  <h2>Love Story</h2>
+  <div class="story">
+    <div class="txt"><h3>First Meet</h3><div class="date">Saturday, July 1st, 2023</div>
+      <p>We met at a friend's garden party and talked until the lights went out. Neither of us remembers who the host was.</p></div>
+    <label class="slot"><span>Tap to add couple portrait 1</span><input type="file" accept="image/*" aria-label="Upload couple portrait 1"></label>
+  </div>
+  <div class="story">
+    <div class="txt"><h3>First Date</h3><div class="date">Friday, August 11th, 2023</div>
+      <p>Dinner by the river, a long walk home, and a promise to do it again the next weekend.</p></div>
+    <label class="slot"><span>Tap to add couple portrait 2</span><input type="file" accept="image/*" aria-label="Upload couple portrait 2"></label>
+  </div>
+  <div class="story">
+    <div class="txt"><h3>The Proposal</h3><div class="date">Sunday, December 24th, 2026</div>
+      <p>On the hill where we first watched the sunset together, James asked. Amelia said yes before he finished the question.</p></div>
+    <label class="slot"><span>Tap to add couple portrait 3</span><input type="file" accept="image/*" aria-label="Upload couple portrait 3"></label>
+  </div>
+</section>
+
+<section id="details">
+  <div class="wrap">
+    <h2>Details</h2>
+    <div class="cards">
+      <div class="card"><h3>Ceremony</h3><p>2:00 PM<br>St. Anne's Chapel<br>12 Garden Road</p></div>
+      <div class="card"><h3>Reception</h3><p>5:00 PM<br>The Orchard Hall<br>4 Meadow Lane</p></div>
+      <div class="card"><h3>Dress Code</h3><p>Formal.<br>Navy, gold and soft neutrals are welcome.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="program">
+  <h2>Program</h2>
+  <ul class="tl">
+    <li><time>1:30 PM</time><h3>Guests arrive</h3><p>Find your seat and enjoy live music.</p></li>
+    <li><time>2:00 PM</time><h3>Ceremony</h3><p>Vows and rings at the chapel.</p></li>
+    <li><time>3:30 PM</time><h3>Photos &amp; cocktails</h3><p>Drinks and canapés in the garden.</p></li>
+    <li><time>5:00 PM</time><h3>Dinner</h3><p>Three-course meal and toasts.</p></li>
+    <li><time>8:00 PM</time><h3>First dance &amp; party</h3><p>Dancing until midnight.</p></li>
+  </ul>
+</section>
+
+<section id="gallery">
+  <h2>Gallery</h2>
+  <div class="grid">
+    <label class="slot"><span>Photo 1</span><input type="file" accept="image/*" aria-label="Upload gallery photo 1"></label>
+    <label class="slot"><span>Photo 2</span><input type="file" accept="image/*" aria-label="Upload gallery photo 2"></label>
+    <label class="slot"><span>Photo 3</span><input type="file" accept="image/*" aria-label="Upload gallery photo 3"></label>
+    <label class="slot"><span>Photo 4</span><input type="file" accept="image/*" aria-label="Upload gallery photo 4"></label>
+    <label class="slot"><span>Photo 5</span><input type="file" accept="image/*" aria-label="Upload gallery photo 5"></label>
+    <label class="slot"><span>Photo 6</span><input type="file" accept="image/*" aria-label="Upload gallery photo 6"></label>
+  </div>
+</section>
+
+<section id="rsvp">
+  <div class="wrap">
+    <h2>RSVP</h2>
+    <form id="f">
+      <div class="row">
+        <label>Full name<input type="text" name="name" required></label>
+        <label>Email<input type="email" name="email" required></label>
+      </div>
+      <div class="row">
+        <label>Will you attend?<select name="att"><option>Joyfully accepts</option><option>Regretfully declines</option></select></label>
+        <label>Number of guests<select name="n"><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
+      </div>
+      <label>Message for the couple<textarea name="msg" rows="3"></textarea></label>
+      <button class="go" type="submit">Send RSVP</button>
+    </form>
+    <div id="thanks"><h3>Thank you!</h3><p>Your reply has been sent. We can't wait to celebrate with you.</p></div>
+  </div>
+</section>
+
+<footer><div class="n">Amelia &amp; James</div>11.19.2027</footer>
+
+<script>
+// Wedding date: edit here (year, month 0-11, day, hour, minute)
+var target=new Date(2027,10,19,14,0,0);
+function tick(){
+  var t=Math.max(0,target-new Date()),p=function(n){return String(n).padStart(2,'0')};
+  document.getElementById('d').textContent=p(Math.floor(t/864e5));
+  document.getElementById('h').textContent=p(Math.floor(t/36e5)%24);
+  document.getElementById('m').textContent=p(Math.floor(t/6e4)%60);
+  document.getElementById('s').textContent=p(Math.floor(t/1e3)%60);
+}
+tick();setInterval(tick,1000);
+
+// Photo slots: pick an image to fill the slot (kept in memory only)
+document.querySelectorAll('.slot input').forEach(function(inp){
+  inp.addEventListener('change',function(){
+    var f=inp.files&&inp.files[0];if(!f)return;
+    var slot=inp.parentNode,img=slot.querySelector('img');
+    if(!img){img=document.createElement('img');img.alt='';slot.appendChild(img)}
+    img.src=URL.createObjectURL(f);slot.classList.add('has');
+  });
+});
+
+// RSVP: front-end only; connect to your own form service to collect replies
+document.getElementById('f').addEventListener('submit',function(e){
+  e.preventDefault();this.style.display='none';
+  document.getElementById('thanks').style.display='block';
+});
+</script>
+</body>
+</html>

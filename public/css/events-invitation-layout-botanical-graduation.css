@@ -657,6 +657,15 @@
     color: var(--bg-text-dark);
 }
 
+/* Preview: the pills are spans, not links — no lift, no pointer. */
+.evt-layout-botanical-graduation .evt-bg-rsvp-choice-btn--preview {
+    cursor: default;
+}
+
+.evt-layout-botanical-graduation .evt-bg-rsvp-choice-btn--preview:hover {
+    transform: none;
+}
+
 .evt-layout-botanical-graduation .evt-bg-rsvp-choice-note {
     margin: 1.25rem 0 0;
     font-size: 0.9rem;

@@ -117,4 +117,36 @@ final class WeddingInvitationView
     {
         return trim((string) ($this->invitation['content']['story'] ?? ''));
     }
+
+    /**
+     * The story split on blank lines into at most one chunk per couple portrait, each paired
+     * with its portrait — for layouts that print the story as alternating photo rows. Paragraphs
+     * beyond the last portrait join the final chunk so no text is dropped.
+     *
+     * @return list<array{text: string, photo: string}>
+     */
+    public function storyChapters(): array
+    {
+        $paragraphs = array_values(array_filter(
+            array_map('trim', preg_split('/\R\s*\R/', $this->story()) ?: []),
+            static fn (string $paragraph): bool => $paragraph !== ''
+        ));
+
+        if ($paragraphs === []) {
+            return [];
+        }
+
+        if (count($paragraphs) > self::COUPLE_PHOTO_SLOTS) {
+            $tail = array_splice($paragraphs, self::COUPLE_PHOTO_SLOTS - 1);
+            $paragraphs[] = implode("\n\n", $tail);
+        }
+
+        $photos = $this->couplePhotos();
+
+        return array_map(
+            static fn (string $text, int $i): array => ['text' => $text, 'photo' => $photos[$i]],
+            $paragraphs,
+            array_keys($paragraphs)
+        );
+    }
 }

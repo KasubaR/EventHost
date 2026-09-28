@@ -1,10 +1,17 @@
 @php
     $maxAttendees = $maxAttendees ?? 1;
     $phoneRequired = $phoneRequired ?? false;
+    // Previews render against events that may be unsaved (no slug), so there is no
+    // route to post to: the form shows every field but cannot submit.
+    $previewOnly = $previewOnly ?? false;
 @endphp
 
+@if ($previewOnly)
+<form class="rsvp-form evt-open-rsvp-form" data-rsvp-preview>
+@else
 <form method="post" action="{{ route('rsvp.open.store', ['slug' => $event->slug]) }}" class="rsvp-form evt-open-rsvp-form">
     @csrf
+@endif
     <div class="rsvp-field-group">
         <label class="rsvp-field-label" for="rsvp_name">Full name</label>
         <input id="rsvp_name" type="text" name="name" class="rsvp-input" required maxlength="255" value="{{ old('name') }}" autocomplete="name">
@@ -39,7 +46,10 @@
         'preselectedStatus'  => $preselectedStatus ?? null,
     ])
 
-    <button type="submit" class="btn-primary rsvp-submit">
+    <button type="submit" class="btn-primary rsvp-submit" @disabled($previewOnly)>
         <i class="fa-solid fa-paper-plane" aria-hidden="true"></i> Send my response
     </button>
+    @if ($previewOnly)
+        <p class="rsvp-preview-note">Preview only — responses aren't sent.</p>
+    @endif
 </form>

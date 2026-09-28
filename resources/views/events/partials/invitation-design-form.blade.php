@@ -70,6 +70,17 @@
         $sectionLabels['hero'] = 'Names, date & framed cover';
         $sectionLabels['description'] = 'Invitation wording & couple photos';
     }
+    if ($layoutVariant === InvitationLayoutVariant::WEDDING_MIDNIGHT_GOLD) {
+        $sectionLabels['hero'] = 'Framed names & date over your cover';
+        $sectionLabels['description'] = 'Invitation wording';
+        $sectionLabels['story'] = 'Love story & couple portraits';
+    }
+    if ($layoutVariant === InvitationLayoutVariant::WEDDING_DUSTY_BLUE) {
+        $sectionLabels['hero'] = 'Save the date, photo strip & date/place panel';
+        $sectionLabels['description'] = 'Invitation wording';
+        $sectionLabels['story'] = 'Our story & couple portraits';
+        $sectionLabels['gallery'] = 'Photo prints gallery';
+    }
     $blockedSections = InvitationLayoutVariant::blockedSections($layoutVariant);
     $sectionLabels = array_diff_key($sectionLabels, array_flip($blockedSections));
     $heroPortraitSlots = InvitationLayoutVariant::maxInvitationHeroPortraitSlots($layoutVariant);
@@ -474,6 +485,20 @@
                 </fieldset>
             @endif
 
+            @if (in_array($layoutVariant, [InvitationLayoutVariant::WEDDING_MIDNIGHT_GOLD, InvitationLayoutVariant::WEDDING_DUSTY_BLUE], true))
+                <fieldset class="evt-design-fieldset">
+                    <legend class="profile-label">Dress code (optional)</legend>
+                    <p class="evt-muted evt-design-hint">Shown as a Dress Code card beside the date and venue under Details. Leave it empty to show no card.</p>
+
+                    <div class="profile-field">
+                        <label for="wi_couple_caption" class="profile-label">Dress code</label>
+                        <input id="wi_couple_caption" name="wi_couple_caption" type="text" maxlength="160" class="profile-input"
+                               value="{{ old('wi_couple_caption', $invitationMerged['content']['wi_couple_caption'] ?? '') }}"
+                               placeholder="Formal — navy, gold and soft neutrals">
+                    </div>
+                </fieldset>
+            @endif
+
             @if ($layoutVariant === InvitationLayoutVariant::BASE_WEDDING)
                 <fieldset class="evt-design-fieldset">
                     <legend class="profile-label">Wedding invitation — wording</legend>
@@ -706,6 +731,8 @@
                     InvitationLayoutVariant::STANDARD,
                     InvitationLayoutVariant::PRO_MAGAZINE,
                     InvitationLayoutVariant::WEDDING_INVITATION,
+                    InvitationLayoutVariant::WEDDING_MIDNIGHT_GOLD,
+                    InvitationLayoutVariant::WEDDING_DUSTY_BLUE,
                 ], true)
             )
                 <p class="evt-muted evt-design-hint">The invitation hero image uses your <strong>event cover photo</strong> (edit under Event details).</p>
@@ -723,7 +750,11 @@
                         @endif
                     </legend>
                     <p class="evt-muted evt-design-hint">
-                        @if ($isWeddingLayout)
+                        @if ($layoutVariant === InvitationLayoutVariant::WEDDING_MIDNIGHT_GOLD)
+                            Upload three photos. Each sits in a round frame beside one paragraph of your story — separate paragraphs with a blank line. When fewer than three are uploaded, the last image repeats.
+                        @elseif ($layoutVariant === InvitationLayoutVariant::WEDDING_DUSTY_BLUE)
+                            Upload three photos for the tilted photo strip in the opening screen. The same photos sit in round frames beside each paragraph of your story — separate paragraphs with a blank line. When fewer than three are uploaded, the last image repeats.
+                        @elseif ($isWeddingLayout)
                             Upload three separate photos for the couple portrait grid — left portrait, centre portrait, and right portrait. When fewer than three are uploaded, the last image repeats to fill the grid.
                         @elseif ($layoutVariant === InvitationLayoutVariant::BOTANICAL_GRADUATION)
                             Optional. Two photos create the side-by-side framed look; one shows a single frame. Select both at once or upload one then the other.
@@ -848,6 +879,10 @@
                         Up to {{ $galleryMaxWord }} photos in two rows of three. One of these also appears behind the story or quote section (or the hero photo if the gallery is empty). Stored as WebP after upload.
                     @elseif ($layoutVariant === InvitationLayoutVariant::MODERN_MINIMAL)
                         Up to {{ $galleryMaxWord }} photos — six fill two rows of three. Stored as WebP after upload (converted from JPG/PNG).
+                    @elseif ($layoutVariant === InvitationLayoutVariant::WEDDING_MIDNIGHT_GOLD)
+                        Up to {{ $galleryMaxWord }} photos in a mosaic — six zigzag wide and square tiles across three rows. Stored as WebP after upload.
+                    @elseif ($layoutVariant === InvitationLayoutVariant::WEDDING_DUSTY_BLUE)
+                        Up to {{ $galleryMaxWord }} photos shown as tilted white-bordered prints — six zigzag across three rows. Stored as WebP after upload.
                     @elseif ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION)
                         Up to {{ $galleryMaxWord }} photos for the masonry gallery. The story panel can also use a gallery photo when one is available. Stored as WebP after upload.
                     @else

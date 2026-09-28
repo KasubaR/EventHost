@@ -11,9 +11,19 @@
         @include('events.invitations.sections.rsvp')
     @elseif ($rsvpOpen)
         @if (! empty($isPreview))
-            <div class="evt-rsvp-banner evt-rsvp-banner--open evt-bg-rsvp-banner">
-                <i class="fa-solid fa-eye" aria-hidden="true"></i>
-                RSVP preview — publishing unlocks live links for your guests.
+            <div class="evt-bg-rsvp-choice" data-rsvp-preview>
+                <p class="evt-bg-rsvp-kicker">RSVP</p>
+                <h2 class="evt-bg-rsvp-question">Will you be attending?</h2>
+                <div class="evt-bg-rsvp-choices" role="group" aria-label="Will you be attending?">
+                    @foreach (RsvpStatus::cases() as $statusCase)
+                        <span
+                            class="evt-bg-rsvp-choice-btn evt-bg-rsvp-choice-btn--{{ $statusCase->value }} evt-bg-rsvp-choice-btn--preview"
+                            aria-disabled="true"
+                        >{{ $statusCase->label() }}</span>
+                    @endforeach
+                </div>
+                <p class="evt-bg-rsvp-choice-note">Choose a response, then add your details. No account needed.</p>
+                <p class="rsvp-preview-note">Preview only — responses aren't sent.</p>
             </div>
         @elseif ($rsvpPublicAvailable && filled($event->slug ?? null))
             <div class="evt-bg-rsvp-choice">

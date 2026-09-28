@@ -247,6 +247,20 @@
     letter-spacing: 0.01em;
 }
 
+.rsvp-submit:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.rsvp-preview-note {
+    margin: 10px 0 0;
+    font-size: 12px;
+    text-align: center;
+    color: var(--gray-mid, #8e8ea8);
+}
+
 /* ── Entry pass action buttons — the card itself is guest-pass.css ── */
 .rsvp-pass-download {
     display: inline-flex;

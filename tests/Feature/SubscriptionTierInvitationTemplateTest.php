@@ -15,7 +15,7 @@ class SubscriptionTierInvitationTemplateTest extends TestCase
 
     public function test_pro_templates_require_pro_tier(): void
     {
-        foreach (['wedding-invitation', 'wedding-invitation-2', 'modern-minimal'] as $slug) {
+        foreach (['wedding-invitation', 'wedding-invitation-2', 'modern-minimal', 'wedding-midnight-gold', 'wedding-dusty-blue'] as $slug) {
             $tpl = InvitationTemplate::query()->where('slug', $slug)->firstOrFail();
             $this->assertSame(SubscriptionTier::Pro, $tpl->requiredTier(), $slug);
         }

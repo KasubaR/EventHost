@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\InvitationCustomizationService;
 use App\Support\InvitationLayoutVariant;
 use App\Support\InvitationPalettes;
+use App\Support\WeddingInvitationView;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -64,9 +65,10 @@ class InvitationTemplateFeaturesTest extends TestCase
 
     /**
      * The Pro wedding standard: every template on a Pro wedding layout renders the same
-     * sections and asks for the same photos (1 cover, 3 couple portraits, up to 6 gallery), and
-     * is tagged Wedding only. A new Pro wedding layout that drifts from this fails here.
-     * (Pro Magazine is also tagged Wedding, on request, but is not on the standard.)
+     * sections (in any order, hero first) and asks for the same photos (1 cover, 3 couple
+     * portraits, up to 6 gallery), and is tagged Wedding only. A new Pro wedding layout that
+     * drifts from this fails here. (Pro Magazine is also tagged Wedding, on request, but is not
+     * on the standard.)
      */
     public function test_every_pro_wedding_template_follows_the_wedding_standard(): void
     {
@@ -77,7 +79,7 @@ class InvitationTemplateFeaturesTest extends TestCase
             ->get();
 
         $this->assertEqualsCanonicalizing(
-            ['wedding-invitation', 'wedding-invitation-2', 'modern-minimal'],
+            ['wedding-invitation', 'wedding-invitation-2', 'modern-minimal', 'wedding-midnight-gold', 'wedding-dusty-blue'],
             $proWeddings->pluck('slug')->all()
         );
 
@@ -85,9 +87,11 @@ class InvitationTemplateFeaturesTest extends TestCase
 
         foreach ($proWeddings as $template) {
             $variant = $template->layout_variant;
+            $sections = collect($template->default_sections)->pluck('type')->all();
 
             $this->assertSame(['wedding'], $template->categories->pluck('slug')->all(), $template->slug);
-            $this->assertSame($expectedSections, collect($template->default_sections)->pluck('type')->all(), $template->slug);
+            $this->assertEqualsCanonicalizing($expectedSections, $sections, $template->slug);
+            $this->assertSame('hero', $sections[0], $template->slug);
             $this->assertTrue(InvitationLayoutVariant::isProWedding($variant), $template->slug);
             $this->assertSame([], InvitationLayoutVariant::blockedSections($variant), $template->slug);
             $this->assertTrue(InvitationLayoutVariant::usesCoverImage($variant), $template->slug);
@@ -122,6 +126,8 @@ class InvitationTemplateFeaturesTest extends TestCase
             'wedding-invitation' => 'wedding',
             'wedding-invitation-2' => 'wedding',
             'modern-minimal' => 'wedding',
+            'wedding-midnight-gold' => 'wedding',
+            'wedding-dusty-blue' => 'wedding',
             'pro-magazine' => 'wedding',
             'graduation-template-2-botanical-blush' => 'graduation',
             'beauty-for-ashes' => 'church',
@@ -154,6 +160,78 @@ class InvitationTemplateFeaturesTest extends TestCase
         $response->assertSee('wi2-countdown-section', escape: false);
         $response->assertSee('data-inv-countdown', escape: false);
         $response->assertSee('The Ridgecrest Estate Chapel', escape: false);
+    }
+
+    public function test_preview_midnight_gold_renders_its_markup(): void
+    {
+        $user = User::factory()->pro()->create();
+        $tpl = InvitationTemplate::query()->where('slug', 'wedding-midnight-gold')->firstOrFail();
+
+        $response = $this->actingAs($user)->get(route('templates.preview', $tpl));
+
+        $response->assertOk();
+        $response->assertSee('evt-layout-wedding-midnight-gold', escape: false);
+        $response->assertSee('events-invitation-layout-wedding-midnight-gold.css', escape: false);
+        $response->assertSee('Dancing+Script', escape: false);
+        $response->assertSee('mg-hero-frame', escape: false);
+        $response->assertSee('Mutale', escape: false);
+        $response->assertSee('Chilufya', escape: false);
+        $response->assertSee('data-inv-countdown', escape: false);
+        $response->assertSee('Love Story', escape: false);
+        $this->assertSame(3, substr_count($response->getContent(), 'class="mg-story-row"'));
+        $response->assertSee('Kabulonga Garden Chapel', escape: false);
+        $response->assertSee('Dress Code', escape: false);
+        $response->assertSee('mg-timeline', escape: false);
+        $response->assertSee('mg-gallery--count-6', escape: false);
+        $response->assertSee('data-rsvp-preview', escape: false);
+        $response->assertSee('mg-footer', escape: false);
+    }
+
+    public function test_preview_dusty_blue_renders_its_markup_in_its_own_section_order(): void
+    {
+        $user = User::factory()->pro()->create();
+        $tpl = InvitationTemplate::query()->where('slug', 'wedding-dusty-blue')->firstOrFail();
+
+        $response = $this->actingAs($user)->get(route('templates.preview', $tpl));
+
+        $response->assertOk();
+        $response->assertSee('evt-layout-wedding-dusty-blue', escape: false);
+        $response->assertSee('events-invitation-layout-wedding-dusty-blue.css', escape: false);
+        $response->assertSee('Mrs+Saint+Delafield', escape: false);
+        $response->assertSee('db-strip', escape: false);
+        $this->assertSame(3, substr_count($response->getContent(), 'class="db-strip-photo"'));
+        $response->assertSee('Bwalya', escape: false);
+        $response->assertSee('Namukolo', escape: false);
+        $response->assertSee('The Feeling', escape: false);
+        $response->assertSee('Zambezi Riverside Pavilion', escape: false);
+        $this->assertSame(3, substr_count($response->getContent(), 'class="db-story-row"'));
+        $response->assertSee('data-inv-countdown', escape: false);
+        $response->assertSee('db-gallery--count-6', escape: false);
+        $response->assertSee('db-timeline', escape: false);
+        $response->assertSee('data-rsvp-preview', escape: false);
+
+        $response->assertSeeInOrder(
+            ['id="top"', 'id="invitation"', 'id="story"', 'id="countdown"', 'id="gallery"', 'id="details"', 'id="programme"', 'id="rsvp"'],
+            escape: false
+        );
+    }
+
+    public function test_story_chapters_pair_paragraphs_with_portraits_and_fold_extras_into_the_last(): void
+    {
+        $tpl = InvitationTemplate::query()->where('slug', 'wedding-midnight-gold')->firstOrFail();
+        $event = $tpl->previewSampleEvent();
+
+        $invitation = app(InvitationCustomizationService::class)->merge($event);
+        $invitation['content']['story'] = "One.\n\nTwo.\n\n\nThree.\n\nFour.";
+
+        $chapters = WeddingInvitationView::for($event, $invitation)->storyChapters();
+
+        $this->assertCount(3, $chapters);
+        $this->assertSame(['One.', 'Two.', "Three.\n\nFour."], array_column($chapters, 'text'));
+        $this->assertSame($event->invitation_customization['media']['couple_photos'], array_column($chapters, 'photo'));
+
+        $invitation['content']['story'] = '';
+        $this->assertSame([], WeddingInvitationView::for($event, $invitation)->storyChapters());
     }
 
     public function test_preview_page_title_escapes_an_ampersand_once(): void
@@ -364,6 +442,57 @@ class InvitationTemplateFeaturesTest extends TestCase
             ->assertOk()
             ->assertSee('Wedding Standard', escape: false)
             ->assertSee('Ivory &amp; Gold Wedding', escape: false);
+    }
+
+    /**
+     * Every template preview shows its real RSVP form, but one that cannot post anywhere.
+     * Botanical has no inline form (guests pick a response first), so it shows its pills.
+     */
+    public function test_every_template_preview_shows_a_non_submitting_rsvp_form(): void
+    {
+        $user = User::factory()->proPlus()->create();
+        $templates = InvitationTemplate::query()->where('is_active', true)->get();
+
+        $this->assertNotEmpty($templates);
+
+        foreach ($templates as $template) {
+            $response = $this->actingAs($user)->get(route('templates.preview', $template));
+
+            $response->assertOk();
+            $response->assertSee('data-rsvp-preview', escape: false);
+            $response->assertSee('Preview only', escape: false);
+            $response->assertDontSee('publishing unlocks live links', escape: false);
+            $response->assertDontSee('/rsvp"', escape: false);
+
+            if ($template->slug === 'graduation-template-2-botanical-blush') {
+                $response->assertSee('Will you be attending?', escape: false);
+                $response->assertSee('evt-bg-rsvp-choice-btn--preview', escape: false);
+            } else {
+                $response->assertSee('name="status"', escape: false);
+                $response->assertSee('rsvp-public.css', escape: false);
+            }
+        }
+    }
+
+    public function test_event_preview_shows_a_non_submitting_rsvp_form(): void
+    {
+        $user = User::factory()->proPlus()->create();
+        $tpl = InvitationTemplate::query()->where('slug', 'wedding-invitation')->firstOrFail();
+
+        $event = Event::factory()->for($user)->create([
+            'invitation_template_id' => $tpl->id,
+            'event_date' => now()->addMonth(),
+            'rsvp_deadline' => now()->addWeeks(2),
+        ]);
+
+        $response = $this->actingAs($user)->get(route('events.preview', $event));
+
+        $response->assertOk();
+        $response->assertSee('data-rsvp-preview', escape: false);
+        $response->assertSee('name="status"', escape: false);
+        $response->assertSee('Preview only', escape: false);
+        $response->assertDontSee('publishing unlocks live links', escape: false);
+        $response->assertDontSee('/e/'.$event->slug.'/rsvp', escape: false);
     }
 
     public function test_owner_can_save_invitation_design(): void

@@ -270,6 +270,84 @@ class InvitationTemplate extends Model
                     'wi2_footer_legal' => 'With Love & Gratitude',
                 ],
             ];
+        } elseif ($this->slug === 'wedding-midnight-gold') {
+            $event->name = 'Mutale & Chilufya';
+            $event->event_type = 'wedding';
+            $event->description = 'Together with their families, Mutale and Chilufya joyfully invite you to celebrate their wedding. Join us for a ceremony, dinner and dancing, and help us begin our next chapter with the people we love most.';
+            $event->venue = 'Kabulonga Garden Chapel';
+            $event->location_name = 'Lusaka, Zambia';
+            $event->event_date = now()->addMonths(3)->next('Saturday')->startOfDay();
+            $event->event_time = '14:00:00';
+            $event->rsvp_deadline = now()->addMonths(2);
+            $event->preview_cover_image_url = self::unsplash('1519741497674-611481863552');
+            $event->invitation_customization = [
+                'schema_version' => InvitationCustomizationService::CURRENT_SCHEMA_VERSION,
+                'media' => [
+                    'couple_photos' => [
+                        self::unsplash('1591604466107-ec97de577aff', 1000),
+                        self::unsplash('1583939003579-730e3918a45a', 1000),
+                        self::unsplash('1606216794074-735e91aa2c92', 1000),
+                    ],
+                    'gallery' => [
+                        self::unsplash('1519167758481-83f550bb49b3', 1000),
+                        self::unsplash('1606216794074-735e91aa2c92', 1000),
+                        self::unsplash('1465495976277-4387d4b0b4c6', 1000),
+                        self::unsplash('1519657337289-077653f724ed', 1000),
+                        self::unsplash('1523438885200-e635ba2c371e', 1000),
+                        self::unsplash('1520854221256-17451cc331bf', 1000),
+                    ],
+                ],
+                'content' => [
+                    'story' => "We first met at a friend's kitchen party in Kabulonga, arguing over the best nshima in town. Neither of us remembers who won.\n\nOur first date was a slow afternoon by the Kafue River — grilled bream, a long drive home, and a promise to do it again the next weekend.\n\nOn the evening we watched our first sunset together again, Mutale asked. Chilufya said yes before the question was finished.",
+                    'schedule' => [
+                        ['time' => '1:30 PM', 'title' => 'Guests arrive', 'detail' => 'Find your seat and enjoy live music.'],
+                        ['time' => '2:00 PM', 'title' => 'Ceremony', 'detail' => 'Vows and rings at the chapel.'],
+                        ['time' => '3:30 PM', 'title' => 'Photos & cocktails', 'detail' => 'Drinks and canapés in the garden.'],
+                        ['time' => '5:00 PM', 'title' => 'Dinner', 'detail' => 'Three-course meal and toasts.'],
+                        ['time' => '8:00 PM', 'title' => 'First dance & party', 'detail' => 'Dancing until midnight.'],
+                    ],
+                    'wi_couple_caption' => 'Formal — navy, gold and soft neutrals',
+                ],
+            ];
+        } elseif ($this->slug === 'wedding-dusty-blue') {
+            $event->name = 'Bwalya & Namukolo';
+            $event->event_type = 'wedding';
+            $event->description = 'Bwalya and Namukolo are getting married, and they would love for you to be there. Please save the date and join us as we celebrate the beginning of our forever.';
+            $event->venue = 'Zambezi Riverside Pavilion';
+            $event->location_name = 'Livingstone, Zambia';
+            $event->event_date = now()->addMonths(4)->next('Saturday')->startOfDay();
+            $event->event_time = '16:00:00';
+            $event->rsvp_deadline = now()->addMonths(3);
+            $event->preview_cover_image_url = self::unsplash('1520854221256-17451cc331bf');
+            $event->invitation_customization = [
+                'schema_version' => InvitationCustomizationService::CURRENT_SCHEMA_VERSION,
+                'media' => [
+                    'couple_photos' => [
+                        self::unsplash('1606216794074-735e91aa2c92', 1000),
+                        self::unsplash('1591604466107-ec97de577aff', 1000),
+                        self::unsplash('1583939003579-730e3918a45a', 1000),
+                    ],
+                    'gallery' => [
+                        self::unsplash('1465495976277-4387d4b0b4c6', 1000),
+                        self::unsplash('1583939003579-730e3918a45a', 1000),
+                        self::unsplash('1523438885200-e635ba2c371e', 1000),
+                        self::unsplash('1519741497674-611481863552', 1000),
+                        self::unsplash('1519657337289-077653f724ed', 1000),
+                        self::unsplash('1591604466107-ec97de577aff', 1000),
+                    ],
+                ],
+                'content' => [
+                    'story' => "We met through friends at church in Livingstone and talked long after everyone else had gone home.\n\nOur first date was a sunset cruise on the Zambezi — hippos, a borrowed jacket, and a plan to do it again soon.\n\nAt Victoria Falls, with the spray in the air, Bwalya asked. Namukolo laughed, cried and said yes.",
+                    'schedule' => [
+                        ['time' => '3:00 PM', 'title' => 'Guests arrive', 'detail' => 'Welcome drinks and live music.'],
+                        ['time' => '4:00 PM', 'title' => 'Ceremony', 'detail' => 'Vows and rings by the river.'],
+                        ['time' => '5:30 PM', 'title' => 'Photo booth & canapés', 'detail' => 'Sunglasses encouraged.'],
+                        ['time' => '6:30 PM', 'title' => 'Dinner', 'detail' => 'Dinner and toasts.'],
+                        ['time' => '8:30 PM', 'title' => 'First dance & party', 'detail' => 'Dancing into the night.'],
+                    ],
+                    'wi_couple_caption' => 'Formal — soft blues and neutrals',
+                ],
+            ];
         } elseif ($this->slug === 'wedding-invitation') {
             $event->name = 'Kasuba Mulenga & Tamara Muzwindi';
             $event->event_type = 'wedding';
