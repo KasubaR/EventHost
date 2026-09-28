@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\EventAudience;
+use App\Enums\RsvpApprovalStatus;
 use App\Enums\RsvpStatus;
 use App\Models\ContributionPayment;
 use App\Models\Event;
@@ -18,7 +19,9 @@ use App\Notifications\HostEventReminderNotification;
 use App\Notifications\HostPurgeWarningNotification;
 use App\Notifications\NewContributionReceivedNotification;
 use App\Notifications\NewRsvpReceivedNotification;
+use App\Notifications\RsvpAwaitingApprovalNotification;
 use App\Notifications\RsvpConfirmationNotification;
+use App\Notifications\RsvpRejectedNotification;
 use App\Notifications\RsvpReminderNotification;
 use App\Support\EventReminderBuckets;
 use App\Support\WhatsAppEventReminderBuckets;
@@ -113,6 +116,58 @@ class CommunicationService
     }
 
     /**
+     * Host-facing twin of notifyHostNewRsvp() for an Accepted RSVP the event is holding for
+     * review (require_rsvp_approval) — sent instead of, never alongside, that notification.
+     */
+    public function notifyHostRsvpAwaitingApproval(User $host, Event $event, Guest $guest, Rsvp $rsvp): void
+    {
+        $wantsEmail = (bool) ($host->notification_preferences['email_rsvp_updates'] ?? true);
+        $wantsPush = (bool) ($host->notification_preferences['push_rsvp_updates'] ?? true);
+
+        if (! $wantsEmail && ! $wantsPush) {
+            return;
+        }
+
+        $log = $this->startLog($event, $guest, 'email', 'host_rsvp_awaiting_approval', null, ['host_user_id' => $host->id]);
+        if ($log === null) {
+            return;
+        }
+
+        try {
+            $host->notify(new RsvpAwaitingApprovalNotification($event, $guest, $rsvp));
+            $this->markSent($log);
+        } catch (\Throwable $e) {
+            $this->markFailed($log, $e);
+            throw $e;
+        }
+    }
+
+    /**
+     * Guest-facing: the host declined an Accepted RSVP under require_rsvp_approval. Called by
+     * RsvpApprovalService::reject(), never as part of dispatchRsvpNotifications().
+     */
+    public function sendRsvpRejection(Event $event, Guest $guest, Rsvp $rsvp, string $note): void
+    {
+        if (! is_string($guest->email) || $guest->email === '') {
+            return;
+        }
+
+        $log = $this->startLog($event, $guest, 'email', 'rsvp_rejected', null, null);
+        if ($log === null) {
+            return;
+        }
+
+        try {
+            Notification::route('mail', $guest->email)
+                ->notify(new RsvpRejectedNotification($event, $guest, $rsvp, $note));
+            $this->markSent($log);
+        } catch (\Throwable $e) {
+            $this->markFailed($log, $e);
+            throw $e;
+        }
+    }
+
+    /**
      * Shared by web RSVP, API RSVP, and WhatsApp inbound quick-reply — keep side effects identical,
      * with one deliberate exception: $viaWhatsAppInbound. A quick-reply tap never opens a web
      * request that could also fire the business-initiated WhatsApp confirmation below — it already
@@ -124,6 +179,19 @@ class CommunicationService
     {
         try {
             $rsvp->loadMissing('guest');
+
+            if ($rsvp->host_approval_status === RsvpApprovalStatus::Pending) {
+                // Held for review: no guest confirmation, no pass, no WhatsApp send until the
+                // host approves or rejects it — see RsvpApprovalService and plans/rsvp-host-approval.md.
+                $event->loadMissing('user');
+                $host = $event->user;
+
+                if ($host !== null) {
+                    $this->notifyHostRsvpAwaitingApproval($host, $event, $guest, $rsvp);
+                }
+
+                return;
+            }
 
             if (is_string($guest->email) && $guest->email !== '') {
                 $this->sendRsvpConfirmation($event, $guest, $rsvp);
@@ -139,6 +207,28 @@ class CommunicationService
             if ($host !== null) {
                 $this->notifyHostNewRsvp($host, $event, $guest, $rsvp);
             }
+        } catch (\Throwable $e) {
+            report($e);
+        }
+    }
+
+    /**
+     * Called by RsvpApprovalService::approve(), never from dispatchRsvpNotifications() itself —
+     * this is the same confirmation + WhatsApp-pass send an approval-not-required Accepted RSVP
+     * already gets, just fired once the host decides instead of at submit time. Reuses
+     * sendRsvpConfirmation()/sendWhatsAppRsvpConfirmation() rather than duplicating them, so the
+     * guest's confirmation is byte-for-byte the same either way.
+     */
+    public function dispatchApprovedRsvpNotifications(Event $event, Guest $guest, Rsvp $rsvp): void
+    {
+        try {
+            $rsvp->loadMissing('guest');
+
+            if (is_string($guest->email) && $guest->email !== '') {
+                $this->sendRsvpConfirmation($event, $guest, $rsvp);
+            }
+
+            $this->sendWhatsAppRsvpConfirmation($event, $guest, $rsvp);
         } catch (\Throwable $e) {
             report($e);
         }

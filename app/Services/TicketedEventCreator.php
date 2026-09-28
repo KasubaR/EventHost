@@ -30,6 +30,7 @@ class TicketedEventCreator
             $validated['rsvp_deadline'],
             $validated['guest_limit'],
             $validated['allow_plus_one'],
+            $validated['require_rsvp_approval'],
             $validated['show_guest_list'],
             $validated['user_id'],
             $validated['product_kind'],

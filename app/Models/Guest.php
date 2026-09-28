@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Casts\AsRsvpRemindersSent;
 use App\Casts\AsWhatsAppEventRemindersSent;
+use App\Enums\RsvpApprovalStatus;
 use App\Enums\RsvpStatus;
 use App\Support\RsvpReminderBuckets;
 use App\Support\WhatsAppEventReminderBuckets;
@@ -121,15 +122,19 @@ class Guest extends Model
 
     /**
      * True when this guest should see (or be emailed) an entry-pass QR for a
-     * given RSVP: accepted, has a personal token to encode, and the host's
-     * plan includes check-in tools. RsvpController's web view and
-     * RsvpConfirmationNotification's email both funnel through this so the
-     * eligibility rule can't drift between the two surfaces.
+     * given RSVP: accepted, has a personal token to encode, the host's plan
+     * includes check-in tools, and — when the event holds RSVPs for host
+     * review (require_rsvp_approval) — the host has actually approved this
+     * one. RsvpController's web view and RsvpConfirmationNotification's email
+     * both funnel through this so the eligibility rule can't drift between
+     * the two surfaces; extending it here is also what keeps a Pending or
+     * Rejected guest out of the check-in scan flow without a second gate.
      */
     public function hasEntryPassFor(Rsvp $rsvp, Event $event): bool
     {
         return $this->invitation_token !== null
             && $rsvp->status === RsvpStatus::Accepted
+            && ! in_array($rsvp->host_approval_status, [RsvpApprovalStatus::Pending, RsvpApprovalStatus::Rejected], true)
             && $event->ownerHasPremiumEventTools();
     }
 

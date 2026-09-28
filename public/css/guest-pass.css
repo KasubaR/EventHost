@@ -209,6 +209,33 @@
     font-size: 13px;
 }
 
+/* Host-approval pending/rejected messaging — plans/rsvp-host-approval.md */
+.gpass-panel--pending,
+.gpass-panel--rejected {
+    max-width: 420px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 16px 18px;
+    border-radius: var(--radius, 8px);
+    background: var(--gray-light, #f4f5f9);
+    color: var(--text-dark, #1a1a2e);
+    font-size: 14px;
+}
+
+.gpass-panel-badge--pending {
+    color: var(--orange, #f39c12);
+}
+
+.gpass-panel-badge--rejected {
+    color: var(--pink, #e00e4f);
+}
+
+.gpass-panel-note {
+    margin-top: 8px;
+    font-style: italic;
+    color: var(--gray-mid, #8e8ea8);
+}
+
 .gpass-page {
     min-height: calc(100vh - 56px);
     background: var(--gray-light, #f4f5f9);

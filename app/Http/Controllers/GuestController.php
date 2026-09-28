@@ -2,13 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\RsvpApprovalStatus;
 use App\Enums\RsvpStatus;
+use App\Exceptions\RsvpApprovalException;
+use App\Http\Requests\RejectRsvpApprovalRequest;
 use App\Http\Requests\StoreGuestRequest;
 use App\Http\Requests\UpdateGuestRequest;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Services\CommunicationService;
 use App\Services\QrCodeService;
+use App\Services\RsvpApprovalService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -44,6 +48,9 @@ class GuestController extends Controller
             RsvpStatus::Accepted->value => $query->whereHas('rsvp', fn ($q) => $q->where('status', RsvpStatus::Accepted)),
             RsvpStatus::Declined->value => $query->whereHas('rsvp', fn ($q) => $q->where('status', RsvpStatus::Declined)),
             RsvpStatus::Maybe->value => $query->whereHas('rsvp', fn ($q) => $q->where('status', RsvpStatus::Maybe)),
+            // Named distinctly from 'pending' above — that already means "hasn't
+            // responded at all," this means "responded Accepted, awaiting host review."
+            'awaiting_approval' => $query->whereHas('rsvp', fn ($q) => $q->where('host_approval_status', RsvpApprovalStatus::Pending)),
             default => $query,
         };
     }
@@ -70,6 +77,7 @@ class GuestController extends Controller
             'pending' => $event->guests()->whereDoesntHave('rsvp')->count(),
             'accepted' => $event->guests()->whereHas('rsvp', fn ($q) => $q->where('status', RsvpStatus::Accepted))->count(),
             'declined' => $event->guests()->whereHas('rsvp', fn ($q) => $q->where('status', RsvpStatus::Declined))->count(),
+            'awaiting_approval' => $event->guests()->whereHas('rsvp', fn ($q) => $q->where('host_approval_status', RsvpApprovalStatus::Pending))->count(),
         ];
 
         $whatsappSendEnabled = (bool) config('communications.whatsapp.enabled', false);
@@ -262,6 +270,49 @@ class GuestController extends Controller
         ])->save();
 
         return back()->with('status', 'guest-invitation-marked-sent');
+    }
+
+    /**
+     * plans/rsvp-host-approval.md — approves a Pending RSVP, which triggers the same
+     * confirmation + entry-pass send an approval-not-required Accepted RSVP already gets.
+     */
+    public function approveRsvp(Event $event, Guest $guest, RsvpApprovalService $rsvpApprovalService): RedirectResponse
+    {
+        $guest->loadMissing('event', 'rsvp');
+        $this->authorize('update', $guest);
+
+        abort_unless($guest->event_id === $event->id, 404);
+        abort_unless($event->isInvitation(), 404);
+        abort_if($guest->rsvp === null, 404);
+
+        try {
+            $rsvpApprovalService->approve($guest->rsvp, $event->user);
+        } catch (RsvpApprovalException $e) {
+            return back()->withErrors(['rsvp_approval' => $e->getMessage()]);
+        }
+
+        return back()->with('status', 'guest-rsvp-approved');
+    }
+
+    /**
+     * plans/rsvp-host-approval.md — declines a Pending RSVP; the guest is notified with the
+     * host's note and never gets a confirmation or entry pass for this response.
+     */
+    public function rejectRsvp(RejectRsvpApprovalRequest $request, Event $event, Guest $guest, RsvpApprovalService $rsvpApprovalService): RedirectResponse
+    {
+        $guest->loadMissing('event', 'rsvp');
+
+        abort_unless($guest->event_id === $event->id, 404);
+        abort_unless($event->isInvitation(), 404);
+        abort_if($guest->rsvp === null, 404);
+
+        try {
+            $rsvpApprovalService->reject($guest->rsvp, $event->user, $request->validated('host_rejection_note'));
+        } catch (RsvpApprovalException $e) {
+            return back()->withErrors(['rsvp_approval' => $e->getMessage()]);
+        }
+
+        return back()->with('status', 'guest-rsvp-rejected');
     }
 
     /**

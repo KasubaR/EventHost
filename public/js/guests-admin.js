@@ -375,6 +375,80 @@
         }
     }
 
+    // Single shared modal, rewired per row by data-evt-rsvp-reject-open triggers — same
+    // reasoning as initQrLightbox: a modal per table row would mean duplicate ids.
+    // plans/rsvp-host-approval.md.
+    function initRsvpRejectModal(root, moreMenu) {
+        var overlay = root.querySelector('[data-evt-rsvp-reject-modal]');
+        if (!overlay) {
+            return;
+        }
+
+        var form = overlay.querySelector('[data-evt-rsvp-reject-form]');
+        var titleEl = overlay.querySelector('[data-evt-rsvp-reject-title]');
+        var textarea = overlay.querySelector('#rsvp_reject_note');
+        var closeEls = overlay.querySelectorAll('[data-evt-rsvp-reject-close]');
+        var lastFocus = null;
+
+        function close() {
+            if (!overlay.classList.contains('is-open')) {
+                return;
+            }
+            overlay.classList.remove('is-open');
+            if (lastFocus && typeof lastFocus.focus === 'function') {
+                lastFocus.focus();
+            }
+            lastFocus = null;
+        }
+
+        function open(trigger) {
+            var action = trigger.getAttribute('data-reject-action');
+            if (!action || !form) {
+                return;
+            }
+            var name = trigger.getAttribute('data-reject-name') || 'this guest';
+
+            lastFocus = document.activeElement;
+            form.setAttribute('action', action);
+            if (titleEl) {
+                titleEl.textContent = 'Decline ' + name + '’s RSVP?';
+            }
+            if (textarea) {
+                textarea.value = '';
+            }
+            overlay.classList.add('is-open');
+            if (textarea) {
+                textarea.focus();
+            }
+        }
+
+        root.querySelectorAll('[data-evt-rsvp-reject-open]').forEach(function (trigger) {
+            trigger.addEventListener('click', function () {
+                if (moreMenu && typeof moreMenu.close === 'function') {
+                    moreMenu.close();
+                }
+                open(trigger);
+            });
+        });
+
+        closeEls.forEach(function (el) {
+            el.addEventListener('click', close);
+        });
+
+        overlay.addEventListener('click', function (event) {
+            if (event.target === overlay) {
+                close();
+            }
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && overlay.classList.contains('is-open')) {
+                event.stopPropagation();
+                close();
+            }
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         initConfirmForms();
         initCopyButtons(document);
@@ -382,5 +456,6 @@
         initBulkActionInputs(document);
         var moreMenu = initMoreMenus(document);
         initQrLightbox(document, moreMenu);
+        initRsvpRejectModal(document, moreMenu);
     });
 })();

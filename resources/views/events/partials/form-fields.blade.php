@@ -43,6 +43,7 @@
 
 @unless ($isTicketed)
     <input type="hidden" name="allow_plus_one" value="0">
+    <input type="hidden" name="require_rsvp_approval" value="0">
     <input type="hidden" name="show_guest_list" value="0">
 @endunless
 
@@ -346,6 +347,15 @@
                        @checked((string) old('allow_plus_one', ($event?->allow_plus_one ?? false) ? '1' : '0') === '1')>
                 Allow plus-one
             </label>
+
+            <label class="profile-label evt-check-label">
+                <input type="checkbox" name="require_rsvp_approval" value="1" class="profile-input evt-check-input"
+                       @checked((string) old('require_rsvp_approval', ($event?->require_rsvp_approval ?? false) ? '1' : '0') === '1')>
+                Review RSVPs before sending passes
+            </label>
+            <p class="evt-muted evt-guest-capacity-hint">
+                When on, an accepted RSVP is held for your approval — the guest's confirmation and entry pass go out once you approve it, not right away.
+            </p>
 
             <label class="profile-label evt-check-label">
                 <input type="checkbox" name="show_guest_list" value="1" class="profile-input evt-check-input"

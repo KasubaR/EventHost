@@ -115,6 +115,7 @@ class StoreEventRequest extends FormRequest
             'rsvp_deadline' => ['nullable', 'date'],
             'guest_limit' => $this->guestLimitRules(),
             'allow_plus_one' => ['boolean'],
+            'require_rsvp_approval' => ['boolean'],
             'show_guest_list' => ['boolean'],
         ];
     }

@@ -319,6 +319,12 @@ Route::middleware(['auth', 'account.active', 'verified'])->group(function () {
     Route::patch('/events/{event}/guests/{guest}/invitation-sent', [GuestController::class, 'markInvitationSent'])
         ->name('events.guests.mark-invitation-sent');
 
+    Route::patch('/events/{event}/guests/{guest}/rsvp/approve', [GuestController::class, 'approveRsvp'])
+        ->name('events.guests.rsvp.approve');
+
+    Route::patch('/events/{event}/guests/{guest}/rsvp/reject', [GuestController::class, 'rejectRsvp'])
+        ->name('events.guests.rsvp.reject');
+
     Route::post('/events/{event}/guests/{guest}/whatsapp-invite', [GuestController::class, 'sendWhatsAppInvitation'])
         ->middleware('throttle:guest-whatsapp-send')
         ->name('events.guests.whatsapp-invite');

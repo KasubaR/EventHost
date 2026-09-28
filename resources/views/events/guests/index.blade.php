@@ -102,6 +102,12 @@
                 <div class="evt-stat-value">{{ $stats['declined'] }}</div>
                 <div class="evt-stat-label">Declined</div>
             </div>
+            @if ($event->require_rsvp_approval)
+                <div class="evt-stat-card">
+                    <div class="evt-stat-value">{{ $stats['awaiting_approval'] }}</div>
+                    <div class="evt-stat-label">Awaiting your approval</div>
+                </div>
+            @endif
         </div>
 
         <div class="evt-section evt-guest-toolbar-section">
@@ -159,6 +165,9 @@
                     'declined'  => 'Declined',
                     'maybe'     => 'Maybe',
                 ];
+                if ($event->require_rsvp_approval) {
+                    $filters['awaiting_approval'] = 'Awaiting approval';
+                }
                 $filterParams = array_filter([
                     'q' => request('q'),
                     'group' => request('group'),
@@ -282,6 +291,19 @@
                                     <td>
                                         @if ($rsvpRow)
                                             <span class="evt-pill evt-pill--{{ $rsvpRow->status->value }}">{{ ucfirst($rsvpRow->status->value) }}</span>
+                                            @php
+                                                // Only meaningful for an Accepted RSVP on an event that holds
+                                                // RSVPs for review — NotRequired never renders a second pill.
+                                                $approvalPillClass = match ($rsvpRow->host_approval_status) {
+                                                    \App\Enums\RsvpApprovalStatus::Pending => 'pending',
+                                                    \App\Enums\RsvpApprovalStatus::Approved => 'accepted',
+                                                    \App\Enums\RsvpApprovalStatus::Rejected => 'declined',
+                                                    \App\Enums\RsvpApprovalStatus::NotRequired => null,
+                                                };
+                                            @endphp
+                                            @if ($approvalPillClass)
+                                                <span class="evt-pill evt-pill--{{ $approvalPillClass }}">{{ $rsvpRow->host_approval_status->label() }}</span>
+                                            @endif
                                         @else
                                             <span class="evt-pill evt-pill--pending">Pending</span>
                                         @endif
@@ -369,6 +391,23 @@
                                                         </button>
                                                     </form>
                                                 @endif
+                                                @if ($rsvpRow?->host_approval_status === \App\Enums\RsvpApprovalStatus::Pending)
+                                                    <form method="post" action="{{ route('events.guests.rsvp.approve', ['event' => $event, 'guest' => $guestRow->id]) }}" class="evt-inline-form">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <button type="submit" class="evt-more-item" role="menuitem">
+                                                            <i class="fa-solid fa-check" aria-hidden="true"></i>
+                                                            <span>Approve RSVP</span>
+                                                        </button>
+                                                    </form>
+                                                    <button type="button" class="evt-more-item evt-more-item--danger" role="menuitem"
+                                                            data-evt-rsvp-reject-open
+                                                            data-reject-action="{{ route('events.guests.rsvp.reject', ['event' => $event, 'guest' => $guestRow->id]) }}"
+                                                            data-reject-name="{{ $guestRow->name }}">
+                                                        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                                                        <span>Decline RSVP</span>
+                                                    </button>
+                                                @endif
                                                 <a href="{{ route('events.guests.edit', ['event' => $event, 'guest' => $guestRow->id]) }}" class="evt-more-item" role="menuitem">
                                                     <i class="fa-solid fa-pen" aria-hidden="true"></i>
                                                     <span>Edit</span>
@@ -416,6 +455,36 @@
                     Share
                 </button>
             </div>
+        </div>
+    </div>
+
+    {{-- Single shared modal, rewired per row by data-evt-rsvp-reject-open triggers above —
+         same pattern as the QR lightbox, since a modal per table row would mean duplicate ids.
+         plans/rsvp-host-approval.md. --}}
+    <div class="profile-modal-overlay" data-evt-rsvp-reject-modal>
+        <div class="profile-modal">
+            <div class="profile-modal-header">
+                <div class="profile-modal-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                <h3 data-evt-rsvp-reject-title>Decline this RSVP?</h3>
+                <p>The guest will be told why and will not receive a confirmation or entry pass for this response.</p>
+            </div>
+
+            <form method="post" class="profile-modal-form" data-evt-rsvp-reject-form>
+                @csrf
+                @method('PATCH')
+
+                <div class="profile-field">
+                    <label for="rsvp_reject_note" class="profile-label">Note to the guest</label>
+                    <textarea id="rsvp_reject_note" name="host_rejection_note" class="profile-input" rows="3" maxlength="2000" required placeholder="Let them know why, e.g. the event has reached capacity."></textarea>
+                </div>
+
+                <div class="profile-modal-actions">
+                    <button type="button" class="profile-modal-cancel" data-evt-rsvp-reject-close>Cancel</button>
+                    <button type="submit" class="danger-confirm-btn">
+                        <i class="fa-solid fa-xmark" aria-hidden="true"></i> Decline RSVP
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 

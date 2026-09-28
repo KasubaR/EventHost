@@ -54,7 +54,7 @@
                 @endif
             </div>
 
-            @include('rsvp.partials.entry-pass', ['guest' => $guest, 'showEntryPass' => $showEntryPass ?? false])
+            @include('rsvp.partials.entry-pass', ['guest' => $guest, 'rsvp' => $rsvp, 'showEntryPass' => $showEntryPass ?? false])
 
             <div class="rsvp-thanks-actions">
                 @if ($viewInvitationUrl)

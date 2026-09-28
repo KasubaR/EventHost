@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\RsvpApprovalStatus;
 use App\Enums\RsvpStatus;
 use App\Models\Event;
 use App\Models\Guest;
@@ -53,12 +54,40 @@ class RsvpSubmissionService
                 }
             }
 
+            // Approval only (re)opens on a transition into Accepted from something else — a
+            // fresh accept, or an accept after a prior decline/maybe. Editing attendee_count/
+            // message while already Accepted keeps whatever decision the host already made
+            // (Pending/Approved/Rejected), so a minor edit can't reopen a settled review.
+            $approvalStatus = RsvpApprovalStatus::NotRequired;
+            $resetReview = false;
+
+            if ($status === RsvpStatus::Accepted && $locked->require_rsvp_approval) {
+                $wasAccepted = $existing !== null && $existing->status === RsvpStatus::Accepted;
+
+                if ($wasAccepted) {
+                    $approvalStatus = $existing->host_approval_status;
+                } else {
+                    $approvalStatus = RsvpApprovalStatus::Pending;
+                    $resetReview = true;
+                }
+            }
+
             $rsvpData = [
                 'event_id' => $locked->id,
                 'status' => $status,
                 'attendee_count' => $attendeeCount,
                 'message' => $payload['message'] ?? null,
+                'host_approval_status' => $approvalStatus,
             ];
+
+            if ($resetReview) {
+                // A new review episode — clear any reviewed_at/by/note left over from a
+                // previous decision so the guest list doesn't show a stale rejection note
+                // next to a freshly-Pending row.
+                $rsvpData['host_reviewed_at'] = null;
+                $rsvpData['host_reviewed_by'] = null;
+                $rsvpData['host_rejection_note'] = null;
+            }
 
             try {
                 /** @var Rsvp $rsvp */

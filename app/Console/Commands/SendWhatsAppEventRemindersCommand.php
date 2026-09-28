@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\RsvpApprovalStatus;
 use App\Enums\RsvpStatus;
 use App\Models\Event;
 use App\Services\CommunicationService;
@@ -42,7 +43,10 @@ class SendWhatsAppEventRemindersCommand extends Command
 
                     $guests = $event->guests()
                         ->whereNotNull('phone')
-                        ->whereHas('rsvp', fn ($q) => $q->where('status', RsvpStatus::Accepted))
+                        // A Pending/Rejected guest has no pass and may never get one — a "see you
+                        // tomorrow" reminder for an event they can't actually enter would be wrong.
+                        ->whereHas('rsvp', fn ($q) => $q->where('status', RsvpStatus::Accepted)
+                            ->whereNotIn('host_approval_status', [RsvpApprovalStatus::Pending, RsvpApprovalStatus::Rejected]))
                         ->with('rsvp')
                         ->cursor();
 
