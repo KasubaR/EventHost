@@ -34,6 +34,10 @@
             <div class="evt-flash evt-flash--warn">
                 <i class="fa-solid fa-triangle-exclamation"></i> You have no event credits. Buy one below to publish an event.
             </div>
+        @elseif (session('status') === 'enterprise-request-submitted')
+            <div class="evt-flash evt-flash--info">
+                <i class="fa-solid fa-circle-check"></i> Your Enterprise request has been sent — our team will follow up by email.
+            </div>
         @endif
 
         {{-- Credits bar --}}
@@ -145,7 +149,21 @@
                             <li><i class="fa-solid fa-check" aria-hidden="true"></i> Fully custom event builds</li>
                             <li><i class="fa-solid fa-check" aria-hidden="true"></i> Dedicated designer</li>
                         </ul>
-                        <a href="{{ route('contact') }}" class="billing-plan-contact-btn">Contact Sales</a>
+                        @if ($pendingEnterpriseRequest)
+                            <p class="billing-plan-request-pending">
+                                <i class="fa-solid fa-circle-check" aria-hidden="true"></i> Request sent — our team will follow up by email.
+                            </p>
+                        @else
+                            <form method="post" action="{{ route('billing.enterprise-request.store') }}" class="billing-plan-request-form">
+                                @csrf
+                                <textarea name="message" maxlength="1000" placeholder="Tell us what you need (optional)">{{ old('message') }}</textarea>
+                                @error('enterprise_request')
+                                    <p class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
+                                @enderror
+                                <button type="submit" class="billing-plan-contact-btn">Request a quote</button>
+                            </form>
+                        @endif
+                        <a href="{{ route('contact') }}" class="billing-plan-contact-btn billing-plan-contact-btn--secondary">Contact Sales</a>
                     </div>
                 @endif
             </div>

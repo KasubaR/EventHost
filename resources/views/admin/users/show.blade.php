@@ -55,13 +55,19 @@
                 <div class="admin-mt-md">
                     <h3 style="font-size:14px;font-weight:600;margin-bottom:8px;">Event Credits</h3>
                     <p class="admin-muted" style="margin-bottom:10px;">Current balance: <strong>{{ $u->event_credits }}</strong></p>
-                    <form method="post" action="{{ route('admin.users.add-credits', $u) }}" class="profile-form" style="display:flex;gap:8px;align-items:flex-end;">
+                    <form method="post" action="{{ route('admin.users.add-credits', $u) }}" class="profile-form">
                         @csrf
-                        <div style="flex:1;">
-                            <label for="credits-input" style="font-size:13px;">Add credits</label>
-                            <input id="credits-input" type="number" name="credits" min="1" max="100" value="1" class="profile-input" style="margin-top:4px;">
+                        <div style="display:flex;gap:8px;align-items:flex-end;">
+                            <div style="flex:1;">
+                                <label for="credits-input" style="font-size:13px;">Add credits</label>
+                                <input id="credits-input" type="number" name="credits" min="1" max="100" value="1" class="profile-input" style="margin-top:4px;">
+                            </div>
+                            <button type="submit" class="btn-primary" style="white-space:nowrap;">Add credits</button>
                         </div>
-                        <button type="submit" class="btn-primary" style="white-space:nowrap;">Add credits</button>
+                        <div class="admin-mt-sm">
+                            <label for="credits-reason" style="font-size:13px;">Reason <span class="admin-muted">(optional)</span></label>
+                            <input id="credits-reason" type="text" name="reason" maxlength="255" class="profile-input" style="margin-top:4px;" placeholder="e.g. goodwill credit for support ticket #123">
+                        </div>
                     </form>
                 </div>
             @endif
@@ -112,6 +118,23 @@
                     </div>
                 </form>
 
+                @if ($pendingEnterpriseRequest)
+                    <div class="admin-mt-md">
+                        <h3 style="font-size:14px;font-weight:600;margin-bottom:8px;">Enterprise quote request</h3>
+                        <p class="admin-muted" style="margin-bottom:10px;">
+                            Requested {{ $pendingEnterpriseRequest->created_at->format('M j, Y g:i a') }}
+                            @if ($pendingEnterpriseRequest->message)
+                                — "{{ $pendingEnterpriseRequest->message }}"
+                            @endif
+                        </p>
+                        <form method="post" action="{{ route('admin.users.enterprise-request.dismiss', [$u, $pendingEnterpriseRequest]) }}" class="profile-form" data-confirm="Mark this request as handled?">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="evt-btn-outline">Mark as handled</button>
+                        </form>
+                    </div>
+                @endif
+
                 <div class="admin-mt-md">
                     <h3 style="font-size:14px;font-weight:600;margin-bottom:8px;">Custom Enterprise quote</h3>
                     <p class="admin-muted" style="margin-bottom:10px;">
@@ -130,24 +153,32 @@
                         <form method="post" action="{{ route('admin.users.custom-quote.update', [$u, $pendingCustomQuote]) }}" class="profile-form">
                             @csrf
                             @method('PATCH')
-                            <label for="quote-amount">Amount (ZMW)</label>
-                            <input id="quote-amount" type="number" name="amount" min="0.01" step="0.01" required
-                                   class="profile-input" value="{{ old('amount', $pendingCustomQuote->amount) }}">
-                            @error('amount')
-                                <p class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
-                            @enderror
-                            <label for="quote-credits" class="admin-mt-sm">Credits included</label>
-                            <input id="quote-credits" type="number" name="credits_granted" min="1" max="100" required
-                                   class="profile-input" value="{{ old('credits_granted', $pendingCustomQuote->credits_granted) }}">
-                            @error('credits_granted')
-                                <p class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
-                            @enderror
-                            <label for="quote-note" class="admin-mt-sm">Note <span class="profile-optional">optional</span></label>
-                            <input id="quote-note" type="text" name="note" maxlength="500"
-                                   class="profile-input" value="{{ old('note', $pendingCustomQuote->note) }}">
-                            @error('note')
-                                <p class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
-                            @enderror
+                            <div class="profile-fields">
+                                <div class="profile-field">
+                                    <label for="quote-amount" class="profile-label">Amount (ZMW)</label>
+                                    <input id="quote-amount" type="number" name="amount" min="0.01" step="0.01" required
+                                           class="profile-input" value="{{ old('amount', $pendingCustomQuote->amount) }}">
+                                    @error('amount')
+                                        <p class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
+                                    @enderror
+                                </div>
+                                <div class="profile-field">
+                                    <label for="quote-credits" class="profile-label">Credits included</label>
+                                    <input id="quote-credits" type="number" name="credits_granted" min="1" max="100" required
+                                           class="profile-input" value="{{ old('credits_granted', $pendingCustomQuote->credits_granted) }}">
+                                    @error('credits_granted')
+                                        <p class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
+                                    @enderror
+                                </div>
+                                <div class="profile-field">
+                                    <label for="quote-note" class="profile-label">Note <span class="profile-optional">optional</span></label>
+                                    <input id="quote-note" type="text" name="note" maxlength="500"
+                                           class="profile-input" value="{{ old('note', $pendingCustomQuote->note) }}">
+                                    @error('note')
+                                        <p class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
+                                    @enderror
+                                </div>
+                            </div>
                             <div class="admin-actions admin-mt-md">
                                 <button type="submit" class="btn-primary">Update quote</button>
                             </div>
@@ -160,27 +191,35 @@
                     @else
                         <form method="post" action="{{ route('admin.users.custom-quote.store', $u) }}" class="profile-form">
                             @csrf
-                            <label for="quote-amount">Amount (ZMW)</label>
-                            <input id="quote-amount" type="number" name="amount" min="0.01" step="0.01" required
-                                   class="profile-input" value="{{ old('amount') }}" placeholder="12500">
-                            @error('amount')
-                                <p class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
-                            @enderror
-                            <label for="quote-credits" class="admin-mt-sm">Credits included</label>
-                            <input id="quote-credits" type="number" name="credits_granted" min="1" max="100" required
-                                   class="profile-input" value="{{ old('credits_granted', 1) }}">
-                            @error('credits_granted')
-                                <p class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
-                            @enderror
-                            <label for="quote-note" class="admin-mt-sm">Note <span class="profile-optional">optional</span></label>
-                            <input id="quote-note" type="text" name="note" maxlength="500"
-                                   class="profile-input" value="{{ old('note') }}" placeholder="Custom wedding site + templates">
-                            @error('note')
-                                <p class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
-                            @enderror
-                            @error('custom_quote')
-                                <p class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
-                            @enderror
+                            <div class="profile-fields">
+                                <div class="profile-field">
+                                    <label for="quote-amount" class="profile-label">Amount (ZMW)</label>
+                                    <input id="quote-amount" type="number" name="amount" min="0.01" step="0.01" required
+                                           class="profile-input" value="{{ old('amount') }}" placeholder="12500">
+                                    @error('amount')
+                                        <p class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
+                                    @enderror
+                                </div>
+                                <div class="profile-field">
+                                    <label for="quote-credits" class="profile-label">Credits included</label>
+                                    <input id="quote-credits" type="number" name="credits_granted" min="1" max="100" required
+                                           class="profile-input" value="{{ old('credits_granted', 1) }}">
+                                    @error('credits_granted')
+                                        <p class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
+                                    @enderror
+                                </div>
+                                <div class="profile-field">
+                                    <label for="quote-note" class="profile-label">Note <span class="profile-optional">optional</span></label>
+                                    <input id="quote-note" type="text" name="note" maxlength="500"
+                                           class="profile-input" value="{{ old('note') }}" placeholder="Custom wedding site + templates">
+                                    @error('note')
+                                        <p class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
+                                    @enderror
+                                </div>
+                                @error('custom_quote')
+                                    <p class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
+                                @enderror
+                            </div>
                             <div class="admin-actions admin-mt-md">
                                 <button type="submit" class="btn-primary">Send quote to customer</button>
                             </div>
@@ -262,7 +301,7 @@
                                 @if ($entry->event)
                                     {{ $entry->event->name }}
                                 @elseif ($entry->payment)
-                                    {{ $entry->payment->plan_key }}
+                                    {{ \App\Support\BillingPlan::labelForPlanKey($entry->payment->plan_key) }}
                                 @else
                                     {{ $entry->note ?? '—' }}
                                 @endif

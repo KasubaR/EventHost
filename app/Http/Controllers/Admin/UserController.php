@@ -9,8 +9,10 @@ use App\Http\Requests\Admin\UpdateAdminUserStatusRequest;
 use App\Models\Admin;
 use App\Models\CreditTransaction;
 use App\Models\CustomQuote;
+use App\Models\EnterpriseQuoteRequest;
 use App\Models\User;
 use App\Notifications\EmailChangedNotification;
+use App\Services\EnterpriseQuoteRequestService;
 use App\Services\EventCreditService;
 use App\Support\AdminActivity;
 use Illuminate\Http\RedirectResponse;
@@ -63,6 +65,7 @@ class UserController extends Controller
             'adminUser' => $user,
             'creditHistory' => $creditHistory,
             'pendingCustomQuote' => CustomQuote::pendingFor($user),
+            'pendingEnterpriseRequest' => EnterpriseQuoteRequest::pendingFor($user),
         ]);
     }
 
@@ -154,13 +157,19 @@ class UserController extends Controller
     {
         $validated = $request->validate([
             'credits' => ['required', 'integer', 'min:1', 'max:100'],
+            'reason' => ['nullable', 'string', 'max:255'],
         ]);
+
+        $note = 'Granted by '.(auth('admin')->user()?->email ?? 'an admin');
+        if (! empty($validated['reason'])) {
+            $note .= ' — '.$validated['reason'];
+        }
 
         $credits->grant(
             $user,
             (int) $validated['credits'],
             CreditTransaction::REASON_ADMIN_GRANT,
-            note: 'Granted by '.(auth('admin')->user()?->email ?? 'an admin')
+            note: $note
         );
 
         AdminActivity::log('Admin added event credits', [
@@ -170,6 +179,24 @@ class UserController extends Controller
         ]);
 
         return redirect()->back()->with('status', 'Credits added successfully.');
+    }
+
+    public function dismissEnterpriseRequest(User $user, EnterpriseQuoteRequest $enterpriseQuoteRequest, EnterpriseQuoteRequestService $service): RedirectResponse
+    {
+        abort_unless($enterpriseQuoteRequest->user_id === $user->id, 404);
+
+        try {
+            $service->dismiss($enterpriseQuoteRequest);
+        } catch (\InvalidArgumentException $e) {
+            return redirect()->back()->withErrors(['enterprise_request' => $e->getMessage()]);
+        }
+
+        AdminActivity::log('Admin dismissed Enterprise quote request', [
+            'target_user_id' => $user->id,
+            'request_id' => $enterpriseQuoteRequest->id,
+        ]);
+
+        return redirect()->back()->with('status', 'enterprise-request-dismissed');
     }
 
     /**

@@ -59,6 +59,7 @@ Route::prefix('admin')
             Route::post('/users/{user}/custom-quote', [AdminCustomQuoteController::class, 'store'])->name('users.custom-quote.store');
             Route::patch('/users/{user}/custom-quote/{customQuote}', [AdminCustomQuoteController::class, 'update'])->name('users.custom-quote.update');
             Route::delete('/users/{user}/custom-quote/{customQuote}', [AdminCustomQuoteController::class, 'destroy'])->name('users.custom-quote.destroy');
+            Route::delete('/users/{user}/enterprise-request/{enterpriseQuoteRequest}', [AdminUserController::class, 'dismissEnterpriseRequest'])->name('users.enterprise-request.dismiss');
         });
 
         Route::middleware(['permission:users.password_reset,admin', 'throttle:admin-mutations'])->group(function (): void {

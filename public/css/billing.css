@@ -262,6 +262,53 @@
   color: var(--white);
 }
 
+.billing-plan-contact-btn--secondary {
+  margin-top: 8px;
+  border-color: var(--line);
+  color: var(--text-dark);
+}
+
+.billing-plan-contact-btn--secondary:hover {
+  background: var(--line);
+  color: var(--text-dark);
+}
+
+.billing-plan-request-pending {
+  margin-top: auto;
+  padding-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.billing-plan-request-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 10px;
+}
+
+.billing-plan-request-form textarea {
+  width: 100%;
+  min-height: 56px;
+  padding: 8px 10px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  color: var(--text-dark);
+  border: 1.5px solid rgba(26, 26, 110, 0.18);
+  border-radius: var(--radius-sm);
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.billing-plan-request-form .billing-plan-contact-btn {
+  margin-top: 0;
+}
+
 /* ── Checkout 2-col ── */
 .billing-checkout {
   display: grid;

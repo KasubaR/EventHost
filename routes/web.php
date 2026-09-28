@@ -4,6 +4,7 @@ use App\Enums\EventAudience;
 use App\Http\Controllers\CheckInController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EnterpriseQuoteRequestController;
 use App\Http\Controllers\EventChooseTemplateController;
 use App\Http\Controllers\EventContributionController;
 use App\Http\Controllers\EventController;
@@ -489,6 +490,8 @@ Route::middleware(['auth', 'account.active', 'verified'])->group(function () {
     Route::post('/events', [EventController::class, 'store'])->name('events.store')->middleware('throttle:10,1');
 
     Route::get('/billing', [PaymentController::class, 'show'])->name('billing.show');
+    Route::post('/billing/enterprise-request', [EnterpriseQuoteRequestController::class, 'store'])
+        ->name('billing.enterprise-request.store');
     Route::post('/payment/initiate', [PaymentController::class, 'initiate'])
         ->middleware('throttle:payment-initiate')
         ->name('payment.initiate');

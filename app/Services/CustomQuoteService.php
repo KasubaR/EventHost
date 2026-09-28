@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\CustomQuoteStatus;
 use App\Models\Admin;
 use App\Models\CustomQuote;
+use App\Models\EnterpriseQuoteRequest;
 use App\Models\User;
 use App\Notifications\CustomQuoteReadyNotification;
 use Illuminate\Support\Facades\DB;
@@ -32,7 +33,7 @@ class CustomQuoteService
                 throw new \InvalidArgumentException('This user already has a pending custom quote. Update or cancel it first.');
             }
 
-            return CustomQuote::query()->create([
+            $quote = CustomQuote::query()->create([
                 'user_id' => $user->id,
                 'amount' => $data['amount'],
                 'credits_granted' => (int) $data['credits_granted'],
@@ -40,6 +41,16 @@ class CustomQuoteService
                 'status' => CustomQuoteStatus::Pending,
                 'created_by' => $admin->id,
             ]);
+
+            // A quote now exists for the admin to send — close out any pending
+            // host-submitted request so it doesn't also need a separate "mark
+            // as handled" click.
+            EnterpriseQuoteRequest::query()
+                ->where('user_id', $user->id)
+                ->pending()
+                ->update(['dismissed_at' => now()]);
+
+            return $quote;
         });
 
         $user->notify(new CustomQuoteReadyNotification($quote));

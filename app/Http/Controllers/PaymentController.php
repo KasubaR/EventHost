@@ -6,6 +6,7 @@ use App\Http\Requests\InitiatePaymentRequest;
 use App\Jobs\RetryLencoPayment;
 use App\Models\ContributionPayment;
 use App\Models\CustomQuote;
+use App\Models\EnterpriseQuoteRequest;
 use App\Models\Event;
 use App\Models\InvitationTemplate;
 use App\Models\Payment;
@@ -59,6 +60,7 @@ class PaymentController extends Controller
             'activeTemplateCount' => InvitationTemplate::activeCount(),
             'popularPlanKey' => $popularPlans->resolve(),
             'pendingCustomQuote' => CustomQuote::pendingFor($user),
+            'pendingEnterpriseRequest' => EnterpriseQuoteRequest::pendingFor($user),
         ]);
     }
 
