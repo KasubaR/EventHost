@@ -33,9 +33,6 @@ class OpenStoreTest extends TestCase
             'status' => $status->value,
             'attendee_count' => $attendeeCount,
             'message' => null,
-            'meal_preference' => null,
-            'transportation_note' => null,
-            'song_request' => null,
         ];
     }
 

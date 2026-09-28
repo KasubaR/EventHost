@@ -18,7 +18,7 @@ class CheckInService
      *     guest: array{
      *         id: int, name: string, checked_in_at: ?string,
      *         email: ?string, phone: ?string, table: ?string,
-     *         meal_preference: ?string, rsvp_note: ?string,
+     *         rsvp_note: ?string,
      *         checked_in_by: ?string,
      *     },
      *     already_checked_in: bool,
@@ -52,8 +52,7 @@ class CheckInService
             }
 
             // Door staff act on this the moment it lands — a full name-only match still
-            // leaves them guessing which table to point someone to, or whether the
-            // kitchen needs to know about a dietary restriction. loadMissing so every
+            // leaves them guessing which table to point someone to. loadMissing so every
             // caller (dashboard scanner, staff-link scanner, manual lookup) gets the
             // same payload without each having to remember the eager-load itself.
             $locked->loadMissing(['rsvp', 'eventTable', 'checkedInBy']);
@@ -66,7 +65,6 @@ class CheckInService
                     'email' => $locked->email,
                     'phone' => $locked->phone,
                     'table' => $locked->tableLabel(),
-                    'meal_preference' => $locked->rsvp?->meal_preference,
                     'rsvp_note' => $locked->rsvp?->message,
                     // Which door took them the first time — the scanner shows
                     // this on a repeat scan.

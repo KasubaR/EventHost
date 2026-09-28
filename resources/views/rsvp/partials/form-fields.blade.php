@@ -67,36 +67,6 @@
 </div>
 @endif
 
-@if ($_rfcVisible('meal_preference'))
-<div class="rsvp-field-group">
-    <label class="rsvp-field-label" for="rsvp_meal">{{ $_rfcLabel('meal_preference', 'Meal preference') }} <span class="rsvp-optional">optional</span></label>
-    <input id="rsvp_meal" type="text" name="meal_preference" class="rsvp-input" maxlength="255" value="{{ old('meal_preference', $existing?->meal_preference) }}">
-    @error('meal_preference')
-        <p class="rsvp-field-error">{{ $message }}</p>
-    @enderror
-</div>
-@endif
-
-@if ($_rfcVisible('transportation_note'))
-<div class="rsvp-field-group">
-    <label class="rsvp-field-label" for="rsvp_transport">{{ $_rfcLabel('transportation_note', 'Transportation notes') }} <span class="rsvp-optional">optional</span></label>
-    <input id="rsvp_transport" type="text" name="transportation_note" class="rsvp-input" maxlength="255" value="{{ old('transportation_note', $existing?->transportation_note) }}">
-    @error('transportation_note')
-        <p class="rsvp-field-error">{{ $message }}</p>
-    @enderror
-</div>
-@endif
-
-@if ($_rfcVisible('song_request'))
-<div class="rsvp-field-group">
-    <label class="rsvp-field-label" for="rsvp_song">{{ $_rfcLabel('song_request', 'Song request') }} <span class="rsvp-optional">optional</span></label>
-    <input id="rsvp_song" type="text" name="song_request" class="rsvp-input" maxlength="255" value="{{ old('song_request', $existing?->song_request) }}">
-    @error('song_request')
-        <p class="rsvp-field-error">{{ $message }}</p>
-    @enderror
-</div>
-@endif
-
 @once
     @push('scripts')
         <script src="{{ asset('js/rsvp-form.js') }}" defer></script>

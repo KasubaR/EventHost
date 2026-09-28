@@ -236,10 +236,7 @@
                     use App\Services\InvitationCustomizationService;
                     $rsvpFormStored = $invitationMerged['rsvp_form'] ?? [];
                     $rsvpFormDefaultLabels = [
-                        'message'             => 'Message to host',
-                        'meal_preference'     => 'Meal preference',
-                        'transportation_note' => 'Transportation notes',
-                        'song_request'        => 'Song request',
+                        'message' => 'Message to host',
                     ];
                 @endphp
                 <ul class="evt-design-rsvp-list">

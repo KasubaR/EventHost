@@ -57,9 +57,6 @@ class GuestResource extends JsonResource
                 'status' => $rsvp->status->value,
                 'attendee_count' => $rsvp->attendee_count,
                 'message' => $rsvp->message,
-                'meal_preference' => $rsvp->meal_preference,
-                'transportation_note' => $rsvp->transportation_note,
-                'song_request' => $rsvp->song_request,
             ],
         ];
     }

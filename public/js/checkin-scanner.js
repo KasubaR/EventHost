@@ -24,7 +24,6 @@
                 ['Email', 'email'],
                 ['Phone', 'phone'],
                 ['Table', 'table'],
-                ['Meal preference', 'meal_preference'],
                 ['RSVP note', 'rsvp_note'],
             ],
         },
@@ -198,8 +197,8 @@
         }
 
         // Built with createElement/textContent, not innerHTML — guest/attendee
-        // entered fields (name, notes, meal preference…) are untrusted strings
-        // and must never be parsed as markup. extraRows are rendered above the
+        // entered fields (name, notes…) are untrusted strings and must never
+        // be parsed as markup. extraRows are rendered above the
         // configured fields, so a re-scan leads with when the credential was
         // first used rather than burying it under the contact details.
         function showResultDetails(record, extraRows) {

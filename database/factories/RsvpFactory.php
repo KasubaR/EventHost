@@ -38,9 +38,6 @@ class RsvpFactory extends Factory
             'status' => RsvpStatus::Accepted,
             'attendee_count' => 1,
             'message' => fake()->optional()->sentence(),
-            'meal_preference' => null,
-            'transportation_note' => null,
-            'song_request' => null,
         ];
     }
 

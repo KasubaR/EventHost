@@ -48,9 +48,6 @@ class InvitationGalleryProcessingTest extends TestCase
             'gallery_images' => [$file],
             'rsvp_form' => [
                 'message' => ['visible' => '1', 'label' => 'Message to host'],
-                'meal_preference' => ['visible' => '1', 'label' => 'Meal preference'],
-                'transportation_note' => ['visible' => '1', 'label' => 'Transportation notes'],
-                'song_request' => ['visible' => '1', 'label' => 'Song request'],
             ],
         ])->assertSessionHas('status', 'invitation-design-saved');
 
@@ -107,9 +104,6 @@ class InvitationGalleryProcessingTest extends TestCase
             'invitation_hero_portrait' => $file,
             'rsvp_form' => [
                 'message' => ['visible' => '1', 'label' => 'Message to host'],
-                'meal_preference' => ['visible' => '1', 'label' => 'Meal preference'],
-                'transportation_note' => ['visible' => '1', 'label' => 'Transportation notes'],
-                'song_request' => ['visible' => '1', 'label' => 'Song request'],
             ],
         ])->assertSessionHas('status', 'invitation-design-saved');
 
@@ -198,9 +192,6 @@ class InvitationGalleryProcessingTest extends TestCase
             'couple_photos' => [$one, $two],
             'rsvp_form' => [
                 'message' => ['visible' => '1', 'label' => 'Message to host'],
-                'meal_preference' => ['visible' => '1', 'label' => 'Meal preference'],
-                'transportation_note' => ['visible' => '1', 'label' => 'Transportation notes'],
-                'song_request' => ['visible' => '1', 'label' => 'Song request'],
             ],
         ])->assertSessionHas('status', 'invitation-design-saved');
 

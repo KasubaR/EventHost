@@ -73,8 +73,8 @@ class GuestAttendanceExportTest extends TestCase
         $lines = array_map('str_getcsv', array_filter(explode("\n", trim($csv))));
         $noShowRow = collect($lines)->first(fn ($row) => ($row[0] ?? null) === 'No Show Guest');
         $this->assertNotNull($noShowRow);
-        $this->assertSame('', $noShowRow[12] ?? null); // Checked In At
-        $this->assertSame('', $noShowRow[13] ?? null); // Checked In By
+        $this->assertSame('', $noShowRow[9] ?? null); // Checked In At
+        $this->assertSame('', $noShowRow[10] ?? null); // Checked In By
     }
 
     public function test_csv_export_leaves_checked_in_by_blank_for_a_staff_link_scan(): void
@@ -94,8 +94,8 @@ class GuestAttendanceExportTest extends TestCase
 
         $lines = array_map('str_getcsv', array_filter(explode("\n", trim($csv))));
         $row = collect($lines)->first(fn ($r) => ($r[0] ?? null) === 'Staff Link Guest');
-        $this->assertNotSame('', $row[12] ?? null); // Checked In At is present
-        $this->assertSame('', $row[13] ?? null); // Checked In By is blank, not an error
+        $this->assertNotSame('', $row[9] ?? null); // Checked In At is present
+        $this->assertSame('', $row[10] ?? null); // Checked In By is blank, not an error
     }
 
     public function test_csv_export_respects_the_checked_in_filter(): void

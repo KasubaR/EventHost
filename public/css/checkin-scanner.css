@@ -158,8 +158,8 @@
 }
 
 /* Populated by checkin-scanner.js alongside .ckin-result — email, phone, table,
-   meal preference, RSVP note. Only the rows a guest actually has are added, so
-   :empty collapses this to nothing between scans, same as .ckin-result:empty. */
+   RSVP note. Only the rows a guest actually has are added, so :empty collapses
+   this to nothing between scans, same as .ckin-result:empty. */
 .ckin-result-details {
   display: flex;
   flex-direction: column;

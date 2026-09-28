@@ -17,14 +17,11 @@ class InvitationCustomizationService
     public const CURRENT_SCHEMA_VERSION = 2;
 
     /** RSVP form optional fields (in display order). */
-    public const RSVP_FORM_FIELDS = ['message', 'meal_preference', 'transportation_note', 'song_request'];
+    public const RSVP_FORM_FIELDS = ['message'];
 
     /** Default labels for RSVP form fields (standard / non-template-specific). */
     public const RSVP_FORM_DEFAULT_LABELS = [
         'message' => 'Message to host',
-        'meal_preference' => 'Meal preference',
-        'transportation_note' => 'Transportation notes',
-        'song_request' => 'Song request',
     ];
 
     /**
@@ -37,16 +34,13 @@ class InvitationCustomizationService
         $labels = match ($variant) {
             InvitationLayoutVariant::BEAUTY_FOR_ASHES => [
                 'message' => 'What are your expectations',
-                'meal_preference' => 'Meal preference',
-                'transportation_note' => 'Transportation notes',
-                'song_request' => 'Prayer request',
             ],
             default => self::RSVP_FORM_DEFAULT_LABELS,
         };
 
         $out = [];
         foreach (self::RSVP_FORM_FIELDS as $field) {
-            $out[$field] = ['visible' => true, 'label' => $labels[$field]];
+            $out[$field] = ['visible' => false, 'label' => $labels[$field]];
         }
 
         return $out;

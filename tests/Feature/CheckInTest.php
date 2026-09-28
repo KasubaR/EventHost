@@ -70,7 +70,6 @@ class CheckInTest extends TestCase
         ]);
         Rsvp::factory()->for($guest)->create([
             'status' => RsvpStatus::Accepted,
-            'meal_preference' => 'Vegetarian',
             'message' => 'Arriving with a wheelchair, please have a ramp ready.',
         ]);
 
@@ -81,7 +80,6 @@ class CheckInTest extends TestCase
         $response->assertJsonPath('guest.email', 'guest@example.test');
         $response->assertJsonPath('guest.phone', '+260971234567');
         $response->assertJsonPath('guest.table', 'Table 7');
-        $response->assertJsonPath('guest.meal_preference', 'Vegetarian');
         $response->assertJsonPath('guest.rsvp_note', 'Arriving with a wheelchair, please have a ramp ready.');
     }
 
@@ -98,7 +96,6 @@ class CheckInTest extends TestCase
         $response->assertJsonPath('guest.email', null);
         $response->assertJsonPath('guest.phone', null);
         $response->assertJsonPath('guest.table', null);
-        $response->assertJsonPath('guest.meal_preference', null);
         $response->assertJsonPath('guest.rsvp_note', null);
     }
 

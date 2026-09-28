@@ -22,9 +22,6 @@ class Rsvp extends Model
         'status',
         'attendee_count',
         'message',
-        'meal_preference',
-        'transportation_note',
-        'song_request',
     ];
 
     /**

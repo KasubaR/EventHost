@@ -199,7 +199,6 @@ class GuestController extends Controller
             fputcsv($handle, [
                 'Name', 'Email', 'Phone', 'Group',
                 'RSVP Status', 'Attendee Count', 'Message',
-                'Meal Preference', 'Transportation Note', 'Song Request',
                 'Invitation Sent', 'Invitation Sent At',
                 'Checked In At', 'Checked In By',
             ]);
@@ -215,9 +214,6 @@ class GuestController extends Controller
                         $rsvp ? $rsvp->status->value : 'pending',
                         $rsvp && $rsvp->status->countsTowardGuestLimit() ? $rsvp->attendee_count : '',
                         $rsvp?->message ?? '',
-                        $rsvp?->meal_preference ?? '',
-                        $rsvp?->transportation_note ?? '',
-                        $rsvp?->song_request ?? '',
                         $guest->invitation_sent ? 'Yes' : 'No',
                         $guest->invitation_sent_at?->format('Y-m-d H:i') ?? '',
                         $guest->checked_in_at?->timezone(config('app.timezone'))->format('Y-m-d H:i') ?? '',

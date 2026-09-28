@@ -13,7 +13,7 @@ use Illuminate\Validation\ValidationException;
 class RsvpSubmissionService
 {
     /**
-     * @param  array{status:RsvpStatus,attendee_count:int,message?:string|null,meal_preference?:string|null,transportation_note?:string|null,song_request?:string|null}  $payload
+     * @param  array{status:RsvpStatus,attendee_count:int,message?:string|null}  $payload
      */
     public function submit(Event $event, Guest $guest, array $payload): Rsvp
     {
@@ -58,9 +58,6 @@ class RsvpSubmissionService
                 'status' => $status,
                 'attendee_count' => $attendeeCount,
                 'message' => $payload['message'] ?? null,
-                'meal_preference' => $payload['meal_preference'] ?? null,
-                'transportation_note' => $payload['transportation_note'] ?? null,
-                'song_request' => $payload['song_request'] ?? null,
             ];
 
             try {

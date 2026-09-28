@@ -37,27 +37,21 @@ trait ValidatesRsvpPayload
                 },
             ],
             'message' => ['nullable', 'string', 'max:1000'],
-            'meal_preference' => ['nullable', 'string', 'max:255'],
-            'transportation_note' => ['nullable', 'string', 'max:255'],
-            'song_request' => ['nullable', 'string', 'max:255'],
         ];
     }
 
     /**
-     * @return array{status:RsvpStatus,attendee_count:int,message?:string|null,meal_preference?:string|null,transportation_note?:string|null,song_request?:string|null}
+     * @return array{status:RsvpStatus,attendee_count:int,message?:string|null}
      */
     public function validatedRsvpPayload(): array
     {
-        /** @var array{status:string,attendee_count:int,message?:string|null,meal_preference?:string|null,transportation_note?:string|null,song_request?:string|null} $data */
+        /** @var array{status:string,attendee_count:int,message?:string|null} $data */
         $data = $this->validated();
 
         return [
             'status' => RsvpStatus::from($data['status']),
             'attendee_count' => (int) $data['attendee_count'],
             'message' => $data['message'] ?? null,
-            'meal_preference' => $data['meal_preference'] ?? null,
-            'transportation_note' => $data['transportation_note'] ?? null,
-            'song_request' => $data['song_request'] ?? null,
         ];
     }
 }

@@ -49,7 +49,6 @@
                 <th>Response</th>
                 <th>Attendees</th>
                 <th>Message</th>
-                <th>Meal</th>
                 <th>Checked In</th>
             </tr>
         </thead>
@@ -71,7 +70,6 @@
                     </td>
                     <td>{{ $rsvp && $rsvp->status->countsTowardGuestLimit() ? $rsvp->attendee_count : '—' }}</td>
                     <td>{{ $rsvp?->message ?? '' }}</td>
-                    <td>{{ $rsvp?->meal_preference ?? '' }}</td>
                     <td>
                         @if ($guest->checked_in_at)
                             <span class="pill pill-accepted">{{ $guest->checked_in_at->timezone(config('app.timezone'))->format('M j, g:i A') }}</span>
