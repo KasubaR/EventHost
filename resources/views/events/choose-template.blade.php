@@ -59,18 +59,10 @@
     <div class="tpl-grid evt-choose-template-grid">
         @forelse ($templates as $tpl)
             <article class="tpl-card @if ($preferredIdInt !== null && (int) $tpl->id === $preferredIdInt) tpl-card--suggested @endif" id="tpl-suggestion-{{ $tpl->id }}">
-                <a href="{{ route('templates.preview', ['invitation_template' => $tpl, 'from_event' => $event->id]) }}" class="tpl-card-visual" style="--tpl-primary: {{ $tpl->default_theme['primary'] ?? '#1e47bb' }}; --tpl-accent: {{ $tpl->default_theme['accent'] ?? '#e00e4f' }}; --tpl-bg: {{ $tpl->default_theme['background'] ?? '#fafafa' }};">
-                    @if ($tpl->preview_image_url)
-                        <img src="{{ $tpl->preview_image_url }}" alt="" width="640" height="800" loading="lazy" decoding="async">
-                    @else
-                        <div class="tpl-card-placeholder" aria-hidden="true"></div>
-                    @endif
-                    <span class="tpl-card-preview-chip"><i class="fa-regular fa-eye"></i> Preview</span>
-                </a>
+                @include('templates.partials.thumbnail', ['tpl' => $tpl, 'previewUrl' => route('templates.preview', ['invitation_template' => $tpl, 'from_event' => $event->id])])
                 <div class="tpl-card-body">
                     <h2 class="tpl-card-title-row">
                         {{ $tpl->name }}
-                        <span class="tpl-tier-badge tpl-tier-{{ str_replace('_', '-', $tpl->requiredTier()->value) }}">{{ $tpl->requiredTier()->label() }}</span>
                     </h2>
                     @if ($preferredIdInt !== null && (int) $tpl->id === $preferredIdInt)
                         <p class="evt-tpl-suggested-note"><i class="fa-solid fa-lightbulb" aria-hidden="true"></i> Suggested from the template library</p>

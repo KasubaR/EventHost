@@ -64,20 +64,8 @@
     <div class="tpl-grid">
         @forelse ($templates as $tpl)
             <article class="tpl-card tpl-gallery-card">
-                <div class="tpl-gallery-thumb tpl-card-visual" style="--tpl-primary: {{ $tpl->default_theme['primary'] ?? '#1e47bb' }}; --tpl-accent: {{ $tpl->default_theme['accent'] ?? '#e00e4f' }}; --tpl-bg: {{ $tpl->default_theme['background'] ?? '#fafafa' }};">
-                    @if ($tpl->preview_image_url)
-                        <img src="{{ $tpl->preview_image_url }}" alt="{{ $tpl->name }} thumbnail" width="640" height="800" loading="lazy" decoding="async">
-                    @else
-                        <div class="tpl-card-placeholder"></div>
-                    @endif
-                    <span class="tpl-tier-badge tpl-thumb-tier tpl-tier-{{ str_replace('_', '-', $tpl->requiredTier()->value) }}">
-                        <span class="tpl-sr-only">Plan:</span> {{ $tpl->requiredTier()->label() }}
-                    </span>
-                    <a href="{{ route('templates.preview', $tpl) }}" class="btn-outline tpl-placeholder-preview-btn">
-                        <i class="fa-regular fa-eye" aria-hidden="true"></i>
-                        Preview
-                        <span class="tpl-sr-only">{{ $tpl->name }}</span>
-                    </a>
+                <div class="tpl-gallery-thumb">
+                    @include('templates.partials.thumbnail', ['tpl' => $tpl, 'previewUrl' => route('templates.preview', $tpl)])
                 </div>
 
                 <div class="tpl-gallery-body">

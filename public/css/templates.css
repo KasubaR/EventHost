@@ -171,6 +171,7 @@ nav.tpl-plan-tabs {
     border-radius: var(--radius);
     border: 1px solid var(--line, #e0e0e8);
     box-shadow: var(--card-shadow);
+    overflow: hidden;
     transition: transform 0.2s, box-shadow 0.2s;
 }
 
@@ -239,33 +240,6 @@ nav.tpl-plan-tabs {
     height: 100%;
     box-sizing: border-box;
     background: linear-gradient(160deg, var(--tpl-bg, #eef2ff) 0%, color-mix(in srgb, var(--tpl-accent, #1e47bb) 28%, var(--tpl-bg, #eef2ff)) 60%, color-mix(in srgb, var(--tpl-primary, #1a2a4a) 18%, var(--tpl-bg, #eef2ff)) 100%);
-}
-
-.tpl-placeholder-preview-btn {
-    position: absolute;
-    right: 14px;
-    bottom: 14px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 8px 14px;
-    font-size: 13px;
-    font-weight: 700;
-    text-decoration: none;
-    white-space: nowrap;
-    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.14);
-    border-width: 2px;
-    background: rgba(255, 255, 255, 0.94);
-}
-
-.tpl-placeholder-preview-btn:hover {
-    background: var(--white, #fff);
-}
-
-.tpl-card-visual:focus-within .tpl-placeholder-preview-btn:focus-visible {
-    outline: 2px solid var(--accent, #1e47bb);
-    outline-offset: 3px;
 }
 
 .tpl-card-preview-chip {
