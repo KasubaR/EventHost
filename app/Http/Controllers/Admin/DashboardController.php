@@ -41,11 +41,17 @@ class DashboardController extends Controller
     }
 
     /**
+     * Flat rate used only for the admin dashboard's estimated-tax card — not a
+     * withholding or remittance calculation, just revenue_total x this rate.
+     */
+    private const TAX_RATE = 0.04;
+
+    /**
      * Revenue is summed only over the configured billing currency so mixed-currency
      * rows can never be added together. Returns null when the admin may not see
      * payment data, and the view then omits the finance cards entirely.
      *
-     * @return array{revenue_total: float, revenue_month: float, pending_payments: int, completed_payments: int}|null
+     * @return array{revenue_total: float, revenue_month: float, pending_payments: int, completed_payments: int, estimated_tax: float}|null
      */
     private function financeStats(): ?array
     {
@@ -57,13 +63,16 @@ class DashboardController extends Controller
             ->where('status', 'completed')
             ->where('currency', BillingPlan::currency());
 
+        $revenueTotal = (float) $completed()->sum('amount');
+
         return [
-            'revenue_total' => (float) $completed()->sum('amount'),
+            'revenue_total' => $revenueTotal,
             'revenue_month' => (float) $completed()
                 ->where('completed_at', '>=', now()->startOfMonth())
                 ->sum('amount'),
             'completed_payments' => $completed()->count(),
             'pending_payments' => Payment::query()->inProgress()->count(),
+            'estimated_tax' => $revenueTotal * self::TAX_RATE,
         ];
     }
 

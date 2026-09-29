@@ -108,6 +108,13 @@
                         <div class="dsc-label">Payments in progress</div>
                     </div>
                 </div>
+                <div class="dash-stat-card">
+                    <div class="dsc-icon dsc-icon--purple"><i class="fa-solid fa-landmark" aria-hidden="true"></i></div>
+                    <div class="dsc-body">
+                        <div class="dsc-value">{{ number_format($finance['estimated_tax'], 2) }}</div>
+                        <div class="dsc-label">Est. tax, 4% of revenue ({{ $currency }})</div>
+                    </div>
+                </div>
             </div>
         </section>
     @endif
