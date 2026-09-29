@@ -128,6 +128,31 @@
 .evt-preview-bar-publish:hover {
     background: #e8e8e8;
 }
+/* Strip under the preview bar while ?palette= recolours the render. */
+.evt-preview-palette {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 6px 12px;
+    padding: 9px 20px;
+    background: #fef3c7;
+    color: #78350f;
+    border-bottom: 1px solid #fcd34d;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    text-align: center;
+}
+.evt-preview-palette-reset {
+    color: #78350f;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    white-space: nowrap;
+}
+.evt-preview-palette-reset:hover {
+    color: #451a03;
+}
 @media (max-width: 540px) {
     .evt-preview-bar-name,
     .evt-preview-bar-note {

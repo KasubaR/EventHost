@@ -67,6 +67,18 @@
                 </form>
             @endif
         </div>
+
+        @if ($previewPalette)
+            <div class="evt-preview-palette" role="status">
+                <i class="fa-solid fa-palette" aria-hidden="true"></i>
+                <span class="evt-preview-palette-text">
+                    Previewing the <strong>{{ $previewPalette['label'] }}</strong> palette — not saved
+                </span>
+                <a href="{{ route('events.preview', array_filter(['event' => $event, 'from' => request()->query('from') === 'show' ? 'show' : null])) }}" class="evt-preview-palette-reset">
+                    Show saved colours
+                </a>
+            </div>
+        @endif
     @endunless
 
     @unless ($event->is_public)
@@ -88,7 +100,9 @@
             'rsvpPublicAvailable' => $rsvpPublicAvailable,
             'invitation' => $invitation,
             'isPreview' => true,
-            'previewLabel' => 'Preview — this is exactly how your invitation looks to guests.',
+            'previewLabel' => $previewPalette
+                ? 'Preview — your invitation in the '.$previewPalette['label'].' palette. Guests still see your saved colours until you save this palette.'
+                : 'Preview — this is exactly how your invitation looks to guests.',
         ])
     @endif
 

@@ -144,19 +144,21 @@
                     @else
                         <p class="evt-muted evt-design-hint evt-palette-lock-hint">
                             <i class="fa-solid fa-lock" aria-hidden="true"></i>
-                            Requires the {{ SubscriptionTier::ProPlus->label() }} plan — this template's default colours are used until then.
+                            Preview any palette below; applying it requires the {{ SubscriptionTier::ProPlus->label() }} plan.
                         </p>
                     @endif
                     <div class="evt-palette-grid {{ $canChoosePalette ? '' : 'evt-palette-grid--locked' }}">
                         @foreach ($paletteChoices as $key => $palette)
                             <label class="evt-palette-card" for="theme_palette_{{ $key }}">
+                                {{-- Locked hosts pick for preview only: a different name means the
+                                     form never submits a theme_palette, which the request would reject. --}}
                                 <input type="radio"
                                        id="theme_palette_{{ $key }}"
-                                       name="theme_palette"
+                                       name="{{ $canChoosePalette ? 'theme_palette' : 'palette_preview' }}"
                                        value="{{ $key }}"
                                        class="evt-palette-radio"
                                        @checked($selectedPalette === $key)
-                                       @disabled(! $canChoosePalette)>
+                                       @unless ($canChoosePalette) data-preview-only @endunless>
                                 <span class="evt-palette-bands" aria-hidden="true">
                                     <span class="evt-palette-band" style="background: {{ $palette['background'] }};"></span>
                                     <span class="evt-palette-band" style="background: {{ $palette['primary'] }};"></span>
@@ -166,6 +168,14 @@
                             </label>
                         @endforeach
                     </div>
+                    <a href="{{ route('events.preview', ['event' => $event, 'palette' => $selectedPalette]) }}"
+                       class="btn-outline evt-palette-preview-link"
+                       target="_blank"
+                       rel="noopener"
+                       data-palette-preview-link
+                       data-preview-base="{{ route('events.preview', $event) }}">
+                        <i class="fa-solid fa-eye" aria-hidden="true"></i> Preview in this palette
+                    </a>
                     @unless ($canChoosePalette)
                         <a href="{{ BillingPlan::checkoutUrlForTier(SubscriptionTier::ProPlus) }}" class="btn-outline evt-palette-upgrade-link">
                             Upgrade to {{ SubscriptionTier::ProPlus->label() }}

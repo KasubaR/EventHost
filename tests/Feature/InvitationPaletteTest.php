@@ -260,10 +260,34 @@ class InvitationPaletteTest extends TestCase
         $response = $this->actingAs($user)->get(route('events.edit', $event));
 
         $response->assertOk();
-        // Still shown (reads as an upsell) but disabled, plus an upgrade link.
+        // Still shown (reads as an upsell) plus an upgrade link. The cards are
+        // pickable for previewing, under a name the save path never reads.
         $response->assertSee('theme_palette_slate-sky', escape: false);
         $response->assertSee('evt-palette-grid--locked', escape: false);
         $response->assertSee('Upgrade to Pro+', escape: false);
+        $response->assertSee('name="palette_preview"', escape: false);
+        $response->assertDontSee('name="theme_palette"', escape: false);
+        $this->assertDoesNotMatchRegularExpression('/<input[^>]*evt-palette-radio[^>]*disabled/s', $response->getContent());
+    }
+
+    public function test_design_form_links_to_a_preview_in_the_selected_palette(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->proPlus()->create();
+        [$event, $tpl] = $this->eventFor($user, 'slate-minimal');
+        $this->actingAs($user)
+            ->patch(route('events.invitation-design.update', $event), $this->designPayload($tpl, [
+                'theme_palette' => 'sage-ivory',
+            ]))
+            ->assertSessionDoesntHaveErrors();
+
+        $response = $this->actingAs($user)->get(route('events.edit', $event));
+
+        $response->assertOk();
+        $response->assertSee('data-palette-preview-link', escape: false);
+        $response->assertSee(e(route('events.preview', ['event' => $event, 'palette' => 'sage-ivory'])), escape: false);
+        $response->assertSee('name="theme_palette"', escape: false);
     }
 
     public function test_event_with_off_catalogue_colours_still_renders_the_form(): void

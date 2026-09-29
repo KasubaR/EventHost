@@ -53,10 +53,36 @@
         updateRemoveBtns();
     }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function () { boot(); initScheduleRows(); });
-    } else {
+    function initPalettePreview() {
+        var link = document.querySelector('[data-palette-preview-link]');
+        if (!link || !link.dataset.previewBase) return;
+
+        var radios = document.querySelectorAll('.evt-palette-radio');
+
+        function sync(value) {
+            var url = new URL(link.dataset.previewBase, window.location.href);
+            url.searchParams.set('palette', value);
+            link.href = url.toString();
+        }
+
+        radios.forEach(function (radio) {
+            radio.addEventListener('change', function () {
+                if (radio.checked) sync(radio.value);
+            });
+            // Back/forward can restore a different checked radio than the server rendered.
+            if (radio.checked) sync(radio.value);
+        });
+    }
+
+    function init() {
         boot();
         initScheduleRows();
+        initPalettePreview();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
     }
 })();

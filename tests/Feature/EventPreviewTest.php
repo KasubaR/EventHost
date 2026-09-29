@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Event;
 use App\Models\InvitationTemplate;
 use App\Models\User;
+use App\Support\InvitationPalettes;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -152,5 +153,100 @@ class EventPreviewTest extends TestCase
         $response->assertSee('Back to event', escape: false);
         $response->assertSee(route('events.show', $event), escape: false);
         $response->assertDontSee('Back to edit', escape: false);
+    }
+
+    private function eventWithTemplate(User $user, string $slug): Event
+    {
+        $tpl = InvitationTemplate::query()->where('slug', $slug)->firstOrFail();
+
+        return Event::factory()->for($user)->create([
+            'invitation_template_id' => $tpl->id,
+            'invitation_customization' => null,
+        ]);
+    }
+
+    public function test_palette_query_recolours_the_preview_without_saving(): void
+    {
+        $user = User::factory()->proPlus()->create();
+        $event = $this->eventWithTemplate($user, 'slate-minimal');
+        $palette = InvitationPalettes::get('sage-ivory');
+        $this->assertNotSame($palette['background'], $event->invitationTemplate->default_theme['background']);
+
+        $response = $this->actingAs($user)->get(route('events.preview', ['event' => $event, 'palette' => 'sage-ivory']));
+
+        $response->assertOk();
+        $response->assertSee('--evt-primary: '.$palette['primary'], escape: false);
+        $response->assertSee('--evt-accent: '.$palette['accent'], escape: false);
+        $response->assertSee('--evt-background: '.$palette['background'], escape: false);
+        $response->assertSee('palette — not saved', escape: false);
+        $response->assertSee('Show saved colours', escape: false);
+        $response->assertDontSee('this is exactly how your invitation looks to guests', escape: false);
+
+        $this->assertNull($event->fresh()->invitation_customization);
+    }
+
+    public function test_host_below_pro_plus_can_preview_a_palette(): void
+    {
+        $user = User::factory()->create();
+        $event = $this->eventWithTemplate($user, 'slate-minimal');
+        $palette = InvitationPalettes::get('navy-coral');
+
+        $response = $this->actingAs($user)->get(route('events.preview', ['event' => $event, 'palette' => 'navy-coral']));
+
+        $response->assertOk();
+        $response->assertSee('--evt-background: '.$palette['background'], escape: false);
+        $response->assertSee('palette — not saved', escape: false);
+    }
+
+    public function test_unknown_palette_key_falls_back_to_saved_colours(): void
+    {
+        $user = User::factory()->proPlus()->create();
+        $event = $this->eventWithTemplate($user, 'slate-minimal');
+        $default = $event->invitationTemplate->default_theme;
+
+        $response = $this->actingAs($user)->get(route('events.preview', ['event' => $event, 'palette' => 'not-a-palette']));
+
+        $response->assertOk();
+        $response->assertSee('--evt-background: '.$default['background'], escape: false);
+        $response->assertDontSee('palette — not saved', escape: false);
+    }
+
+    public function test_palette_of_the_other_mode_is_ignored(): void
+    {
+        $user = User::factory()->proPlus()->create();
+        $event = $this->eventWithTemplate($user, 'slate-minimal');
+        $default = $event->invitationTemplate->default_theme;
+
+        $response = $this->actingAs($user)->get(route('events.preview', ['event' => $event, 'palette' => 'noir-gold']));
+
+        $response->assertOk();
+        $response->assertSee('--evt-background: '.$default['background'], escape: false);
+        $response->assertDontSee('--evt-background: '.InvitationPalettes::get('noir-gold')['background'], escape: false);
+        $response->assertDontSee('palette — not saved', escape: false);
+    }
+
+    public function test_beauty_for_ashes_ignores_the_palette_query(): void
+    {
+        $user = User::factory()->proPlus()->create();
+        $event = $this->eventWithTemplate($user, 'beauty-for-ashes');
+        $key = InvitationPalettes::defaultKeyForMode(
+            InvitationPalettes::modeForBackground($event->invitationTemplate->default_theme['background'])
+        );
+
+        $response = $this->actingAs($user)->get(route('events.preview', ['event' => $event, 'palette' => $key]));
+
+        $response->assertOk();
+        $response->assertDontSee('palette — not saved', escape: false);
+    }
+
+    public function test_other_users_cannot_preview_a_palette(): void
+    {
+        $owner = User::factory()->create();
+        $stranger = User::factory()->create();
+        $event = $this->eventWithTemplate($owner, 'slate-minimal');
+
+        $this->actingAs($stranger)
+            ->get(route('events.preview', ['event' => $event, 'palette' => 'sage-ivory']))
+            ->assertForbidden();
     }
 }

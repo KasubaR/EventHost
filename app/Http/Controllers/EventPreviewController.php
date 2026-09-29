@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Services\InvitationCustomizationService;
+use App\Support\InvitationLayoutVariant;
+use App\Support\InvitationPalettes;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -46,8 +48,50 @@ class EventPreviewController extends Controller
         $rsvpPublicAvailable = $rsvpOpen;
         $invitation = $customizationService->merge($event);
 
+        // ?palette= recolours this render only — nothing is saved. Open to every
+        // tier on purpose: previewing is the upsell, applying stays Pro+ in
+        // UpdateInvitationDesignRequest::validatePalette().
+        $previewPalette = $this->previewPalette($request, $event, $invitation);
+        if ($previewPalette !== null) {
+            $invitation['theme']['primary'] = $previewPalette['primary'];
+            $invitation['theme']['accent'] = $previewPalette['accent'];
+            $invitation['theme']['background'] = $previewPalette['background'];
+        }
+
         // Deliberately does not touch invitation_views_count — that counter is
         // real guest traffic, and the host reviewing their own draft is not a view.
-        return view('events.preview', compact('event', 'rsvpOpen', 'rsvpPublicAvailable', 'invitation', 'back'));
+        return view('events.preview', compact('event', 'rsvpOpen', 'rsvpPublicAvailable', 'invitation', 'back', 'previewPalette'));
+    }
+
+    /**
+     * The requested palette, or null when it doesn't exist, the layout ignores
+     * theme colours, or it belongs to the other light/dark set than this
+     * template — the same rules the design form's save path applies. An
+     * unusable key falls back to the saved colours rather than erroring.
+     *
+     * @param  array<string, mixed>  $invitation
+     * @return array{label: string, mode: string, primary: string, accent: string, background: string}|null
+     */
+    private function previewPalette(Request $request, Event $event, array $invitation): ?array
+    {
+        $key = $request->query('palette');
+        if (! is_string($key) || $key === '') {
+            return null;
+        }
+
+        $palette = InvitationPalettes::get($key);
+        if ($palette === null) {
+            return null;
+        }
+
+        if (($invitation['layout_variant'] ?? null) === InvitationLayoutVariant::BEAUTY_FOR_ASHES) {
+            return null;
+        }
+
+        $templateMode = InvitationPalettes::modeForBackground(
+            (string) ($event->invitationTemplate?->default_theme['background'] ?? '#ffffff')
+        );
+
+        return $palette['mode'] === $templateMode ? $palette : null;
     }
 }

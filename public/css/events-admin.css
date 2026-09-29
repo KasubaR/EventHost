@@ -924,15 +924,22 @@
 }
 
 /* Pro+ gate: picker stays visible (reads as an upsell, same as locked
-   templates on the template library) but is inert and visually dimmed. */
+   templates on the template library) and dimmed. Cards can still be picked
+   for the palette preview link, just not saved. */
 .evt-palette-grid--locked .evt-palette-card {
-    cursor: not-allowed;
+    cursor: pointer;
     opacity: 0.55;
     filter: grayscale(0.35);
 }
 
 .evt-palette-grid--locked .evt-palette-card:hover {
     border-color: var(--border-soft, rgba(26, 42, 74, 0.12));
+}
+
+.evt-palette-grid--locked .evt-palette-card:has(.evt-palette-radio:checked) {
+    opacity: 1;
+    filter: none;
+    border-color: var(--brand, #1e47bb);
 }
 
 .evt-palette-lock-hint {
@@ -943,6 +950,11 @@
 
 .evt-palette-lock-hint i {
     color: #a21caf;
+}
+
+.evt-palette-preview-link {
+    margin-top: 12px;
+    margin-right: 8px;
 }
 
 .evt-palette-upgrade-link {
