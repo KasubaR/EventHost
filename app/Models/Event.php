@@ -304,6 +304,17 @@ class Event extends Model
     }
 
     /**
+     * The custom URL may be changed exactly once after the event exists —
+     * set by EventSlugService::apply() the first (and only) time that
+     * happens. The initial slug (auto-generated or chosen at creation)
+     * never sets this. See EventSlugService for the enforcement.
+     */
+    public function hasChangedSlugOnce(): bool
+    {
+        return $this->slug_changed_at !== null;
+    }
+
+    /**
      * @return HasMany<Guest, $this>
      */
     public function guests(): HasMany
@@ -1148,6 +1159,7 @@ class Event extends Model
             'commission_percent_override' => 'decimal:2',
             'cancellation_fee_percent_override' => 'decimal:2',
             'rsvp_deadline' => 'datetime',
+            'slug_changed_at' => 'datetime',
             'is_public' => 'boolean',
             'allow_plus_one' => 'boolean',
             'require_rsvp_approval' => 'boolean',

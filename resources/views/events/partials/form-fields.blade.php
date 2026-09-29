@@ -136,9 +136,10 @@
                     // isn't a host User means "no gate applies".
                     $hostUser = auth()->user();
                     $canChooseSlug = $hostUser instanceof \App\Models\User ? $hostUser->canChooseCustomEventSlug() : true;
+                    $slugAlreadyChanged = $event?->hasChangedSlugOnce() ?? false;
                 @endphp
                 <label for="slug" class="profile-label">Custom URL <span class="profile-optional">optional</span></label>
-                @if ($canChooseSlug)
+                @if ($canChooseSlug && ! $slugAlreadyChanged)
                     <div class="evt-slug-input">
                         <span class="evt-slug-prefix">{{ rtrim(config('app.url'), '/') }}/e/</span>
                         <input id="slug" name="slug" type="text" maxlength="60"
@@ -148,7 +149,16 @@
                                autocomplete="off"
                                spellcheck="false">
                     </div>
-                    <p class="evt-field-hint">Lowercase letters, numbers, and hyphens. Leave blank on create to generate from the event name. Changing it keeps the old link as a redirect.</p>
+                    <p class="evt-field-hint">Lowercase letters, numbers, and hyphens. Leave blank on create to generate from the event name. It can be changed once after saving — after that it's locked, and the old link redirects to the new one.</p>
+                @elseif ($slugAlreadyChanged)
+                    <div class="evt-slug-input evt-slug-input--locked" aria-disabled="true">
+                        <span class="evt-slug-prefix">{{ rtrim(config('app.url'), '/') }}/e/</span>
+                        <span class="evt-slug-locked-value" id="slug">{{ $event?->slug }}</span>
+                    </div>
+                    <p class="evt-field-hint evt-palette-lock-hint">
+                        <i class="fa-solid fa-lock" aria-hidden="true"></i>
+                        You've already changed this event's custom URL once, so it's now locked.
+                    </p>
                 @else
                     <div class="evt-slug-input evt-slug-input--locked" aria-disabled="true">
                         <span class="evt-slug-prefix">{{ rtrim(config('app.url'), '/') }}/e/</span>

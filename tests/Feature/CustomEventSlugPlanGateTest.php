@@ -143,7 +143,63 @@ class CustomEventSlugPlanGateTest extends TestCase
             ]))
             ->assertSessionHasNoErrors();
 
-        $this->assertSame('new-custom-slug', $event->fresh()->slug);
+        $event->refresh();
+        $this->assertSame('new-custom-slug', $event->slug);
+        $this->assertNotNull($event->slug_changed_at);
+    }
+
+    public function test_pro_tier_host_cannot_change_slug_a_second_time(): void
+    {
+        $user = User::factory()->pro()->create();
+        $event = Event::factory()->for($user)->create([
+            'slug' => 'old-slug',
+            'slug_changed_at' => now(),
+        ]);
+
+        $this->actingAs($user)
+            ->patch(route('events.update', $event), $this->updatePayload($event, [
+                'slug' => 'another-slug',
+            ]))
+            ->assertSessionHasErrors('slug');
+
+        $this->assertSame('old-slug', $event->fresh()->slug);
+    }
+
+    public function test_host_can_still_save_unchanged_slug_after_it_was_already_changed_once(): void
+    {
+        $user = User::factory()->pro()->create();
+        $event = Event::factory()->for($user)->create([
+            'slug' => 'already-changed',
+            'slug_changed_at' => now(),
+            'venue' => 'Old Hall',
+        ]);
+
+        $this->actingAs($user)
+            ->patch(route('events.update', $event), $this->updatePayload($event, [
+                'slug' => 'already-changed',
+                'venue' => 'New Hall',
+            ]))
+            ->assertSessionHasNoErrors();
+
+        $event->refresh();
+        $this->assertSame('already-changed', $event->slug);
+        $this->assertSame('New Hall', $event->venue);
+    }
+
+    public function test_edit_form_locks_slug_input_once_it_has_already_been_changed(): void
+    {
+        $user = User::factory()->pro()->create();
+        $event = Event::factory()->for($user)->create([
+            'slug' => 'already-changed',
+            'slug_changed_at' => now(),
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('events.edit', $event))
+            ->assertOk()
+            ->assertDontSee('name="slug"', escape: false)
+            ->assertSee('already-changed', escape: false)
+            ->assertSee('custom URL once', escape: false);
     }
 
     public function test_create_form_hides_slug_input_for_base_and_shows_it_for_pro(): void

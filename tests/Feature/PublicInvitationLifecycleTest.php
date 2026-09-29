@@ -171,9 +171,11 @@ class PublicInvitationLifecycleTest extends TestCase
             ->assertSee('Redirect Me', escape: false);
     }
 
-    public function test_reclaiming_old_slug_removes_redirect(): void
+    public function test_slug_can_only_be_changed_once_even_to_reclaim_an_old_value(): void
     {
         // Changing a slug is Pro and above — see CustomEventSlugPlanGateTest.
+        // The custom URL may only be changed once, ever (Event::hasChangedSlugOnce()),
+        // so a second change — even reclaiming the event's own former slug — is refused.
         $user = User::factory()->pro()->create();
         $event = $this->liveEvent(['user_id' => $user->id, 'slug' => 'alpha']);
 
@@ -189,6 +191,7 @@ class PublicInvitationLifecycleTest extends TestCase
         ])->assertRedirect();
 
         $this->assertDatabaseHas('event_slug_redirects', ['slug' => 'alpha', 'event_id' => $event->id]);
+        $this->assertSame('beta', $event->fresh()->slug);
 
         $this->actingAs($user)->put(route('events.update', $event), [
             'name' => $event->name,
@@ -199,10 +202,10 @@ class PublicInvitationLifecycleTest extends TestCase
             'is_public' => '1',
             'allow_plus_one' => '0',
             'show_guest_list' => '0',
-        ])->assertRedirect();
+        ])->assertSessionHasErrors('slug');
 
-        $this->assertDatabaseMissing('event_slug_redirects', ['slug' => 'alpha']);
-        $this->assertSame('alpha', $event->fresh()->slug);
+        $this->assertDatabaseHas('event_slug_redirects', ['slug' => 'alpha', 'event_id' => $event->id]);
+        $this->assertSame('beta', $event->fresh()->slug);
     }
 
     public function test_unpublished_and_unknown_slugs_are_404(): void

@@ -43,6 +43,11 @@ class EventSlugService
      * Apply a host-chosen slug. Empty/null leaves Sluggable to generate on create,
      * or keeps the current slug on update.
      *
+     * The custom URL may be changed exactly once after the event already
+     * exists — see Event::hasChangedSlugOnce(). Callers that can present a
+     * friendlier error ahead of time (UpdateEventRequest::guardCustomSlugChoice)
+     * should still check it themselves; this is the last line of defence.
+     *
      * @throws ValidationException
      */
     public function apply(?string $slug, Event $event): void
@@ -57,6 +62,12 @@ class EventSlugService
 
         if ($event->exists && $event->slug === $slug) {
             return;
+        }
+
+        if ($event->exists && $event->hasChangedSlugOnce()) {
+            throw ValidationException::withMessages([
+                'slug' => 'The custom URL can only be changed once, and it has already been changed.',
+            ]);
         }
 
         if (! $this->isAvailable($slug, $event->exists ? $event->id : null)) {
@@ -82,6 +93,8 @@ class EventSlugService
                         ]
                     );
                 }
+
+                $event->slug_changed_at = now();
             }
 
             $event->slug = $slug;

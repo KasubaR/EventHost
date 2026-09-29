@@ -146,6 +146,12 @@ class UpdateEventRequest extends FormRequest
      * slug (EventSlugService::apply no-op). Submitting the event's own
      * current slug is also fine — a Pro→Base downgrade or a stuck form
      * value must not block ordinary saves. Only a change is refused.
+     *
+     * Separately, whatever the tier, the custom URL may be changed exactly
+     * once after the event exists — see Event::hasChangedSlugOnce(). This
+     * check runs before EventSlugService::apply() touches the database so
+     * the host gets the friendlier of the two guards; apply() enforces the
+     * same rule again as the last line of defence.
      */
     private function guardCustomSlugChoice(Validator $validator): void
     {
@@ -155,13 +161,19 @@ class UpdateEventRequest extends FormRequest
             return;
         }
 
-        if ($this->user()?->canChooseCustomEventSlug()) {
-            return;
-        }
-
         $event = $this->route('event');
 
         if ($event instanceof Event && $event->slug === $slug) {
+            return;
+        }
+
+        if ($event instanceof Event && $event->hasChangedSlugOnce()) {
+            $validator->errors()->add('slug', 'The custom URL can only be changed once, and it has already been changed.');
+
+            return;
+        }
+
+        if ($this->user()?->canChooseCustomEventSlug()) {
             return;
         }
 
