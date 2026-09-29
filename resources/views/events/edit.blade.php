@@ -184,12 +184,12 @@
             <div class="evt-section-body evt-actions-bar">
                 @if ($event->isTicketed())
                     <button type="button" class="btn-primary" data-save-all>
-                        <i class="fa-solid fa-floppy-disk"></i> Save Draft
+                        <i class="fa-solid fa-floppy-disk"></i> {{ $event->is_published ? 'Update details' : 'Save Draft' }}
                     </button>
                     <span class="evt-muted">Ticketed events go live after EventHost activates sales — they do not use event credits.</span>
                 @elseif ($event->isFreeRegistration())
                     <button type="button" class="btn-primary" data-save-all>
-                        <i class="fa-solid fa-floppy-disk"></i> Save Draft
+                        <i class="fa-solid fa-floppy-disk"></i> {{ $event->is_published ? 'Update details' : 'Save Draft' }}
                     </button>
                     <span class="evt-muted">Public events go live after EventHost approves them and you pay the quoted amount — they do not use event credits.</span>
                 @elseif (! $event->is_published)
@@ -209,7 +209,7 @@
                     @endif
                 @else
                     <button type="button" class="btn-primary" data-save-all>
-                        <i class="fa-solid fa-floppy-disk"></i> Save Draft
+                        <i class="fa-solid fa-floppy-disk"></i> Update details
                     </button>
                     <span class="evt-muted">Saves your event details and invitation design together.</span>
                 @endif

@@ -22,7 +22,7 @@ class EventEditSaveAllTest extends TestCase
         $response->assertOk();
         $response->assertSee('id="evt-save-all-bar"', escape: false);
         $response->assertSee('Save Draft', escape: false);
-        $response->assertSee('Save &amp; publish', escape: false);
+        $response->assertSee('Publish', escape: false);
         $response->assertSee('js/event-edit-save.js', escape: false);
     }
 
@@ -48,8 +48,8 @@ class EventEditSaveAllTest extends TestCase
         $response = $this->actingAs($user)->get(route('events.edit', $event));
 
         $response->assertOk();
-        $response->assertSee('Save Draft', escape: false);
-        $response->assertDontSee('Save &amp; publish', escape: false);
+        $response->assertSee('Update details', escape: false);
+        $response->assertDontSee('Save Draft', escape: false);
     }
 
     public function test_edit_page_shows_a_preview_link_and_gates_publish_on_it_once_a_layout_is_chosen(): void
