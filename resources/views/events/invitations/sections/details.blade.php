@@ -25,12 +25,6 @@
     @if ($event->location_name)
         <li><i class="fa-regular fa-map"></i> {{ $event->location_name }}</li>
     @endif
-    @if ($event->latitude !== null && $event->longitude !== null)
-        <li>
-            <i class="fa-solid fa-map-location-dot"></i>
-            <a href="https://www.google.com/maps?q={{ $event->latitude }},{{ $event->longitude }}" target="_blank" rel="noopener noreferrer">Open in Google Maps</a>
-        </li>
-    @endif
     @if ($event->guest_limit)
         <li><i class="fa-solid fa-users"></i> Guest limit: {{ $event->guest_limit }}</li>
     @endif
@@ -41,6 +35,8 @@
         <li><i class="fa-solid fa-list"></i> Guest list visible to attendees</li>
     @endif
 </ul>
+
+@include('events.invitations.partials.map-link', ['embed' => true])
 
 @php
     $calendarWindow = \App\Support\EventCalendarLinks::window($event);

@@ -1,6 +1,13 @@
+@php
+    $googleMapsKey = config('services.google_maps.key');
+@endphp
 @push('styles')
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+@if ($googleMapsKey)
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ $googleMapsKey }}&libraries=places&loading=async&callback=initEventGoogleMap" async defer></script>
+@else
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+@endif
 @endpush
 
 @php
@@ -207,7 +214,9 @@
                 <div class="profile-field">
                     <label class="profile-label">Location pin <span class="profile-optional">optional</span></label>
                     <div class="evt-map-search">
-                        <input type="text" id="evt-map-search" class="profile-input" placeholder="Paste a Google Maps link, or search an address…" autocomplete="off">
+                        <input type="text" id="evt-map-search" class="profile-input"
+                               placeholder="{{ $googleMapsKey ? 'Search for a venue or address…' : 'Paste a Google Maps link, or search an address…' }}"
+                               autocomplete="off">
                         <button type="button" id="evt-map-search-btn" class="evt-btn-outline">
                             <i class="fa-solid fa-magnifying-glass"></i>
                         </button>
@@ -216,11 +225,15 @@
                         </button>
                     </div>
                     <div class="evt-map-wrap">
-                        <div id="evt-map" class="evt-map"></div>
+                        <div id="evt-map" class="evt-map" data-provider="{{ $googleMapsKey ? 'google' : 'leaflet' }}"></div>
                     </div>
                     <p class="evt-map-hint">
-                        Easiest: find your venue on <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer">Google Maps</a>,
-                        tap <strong>Share → Copy link</strong>, and paste it above. You can also search an address, click the map or drag the pin.
+                        @if ($googleMapsKey)
+                            Start typing your venue name above and pick it from the suggestions, or click the map / drag the pin to place it yourself. Pasting a Google Maps link still works too.
+                        @else
+                            Easiest: find your venue on <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer">Google Maps</a>,
+                            tap <strong>Share → Copy link</strong>, and paste it above. You can also search an address, click the map or drag the pin.
+                        @endif
                     </p>
                     <p id="evt-map-status" class="evt-map-status" role="status" aria-live="polite" hidden></p>
                     <div class="evt-grid-2">
@@ -245,6 +258,8 @@
                             @enderror
                         </div>
                     </div>
+                    <input type="hidden" id="google_place_id" name="google_place_id" value="{{ old('google_place_id', $event?->google_place_id ?? '') }}">
+                    <input type="hidden" id="formatted_address" name="formatted_address" value="{{ old('formatted_address', $event?->formatted_address ?? '') }}">
                 </div>
             </div>
         </div>

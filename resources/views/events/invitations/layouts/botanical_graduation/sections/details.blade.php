@@ -42,7 +42,7 @@
             <div class="detail-tile">
                 <span class="tile-label">Directions</span>
                 <p class="tile-value">
-                    <a href="https://www.google.com/maps?q={{ $event->latitude }},{{ $event->longitude }}" target="_blank" rel="noopener noreferrer">Open in Google Maps</a>
+                    @include('events.invitations.partials.map-link')
                 </p>
             </div>
         @endif

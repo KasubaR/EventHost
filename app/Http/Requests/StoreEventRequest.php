@@ -31,6 +31,8 @@ class StoreEventRequest extends FormRequest
             'description' => $this->description === '' ? null : $this->description,
             'venue' => $this->venue === '' ? null : $this->venue,
             'location_name' => $this->location_name === '' ? null : $this->location_name,
+            'google_place_id' => $this->google_place_id === '' ? null : $this->google_place_id,
+            'formatted_address' => $this->formatted_address === '' ? null : $this->formatted_address,
             'rsvp_deadline' => $this->rsvp_deadline === '' ? null : $this->rsvp_deadline,
             'slug' => $this->normalizeSlugInput($this->input('slug')),
         ]);
@@ -101,6 +103,8 @@ class StoreEventRequest extends FormRequest
             'location_name' => ['nullable', 'string', 'max:255'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_with:longitude'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180', 'required_with:latitude'],
+            'google_place_id' => ['nullable', 'string', 'max:255'],
+            'formatted_address' => ['nullable', 'string', 'max:500'],
             'cover_image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:4096'],
             'slug' => ['nullable', 'string', new EventSlugAvailable],
             // Chosen on the create wizard's first step (plans/public-private-portals.md

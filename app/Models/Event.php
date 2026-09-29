@@ -241,6 +241,8 @@ class Event extends Model
         'location_name',
         'latitude',
         'longitude',
+        'google_place_id',
+        'formatted_address',
         'cover_image',
         'is_public',
         'rsvp_deadline',

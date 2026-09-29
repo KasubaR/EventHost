@@ -246,6 +246,34 @@
     width: 18px;
 }
 
+/* Google Maps embed + Directions links — shared by every invitation layout's Location
+   section and the ticket landing page via events.invitations.partials.map-link. */
+.evt-map-embed {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: var(--radius-sm, 6px);
+    overflow: hidden;
+    margin: 4px 0 16px;
+    border: 1px solid var(--line, #e0e0e8);
+    background: var(--gray-light, #f1f5f9);
+}
+
+.evt-map-embed iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
+.evt-map-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    margin-bottom: 16px;
+}
+
 .evt-rsvp-banner {
     padding: 14px 18px;
     border-radius: 12px;

@@ -126,13 +126,9 @@
                         @if ($event->location_name)
                             <li><i class="fa-regular fa-map" aria-hidden="true"></i> {{ $event->location_name }}</li>
                         @endif
-                        @if ($event->latitude !== null && $event->longitude !== null)
-                            <li>
-                                <i class="fa-solid fa-map-location-dot" aria-hidden="true"></i>
-                                <a href="https://www.google.com/maps?q={{ $event->latitude }},{{ $event->longitude }}" target="_blank" rel="noopener noreferrer">Open in Google Maps</a>
-                            </li>
-                        @endif
                     </ul>
+
+                    @include('events.invitations.partials.map-link', ['embed' => true])
 
                     @if ($calendarWindow && ($googleCal || $outlookCal || $icsHref))
                         <div class="tev-calendar-actions">

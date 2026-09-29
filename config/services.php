@@ -55,6 +55,14 @@ return [
         'bank_transfer_enabled' => filter_var(env('LENCO_BANK_TRANSFER_ENABLED', true), FILTER_VALIDATE_BOOL),
     ],
 
+    // Google Maps (venue picker on the event edit form, embedded map + directions on
+    // public/ticket pages). Unset by default: every map feature falls back to its
+    // pre-Google-Maps behaviour (Leaflet/OSM picker, plain "Open in Google Maps" link)
+    // when this key is blank, same graceful-degradation posture as fcm/twilio above.
+    'google_maps' => [
+        'key' => env('GOOGLE_MAPS_API_KEY'),
+    ],
+
     // Slice E (Android push) — Firebase Cloud Messaging server credentials.
     // Unset by default: App\Services\NullPushNotificationService is bound
     // until a real service-account file/project id is configured, same

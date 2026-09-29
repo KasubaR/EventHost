@@ -766,6 +766,42 @@ class EventManagementTest extends TestCase
         $this->assertNull($fresh->longitude);
     }
 
+    public function test_google_place_id_and_formatted_address_persist_through_store(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->post(route('events.store'), $this->baseStorePayload($user, [
+            'latitude' => '1.234567',
+            'longitude' => '2.345678',
+            'google_place_id' => 'ChIJd8BlQ2BZwokRAFUEcm_qrcA',
+            'formatted_address' => '123 Garden Terrace, Lusaka, Zambia',
+        ]))->assertSessionHasNoErrors();
+
+        $event = Event::where('user_id', $user->id)->first();
+        $this->assertSame('ChIJd8BlQ2BZwokRAFUEcm_qrcA', $event->google_place_id);
+        $this->assertSame('123 Garden Terrace, Lusaka, Zambia', $event->formatted_address);
+    }
+
+    public function test_google_place_id_and_formatted_address_persist_through_update(): void
+    {
+        $user = User::factory()->create();
+        $event = Event::factory()->for($user)->create([
+            'latitude' => 1.234567,
+            'longitude' => 2.345678,
+            'google_place_id' => null,
+            'formatted_address' => null,
+        ]);
+
+        $this->actingAs($user)->patch(route('events.update', $event), $this->baseUpdatePayload($event, [
+            'google_place_id' => 'ChIJd8BlQ2BZwokRAFUEcm_qrcA',
+            'formatted_address' => '123 Garden Terrace, Lusaka, Zambia',
+        ]))->assertSessionHasNoErrors();
+
+        $fresh = $event->fresh();
+        $this->assertSame('ChIJd8BlQ2BZwokRAFUEcm_qrcA', $fresh->google_place_id);
+        $this->assertSame('123 Garden Terrace, Lusaka, Zambia', $fresh->formatted_address);
+    }
+
     public function test_partial_update_omitting_rsvp_deadline_still_checks_it_against_a_new_time(): void
     {
         $user = User::factory()->create();

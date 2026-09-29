@@ -35,7 +35,7 @@ class UpdateEventRequest extends FormRequest
     {
         $updates = [];
 
-        foreach (['latitude', 'longitude', 'guest_limit', 'description', 'venue', 'location_name', 'rsvp_deadline'] as $key) {
+        foreach (['latitude', 'longitude', 'guest_limit', 'description', 'venue', 'location_name', 'google_place_id', 'formatted_address', 'rsvp_deadline'] as $key) {
             if ($this->has($key) && $this->input($key) === '') {
                 $updates[$key] = null;
             }
@@ -80,6 +80,8 @@ class UpdateEventRequest extends FormRequest
             'location_name' => ['nullable', 'string', 'max:255'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_with:longitude'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180', 'required_with:latitude'],
+            'google_place_id' => ['nullable', 'string', 'max:255'],
+            'formatted_address' => ['nullable', 'string', 'max:500'],
             'cover_image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:4096'],
 
             // Receipt for a cover already uploaded from the edit page — see

@@ -19,6 +19,42 @@ class PublicInvitationPageTest extends TestCase
         ], $overrides));
     }
 
+    public function test_map_links_render_without_a_google_maps_key(): void
+    {
+        config(['services.google_maps.key' => null]);
+
+        $event = $this->publishedPublicEvent([
+            'latitude' => -15.4067,
+            'longitude' => 28.2871,
+        ]);
+
+        $response = $this->get(route('events.public', ['slug' => $event->slug]));
+
+        $response->assertOk();
+        $response->assertSee('Open in Google Maps', escape: false);
+        $response->assertSee('Get Directions', escape: false);
+        $response->assertDontSee('evt-map-embed', escape: false);
+    }
+
+    public function test_map_embed_and_directions_use_place_id_when_a_google_maps_key_is_set(): void
+    {
+        config(['services.google_maps.key' => 'test-maps-key']);
+
+        $event = $this->publishedPublicEvent([
+            'latitude' => -15.4067,
+            'longitude' => 28.2871,
+            'google_place_id' => 'ChIJd8BlQ2BZwokRAFUEcm_qrcA',
+            'formatted_address' => '123 Garden Terrace, Lusaka, Zambia',
+        ]);
+
+        $response = $this->get(route('events.public', ['slug' => $event->slug]));
+
+        $response->assertOk();
+        $response->assertSee('evt-map-embed', escape: false);
+        $response->assertSee('q=place_id%3AChIJd8BlQ2BZwokRAFUEcm_qrcA', escape: false);
+        $response->assertSee('destination_place_id=ChIJd8BlQ2BZwokRAFUEcm_qrcA', escape: false);
+    }
+
     public function test_public_page_includes_open_graph_and_canonical_meta_tags(): void
     {
         $event = $this->publishedPublicEvent([

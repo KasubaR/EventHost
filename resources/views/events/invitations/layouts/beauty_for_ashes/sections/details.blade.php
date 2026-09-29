@@ -67,7 +67,7 @@
                         <div>
                             <div class="bfa-detail-label">Directions</div>
                             <div class="bfa-detail-value">
-                                <a class="bfa-inline-link" href="https://www.google.com/maps?q={{ $event->latitude }},{{ $event->longitude }}" target="_blank" rel="noopener noreferrer">Open in Google Maps</a>
+                                @include('events.invitations.partials.map-link', ['class' => 'bfa-inline-link'])
                             </div>
                         </div>
                     </div>

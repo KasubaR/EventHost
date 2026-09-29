@@ -32,7 +32,7 @@
             @if ($event->latitude !== null && $event->longitude !== null)
                 <li>
                     <i class="fa-solid fa-map-location-dot"></i>
-                    <a href="https://www.google.com/maps?q={{ $event->latitude }},{{ $event->longitude }}" target="_blank" rel="noopener noreferrer">Open in Google Maps</a>
+                    @include('events.invitations.partials.map-link')
                 </li>
             @endif
             @if ($event->guest_limit)
