@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
+use App\Models\StagedMedia;
 use App\Services\InvitationCustomizationService;
 use App\Support\InvitationLayoutVariant;
+use App\Support\InvitationMediaStager;
 use App\Support\InvitationPalettes;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -47,6 +49,7 @@ class EventPreviewController extends Controller
         // as public ones. See PublicEventController::show()/PublicInvitationResolver.
         $rsvpPublicAvailable = $rsvpOpen;
         $invitation = $customizationService->merge($event);
+        $invitation = $this->overlayPendingUploads($event, $request, $invitation);
 
         // ?palette= recolours this render only — nothing is saved. Open to every
         // tier on purpose: previewing is the upsell, applying stays Pro+ in
@@ -61,6 +64,51 @@ class EventPreviewController extends Controller
         // Deliberately does not touch invitation_views_count — that counter is
         // real guest traffic, and the host reviewing their own draft is not a view.
         return view('events.preview', compact('event', 'rsvpOpen', 'rsvpPublicAvailable', 'invitation', 'back', 'previewPalette'));
+    }
+
+    /**
+     * Lets a host see images/audio they've picked on the edit form but not yet saved —
+     * without this, "upload on pick" stages the file immediately but Preview kept showing
+     * the last-saved design, which reads as "my upload didn't work". Only ever affects this
+     * render; nothing here is persisted. See InvitationMediaStager::overlayPending().
+     *
+     * @param  array<string, mixed>  $invitation
+     * @return array<string, mixed>
+     */
+    private function overlayPendingUploads(Event $event, Request $request, array $invitation): array
+    {
+        $userId = $request->user()?->id;
+        if ($userId === null) {
+            return $invitation;
+        }
+
+        $staged = StagedMedia::query()
+            ->ownedBy($event->id, $userId)
+            ->where('created_at', '>=', now()->subMinutes(max(1, (int) config('invitations.staged_media_ttl_minutes', 1440))))
+            ->get();
+
+        if ($staged->isEmpty()) {
+            return $invitation;
+        }
+
+        $overlay = InvitationMediaStager::overlayPending(
+            $invitation['media'],
+            $invitation['effects']['audio_track'] ?? null,
+            $invitation['layout_variant'] ?? '',
+            $staged
+        );
+
+        $invitation['media'] = $overlay['media'];
+        $invitation['effects']['audio_track'] = $overlay['audio_track'];
+
+        // cover_image lives on the Event model itself, not in $invitation — mutating it
+        // in-memory here (never saved) is the same non-persisted-preview-attribute pattern
+        // Event::getCoverImageUrlAttribute() already uses for template preview samples.
+        if ($overlay['cover'] !== null) {
+            $event->cover_image = $overlay['cover'];
+        }
+
+        return $invitation;
     }
 
     /**

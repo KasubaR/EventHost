@@ -2,9 +2,11 @@
 
 namespace App\Support;
 
+use App\Http\Controllers\EventInvitationDesignController;
 use App\Jobs\ProcessInvitationDesignImageJob;
 use App\Models\StagedMedia;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManager;
 
@@ -89,5 +91,62 @@ final class InvitationMediaStager
         Storage::disk('public')->put($path, $webp->toString());
 
         return $path;
+    }
+
+    /**
+     * Read-only preview of what {@see EventInvitationDesignController::update()}
+     * would resolve currently-staged rows to, without consuming them or writing to the database —
+     * lets EventPreviewController show images/audio a host has picked but not yet saved. Staged
+     * files already live at their final path the moment they're staged (see this class's own
+     * docblock), so overlaying is just array merging, not a file move.
+     *
+     * Deliberately skips everything that's only relevant at save time (deletions, orphaned-slot
+     * cleanup, WebP job dispatch, staging caps) — none of that applies to a render. Must be kept
+     * in step with that controller's slot-to-field mapping if it ever changes.
+     *
+     * @param  array{gallery: list<string>, hero_portrait: ?string, couple_photos: array<int, string>}  $media
+     * @param  Collection<int, StagedMedia>  $staged
+     * @return array{media: array{gallery: list<string>, hero_portrait: ?string, couple_photos: array<int, string>}, audio_track: ?string, cover: ?string}
+     */
+    public static function overlayPending(array $media, ?string $audioTrack, string $layoutVariant, Collection $staged): array
+    {
+        $bySlot = $staged->groupBy('slot');
+
+        if ($bySlot->has(StagedMedia::SLOT_GALLERY)) {
+            $media['gallery'] = array_values(array_merge(
+                $media['gallery'],
+                $bySlot->get(StagedMedia::SLOT_GALLERY)->pluck('path')->all()
+            ));
+        }
+
+        if ($bySlot->has(StagedMedia::SLOT_HERO_PORTRAIT)) {
+            $media['hero_portrait'] = $bySlot->get(StagedMedia::SLOT_HERO_PORTRAIT)->last()->path;
+        }
+
+        // Numbered slots belong to Beauty for Ashes only — see the matching branch in
+        // EventInvitationDesignController::update().
+        if ($layoutVariant === InvitationLayoutVariant::BEAUTY_FOR_ASHES) {
+            for ($i = 0; $i < 4; $i++) {
+                $slot = StagedMedia::speakerSlot($i);
+                if ($bySlot->has($slot)) {
+                    $media['couple_photos'][$i] = $bySlot->get($slot)->last()->path;
+                }
+            }
+        } elseif ($bySlot->has(StagedMedia::SLOT_COUPLE)) {
+            $media['couple_photos'] = array_values(array_merge(
+                $media['couple_photos'],
+                $bySlot->get(StagedMedia::SLOT_COUPLE)->pluck('path')->all()
+            ));
+        }
+
+        if ($bySlot->has(StagedMedia::SLOT_AUDIO)) {
+            $audioTrack = $bySlot->get(StagedMedia::SLOT_AUDIO)->last()->path;
+        }
+
+        $cover = $bySlot->has(StagedMedia::SLOT_COVER)
+            ? $bySlot->get(StagedMedia::SLOT_COVER)->last()->path
+            : null;
+
+        return ['media' => $media, 'audio_track' => $audioTrack, 'cover' => $cover];
     }
 }

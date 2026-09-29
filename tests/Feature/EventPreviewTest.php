@@ -4,9 +4,12 @@ namespace Tests\Feature;
 
 use App\Models\Event;
 use App\Models\InvitationTemplate;
+use App\Models\StagedMedia;
 use App\Models\User;
+use App\Support\InvitationMediaUrl;
 use App\Support\InvitationPalettes;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class EventPreviewTest extends TestCase
@@ -248,5 +251,103 @@ class EventPreviewTest extends TestCase
         $this->actingAs($stranger)
             ->get(route('events.preview', ['event' => $event, 'palette' => 'sage-ivory']))
             ->assertForbidden();
+    }
+
+    private function stagedRow(Event $event, User $user, string $slot, string $path): StagedMedia
+    {
+        Storage::disk('public')->put($path, 'binary');
+
+        return StagedMedia::create([
+            'event_id' => $event->id,
+            'user_id' => $user->id,
+            'slot' => $slot,
+            'path' => $path,
+            'original_name' => basename($path),
+            'bytes' => 6,
+        ]);
+    }
+
+    public function test_staged_gallery_upload_appears_in_preview_before_saving(): void
+    {
+        Storage::fake('public');
+        $user = User::factory()->create();
+        $event = $this->eventWithTemplate($user, 'wedding-invitation-2');
+        $path = $this->stagedRow($event, $user, StagedMedia::SLOT_GALLERY, 'invitation-gallery/'.$event->id.'/gal_src_new.jpg')->path;
+
+        $response = $this->actingAs($user)->get(route('events.preview', $event));
+
+        $response->assertOk();
+        $response->assertSee(InvitationMediaUrl::resolve($path), escape: false);
+        // Never persisted — this is a render-only overlay.
+        $this->assertNull($event->fresh()->invitation_customization);
+    }
+
+    public function test_staged_hero_portrait_appears_in_preview_before_saving(): void
+    {
+        Storage::fake('public');
+        $user = User::factory()->pro()->create();
+        $event = $this->eventWithTemplate($user, 'graduation-template-2-botanical-blush');
+        $path = $this->stagedRow($event, $user, StagedMedia::SLOT_HERO_PORTRAIT, 'invitation-hero/'.$event->id.'/hero_src_new.jpg')->path;
+
+        $response = $this->actingAs($user)->get(route('events.preview', $event));
+
+        $response->assertOk();
+        $response->assertSee(InvitationMediaUrl::resolve($path), escape: false);
+    }
+
+    public function test_staged_cover_image_appears_in_preview_before_saving(): void
+    {
+        Storage::fake('public');
+        $user = User::factory()->create();
+        $event = $this->eventWithTemplate($user, 'wedding-invitation-2');
+        $path = $this->stagedRow($event, $user, StagedMedia::SLOT_COVER, 'events/event_new.webp')->path;
+
+        $response = $this->actingAs($user)->get(route('events.preview', $event));
+
+        $response->assertOk();
+        $response->assertSee(asset('storage/'.$path), escape: false);
+        $this->assertNull($event->fresh()->cover_image);
+    }
+
+    public function test_staged_speaker_slot_fills_the_right_beauty_for_ashes_position(): void
+    {
+        Storage::fake('public');
+        $user = User::factory()->proPlus()->create();
+        $event = $this->eventWithTemplate($user, 'beauty-for-ashes');
+        $path = $this->stagedRow($event, $user, StagedMedia::speakerSlot(2), 'invitation-couple/'.$event->id.'/couple_src_new.jpg')->path;
+
+        $response = $this->actingAs($user)->get(route('events.preview', $event));
+
+        $response->assertOk();
+        $response->assertSee(InvitationMediaUrl::resolve($path), escape: false);
+    }
+
+    public function test_staged_media_older_than_the_ttl_is_not_shown_in_preview(): void
+    {
+        Storage::fake('public');
+        config(['invitations.staged_media_ttl_minutes' => 60]);
+        $user = User::factory()->create();
+        $event = $this->eventWithTemplate($user, 'wedding-invitation-2');
+        $row = $this->stagedRow($event, $user, StagedMedia::SLOT_GALLERY, 'invitation-gallery/'.$event->id.'/gal_src_stale.jpg');
+        $row->forceFill(['created_at' => now()->subMinutes(120)])->save();
+
+        $response = $this->actingAs($user)->get(route('events.preview', $event));
+
+        $response->assertOk();
+        $response->assertDontSee(InvitationMediaUrl::resolve($row->path), escape: false);
+    }
+
+    public function test_another_users_staged_media_on_the_same_event_does_not_leak_into_preview(): void
+    {
+        Storage::fake('public');
+        $owner = User::factory()->create();
+        $stranger = User::factory()->create();
+        $event = $this->eventWithTemplate($owner, 'wedding-invitation-2');
+        $path = $this->stagedRow($event, $stranger, StagedMedia::SLOT_GALLERY, 'invitation-gallery/'.$event->id.'/gal_src_stray.jpg')->path;
+
+        $response = $this->actingAs($owner)->get(route('events.preview', $event));
+
+        $response->assertOk();
+        $response->assertDontSee(InvitationMediaUrl::resolve($path), escape: false);
     }
 }

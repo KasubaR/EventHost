@@ -97,23 +97,22 @@
             ])
 
             <div class="evt-section-body evt-actions-bar">
+                {{-- "Save draft" belongs to step 4, the one place you actually revisit
+                     and re-save — every path here just creates the row and moves the
+                     wizard on, so it reads as a forward action instead. --}}
                 @if ($productKind === \App\Enums\EventProductKind::Ticketed)
-                    {{-- "Save draft" belongs to step 4, the one place you actually
-                         revisit and re-save — this submit just creates the row and
-                         moves the wizard on, so it reads as a forward action instead
-                         of a second "save draft". --}}
                     <button type="submit" class="btn-primary">
                         Continue to tickets <i class="fa-solid fa-arrow-right"></i>
                     </button>
                     <span class="evt-muted">Ticket sales go live after EventHost review — no event credit.</span>
                 @elseif ($audience === \App\Enums\EventAudience::Public)
                     <button type="submit" class="btn-primary">
-                        <i class="fa-solid fa-floppy-disk"></i> Save draft
+                        Next <i class="fa-solid fa-arrow-right"></i>
                     </button>
                     <span class="evt-muted">EventHost reviews and quotes a price after save — no event credit.</span>
                 @else
                     <button type="submit" class="btn-primary">
-                        <i class="fa-solid fa-floppy-disk"></i> Save draft
+                        Next <i class="fa-solid fa-arrow-right"></i>
                     </button>
                     <span class="evt-muted">Publishing is available after save and uses 1 event credit.</span>
                 @endif
