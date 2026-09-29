@@ -247,6 +247,31 @@
   color: var(--accent);
 }
 
+/* Colour swatch (option data-swatch) — shown in the list and on the trigger */
+.cs-swatch {
+  flex: none;
+  display: inline-flex;
+  width: 44px;
+  height: 22px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(26, 42, 74, 0.14);
+}
+
+.cs-swatch-band {
+  flex: 1;
+}
+
+/* First colour is the dominant surface, so give it the most width. */
+.cs-swatch-band:first-child {
+  flex: 2;
+}
+
+.cs-trigger-swatch {
+  width: 40px;
+  height: 20px;
+}
+
 .cs-option-body {
   flex: 1 1 auto;
   min-width: 0;

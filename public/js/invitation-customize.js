@@ -57,21 +57,18 @@
         var link = document.querySelector('[data-palette-preview-link]');
         if (!link || !link.dataset.previewBase) return;
 
-        var radios = document.querySelectorAll('.evt-palette-radio');
+        var select = document.querySelector('[data-palette-select]');
+        if (!select) return;
 
-        function sync(value) {
+        function sync() {
             var url = new URL(link.dataset.previewBase, window.location.href);
-            url.searchParams.set('palette', value);
+            url.searchParams.set('palette', select.value);
             link.href = url.toString();
         }
 
-        radios.forEach(function (radio) {
-            radio.addEventListener('change', function () {
-                if (radio.checked) sync(radio.value);
-            });
-            // Back/forward can restore a different checked radio than the server rendered.
-            if (radio.checked) sync(radio.value);
-        });
+        select.addEventListener('change', sync);
+        // Back/forward can restore a different selection than the server rendered.
+        sync();
     }
 
     function init() {

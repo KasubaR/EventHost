@@ -171,8 +171,9 @@ class InvitationPaletteTest extends TestCase
         $response = $this->actingAs($user)->get(route('events.edit', $event));
 
         $response->assertOk();
-        $response->assertSee('theme_palette_sage-ivory', escape: false);
-        $response->assertDontSee('theme_palette_noir-gold', escape: false);
+        $offered = $this->paletteOptions($response->getContent());
+        $this->assertContains('sage-ivory', $offered);
+        $this->assertNotContains('noir-gold', $offered);
     }
 
     public function test_design_form_for_dark_template_offers_dark_palettes(): void
@@ -183,8 +184,9 @@ class InvitationPaletteTest extends TestCase
         $response = $this->actingAs($user)->get(route('events.edit', $event));
 
         $response->assertOk();
-        $response->assertSee('theme_palette_midnight-silver', escape: false);
-        $response->assertDontSee('theme_palette_slate-sky', escape: false);
+        $offered = $this->paletteOptions($response->getContent());
+        $this->assertContains('midnight-silver', $offered);
+        $this->assertNotContains('slate-sky', $offered);
     }
 
     public function test_beauty_for_ashes_hides_the_palette_picker_and_saves_without_one(): void
@@ -260,14 +262,15 @@ class InvitationPaletteTest extends TestCase
         $response = $this->actingAs($user)->get(route('events.edit', $event));
 
         $response->assertOk();
-        // Still shown (reads as an upsell) plus an upgrade link. The cards are
+        // Still shown (reads as an upsell) plus an upgrade link. The dropdown is
         // pickable for previewing, under a name the save path never reads.
-        $response->assertSee('theme_palette_sage-ivory', escape: false);
-        $response->assertSee('evt-palette-grid--locked', escape: false);
+        $html = $response->getContent();
+        $this->assertContains('sage-ivory', $this->paletteOptions($html));
         $response->assertSee('Upgrade to Pro+', escape: false);
         $response->assertSee('name="palette_preview"', escape: false);
         $response->assertDontSee('name="theme_palette"', escape: false);
-        $this->assertDoesNotMatchRegularExpression('/<input[^>]*evt-palette-radio[^>]*disabled/s', $response->getContent());
+        $this->assertMatchesRegularExpression('/<select[^>]*id="theme_palette"[^>]*data-preview-only/s', $html);
+        $this->assertDoesNotMatchRegularExpression('/<select[^>]*id="theme_palette"[^>]*\sdisabled/s', $html);
     }
 
     public function test_design_form_links_to_a_preview_in_the_selected_palette(): void
@@ -313,12 +316,35 @@ class InvitationPaletteTest extends TestCase
         $this->assertSame(InvitationPalettes::TEMPLATE_DEFAULT_KEY, $this->checkedPalette($response->getContent()));
     }
 
+    /**
+     * Option tags of the palette dropdown only — the font selects on the same
+     * page have options too.
+     *
+     * @return array<int, array{0: string, 1: string}> [tag, key] pairs in order
+     */
+    private function paletteOptionTags(string $html): array
+    {
+        if (! preg_match('/<select[^>]*id="theme_palette"[^>]*>(.*?)<\/select>/s', $html, $select)) {
+            return [];
+        }
+
+        preg_match_all('/<option[^>]*value="([a-z-]+)"[^>]*>/s', $select[1], $options, PREG_SET_ORDER);
+
+        return $options;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function paletteOptions(string $html): array
+    {
+        return array_column($this->paletteOptionTags($html), 1);
+    }
+
     private function checkedPalette(string $html): ?string
     {
-        preg_match_all('/<input[^>]*id="theme_palette_([a-z-]+)"[^>]*>/', $html, $inputs, PREG_SET_ORDER);
-
-        foreach ($inputs as [$tag, $key]) {
-            if (preg_match('/\schecked\b/', $tag)) {
+        foreach ($this->paletteOptionTags($html) as [$tag, $key]) {
+            if (preg_match('/\sselected\b/', $tag)) {
                 return $key;
             }
         }
@@ -351,7 +377,7 @@ class InvitationPaletteTest extends TestCase
         $response->assertOk();
         $this->assertSame(InvitationPalettes::TEMPLATE_DEFAULT_KEY, $this->checkedPalette($response->getContent()));
         $response->assertSee($tpl->name, escape: false);
-        $response->assertSee('evt-palette-tag', escape: false);
+        $response->assertSee('data-hint="Template default"', escape: false);
     }
 
     public function test_template_default_card_is_first_and_catalogue_twin_is_not_repeated(): void
@@ -361,9 +387,9 @@ class InvitationPaletteTest extends TestCase
 
         $html = $this->actingAs($user)->get(route('events.edit', $event))->assertOk()->getContent();
 
-        preg_match_all('/id="theme_palette_([a-z-]+)"/', $html, $m);
-        $this->assertSame(InvitationPalettes::TEMPLATE_DEFAULT_KEY, $m[1][0] ?? null);
-        $this->assertNotContains('ivory-gold', $m[1]);
+        $offered = $this->paletteOptions($html);
+        $this->assertSame(InvitationPalettes::TEMPLATE_DEFAULT_KEY, $offered[0] ?? null);
+        $this->assertNotContains('ivory-gold', $offered);
         $this->assertSame(InvitationPalettes::TEMPLATE_DEFAULT_KEY, $this->checkedPalette($html));
     }
 

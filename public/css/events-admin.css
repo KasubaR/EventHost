@@ -856,106 +856,18 @@
     }
 }
 
-.evt-palette-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 12px;
-    margin-top: 10px;
-}
-
-.evt-palette-card {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 10px;
-    border-radius: 12px;
-    border: 1px solid var(--border-soft, rgba(26, 42, 74, 0.12));
-    background: var(--surface, #fff);
-    cursor: pointer;
-    transition: border-color 0.15s, box-shadow 0.15s;
-}
-
-.evt-palette-card:hover {
-    border-color: rgba(26, 42, 74, 0.28);
-}
-
-/* The radio stays in the accessibility tree and keyboard order — only visually hidden. */
-.evt-palette-radio {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    padding: 0;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-}
-
-.evt-palette-card:has(.evt-palette-radio:checked) {
-    border-color: var(--brand, #1e47bb);
-    box-shadow: 0 0 0 2px rgba(30, 71, 187, 0.18);
-}
-
-.evt-palette-card:has(.evt-palette-radio:focus-visible) {
-    outline: 2px solid var(--brand, #1e47bb);
-    outline-offset: 2px;
-}
-
-.evt-palette-bands {
-    display: flex;
-    height: 42px;
-    border-radius: 8px;
-    overflow: hidden;
-    border: 1px solid rgba(26, 42, 74, 0.1);
-}
-
-.evt-palette-band {
-    flex: 1;
-}
-
-/* Background band reads as the dominant surface, so give it the most width. */
-.evt-palette-band:first-child {
-    flex: 2;
-}
-
-.evt-palette-name {
+/* Palette dropdown with its preview / upgrade actions beside it; wraps under
+   the dropdown on narrow screens. */
+.evt-palette-row {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 6px;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    color: var(--text-strong, #1a2a4a);
+    gap: 10px;
 }
 
-.evt-palette-tag {
-    padding: 1px 7px;
-    border-radius: 999px;
-    background: rgba(30, 71, 187, 0.1);
-    color: var(--brand, #1e47bb);
-    font-size: 0.6875rem;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-}
-
-/* Pro+ gate: picker stays visible (reads as an upsell, same as locked
-   templates on the template library) and dimmed. Cards can still be picked
-   for the palette preview link, just not saved. */
-.evt-palette-grid--locked .evt-palette-card {
-    cursor: pointer;
-    opacity: 0.55;
-    filter: grayscale(0.35);
-}
-
-.evt-palette-grid--locked .evt-palette-card:hover {
-    border-color: var(--border-soft, rgba(26, 42, 74, 0.12));
-}
-
-.evt-palette-grid--locked .evt-palette-card:has(.evt-palette-radio:checked) {
-    opacity: 1;
-    filter: none;
-    border-color: var(--brand, #1e47bb);
+.evt-palette-select {
+    flex: 1 1 260px;
+    max-width: 380px;
 }
 
 .evt-palette-lock-hint {
@@ -968,13 +880,12 @@
     color: #a21caf;
 }
 
-.evt-palette-preview-link {
-    margin-top: 12px;
-    margin-right: 8px;
-}
-
 .evt-palette-upgrade-link {
     margin-top: 12px;
+}
+
+.evt-palette-row .evt-palette-upgrade-link {
+    margin-top: 0;
 }
 
 .evt-design-section-list {

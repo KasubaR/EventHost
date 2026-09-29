@@ -21,6 +21,8 @@
  * Attributes (on each <option>)
  *   data-icon            Font Awesome classes shown before the label
  *   data-hint            secondary line under the label
+ *   data-swatch          comma-separated colours drawn as a swatch before the
+ *                        label (single select only); the first band is widest
  *
  * An empty-valued first option is treated as the placeholder.
  * The panel is portalled to <body> because form sections use overflow:hidden.
@@ -47,6 +49,22 @@
 
     function normalize(str) {
         return (str || '').toLowerCase().trim();
+    }
+
+    function parseSwatch(value) {
+        return (value || '').split(',').map(function (c) { return c.trim(); }).filter(Boolean);
+    }
+
+    // backgroundColor, not background: a colour value can never load a url().
+    function swatch(colours, className) {
+        var node = el('span', 'cs-swatch' + (className ? ' ' + className : ''));
+        node.setAttribute('aria-hidden', 'true');
+        colours.forEach(function (colour) {
+            var band = el('span', 'cs-swatch-band');
+            band.style.backgroundColor = colour;
+            node.appendChild(band);
+        });
+        return node;
     }
 
     /* ── control ── */
@@ -170,6 +188,7 @@
             label: option.textContent.trim(),
             hint: option.dataset.hint || '',
             icon: option.dataset.icon || '',
+            swatch: this.multiple ? [] : parseSwatch(option.dataset.swatch),
             disabled: option.disabled || groupDisabled,
             option: option
         });
@@ -187,6 +206,15 @@
 
     CustomSelect.prototype.renderTrigger = function () {
         var chosen = this.selectedItems().filter(function (i) { return !i.placeholder; });
+
+        if (this.triggerSwatch) {
+            this.triggerSwatch.remove();
+            this.triggerSwatch = null;
+        }
+        if (chosen.length === 1 && chosen[0].swatch.length) {
+            this.triggerSwatch = swatch(chosen[0].swatch, 'cs-trigger-swatch');
+            this.trigger.insertBefore(this.triggerSwatch, this.triggerText);
+        }
 
         if (!chosen.length) {
             this.triggerText.textContent = this.placeholder;
@@ -299,6 +327,8 @@
                 var box = el('span', 'cs-option-box');
                 box.innerHTML = '<i class="fa-solid fa-check"></i>';
                 b.appendChild(box);
+            } else if (item.swatch.length) {
+                b.appendChild(swatch(item.swatch));
             } else if (item.icon) {
                 b.appendChild(el('i', 'cs-option-icon ' + item.icon));
             }

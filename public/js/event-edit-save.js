@@ -57,15 +57,15 @@
         });
 
         forms.forEach((form) => {
-            // data-preview-only controls (locked palette cards) never save,
+            // data-preview-only controls (the locked palette dropdown) never save,
             // so picking one leaves the previewed invitation current.
             form.addEventListener('change', (e) => {
                 if (!previewed || e.target.closest('[data-preview-only]')) return;
                 previewed = false;
                 updatePublishGate();
             });
-            form.addEventListener('input', () => {
-                if (!previewed) return;
+            form.addEventListener('input', (e) => {
+                if (!previewed || e.target.closest('[data-preview-only]')) return;
                 previewed = false;
                 updatePublishGate();
             });

@@ -142,47 +142,46 @@
                             Preview any palette below; applying it requires the {{ SubscriptionTier::ProPlus->label() }} plan.
                         </p>
                     @endif
-                    <div class="evt-palette-grid {{ $canChoosePalette ? '' : 'evt-palette-grid--locked' }}">
-                        @foreach ($paletteChoices as $key => $palette)
-                            <label class="evt-palette-card" for="theme_palette_{{ $key }}">
-                                {{-- Locked hosts pick for preview only: a different name means the
-                                     form never submits a theme_palette, which the request would reject. --}}
-                                <input type="radio"
-                                       id="theme_palette_{{ $key }}"
-                                       name="{{ $canChoosePalette ? 'theme_palette' : 'palette_preview' }}"
-                                       value="{{ $key }}"
-                                       class="evt-palette-radio"
-                                       @checked($selectedPalette === $key)
-                                       @unless ($canChoosePalette) data-preview-only @endunless>
-                                <span class="evt-palette-bands" aria-hidden="true">
-                                    <span class="evt-palette-band" style="background: {{ $palette['background'] }};"></span>
-                                    <span class="evt-palette-band" style="background: {{ $palette['primary'] }};"></span>
-                                    <span class="evt-palette-band" style="background: {{ $palette['accent'] }};"></span>
-                                </span>
-                                <span class="evt-palette-name">
+                    <div class="evt-palette-row">
+                        <div class="evt-palette-select">
+                            {{-- Locked hosts pick for preview only: a different name means the
+                                 form never submits a theme_palette, which the request would reject. --}}
+                            <select id="theme_palette"
+                                    name="{{ $canChoosePalette ? 'theme_palette' : 'palette_preview' }}"
+                                    class="profile-input {{ $errors->has('theme_palette') ? 'profile-input--error' : '' }}"
+                                    aria-label="Colour palette"
+                                    data-cs
+                                    data-cs-search="never"
+                                    data-palette-select
+                                    @unless ($canChoosePalette) data-preview-only @endunless>
+                                @foreach ($paletteChoices as $key => $palette)
                                     @if ($key === InvitationPalettes::TEMPLATE_DEFAULT_KEY)
-                                        {{ $event->invitationTemplate?->name ?? $palette['label'] }}
-                                        <span class="evt-palette-tag">Default</span>
+                                        <option value="{{ $key }}"
+                                                data-swatch="{{ $palette['background'] }},{{ $palette['primary'] }},{{ $palette['accent'] }}"
+                                                data-hint="Template default"
+                                                @selected($selectedPalette === $key)>{{ $event->invitationTemplate?->name ?? $palette['label'] }}</option>
                                     @else
-                                        {{ $palette['label'] }}
+                                        <option value="{{ $key }}"
+                                                data-swatch="{{ $palette['background'] }},{{ $palette['primary'] }},{{ $palette['accent'] }}"
+                                                @selected($selectedPalette === $key)>{{ $palette['label'] }}</option>
                                     @endif
-                                </span>
-                            </label>
-                        @endforeach
-                    </div>
-                    <a href="{{ route('events.preview', ['event' => $event, 'palette' => $selectedPalette]) }}"
-                       class="btn-outline evt-palette-preview-link"
-                       target="_blank"
-                       rel="noopener"
-                       data-palette-preview-link
-                       data-preview-base="{{ route('events.preview', $event) }}">
-                        <i class="fa-solid fa-eye" aria-hidden="true"></i> Preview in this palette
-                    </a>
-                    @unless ($canChoosePalette)
-                        <a href="{{ BillingPlan::checkoutUrlForTier(SubscriptionTier::ProPlus) }}" class="btn-outline evt-palette-upgrade-link">
-                            Upgrade to {{ SubscriptionTier::ProPlus->label() }}
+                                @endforeach
+                            </select>
+                        </div>
+                        <a href="{{ route('events.preview', ['event' => $event, 'palette' => $selectedPalette]) }}"
+                           class="btn-outline evt-palette-preview-link"
+                           target="_blank"
+                           rel="noopener"
+                           data-palette-preview-link
+                           data-preview-base="{{ route('events.preview', $event) }}">
+                            <i class="fa-solid fa-eye" aria-hidden="true"></i> Preview in this palette
                         </a>
-                    @endunless
+                        @unless ($canChoosePalette)
+                            <a href="{{ BillingPlan::checkoutUrlForTier(SubscriptionTier::ProPlus) }}" class="btn-outline evt-palette-upgrade-link">
+                                Upgrade to {{ SubscriptionTier::ProPlus->label() }}
+                            </a>
+                        @endunless
+                    </div>
                     @error('theme_palette')
                         <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                     @enderror
