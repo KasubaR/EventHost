@@ -152,6 +152,8 @@
                                     aria-label="Colour palette"
                                     data-cs
                                     data-cs-search="never"
+                                    data-cs-swatch-only
+                                    data-cs-placeholder="Colour palette"
                                     data-palette-select
                                     @unless ($canChoosePalette) data-preview-only @endunless>
                                 @foreach ($paletteChoices as $key => $palette)

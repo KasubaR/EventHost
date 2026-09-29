@@ -865,9 +865,10 @@
     gap: 10px;
 }
 
+/* Wide enough for a three-column swatch grid in the open panel. */
 .evt-palette-select {
-    flex: 1 1 260px;
-    max-width: 380px;
+    flex: 0 1 300px;
+    min-width: 0;
 }
 
 .evt-palette-lock-hint {

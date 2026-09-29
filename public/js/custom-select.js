@@ -17,6 +17,9 @@
  *   data-cs-placeholder  trigger text when nothing is chosen
  *   data-cs-icon         Font Awesome classes for the trigger icon
  *   data-cs-size         "sm" for the compact toolbar variant
+ *   data-cs-swatch-only  show option swatches as a tile grid with the labels
+ *                        visually hidden (kept for screen readers, type-ahead
+ *                        and the hover tooltip)
  *
  * Attributes (on each <option>)
  *   data-icon            Font Awesome classes shown before the label
@@ -55,6 +58,10 @@
         return (value || '').split(',').map(function (c) { return c.trim(); }).filter(Boolean);
     }
 
+    function optionTitle(item) {
+        return item.hint ? item.label + ' — ' + item.hint : item.label;
+    }
+
     // backgroundColor, not background: a colour value can never load a url().
     function swatch(colours, className) {
         var node = el('span', 'cs-swatch' + (className ? ' ' + className : ''));
@@ -75,6 +82,7 @@
         this.id = 'cs-' + (++uid);
         this.placeholder = select.dataset.csPlaceholder || this.derivePlaceholder();
         this.searchMode = select.dataset.csSearch || 'auto';
+        this.swatchOnly = !this.multiple && select.hasAttribute('data-cs-swatch-only');
         this.activeIndex = -1;
 
         this.build();
@@ -103,6 +111,7 @@
         var wrap = el('div', 'cs');
 
         if (select.dataset.csSize === 'sm') wrap.classList.add('cs-sm');
+        if (this.swatchOnly) wrap.classList.add('cs-swatch-only');
         if (select.classList.contains('profile-input--error')) wrap.classList.add('is-invalid');
 
         select.parentNode.insertBefore(wrap, select);
@@ -224,6 +233,11 @@
             this.triggerText.classList.remove('is-placeholder');
         }
 
+        if (this.swatchOnly) {
+            this.triggerText.classList.toggle('cs-visually-hidden', !!this.triggerSwatch);
+            this.trigger.title = this.triggerSwatch ? optionTitle(chosen[0]) : '';
+        }
+
         if (this.countEl) {
             this.countEl.textContent = chosen.length;
             this.countEl.style.display = chosen.length > 1 ? '' : 'none';
@@ -235,6 +249,7 @@
     CustomSelect.prototype.buildPanel = function () {
         var self = this;
         var panel = el('div', 'cs-panel');
+        if (this.swatchOnly) panel.classList.add('cs-swatch-only');
         panel.setAttribute('role', 'dialog');
         panel.setAttribute('aria-label', this.placeholder);
 
@@ -337,6 +352,11 @@
             body.appendChild(el('span', 'cs-option-label', item.label));
             if (item.hint) body.appendChild(el('span', 'cs-option-hint', item.hint));
             b.appendChild(body);
+
+            if (self.swatchOnly && item.swatch.length) {
+                body.classList.add('cs-visually-hidden');
+                b.title = optionTitle(item);
+            }
 
             if (!self.multiple) {
                 var mark = el('i', 'cs-option-mark fa-solid fa-check');
