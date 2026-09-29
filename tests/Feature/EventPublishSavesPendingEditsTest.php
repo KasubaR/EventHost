@@ -37,7 +37,7 @@ class EventPublishSavesPendingEditsTest extends TestCase
                 'name' => 'Edited before publishing',
                 'publish' => '1',
             ]))
-            ->assertRedirect(route('events.public', $event->fresh()->slug));
+            ->assertRedirect(route('events.index'));
 
         $event->refresh();
 

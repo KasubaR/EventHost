@@ -976,8 +976,7 @@ class EventManagementTest extends TestCase
      * credit-publish at all (admin approval + a paid quote is required
      * instead — see PublicRegistrationApprovalTest). Rewritten to a private
      * event: /e/{slug} now renders for a private event too (it's just never
-     * listed anywhere — see PublicInvitationLifecycleTest), which is exactly
-     * where EventController::publish() redirects the host after publishing.
+     * listed anywhere — see PublicInvitationLifecycleTest).
      */
     public function test_publish_requires_owner_and_the_owner_can_then_view_it(): void
     {
@@ -994,12 +993,12 @@ class EventManagementTest extends TestCase
 
         $response = $this->actingAs($user)->patch(route('events.publish', $event));
 
-        $response->assertRedirect(route('events.public', $event->fresh()->slug));
+        $response->assertRedirect(route('events.index'));
         $response->assertSessionHas('status', 'published');
         $this->assertTrue((bool) $event->fresh()->is_published);
 
-        // The redirect above lands the host straight on this page — it must
-        // actually render, not 403, even though the event is private.
+        // /e/{slug} must actually render, not 403, even though the event is
+        // private — it's still the invitation link the host can share.
         $this->get(route('events.public', $event->slug))
             ->assertOk()
             ->assertSee($event->name, escape: false);

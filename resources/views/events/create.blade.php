@@ -29,7 +29,7 @@
                 @elseif ($audience === \App\Enums\EventAudience::Public)
                     <p class="dph-sub">Add details and save as a draft — drafts are free. EventHost reviews and quotes a price before it goes live, with no event credit.</p>
                 @else
-                    <p class="dph-sub">Add details and save as a draft — drafts are free. Publishing uses 1 event credit.</p>
+                    <p class="dph-sub">Add your event details, then choose to save as a draft or publish — publishing uses 1 event credit.</p>
                 @endif
             </div>
             <a href="{{ route($audience === \App\Enums\EventAudience::Public ? 'public-events.index' : 'events.index') }}" class="evt-btn-outline"><i class="fa-solid fa-arrow-left"></i> Back to events</a>
@@ -97,9 +97,10 @@
             ])
 
             <div class="evt-section-body evt-actions-bar">
-                {{-- "Save draft" belongs to step 4, the one place you actually revisit
-                     and re-save — every path here just creates the row and moves the
-                     wizard on, so it reads as a forward action instead. --}}
+                {{-- Neither "Save draft" nor "Publish" belongs here — both are chosen
+                     later, on step 4, once there's a design to save or publish. Every
+                     path here just creates the row and moves the wizard on, so it
+                     reads as a forward action instead. --}}
                 @if ($productKind === \App\Enums\EventProductKind::Ticketed)
                     <button type="submit" class="btn-primary">
                         Continue to tickets <i class="fa-solid fa-arrow-right"></i>
@@ -114,7 +115,7 @@
                     <button type="submit" class="btn-primary">
                         Next <i class="fa-solid fa-arrow-right"></i>
                     </button>
-                    <span class="evt-muted">Publishing is available after save and uses 1 event credit.</span>
+                    <span class="evt-muted">Next you'll pick a layout and design your invitation, then choose to save a draft or publish.</span>
                 @endif
             </div>
         </form>

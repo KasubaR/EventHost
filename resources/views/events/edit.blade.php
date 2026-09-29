@@ -182,26 +182,35 @@
                  data-redefine-confirm="This event has already taken place. If you changed its name, type or date, saving will use 1 event credit. Continue?"
              @endif>
             <div class="evt-section-body evt-actions-bar">
-                <button type="button" class="btn-primary" data-save-all>
-                    <i class="fa-solid fa-floppy-disk"></i> Save Draft
-                </button>
                 @if ($event->isTicketed())
+                    <button type="button" class="btn-primary" data-save-all>
+                        <i class="fa-solid fa-floppy-disk"></i> Save Draft
+                    </button>
                     <span class="evt-muted">Ticketed events go live after EventHost activates sales — they do not use event credits.</span>
                 @elseif ($event->isFreeRegistration())
+                    <button type="button" class="btn-primary" data-save-all>
+                        <i class="fa-solid fa-floppy-disk"></i> Save Draft
+                    </button>
                     <span class="evt-muted">Public events go live after EventHost approves them and you pay the quoted amount — they do not use event credits.</span>
                 @elseif (! $event->is_published)
                     <button type="button" class="btn-primary" data-save-all data-publish data-requires-preview>
-                        <i class="fa-solid fa-bullhorn"></i> Save &amp; publish
+                        <i class="fa-solid fa-bullhorn"></i> Publish
+                    </button>
+                    <button type="button" class="evt-btn-outline" data-save-all>
+                        <i class="fa-solid fa-floppy-disk"></i> Save Draft
                     </button>
                     <span class="evt-muted evt-flash--warn" data-preview-required-hint hidden>
                         <i class="fa-solid fa-eye"></i> Preview your invitation above first.
                     </span>
                     @if ($publishCostsCredit)
-                        <span class="evt-muted">Publishing uses 1 event credit — you have {{ auth()->user()->event_credits }}.</span>
+                        <span class="evt-muted">Publishing uses 1 event credit — you have {{ auth()->user()->event_credits }}. Saving a draft is free and optional.</span>
                     @else
-                        <span class="evt-muted">Publishing saves everything first, then makes the invitation public.</span>
+                        <span class="evt-muted">Publishing saves everything first, then makes the invitation public. Saving a draft is free and optional.</span>
                     @endif
                 @else
+                    <button type="button" class="btn-primary" data-save-all>
+                        <i class="fa-solid fa-floppy-disk"></i> Save Draft
+                    </button>
                     <span class="evt-muted">Saves your event details and invitation design together.</span>
                 @endif
             </div>

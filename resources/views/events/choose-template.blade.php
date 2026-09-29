@@ -21,7 +21,7 @@
     @include('events.partials.steps', ['current' => 3])
 
     @if (session('status') === 'draft-saved')
-        <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Draft saved — choose a layout below.</div>
+        <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Details saved — choose a layout below.</div>
     @endif
 
     @if ($errors->has('invitation_template_id'))

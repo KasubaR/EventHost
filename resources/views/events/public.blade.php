@@ -38,12 +38,6 @@
 
     <x-event-host-bar :event="$event" />
 
-    @if (session('status') === 'published')
-        <div class="evt-session-banner">
-            <i class="fa-solid fa-circle-check"></i> Your event is now live.
-        </div>
-    @endif
-
     @if ($event->acceptsContributions())
         <div class="ctb-invite-banner">
             <span><i class="fa-solid fa-hand-holding-dollar" aria-hidden="true"></i> This event is accepting contributions of K{{ number_format((float) $event->contribution_amount, 2) }}.</span>

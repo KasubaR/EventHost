@@ -65,7 +65,7 @@ class EventCreditTest extends TestCase
 
         $this->actingAs($user)
             ->patch(route('events.publish', $event))
-            ->assertRedirect(route('events.public', $event->fresh()->slug));
+            ->assertRedirect(route('events.index'));
 
         $this->assertTrue((bool) $event->fresh()->is_published);
         $this->assertSame(0, $user->fresh()->event_credits);
@@ -83,7 +83,7 @@ class EventCreditTest extends TestCase
                 'event_date' => $event->event_date->format('Y-m-d'),
                 'publish' => '1',
             ]))
-            ->assertRedirect(route('events.public', $event->fresh()->slug));
+            ->assertRedirect(route('events.index'));
 
         $this->assertTrue((bool) $event->fresh()->is_published);
         $this->assertSame(0, $user->fresh()->event_credits);
@@ -134,7 +134,7 @@ class EventCreditTest extends TestCase
 
         $this->actingAs($user)
             ->patch(route('events.publish', $event))
-            ->assertRedirect(route('events.public', $event->fresh()->slug));
+            ->assertRedirect(route('events.index'));
 
         $this->assertTrue((bool) $event->fresh()->is_published);
         $this->assertSame(1, $user->fresh()->event_credits);
@@ -149,7 +149,7 @@ class EventCreditTest extends TestCase
 
         $this->actingAs($user)
             ->patch(route('events.publish', $event))
-            ->assertRedirect(route('events.public', $event->fresh()->slug));
+            ->assertRedirect(route('events.index'));
 
         $this->assertTrue((bool) $event->fresh()->is_published);
         $this->assertSame(1, $user->fresh()->event_credits);
@@ -232,7 +232,7 @@ class EventCreditTest extends TestCase
 
         $this->actingAs($user)
             ->patch(route('events.publish', $event))
-            ->assertRedirect(route('events.public', $event->fresh()->slug));
+            ->assertRedirect(route('events.index'));
 
         $this->assertTrue($event->fresh()->is_published);
         $this->assertSame(0, $user->fresh()->event_credits);
@@ -382,7 +382,7 @@ class EventCreditTest extends TestCase
                 'event_date' => now()->addMonth()->format('Y-m-d'),
                 'publish' => '1',
             ]))
-            ->assertRedirect(route('events.public', $event->fresh()->slug));
+            ->assertRedirect(route('events.index'));
 
         $this->assertTrue((bool) $event->fresh()->is_published);
         $this->assertSame(0, $user->fresh()->event_credits);

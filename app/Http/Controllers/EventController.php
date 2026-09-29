@@ -426,7 +426,7 @@ class EventController extends Controller
         }
 
         if ($shouldPublish) {
-            return redirect()->route('events.public', $event->slug)->with('status', 'published');
+            return redirect()->route('events.index')->with('status', 'published');
         }
 
         if ($notifyGuestsCount > 0) {
@@ -606,7 +606,7 @@ class EventController extends Controller
             return redirect()->route('billing.show')->with('status', 'no-event-credits');
         }
 
-        return redirect()->route('events.public', $event->fresh()->slug)->with('status', 'published');
+        return redirect()->route('events.index')->with('status', 'published');
     }
 
     /**
