@@ -31,6 +31,13 @@ class CreditTransaction extends Model
     public const REASON_REFUND = 'refund';
 
     /**
+     * Ledger-only correction for a balance that predates this table — see
+     * App\Console\Commands\ReconcileLegacyCreditLedgerCommand. Never changes
+     * `users.event_credits`, unlike every other reason here.
+     */
+    public const REASON_LEDGER_BACKFILL = 'ledger_backfill';
+
+    /**
      * Labels for the admin credit history table.
      *
      * @var array<string, string>
@@ -42,10 +49,15 @@ class CreditTransaction extends Model
         self::REASON_EVENT_PUBLISHED => 'Event published',
         self::REASON_EVENT_REDEFINED => 'Event redefined',
         self::REASON_REFUND => 'Refund',
+        self::REASON_LEDGER_BACKFILL => 'Ledger backfill',
     ];
 
     /**
-     * Rows are written only by EventCreditService via forceFill().
+     * Rows are written only by EventCreditService via forceFill(), with one
+     * exception: ReconcileLegacyCreditLedgerCommand writes a REASON_LEDGER_BACKFILL
+     * row directly, since that command's entire point is to add a ledger row
+     * without moving the balance — which EventCreditService's methods cannot do,
+     * by design (every one of them moves both together).
      *
      * @var list<string>
      */

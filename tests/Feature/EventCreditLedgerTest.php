@@ -247,4 +247,50 @@ class EventCreditLedgerTest extends TestCase
 
         $this->artisan('credits:audit')->assertFailed();
     }
+
+    public function test_reconcile_legacy_backfill_writes_the_missing_delta_without_touching_the_balance(): void
+    {
+        $user = User::factory()->withoutCredits()->create();
+        $this->credits()->grant($user, 2, CreditTransaction::REASON_ADMIN_GRANT);
+        $this->credits()->spend($user, CreditTransaction::REASON_EVENT_CREATED);
+        // Simulates the 2026_05_24_185558 raw-SQL backfill: balance set directly,
+        // no ledger row, on top of the two real movements above (net ledger: +1).
+        User::query()->whereKey($user->id)->update(['event_credits' => 6]);
+
+        $this->artisan('credits:reconcile-legacy-backfill')->assertSuccessful();
+
+        $user->refresh();
+        $this->assertSame(6, $user->event_credits);
+
+        $entry = CreditTransaction::query()->where('user_id', $user->id)->latest('id')->firstOrFail();
+        $this->assertSame(CreditTransaction::REASON_LEDGER_BACKFILL, $entry->reason);
+        $this->assertSame(5, $entry->delta);
+        $this->assertSame(6, $entry->balance_after);
+
+        $sum = (int) CreditTransaction::query()->where('user_id', $user->id)->sum('delta');
+        $this->assertSame(6, $sum);
+
+        $this->artisan('credits:audit')->assertSuccessful();
+    }
+
+    public function test_reconcile_legacy_backfill_dry_run_writes_nothing(): void
+    {
+        $user = User::factory()->withoutCredits()->create();
+        User::query()->whereKey($user->id)->update(['event_credits' => 3]);
+
+        $this->artisan('credits:reconcile-legacy-backfill', ['--dry-run' => true])->assertSuccessful();
+
+        $this->assertSame(0, CreditTransaction::query()->where('user_id', $user->id)->count());
+        $this->assertSame(3, $user->fresh()->event_credits);
+    }
+
+    public function test_reconcile_legacy_backfill_is_a_no_op_when_nothing_is_mismatched(): void
+    {
+        $user = User::factory()->withoutCredits()->create();
+        $this->credits()->grant($user, 4, CreditTransaction::REASON_ADMIN_GRANT);
+
+        $this->artisan('credits:reconcile-legacy-backfill')->assertSuccessful();
+
+        $this->assertSame(1, CreditTransaction::query()->where('user_id', $user->id)->count());
+    }
 }
