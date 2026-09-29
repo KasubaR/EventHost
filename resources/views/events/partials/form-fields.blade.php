@@ -11,6 +11,16 @@
 @endpush
 
 @php
+    // An already-past (locked) event may still have its date corrected
+    // retroactively (EventController::update() / Event::isLocked()) — only
+    // an upcoming event, or a brand new one, is blocked from picking a past
+    // date. event_time has no matching static bound here: whether "today" is
+    // even a legal date depends on this same flag, and once it is, the time
+    // picker's own min is kept in step with the clock client-side (see
+    // bindEventDateTimeGuard() in events-form.js) and re-checked server-side
+    // regardless (guardEventTimeNotAlreadyPassedToday / guardEventNotPushedIntoPast).
+    $eventDateAllowsPast = isset($event) && $event->isLocked();
+
     $timeRaw = old('event_time', isset($event) ? $event?->event_time : '12:00:00');
     $timeForInput = is_string($timeRaw) && strlen($timeRaw) >= 5 ? substr($timeRaw, 0, 5) : '12:00';
 
@@ -169,6 +179,7 @@
                 <div class="profile-field">
                     <label for="event_date" class="profile-label">Date</label>
                     <input id="event_date" name="event_date" type="date" required data-dtp
+                           @unless($eventDateAllowsPast) min="today" @endunless
                            data-placeholder="Pick the event date"
                            class="profile-input {{ $errors->has('event_date') ? 'profile-input--error' : '' }}"
                            value="{{ old('event_date', isset($event) ? $event->event_date->format('Y-m-d') : '') }}">
@@ -375,8 +386,12 @@
             <label class="profile-label evt-check-label">
                 <input type="checkbox" name="show_guest_list" value="1" class="profile-input evt-check-input"
                        @checked((string) old('show_guest_list', ($event?->show_guest_list ?? false) ? '1' : '0') === '1')>
-                Show guest list on invitation
+                Note that a guest list will be visible at the event
             </label>
+            <p class="evt-muted evt-guest-capacity-hint">
+                Adds a line to your invitation letting guests know there's a visible guest list at the venue
+                (e.g. a printed sign-in sheet). It does not publish or share guest names anywhere on EventHost.
+            </p>
         </div>
         </div>
     @endif

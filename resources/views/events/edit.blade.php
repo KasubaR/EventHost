@@ -74,7 +74,7 @@
         <div class="profile-errors evt-flash" role="alert"><i class="fa-solid fa-circle-exclamation"></i> {{ $errors->first('public_registration') }}</div>
     @endif
 
-    @if ($event->isLocked())
+    @if ($event->is_published && $event->isLocked())
         <div class="evt-flash evt-flash--warn">
             <i class="fa-solid fa-circle-info"></i>
             This event has already taken place. Changing its <strong>name, type or date</strong> makes it a
@@ -178,7 +178,7 @@
              @if ($publishCostsCredit)
                  data-publish-confirm="Publishing uses 1 event credit. Continue?"
              @endif
-             @if ($event->isLocked())
+             @if ($event->is_published && $event->isLocked())
                  data-redefine-confirm="This event has already taken place. If you changed its name, type or date, saving will use 1 event credit. Continue?"
              @endif>
             <div class="evt-section-body evt-actions-bar">

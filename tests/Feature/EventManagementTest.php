@@ -458,9 +458,9 @@ class EventManagementTest extends TestCase
         $response->assertDontSee('event cover photo', false);
 
         $response->assertSeeInOrder([
-            'Recommended size: 1200 ├ù 630 px (landscape).',
-            'Recommended size: 900 ├ù 900 px (square).',
-            'Recommended size: 1200 ├ù 1200 px (square).',
+            'Recommended size: 1200 × 630 px (landscape).',
+            'Recommended size: 900 × 900 px (square).',
+            'Recommended size: 1200 × 1200 px (square).',
         ], false);
     }
 
@@ -474,9 +474,9 @@ class EventManagementTest extends TestCase
 
         $this->actingAs($user)->get(route('events.edit', $event))
             ->assertOk()
-            ->assertSee('Recommended size: 1200 ├ù 630 px (landscape). Keep faces near the centre', false)
-            ->assertSee('Recommended size: 900 ├ù 1200 px (portrait, 3:4).', false)
-            ->assertSee('Recommended size: 1200 ├ù 900 px (landscape, 4:3).', false);
+            ->assertSee('Recommended size: 1200 × 630 px (landscape). Keep faces near the centre', false)
+            ->assertSee('Recommended size: 900 × 1200 px (portrait, 3:4).', false)
+            ->assertSee('Recommended size: 1200 × 900 px (landscape, 4:3).', false);
     }
 
     public function test_beauty_for_ashes_edit_page_shows_a_size_under_each_speaker_upload(): void
@@ -491,7 +491,7 @@ class EventManagementTest extends TestCase
             ->assertOk()
             ->getContent();
 
-        $this->assertSame(4, substr_count($content, 'Recommended size: 900 ├ù 1200 px (portrait, 3:4).'));
+        $this->assertSame(4, substr_count($content, 'Recommended size: 900 × 1200 px (portrait, 3:4).'));
     }
 
     public function test_image_free_layout_edit_page_shows_no_size_hints(): void

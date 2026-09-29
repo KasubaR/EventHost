@@ -959,4 +959,8 @@ function bindProductKindToggle() {
 
 document.addEventListener('DOMContentLoaded', () => {
     bindProductKindToggle();
+    bindEventDateTimeGuard();
+
+    const dateField = document.getElementById('event_date');
+    bindLiveFieldValidation(dateField && dateField.closest('form'));
 });
