@@ -10,11 +10,18 @@
                 \App\Support\InvitationLayoutVariant::maxGalleryImages(\App\Support\InvitationLayoutVariant::BOTANICAL_GRADUATION)
             );
             $gmClasses = ['gm-1', 'gm-2', 'gm-3', 'gm-4', 'gm-5'];
+            $galleryId = 'bg-gallery-'.$event->getKey();
         @endphp
         <div class="gallery-mosaic evt-bg-gallery-mosaic">
             @foreach ($galleryPaths as $index => $path)
                 <figure class="gm-tile {{ $gmClasses[$index] ?? 'gm-5' }} evt-bg-gm-figure">
-                    <img src="{{ \App\Support\InvitationMediaUrl::resolve($path) }}" alt="" loading="lazy" decoding="async" width="800" height="600">
+                    <a href="{{ \App\Support\InvitationMediaUrl::resolve($path) }}"
+                       class="glightbox evt-bg-gallery-lightbox"
+                       data-gallery="{{ $galleryId }}"
+                       data-type="image"
+                       aria-label="Open photo {{ $index + 1 }}">
+                        <img src="{{ \App\Support\InvitationMediaUrl::resolve($path) }}" alt="" loading="lazy" decoding="async" width="800" height="600">
+                    </a>
                 </figure>
             @endforeach
         </div>

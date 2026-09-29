@@ -10,6 +10,7 @@ use App\Support\InvitationMediaUrl;
 use App\Support\InvitationPalettes;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class EventPreviewTest extends TestCase
@@ -310,6 +311,42 @@ class EventPreviewTest extends TestCase
         $response->assertSee(InvitationMediaUrl::resolve($path), escape: false);
         // Never persisted — this is a render-only overlay.
         $this->assertNull($event->fresh()->invitation_customization);
+    }
+
+    /**
+     * Every grid gallery must render lightbox links; invitation-public.js opens
+     * them with GLightbox by these classes.
+     *
+     * @return array<string, array{string, string}>
+     */
+    public static function lightboxGalleryTemplates(): array
+    {
+        return [
+            'classic' => ['wedding-invitation', 'glightbox'],
+            'noir' => ['wedding-invitation-2', 'glightbox wi2-gallery-lightbox'],
+            'modern minimal' => ['modern-minimal', 'glightbox mm-gallery-lightbox'],
+            'midnight gold' => ['wedding-midnight-gold', 'glightbox mg-gallery-item'],
+            'dusty blue' => ['wedding-dusty-blue', 'glightbox db-print'],
+            'botanical' => ['graduation-template-2-botanical-blush', 'glightbox evt-bg-gallery-lightbox'],
+        ];
+    }
+
+    #[DataProvider('lightboxGalleryTemplates')]
+    public function test_gallery_photos_render_as_lightbox_links(string $slug, string $linkClass): void
+    {
+        Storage::fake('public');
+        $user = User::factory()->proPlus()->create();
+        $event = $this->eventWithTemplate($user, $slug);
+        $url = InvitationMediaUrl::resolve(
+            $this->stagedRow($event, $user, StagedMedia::SLOT_GALLERY, 'invitation-gallery/'.$event->id.'/gal_src_lb.jpg')->path
+        );
+
+        $html = $this->actingAs($user)->get(route('events.preview', $event))->assertOk()->getContent();
+
+        $this->assertMatchesRegularExpression(
+            '/<a\s[^>]*href="'.preg_quote(e($url), '/').'"[^>]*class="'.preg_quote($linkClass, '/').'"/s',
+            $html
+        );
     }
 
     public function test_staged_hero_portrait_appears_in_preview_before_saving(): void

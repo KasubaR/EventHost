@@ -226,29 +226,33 @@
         });
     }
 
-    function initModernMinimalLightbox(root) {
-        var links = root.querySelectorAll('.mm-gallery-lightbox');
-        if (links.length === 0 || typeof window.GLightbox === 'undefined') {
+    // Grid galleries of the layouts that override the gallery section. The shared
+    // Swiper gallery (.evt-inv-gallery-lightbox) is wired up in initGallery().
+    var LAYOUT_LIGHTBOX_SELECTORS = [
+        '.wi-gallery-grid .glightbox',
+        '.wi2-gallery-lightbox',
+        '.mm-gallery-lightbox',
+        '.mg-gallery-item',
+        '.db-gallery .glightbox',
+        '.evt-bg-gallery-lightbox',
+    ];
+
+    function initLayoutLightboxes(root) {
+        if (typeof window.GLightbox === 'undefined') {
             return;
         }
 
-        window.GLightbox({
-            selector: '.mm-gallery-lightbox',
-            touchNavigation: true,
-            loop: links.length > 1,
-        });
-    }
+        LAYOUT_LIGHTBOX_SELECTORS.forEach(function (selector) {
+            var links = root.querySelectorAll(selector);
+            if (links.length === 0) {
+                return;
+            }
 
-    function initWeddingNoirLightbox(root) {
-        var links = root.querySelectorAll('.wi2-gallery-lightbox');
-        if (links.length === 0 || typeof window.GLightbox === 'undefined') {
-            return;
-        }
-
-        window.GLightbox({
-            selector: '.wi2-gallery-lightbox',
-            touchNavigation: true,
-            loop: links.length > 1,
+            window.GLightbox({
+                selector: selector,
+                touchNavigation: true,
+                loop: links.length > 1,
+            });
         });
     }
 
@@ -284,19 +288,6 @@
         });
     }
 
-    function initWeddingLightbox(root) {
-        var grid = root.querySelector('.wi-gallery-grid');
-        if (!grid || typeof window.GLightbox === 'undefined') {
-            return;
-        }
-
-        window.GLightbox({
-            selector: '.wi-gallery-grid .glightbox',
-            touchNavigation: true,
-            loop: grid.querySelectorAll('.glightbox').length > 1,
-        });
-    }
-
     function initEventInviteLights(root) {
         var wrap = root.querySelector('[data-ei-lights]');
         if (!wrap || wrap.childElementCount > 0) {
@@ -329,10 +320,8 @@
             initGallery(root);
             initEventInviteLights(root);
             initWeddingReveal(root);
-            initWeddingLightbox(root);
             initWeddingNoirReveal(root);
-            initWeddingNoirLightbox(root);
-            initModernMinimalLightbox(root);
+            initLayoutLightboxes(root);
         });
     }
 
