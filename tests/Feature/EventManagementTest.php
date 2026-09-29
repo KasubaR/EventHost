@@ -910,14 +910,16 @@ class EventManagementTest extends TestCase
 
     public function test_venue_change_on_published_event_with_no_guests_does_not_prompt(): void
     {
-        // No count worth prompting over — falls through to the ordinary
-        // redirect response, same as any save that has nothing to report.
+        // No count worth prompting over, and the event is already published —
+        // falls through to the plain JSON "event-updated" response that tells
+        // event-edit-save.js to send the host back to their event list, same
+        // as any save that has nothing else to report.
         $user = User::factory()->create();
         $event = Event::factory()->for($user)->published()->create(['venue' => 'Old Hall']);
 
         $this->actingAs($user)->patchJson(route('events.update', $event), $this->baseUpdatePayload($event, [
             'venue' => 'New Hall',
-        ]))->assertRedirect();
+        ]))->assertOk()->assertJsonPath('status', 'event-updated');
 
         $this->assertSame('New Hall', $event->fresh()->venue);
     }
@@ -943,9 +945,23 @@ class EventManagementTest extends TestCase
 
         $this->actingAs($user)->patchJson(route('events.update', $event), $this->baseUpdatePayload($event, [
             'name' => 'A new name for the same event',
-        ]))->assertRedirect();
+        ]))->assertOk()->assertJsonPath('status', 'event-updated');
 
         $this->assertSame('A new name for the same event', $event->fresh()->name);
+    }
+
+    public function test_updating_a_published_event_redirects_to_my_events(): void
+    {
+        $user = User::factory()->create();
+        $event = Event::factory()->for($user)->privateAudience()->published()->create();
+
+        $response = $this->actingAs($user)->patch(route('events.update', $event), $this->baseUpdatePayload($event, [
+            'name' => 'Renamed after publishing',
+        ]));
+
+        $response->assertRedirect(route('events.index'));
+        $response->assertSessionHas('status', 'event-updated');
+        $this->assertSame('Renamed after publishing', $event->fresh()->name);
     }
 
     public function test_venue_change_flashes_notify_count_for_the_non_js_fallback(): void

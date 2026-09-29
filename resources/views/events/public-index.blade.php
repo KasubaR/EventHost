@@ -17,7 +17,9 @@
         </div>
     </x-slot>
 
-    @if (session('status') === 'event-deleted')
+    @if (session('status') === 'event-updated')
+        <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Event updated.</div>
+    @elseif (session('status') === 'event-deleted')
         <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Event deleted. You can restore it from Recently deleted below{{ \App\Models\Event::retentionDays() > 0 ? ' within '.\App\Models\Event::retentionDays().' days' : '' }}.</div>
     @elseif (session('status') === 'event-restored')
         <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Event restored.</div>

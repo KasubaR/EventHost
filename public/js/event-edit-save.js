@@ -290,6 +290,14 @@
                 }
             }
 
+            // A published event has nothing left to do on this page once details
+            // are saved — send the host back to their event list. A draft still
+            // mid-setup (no data-update-redirect-url) reloads in place instead.
+            if (bar.dataset.updateRedirectUrl) {
+                window.location.href = bar.dataset.updateRedirectUrl;
+                return;
+            }
+
             window.location.reload();
         } catch (e) {
             setBusy(false);

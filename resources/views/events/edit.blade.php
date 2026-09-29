@@ -180,6 +180,9 @@
              @endif
              @if ($event->is_published && $event->isLocked())
                  data-redefine-confirm="This event has already taken place. If you changed its name, type or date, saving will use 1 event credit. Continue?"
+             @endif
+             @if ($event->is_published)
+                 data-update-redirect-url="{{ route($event->isPublicAudience() ? 'public-events.index' : 'events.index') }}"
              @endif>
             <div class="evt-section-body evt-actions-bar">
                 @if ($event->isTicketed())
@@ -331,10 +334,11 @@
                 @else
                     <div class="evt-section-head">
                         <h2>Share</h2>
-                        <p>This is a private event, so it has no public link.</p>
+                        <p>Private invitation link — not listed anywhere, only guests you send it to can find it.</p>
                     </div>
                     <div class="evt-section-body">
-                        <span class="evt-muted">Send each guest their own invite from <a href="{{ route('events.guests.index', $event) }}">Guests</a> — that personal link is how they view and RSVP.</span>
+                        <a href="{{ route('events.public', $event->slug) }}" class="evt-public-url" target="_blank" rel="noopener">{{ url('/e/'.$event->slug) }}</a>
+                        <span class="evt-muted">Send each guest their own personal invite from <a href="{{ route('events.guests.index', $event) }}">Guests</a> instead, or pause/cancel/copy this link from <a href="{{ route('events.show', $event) }}">the event page</a>.</span>
                     </div>
                 @endif
             </div>

@@ -452,6 +452,29 @@ class EventController extends Controller
             ]);
         }
 
+        // A published event's "Update details" has nothing more to show on this
+        // page (no template prompt, no publish decision left) — send the host
+        // back to their event list instead of reloading the edit page. A draft
+        // still mid-setup (choosing a template, designing) stays here.
+        if ($event->is_published) {
+            $redirectRoute = $event->isPublicAudience() ? 'public-events.index' : 'events.index';
+
+            // Flash manually rather than via redirect()->with(): the edit page
+            // saves over fetch(), and a flash attached to THIS response would be
+            // consumed by fetch's own silent redirect-follow before the real
+            // navigation event-edit-save.js triggers afterward ever sees it (same
+            // issue the notifyGuestsCount branch above works around). Flashing
+            // here and returning JSON for that case, with a real redirect only for
+            // the no-JS fallback, means exactly one page load reads it either way.
+            session()->flash('status', 'event-updated');
+
+            if ($request->expectsJson()) {
+                return response()->json(['status' => 'event-updated']);
+            }
+
+            return redirect()->route($redirectRoute);
+        }
+
         return back()->with('status', 'event-updated');
     }
 
