@@ -127,7 +127,8 @@ class EventPreviewController extends Controller
             return null;
         }
 
-        $palette = InvitationPalettes::get($key);
+        $template = $event->invitationTemplate;
+        $palette = InvitationPalettes::resolve($key, $template?->default_theme);
         if ($palette === null) {
             return null;
         }
@@ -136,8 +137,12 @@ class EventPreviewController extends Controller
             return null;
         }
 
+        if ($key === InvitationPalettes::TEMPLATE_DEFAULT_KEY && $template !== null) {
+            $palette['label'] = $template->name;
+        }
+
         $templateMode = InvitationPalettes::modeForBackground(
-            (string) ($event->invitationTemplate?->default_theme['background'] ?? '#ffffff')
+            (string) ($template?->default_theme['background'] ?? '#ffffff')
         );
 
         return $palette['mode'] === $templateMode ? $palette : null;

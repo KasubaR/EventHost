@@ -462,6 +462,32 @@ class InvitationCustomizationService
     }
 
     /**
+     * Point the event's saved colours at a newly chosen template's own default.
+     * Colours saved for the old template would otherwise carry over — and a light
+     * trio on a dark layout (or the reverse) is exactly the unreadable combination
+     * the palette catalogue exists to prevent. Fonts, sections, content and media
+     * are left alone. Sets the attribute only; the caller saves.
+     */
+    public function resetThemeColoursForTemplate(Event $event, InvitationTemplate $template): void
+    {
+        $stored = $this->normalizeStoredCustomizationInput($event, $event->invitation_customization);
+        if (! is_array($stored['theme'] ?? null)) {
+            return;
+        }
+
+        $default = InvitationPalettes::templateDefault($template->default_theme);
+
+        $stored['theme'] = array_merge($stored['theme'], [
+            'palette_key' => InvitationPalettes::TEMPLATE_DEFAULT_KEY,
+            'primary' => $default['primary'],
+            'accent' => $default['accent'],
+            'background' => $default['background'],
+        ]);
+
+        $event->invitation_customization = $stored;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function defaultCustomizationShape(InvitationTemplate $template): array
@@ -475,9 +501,8 @@ class InvitationCustomizationService
         return [
             'schema_version' => self::CURRENT_SCHEMA_VERSION,
             'theme' => [
-                // Null when the template's own trio predates the curated catalogue —
-                // the design form then falls back to the first palette of its mode.
-                'palette_key' => InvitationPalettes::matchKey($primary, $accent, $background),
+                // The template's own colours, whether or not a catalogue palette shares them.
+                'palette_key' => InvitationPalettes::TEMPLATE_DEFAULT_KEY,
                 'primary' => $primary,
                 'accent' => $accent,
                 'background' => $background,

@@ -6,6 +6,7 @@ use App\Http\Requests\ChooseEventTemplateRequest;
 use App\Models\Event;
 use App\Models\InvitationTemplate;
 use App\Models\InvitationTemplateCategory;
+use App\Services\InvitationCustomizationService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -60,15 +61,20 @@ class EventChooseTemplateController extends Controller
         return view('events.choose-template', compact('event', 'templates', 'categories', 'q', 'categorySlug', 'preferredIdInt'));
     }
 
-    public function update(ChooseEventTemplateRequest $request, Event $event): RedirectResponse
+    public function update(ChooseEventTemplateRequest $request, Event $event, InvitationCustomizationService $customizationService): RedirectResponse
     {
         if ($event->isTicketed()) {
             return redirect()->route('events.edit', $event);
         }
 
-        $event->update([
-            'invitation_template_id' => (int) $request->validated('invitation_template_id'),
-        ]);
+        $templateId = (int) $request->validated('invitation_template_id');
+
+        if ($event->invitation_template_id !== $templateId) {
+            $customizationService->resetThemeColoursForTemplate($event, InvitationTemplate::query()->findOrFail($templateId));
+        }
+
+        $event->invitation_template_id = $templateId;
+        $event->save();
 
         return redirect()->route('events.edit', $event)->with('status', 'template-chosen');
     }

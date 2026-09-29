@@ -380,7 +380,7 @@ class EventInvitationDesignController extends Controller
                 // unreadable combination cannot reach a public invitation. Layouts that
                 // ignore the theme variables submit no palette and keep what they have.
                 $storedTheme = $fresh->invitation_customization['theme'] ?? [];
-                $palette = InvitationPalettes::get((string) ($validated['theme_palette'] ?? ''));
+                $palette = InvitationPalettes::resolve((string) ($validated['theme_palette'] ?? ''), $template->default_theme);
                 $themeColours = $palette !== null
                     ? [
                         'palette_key' => (string) $validated['theme_palette'],

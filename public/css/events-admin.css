@@ -449,7 +449,9 @@
     gap: 24px;
 }
 
-.evt-design-fieldset {
+/* Scoped under .profile-form so it outranks forms-app.css's
+   `.profile-form fieldset` reset, which zeroes padding and border. */
+.profile-form fieldset.evt-design-fieldset {
     border: 1px solid var(--border-soft, rgba(26, 42, 74, 0.12));
     border-radius: 14px;
     padding: 18px 20px;
@@ -460,7 +462,7 @@
         0 8px 26px rgba(26, 42, 74, 0.06);
 }
 
-.evt-design-fieldset legend {
+.profile-form fieldset.evt-design-fieldset > legend {
     padding: 0 8px;
     font-weight: 700;
 }
@@ -918,9 +920,23 @@
 }
 
 .evt-palette-name {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
     font-size: 0.8125rem;
     font-weight: 600;
     color: var(--text-strong, #1a2a4a);
+}
+
+.evt-palette-tag {
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: rgba(30, 71, 187, 0.1);
+    color: var(--brand, #1e47bb);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
 }
 
 /* Pro+ gate: picker stays visible (reads as an upsell, same as locked

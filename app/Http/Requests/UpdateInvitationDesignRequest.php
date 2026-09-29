@@ -162,7 +162,7 @@ class UpdateInvitationDesignRequest extends FormRequest
             // Nullable here, then required in withValidator() for every layout that
             // actually consumes the theme variables — Beauty for Ashes does not, so
             // its form omits the picker entirely.
-            'theme_palette' => ['nullable', Rule::in(InvitationPalettes::keys())],
+            'theme_palette' => ['nullable', Rule::in(InvitationPalettes::storableKeys())],
             'font_heading_key' => ['required', Rule::in(InvitationFonts::keys())],
             'font_body_key' => ['required', Rule::in(InvitationFonts::keys())],
 
@@ -321,7 +321,7 @@ class UpdateInvitationDesignRequest extends FormRequest
             return;
         }
 
-        $palette = is_string($key) ? InvitationPalettes::get($key) : null;
+        $palette = is_string($key) ? InvitationPalettes::resolve($key, $template->default_theme) : null;
 
         if ($palette === null) {
             $validator->errors()->add('theme_palette', 'Choose a colour palette for this invitation.');

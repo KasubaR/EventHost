@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\EventStaff;
 use App\Models\InvitationTemplate;
 use App\Models\User;
+use App\Support\InvitationPalettes;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -68,6 +69,23 @@ class ShowTest extends TestCase
 
         $response->assertOk()->assertJsonPath('catalog.palette_locked', false);
         $this->assertNotEmpty($response->json('catalog.palettes'));
+    }
+
+    public function test_unlocked_catalog_lists_the_template_default_first(): void
+    {
+        $proPlus = User::factory()->proPlus()->create();
+        $event = $this->eventFor($proPlus, 'wedding-midnight-gold');
+        $default = $event->invitationTemplate->default_theme;
+
+        $palettes = $this->withHeader('Authorization', 'Bearer '.$this->tokenFor($proPlus))
+            ->getJson("/api/v1/host/events/{$event->id}/design")
+            ->assertOk()
+            ->json('catalog.palettes');
+
+        $this->assertSame('template-default', $palettes[0]['key']);
+        $this->assertSame(strtolower($default['background']), $palettes[0]['background']);
+        // Every catalogue key existing clients know is still listed.
+        $this->assertCount(count(InvitationPalettes::keys()) + 1, $palettes);
     }
 
     public function test_needs_template_reason_when_no_template_chosen(): void

@@ -445,7 +445,7 @@ class EventInvitationDesignController extends Controller
                 // unreadable combination cannot reach a public invitation. Layouts that
                 // ignore the theme variables submit no palette and keep what they have.
                 $storedTheme = $fresh->invitation_customization['theme'] ?? [];
-                $palette = InvitationPalettes::get((string) ($validated['theme_palette'] ?? ''));
+                $palette = InvitationPalettes::resolve((string) ($validated['theme_palette'] ?? ''), $template->default_theme);
                 $themeColours = $palette !== null
                     ? [
                         'palette_key' => (string) $validated['theme_palette'],
@@ -603,15 +603,19 @@ class EventInvitationDesignController extends Controller
     private function catalog(InvitationTemplate $template, string $variant, bool $paletteUnlocked): array
     {
         return [
+            // The template's own colours lead the list; the rest of the catalogue is
+            // unchanged so existing clients keep every key they already know.
             'palettes' => $paletteUnlocked
-                ? collect(InvitationPalettes::PALETTES)->map(fn (array $p, string $key) => [
-                    'key' => $key,
-                    'label' => $p['label'],
-                    'mode' => $p['mode'],
-                    'primary' => $p['primary'],
-                    'accent' => $p['accent'],
-                    'background' => $p['background'],
-                ])->values() : [],
+                ? collect([InvitationPalettes::TEMPLATE_DEFAULT_KEY => InvitationPalettes::templateDefault($template->default_theme)])
+                    ->merge(InvitationPalettes::PALETTES)
+                    ->map(fn (array $p, string $key) => [
+                        'key' => $key,
+                        'label' => $p['label'],
+                        'mode' => $p['mode'],
+                        'primary' => $p['primary'],
+                        'accent' => $p['accent'],
+                        'background' => $p['background'],
+                    ])->values() : [],
             'palette_locked' => ! $paletteUnlocked,
             'fonts' => collect(InvitationFonts::keys())->map(fn (string $key) => [
                 'key' => $key,

@@ -10,6 +10,7 @@ use App\Http\Resources\Api\V1\InvitationTemplateResource;
 use App\Models\Event;
 use App\Models\InvitationTemplate;
 use App\Models\InvitationTemplateCategory;
+use App\Services\InvitationCustomizationService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -65,15 +66,20 @@ class EventChooseTemplateController extends Controller
         ]);
     }
 
-    public function update(ChooseEventTemplateRequest $request, Event $event): JsonResponse
+    public function update(ChooseEventTemplateRequest $request, Event $event, InvitationCustomizationService $customizationService): JsonResponse
     {
         if ($event->isTicketed()) {
             return response()->json(['error' => 'is_ticketed'], 422);
         }
 
-        $event->update([
-            'invitation_template_id' => (int) $request->validated('invitation_template_id'),
-        ]);
+        $templateId = (int) $request->validated('invitation_template_id');
+
+        if ($event->invitation_template_id !== $templateId) {
+            $customizationService->resetThemeColoursForTemplate($event, InvitationTemplate::query()->findOrFail($templateId));
+        }
+
+        $event->invitation_template_id = $templateId;
+        $event->save();
 
         return response()->json(new EventResource($event->fresh()))->setStatusCode(200);
     }

@@ -9,6 +9,12 @@ final class InvitationPalettes
     public const MODE_DARK = 'dark';
 
     /**
+     * Pseudo-palette meaning "this template's own default_theme colours". Not in
+     * PALETTES because its trio differs per template — resolve it with resolve().
+     */
+    public const TEMPLATE_DEFAULT_KEY = 'template-default';
+
+    /**
      * Pre-vetted colour trios offered in the invitation design form.
      *
      * Free-form hex was replaced by this catalogue because nothing validated the
@@ -119,11 +125,124 @@ final class InvitationPalettes
     }
 
     /**
+     * Every key a host may submit or store: the catalogue plus the template default.
+     *
+     * @return list<string>
+     */
+    public static function storableKeys(): array
+    {
+        return [self::TEMPLATE_DEFAULT_KEY, ...self::keys()];
+    }
+
+    /**
      * @return array{label: string, mode: string, primary: string, accent: string, background: string}|null
      */
     public static function get(string $key): ?array
     {
         return self::PALETTES[trim($key)] ?? null;
+    }
+
+    /**
+     * The template's own colours shaped like a catalogue palette.
+     *
+     * @param  array<string, mixed>|null  $defaultTheme  InvitationTemplate::$default_theme
+     * @return array{label: string, mode: string, primary: string, accent: string, background: string}
+     */
+    public static function templateDefault(?array $defaultTheme): array
+    {
+        $background = strtolower(trim((string) ($defaultTheme['background'] ?? '#fafafa')));
+
+        return [
+            'label' => 'Template default',
+            'mode' => self::modeForBackground($background),
+            'primary' => strtolower(trim((string) ($defaultTheme['primary'] ?? '#1a2a4a'))),
+            'accent' => strtolower(trim((string) ($defaultTheme['accent'] ?? '#1e47bb'))),
+            'background' => $background,
+        ];
+    }
+
+    /**
+     * Palettes offered for a template: its own colours first, then the catalogue
+     * palettes of the same light/dark mode, minus one identical to the default so
+     * the same trio is never offered twice.
+     *
+     * @param  array<string, mixed>|null  $defaultTheme
+     * @return array<string, array{label: string, mode: string, primary: string, accent: string, background: string}>
+     */
+    public static function choicesFor(?array $defaultTheme): array
+    {
+        $default = self::templateDefault($defaultTheme);
+
+        $catalogue = array_filter(
+            self::forMode($default['mode']),
+            static fn (array $p): bool => ! self::sameTrio($p, $default)
+        );
+
+        return [self::TEMPLATE_DEFAULT_KEY => $default] + $catalogue;
+    }
+
+    /**
+     * Trio for a submitted key — the template's own colours for TEMPLATE_DEFAULT_KEY,
+     * otherwise the catalogue entry. Null for an unknown key.
+     *
+     * @param  array<string, mixed>|null  $defaultTheme
+     * @return array{label: string, mode: string, primary: string, accent: string, background: string}|null
+     */
+    public static function resolve(string $key, ?array $defaultTheme): ?array
+    {
+        return trim($key) === self::TEMPLATE_DEFAULT_KEY
+            ? self::templateDefault($defaultTheme)
+            : self::get($key);
+    }
+
+    /**
+     * Which card the design form pre-selects for the event's current colours.
+     * Anything that is neither the template's colours nor an offered palette —
+     * say, colours left over from another template — falls back to the template default.
+     *
+     * @param  array<string, mixed>  $theme  merged invitation theme
+     * @param  array<string, mixed>|null  $defaultTheme
+     * @param  array<string, mixed>  $choices  from choicesFor()
+     */
+    public static function selectedKeyFor(array $theme, ?array $defaultTheme, array $choices): string
+    {
+        $trio = [
+            'primary' => (string) ($theme['primary'] ?? ''),
+            'accent' => (string) ($theme['accent'] ?? ''),
+            'background' => (string) ($theme['background'] ?? ''),
+        ];
+
+        if (self::sameTrio($trio, self::templateDefault($defaultTheme))) {
+            return self::TEMPLATE_DEFAULT_KEY;
+        }
+
+        $stored = $theme['palette_key'] ?? null;
+        if (is_string($stored) && $stored !== self::TEMPLATE_DEFAULT_KEY && isset($choices[$stored])
+            && self::sameTrio($trio, $choices[$stored])) {
+            return $stored;
+        }
+
+        $matched = self::matchKey($trio['primary'], $trio['accent'], $trio['background']);
+        if ($matched !== null && isset($choices[$matched])) {
+            return $matched;
+        }
+
+        return self::TEMPLATE_DEFAULT_KEY;
+    }
+
+    /**
+     * @param  array{primary: string, accent: string, background: string}  $a
+     * @param  array{primary: string, accent: string, background: string}  $b
+     */
+    private static function sameTrio(array $a, array $b): bool
+    {
+        foreach (['primary', 'accent', 'background'] as $k) {
+            if (strtolower(trim((string) $a[$k])) !== strtolower(trim((string) $b[$k]))) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

@@ -242,6 +242,36 @@ class EventPreviewTest extends TestCase
         $response->assertDontSee('palette — not saved', escape: false);
     }
 
+    public function test_template_default_palette_previews_the_templates_own_colours(): void
+    {
+        $user = User::factory()->proPlus()->create();
+        $event = $this->eventWithTemplate($user, 'wedding-midnight-gold');
+        $noir = InvitationPalettes::get('noir-gold');
+        $event->forceFill(['invitation_customization' => [
+            'schema_version' => 2,
+            'theme' => [
+                'palette_key' => 'noir-gold',
+                'primary' => $noir['primary'],
+                'accent' => $noir['accent'],
+                'background' => $noir['background'],
+                'font_heading_key' => 'inter',
+                'font_body_key' => 'inter',
+            ],
+        ]])->save();
+        $default = $event->invitationTemplate->default_theme;
+
+        $response = $this->actingAs($user)->get(route('events.preview', [
+            'event' => $event,
+            'palette' => InvitationPalettes::TEMPLATE_DEFAULT_KEY,
+        ]));
+
+        $response->assertOk();
+        $response->assertSee('--evt-background: '.strtolower($default['background']), escape: false);
+        $response->assertSee('--evt-primary: '.strtolower($default['primary']), escape: false);
+        $response->assertSee('palette — not saved', escape: false);
+        $response->assertSee(e($event->invitationTemplate->name), escape: false);
+    }
+
     public function test_other_users_cannot_preview_a_palette(): void
     {
         $owner = User::factory()->create();

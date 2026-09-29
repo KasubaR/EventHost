@@ -171,7 +171,7 @@ class InvitationPaletteTest extends TestCase
         $response = $this->actingAs($user)->get(route('events.edit', $event));
 
         $response->assertOk();
-        $response->assertSee('theme_palette_slate-sky', escape: false);
+        $response->assertSee('theme_palette_sage-ivory', escape: false);
         $response->assertDontSee('theme_palette_noir-gold', escape: false);
     }
 
@@ -183,7 +183,7 @@ class InvitationPaletteTest extends TestCase
         $response = $this->actingAs($user)->get(route('events.edit', $event));
 
         $response->assertOk();
-        $response->assertSee('theme_palette_noir-gold', escape: false);
+        $response->assertSee('theme_palette_midnight-silver', escape: false);
         $response->assertDontSee('theme_palette_slate-sky', escape: false);
     }
 
@@ -262,7 +262,7 @@ class InvitationPaletteTest extends TestCase
         $response->assertOk();
         // Still shown (reads as an upsell) plus an upgrade link. The cards are
         // pickable for previewing, under a name the save path never reads.
-        $response->assertSee('theme_palette_slate-sky', escape: false);
+        $response->assertSee('theme_palette_sage-ivory', escape: false);
         $response->assertSee('evt-palette-grid--locked', escape: false);
         $response->assertSee('Upgrade to Pro+', escape: false);
         $response->assertSee('name="palette_preview"', escape: false);
@@ -295,7 +295,7 @@ class InvitationPaletteTest extends TestCase
         $user = User::factory()->create();
         [$event] = $this->eventFor($user, 'slate-minimal');
 
-        $event->update(['invitation_customization' => [
+        $event->forceFill(['invitation_customization' => [
             'schema_version' => 2,
             'theme' => [
                 'primary' => '#123456',
@@ -304,12 +304,163 @@ class InvitationPaletteTest extends TestCase
                 'font_heading_key' => 'inter',
                 'font_body_key' => 'inter',
             ],
-        ]]);
+        ]])->save();
 
         $response = $this->actingAs($user)->get(route('events.edit', $event));
 
         $response->assertOk();
-        // Falls back to the first palette of the matching mode rather than showing nothing selected.
-        $response->assertSee('theme_palette_'.InvitationPalettes::defaultKeyForMode(InvitationPalettes::MODE_LIGHT), escape: false);
+        // Falls back to the template's own colours rather than showing nothing selected.
+        $this->assertSame(InvitationPalettes::TEMPLATE_DEFAULT_KEY, $this->checkedPalette($response->getContent()));
+    }
+
+    private function checkedPalette(string $html): ?string
+    {
+        preg_match_all('/<input[^>]*id="theme_palette_([a-z-]+)"[^>]*>/', $html, $inputs, PREG_SET_ORDER);
+
+        foreach ($inputs as [$tag, $key]) {
+            if (preg_match('/\schecked\b/', $tag)) {
+                return $key;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array<int, array{string}>
+     */
+    public static function offCatalogueTemplates(): array
+    {
+        return [
+            'midnight gold' => ['wedding-midnight-gold'],
+            'dusty blue' => ['wedding-dusty-blue'],
+            'wedding standard' => ['base-wedding'],
+        ];
+    }
+
+    /**
+     * @dataProvider offCatalogueTemplates
+     */
+    public function test_template_whose_colours_are_not_in_the_catalogue_preselects_its_own_default(string $slug): void
+    {
+        $user = User::factory()->proPlus()->create();
+        [$event, $tpl] = $this->eventFor($user, $slug);
+
+        $response = $this->actingAs($user)->get(route('events.edit', $event));
+
+        $response->assertOk();
+        $this->assertSame(InvitationPalettes::TEMPLATE_DEFAULT_KEY, $this->checkedPalette($response->getContent()));
+        $response->assertSee($tpl->name, escape: false);
+        $response->assertSee('evt-palette-tag', escape: false);
+    }
+
+    public function test_template_default_card_is_first_and_catalogue_twin_is_not_repeated(): void
+    {
+        $user = User::factory()->proPlus()->create();
+        [$event] = $this->eventFor($user, 'wedding-invitation');
+
+        $html = $this->actingAs($user)->get(route('events.edit', $event))->assertOk()->getContent();
+
+        preg_match_all('/id="theme_palette_([a-z-]+)"/', $html, $m);
+        $this->assertSame(InvitationPalettes::TEMPLATE_DEFAULT_KEY, $m[1][0] ?? null);
+        $this->assertNotContains('ivory-gold', $m[1]);
+        $this->assertSame(InvitationPalettes::TEMPLATE_DEFAULT_KEY, $this->checkedPalette($html));
+    }
+
+    public function test_saving_template_default_stores_the_templates_own_colours(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->proPlus()->create();
+        [$event, $tpl] = $this->eventFor($user, 'wedding-dusty-blue');
+
+        $this->actingAs($user)
+            ->patch(route('events.invitation-design.update', $event), $this->designPayload($tpl, [
+                'theme_palette' => 'sage-ivory',
+            ]))
+            ->assertSessionDoesntHaveErrors();
+
+        $this->actingAs($user)
+            ->patch(route('events.invitation-design.update', $event->fresh()), $this->designPayload($tpl, [
+                'theme_palette' => InvitationPalettes::TEMPLATE_DEFAULT_KEY,
+            ]))
+            ->assertSessionDoesntHaveErrors();
+
+        $theme = $event->fresh()->invitation_customization['theme'];
+        $this->assertSame(InvitationPalettes::TEMPLATE_DEFAULT_KEY, $theme['palette_key']);
+        $this->assertSame(strtolower($tpl->default_theme['primary']), $theme['primary']);
+        $this->assertSame(strtolower($tpl->default_theme['accent']), $theme['accent']);
+        $this->assertSame(strtolower($tpl->default_theme['background']), $theme['background']);
+    }
+
+    public function test_template_default_is_still_rejected_below_pro_plus(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->pro()->create();
+        [$event, $tpl] = $this->eventFor($user, 'wedding-dusty-blue');
+
+        $this->actingAs($user)
+            ->patch(route('events.invitation-design.update', $event), $this->designPayload($tpl, [
+                'theme_palette' => InvitationPalettes::TEMPLATE_DEFAULT_KEY,
+            ]))
+            ->assertSessionHasErrors('theme_palette');
+    }
+
+    public function test_switching_template_resets_colours_to_the_new_templates_default(): void
+    {
+        $user = User::factory()->proPlus()->create();
+        [$event] = $this->eventFor($user, 'wedding-invitation-2');
+        $noir = InvitationPalettes::get('noir-gold');
+        $event->forceFill(['invitation_customization' => [
+            'schema_version' => 2,
+            'theme' => [
+                'palette_key' => 'noir-gold',
+                'primary' => $noir['primary'],
+                'accent' => $noir['accent'],
+                'background' => $noir['background'],
+                'font_heading_key' => 'bodoni_moda',
+                'font_body_key' => 'eb_garamond',
+            ],
+        ]])->save();
+
+        $light = InvitationTemplate::query()->where('slug', 'wedding-dusty-blue')->firstOrFail();
+
+        $this->actingAs($user)
+            ->patch(route('events.choose-template.update', $event), ['invitation_template_id' => $light->id])
+            ->assertRedirect(route('events.edit', $event));
+
+        $theme = $event->fresh()->invitation_customization['theme'];
+        $this->assertSame(InvitationPalettes::TEMPLATE_DEFAULT_KEY, $theme['palette_key']);
+        $this->assertSame(strtolower($light->default_theme['background']), $theme['background']);
+        $this->assertSame(strtolower($light->default_theme['primary']), $theme['primary']);
+        // Only the colours are reset.
+        $this->assertSame('bodoni_moda', $theme['font_heading_key']);
+
+        $html = $this->actingAs($user)->get(route('events.edit', $event))->assertOk()->getContent();
+        $this->assertSame(InvitationPalettes::TEMPLATE_DEFAULT_KEY, $this->checkedPalette($html));
+
+        $this->actingAs($user)->get(route('events.preview', $event))
+            ->assertOk()
+            ->assertDontSee('--evt-background: '.$noir['background'], escape: false);
+    }
+
+    public function test_re_choosing_the_same_template_keeps_a_picked_palette(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->proPlus()->create();
+        [$event, $tpl] = $this->eventFor($user, 'slate-minimal');
+
+        $this->actingAs($user)
+            ->patch(route('events.invitation-design.update', $event), $this->designPayload($tpl, [
+                'theme_palette' => 'sage-ivory',
+            ]))
+            ->assertSessionDoesntHaveErrors();
+
+        $this->actingAs($user)
+            ->patch(route('events.choose-template.update', $event), ['invitation_template_id' => $tpl->id]);
+
+        $this->assertSame('sage-ivory', $event->fresh()->invitation_customization['theme']['palette_key']);
     }
 }

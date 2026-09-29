@@ -107,16 +107,11 @@
     // (so it reads as an upsell, same as locked templates) but can't apply it;
     // enforced again server-side in UpdateInvitationDesignRequest::validatePalette().
     $canChoosePalette = auth()->user()->canChooseInvitationPalette();
-    $paletteMode = InvitationPalettes::modeForBackground($invitationMerged['theme']['background'] ?? '#ffffff');
-    $paletteChoices = InvitationPalettes::forMode($paletteMode);
+    // merge() set this relation to the template actually being rendered.
+    $templateTheme = $event->invitationTemplate?->default_theme;
+    $paletteChoices = InvitationPalettes::choicesFor($templateTheme);
     $selectedPalette = old('theme_palette')
-        ?? $invitationMerged['theme']['palette_key']
-        ?? InvitationPalettes::matchKey(
-            $invitationMerged['theme']['primary'] ?? '',
-            $invitationMerged['theme']['accent'] ?? '',
-            $invitationMerged['theme']['background'] ?? '',
-        )
-        ?? InvitationPalettes::defaultKeyForMode($paletteMode);
+        ?? InvitationPalettes::selectedKeyFor($invitationMerged['theme'] ?? [], $templateTheme, $paletteChoices);
 
     $videoBackgroundStored = $invitationMerged['effects']['video_background'] ?? null;
     $videoBackgroundStored = is_string($videoBackgroundStored) && $videoBackgroundStored !== '' ? $videoBackgroundStored : null;
@@ -164,7 +159,14 @@
                                     <span class="evt-palette-band" style="background: {{ $palette['primary'] }};"></span>
                                     <span class="evt-palette-band" style="background: {{ $palette['accent'] }};"></span>
                                 </span>
-                                <span class="evt-palette-name">{{ $palette['label'] }}</span>
+                                <span class="evt-palette-name">
+                                    @if ($key === InvitationPalettes::TEMPLATE_DEFAULT_KEY)
+                                        {{ $event->invitationTemplate?->name ?? $palette['label'] }}
+                                        <span class="evt-palette-tag">Default</span>
+                                    @else
+                                        {{ $palette['label'] }}
+                                    @endif
+                                </span>
                             </label>
                         @endforeach
                     </div>
