@@ -58,6 +58,7 @@ Laravel 12 application. Auth via Laravel Breeze (Blade stack). No Alpine.js — 
 | `public/css/dashboard-home.css` | `dashboard.blade.php` via `@push('styles')` — overview stats / empty state |
 | `public/css/events-admin.css` | Event CRUD views (`events/*` except public) via `@push('styles')` |
 | `public/css/events-public.css` | `events/public.blade.php` — public invitation page |
+| `public/css/events-invitation-section-nav.css` | Section nav above Pro invitation layouts (`nav.evt-inv-nav`) — pushed by `events/invitations/renderer.blade.php` when `InvitationSectionNav::items()` returns links. Not sticky: resets `global.css`'s `nav {}`. Links come from the sections that actually rendered markup, and each section is wrapped in `<div id="inv-{type}" class="evt-inv-anchor">`, so a sibling selector between bare sections (e.g. Modern Minimal's `.mm-section + .mm-section`) needs a wrapper-form twin in this file |
 | `public/css/event-cards.css` | Public event cards (`.event-card-*`) + `/discover` page — pushed by `home.blade.php` and `events/discover.blade.php` |
 | `public/css/reviews.css` | Host review portal (`.rev-*`) — star picker and status pills; pair with `events-admin.css` |
 | `public/css/settings.css` | Account settings tab strip (`.set-*`) — pushed by `components/settings-layout.blade.php`; the cards inside each tab reuse `forms-app.css` |

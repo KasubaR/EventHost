@@ -1,6 +1,6 @@
 {{--
     Ticketed events replace the RSVP section with this "Buy tickets" panel in
-    every layout variant — see section-loop.blade.php's rsvp case. Reuses the
+    every layout variant — see partials/section.blade.php's rsvp case. Reuses the
     RSVP panel's own classes (.evt-inline-rsvp*) rather than new ones so it
     automatically inherits every skin's already-tuned per-layout styling
     (fonts, colors) instead of needing six new override files.

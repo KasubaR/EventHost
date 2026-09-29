@@ -3,6 +3,7 @@
     $hidden = $hidden ?? false;
     $heading = $heading ?? 'Cover Image';
     $description = $description ?? 'Recommended wide image; we crop to 1200×630 for sharing.';
+    $sizeHint = $sizeHint ?? null;
 @endphp
 <div class="evt-section" data-product-panel="invitation" @if ($hidden) hidden @endif>
     <div class="evt-section-head">
@@ -27,6 +28,9 @@
                            data-upload-max-bytes="{{ \App\Support\InvitationMediaRules::COVER_MAX_KB * 1024 }}"
                        @endisset>
                 <p class="profile-photo-hint">JPG, PNG or WEBP · Max 4MB</p>
+                @if ($sizeHint)
+                    <p class="profile-photo-hint">{{ $sizeHint }}</p>
+                @endif
                 @error('cover_image')
                     <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                 @enderror

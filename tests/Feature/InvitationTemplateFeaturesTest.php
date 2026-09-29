@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\InvitationCustomizationService;
 use App\Support\InvitationLayoutVariant;
 use App\Support\InvitationPalettes;
+use App\Support\InvitationSectionNav;
 use App\Support\WeddingInvitationView;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -322,6 +323,95 @@ class InvitationTemplateFeaturesTest extends TestCase
         $response->assertSee('evt-layout-botanical-graduation', escape: false);
         $response->assertSee('evt-bg-nav-strip', escape: false);
         $response->assertSee('photo-frame', escape: false);
+    }
+
+    public function test_every_pro_template_preview_has_a_section_nav(): void
+    {
+        $user = User::factory()->proPlus()->create();
+        $templates = InvitationTemplate::query()
+            ->where('is_active', true)
+            ->whereIn('layout_variant', InvitationLayoutVariant::sectionNavLayouts())
+            ->get();
+
+        $this->assertCount(count(InvitationLayoutVariant::sectionNavLayouts()), $templates);
+
+        foreach ($templates as $template) {
+            $content = $this->actingAs($user)->get(route('templates.preview', $template))
+                ->assertOk()
+                ->assertSee('events-invitation-section-nav.css', escape: false)
+                ->assertSee('<nav class="evt-inv-nav"', escape: false)
+                ->assertSee('<a href="#inv-hero" class="evt-inv-nav-link">Home</a>', escape: false)
+                ->assertSee('id="inv-hero"', escape: false)
+                ->assertDontSee('href="#inv-countdown"', escape: false)
+                ->getContent();
+
+            preg_match_all('/href="#(inv-[a-z]+)"/', $content, $links);
+            foreach ($links[1] as $anchor) {
+                $this->assertStringContainsString('id="'.$anchor.'"', $content, $template->slug.' links to a missing '.$anchor);
+            }
+        }
+    }
+
+    public function test_base_template_previews_have_no_section_nav(): void
+    {
+        $user = User::factory()->create();
+
+        foreach (['slate-minimal', 'base-wedding', 'event-invite'] as $slug) {
+            $tpl = InvitationTemplate::query()->where('slug', $slug)->firstOrFail();
+
+            $this->actingAs($user)->get(route('templates.preview', $tpl))
+                ->assertOk()
+                ->assertDontSee('evt-inv-nav', escape: false)
+                ->assertDontSee('events-invitation-section-nav.css', escape: false)
+                ->assertDontSee('id="inv-hero"', escape: false);
+        }
+    }
+
+    public function test_section_nav_skips_hidden_and_empty_sections(): void
+    {
+        $user = User::factory()->pro()->create();
+        $tpl = InvitationTemplate::query()->where('slug', 'wedding-invitation')->firstOrFail();
+
+        $sections = collect($tpl->default_sections)
+            ->map(fn (array $s) => ['type' => $s['type'], 'visible' => $s['type'] !== 'gallery'])
+            ->all();
+
+        $event = Event::factory()->for($user)->create([
+            'invitation_template_id' => $tpl->id,
+            'event_date' => now()->addMonth(),
+            'invitation_customization' => ['sections' => $sections, 'content' => ['story' => '']],
+        ]);
+
+        $this->actingAs($user)->get(route('events.preview', $event))
+            ->assertOk()
+            ->assertSeeInOrder(['href="#inv-hero"', 'href="#inv-description"', 'href="#inv-details"', 'href="#inv-rsvp"'], escape: false)
+            // Hidden by the host.
+            ->assertDontSee('href="#inv-gallery"', escape: false)
+            // Visible, but an empty story renders nothing.
+            ->assertDontSee('href="#inv-story"', escape: false)
+            ->assertDontSee('id="inv-story"', escape: false);
+    }
+
+    public function test_section_nav_labels_follow_the_layout(): void
+    {
+        $types = ['hero', 'countdown', 'gallery', 'story', 'details', 'schedule', 'rsvp', 'description'];
+
+        $this->assertSame(
+            ['Home', 'Speakers', 'Message', 'Details', 'Schedule', 'RSVP', 'Contact'],
+            array_column(InvitationSectionNav::items(InvitationLayoutVariant::BEAUTY_FOR_ASHES, $types), 'label')
+        );
+        $this->assertSame(
+            ['Home', 'Gallery', 'Story', 'Details', 'The Day', 'RSVP', 'Note'],
+            array_column(InvitationSectionNav::items(InvitationLayoutVariant::BOTANICAL_GRADUATION, $types), 'label')
+        );
+        $this->assertSame(
+            ['Home', 'Gallery', 'Story', 'Details', 'Programme', 'Tickets', 'Invitation'],
+            array_column(InvitationSectionNav::items(InvitationLayoutVariant::WEDDING_INVITATION, $types, ticketed: true), 'label')
+        );
+
+        // Home alone is not worth a bar, and Base layouts never get one.
+        $this->assertSame([], InvitationSectionNav::items(InvitationLayoutVariant::MODERN_MINIMAL, ['hero', 'countdown']));
+        $this->assertSame([], InvitationSectionNav::items(InvitationLayoutVariant::BASE_WEDDING, $types));
     }
 
     public function test_preview_uses_the_requested_templates_merge_output_not_always_first_template(): void

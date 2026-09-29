@@ -8,6 +8,8 @@ use App\Models\Guest;
 use App\Models\InvitationTemplate;
 use App\Models\Rsvp;
 use App\Models\User;
+use App\Support\InvitationImageSizes;
+use App\Support\InvitationLayoutVariant;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -454,6 +456,75 @@ class EventManagementTest extends TestCase
         $response->assertSee('name="countdown_enabled"', false);
         $response->assertDontSee('data-upload-slot="hero_portrait"', false);
         $response->assertDontSee('event cover photo', false);
+
+        $response->assertSeeInOrder([
+            'Recommended size: 1200 ├ù 630 px (landscape).',
+            'Recommended size: 900 ├ù 900 px (square).',
+            'Recommended size: 1200 ├ù 1200 px (square).',
+        ], false);
+    }
+
+    public function test_cover_size_hint_warns_about_side_crop_on_tall_cover_layouts(): void
+    {
+        $user = User::factory()->pro()->create();
+        $tpl = InvitationTemplate::query()->where('slug', 'wedding-invitation-2')->firstOrFail();
+        $event = Event::factory()->for($user)->create([
+            'invitation_template_id' => $tpl->id,
+        ]);
+
+        $this->actingAs($user)->get(route('events.edit', $event))
+            ->assertOk()
+            ->assertSee('Recommended size: 1200 ├ù 630 px (landscape). Keep faces near the centre', false)
+            ->assertSee('Recommended size: 900 ├ù 1200 px (portrait, 3:4).', false)
+            ->assertSee('Recommended size: 1200 ├ù 900 px (landscape, 4:3).', false);
+    }
+
+    public function test_beauty_for_ashes_edit_page_shows_a_size_under_each_speaker_upload(): void
+    {
+        $user = User::factory()->pro()->create();
+        $tpl = InvitationTemplate::query()->where('slug', 'beauty-for-ashes')->firstOrFail();
+        $event = Event::factory()->for($user)->create([
+            'invitation_template_id' => $tpl->id,
+        ]);
+
+        $content = $this->actingAs($user)->get(route('events.edit', $event))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertSame(4, substr_count($content, 'Recommended size: 900 ├ù 1200 px (portrait, 3:4).'));
+    }
+
+    public function test_image_free_layout_edit_page_shows_no_size_hints(): void
+    {
+        $user = User::factory()->create();
+        $tpl = InvitationTemplate::query()->where('slug', 'base-wedding')->firstOrFail();
+        $event = Event::factory()->for($user)->create([
+            'invitation_template_id' => $tpl->id,
+        ]);
+
+        $this->actingAs($user)->get(route('events.edit', $event))
+            ->assertOk()
+            ->assertDontSee('Recommended size:', false);
+    }
+
+    public function test_every_image_slot_a_pro_layout_offers_has_a_recommended_size(): void
+    {
+        foreach (InvitationLayoutVariant::sectionNavLayouts() as $variant) {
+            if (InvitationLayoutVariant::usesCoverImage($variant)) {
+                $this->assertNotNull(InvitationImageSizes::for($variant, 'cover'), $variant.' cover');
+            }
+
+            if (InvitationLayoutVariant::maxCouplePhotoSlots($variant) > 0) {
+                $slot = $variant === InvitationLayoutVariant::BEAUTY_FOR_ASHES ? 'speaker' : 'couple';
+                $this->assertNotNull(InvitationImageSizes::for($variant, $slot), $variant.' '.$slot);
+            }
+
+            $galleryShown = ! in_array('gallery', InvitationLayoutVariant::blockedSections($variant), true)
+                && $variant !== InvitationLayoutVariant::BEAUTY_FOR_ASHES;
+            if ($galleryShown) {
+                $this->assertNotNull(InvitationImageSizes::for($variant, 'gallery'), $variant.' gallery');
+            }
+        }
     }
 
     public function test_pro_magazine_edit_page_matches_cover_and_gallery(): void

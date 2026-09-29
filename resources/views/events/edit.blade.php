@@ -121,7 +121,11 @@
                         $coverVariant = \App\Support\InvitationLayoutVariant::normalize(
                             $event->invitationTemplate?->layout_variant
                         );
-                        $coverField = ['event' => $event, 'associateForm' => true];
+                        $coverField = [
+                            'event' => $event,
+                            'associateForm' => true,
+                            'sizeHint' => \App\Support\InvitationImageSizes::hint($coverVariant, 'cover'),
+                        ];
                         if ($coverVariant === \App\Support\InvitationLayoutVariant::WEDDING_INVITATION_NOIR) {
                             $coverField['heading'] = 'Hero photo';
                             $coverField['description'] = 'Tall portrait on the left of the opening screen. Also used for link sharing.';

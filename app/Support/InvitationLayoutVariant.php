@@ -52,6 +52,21 @@ final class InvitationLayoutVariant
         return in_array(self::normalize($variant), self::proWeddingLayouts(), true);
     }
 
+    /**
+     * Pro layouts that draw a section nav above the hero (see InvitationSectionNav).
+     *
+     * @return list<string>
+     */
+    public static function sectionNavLayouts(): array
+    {
+        return [...self::proWeddingLayouts(), self::PRO_MAGAZINE, self::BOTANICAL_GRADUATION, self::BEAUTY_FOR_ASHES];
+    }
+
+    public static function hasSectionNav(?string $variant): bool
+    {
+        return in_array(self::normalize($variant), self::sectionNavLayouts(), true);
+    }
+
     public static function normalize(?string $value): string
     {
         $trimmed = trim((string) $value);

@@ -2,6 +2,7 @@
     use App\Enums\SubscriptionTier;
     use App\Support\BillingPlan;
     use App\Support\InvitationFonts;
+    use App\Support\InvitationImageSizes;
     use App\Support\InvitationLayoutVariant;
     use App\Support\InvitationMediaRules;
     use App\Support\InvitationPalettes;
@@ -95,6 +96,9 @@
     $currentHeroPortrait = $invitationMerged['media']['hero_portrait'] ?? null;
     $currentHeroPortrait = is_string($currentHeroPortrait) && $currentHeroPortrait !== '' ? $currentHeroPortrait : null;
     $coupleSlotsRemaining = max(0, $couplePhotoSlots - count($currentCouple));
+    $coupleSizeHint = InvitationImageSizes::hint($layoutVariant, 'couple');
+    $speakerSizeHint = InvitationImageSizes::hint($layoutVariant, 'speaker');
+    $gallerySizeHint = InvitationImageSizes::hint($layoutVariant, 'gallery');
 
     // Beauty for Ashes hardcodes its colours and never reads the theme variables,
     // so offering a palette there would silently do nothing.
@@ -237,7 +241,7 @@
                         <li class="evt-design-section-row" data-section-type="{{ $type }}">
                             <input type="hidden" name="section_order[]" value="{{ $type }}">
                             <button type="button" class="evt-design-drag" data-inv-sort-handle aria-label="Reorder {{ $label }}">
-                                <i class="fa-solid fa-grip-vertical" aria-hidden="true"></i>
+                                <i class="fa-solid fa-arrows-up-down" aria-hidden="true"></i>
                             </button>
                             <span class="evt-design-section-label">{{ $label }}</span>
                             <input type="hidden" name="section_visible[{{ $type }}]" value="0">
@@ -705,6 +709,9 @@
                                                    data-upload-slot="speaker:{{ $idx }}"
                                                    data-upload-url="{{ $stageUrl }}"
                                                    data-upload-max-bytes="{{ InvitationMediaRules::IMAGE_MAX_KB * 1024 }}">
+                                            @if ($speakerSizeHint)
+                                                <p class="evt-muted evt-design-hint">{{ $speakerSizeHint }}</p>
+                                            @endif
                                             @error("speaker_photo.$idx")
                                                 <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                                             @enderror
@@ -851,6 +858,9 @@
                                             @endif
                                             {{ $coupleSlotsRemaining === 0 ? 'Remove one to add another.' : $coupleSlotsRemaining.' slot(s) left.' }}
                                         </p>
+                                        @if ($coupleSizeHint)
+                                            <p class="evt-muted evt-design-hint">{{ $coupleSizeHint }}</p>
+                                        @endif
                                         @error('couple_photos')
                                             <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                                         @enderror
@@ -920,6 +930,9 @@
                                        data-upload-slot="gallery"
                                        data-upload-url="{{ $stageUrl }}"
                                        data-upload-max-bytes="{{ InvitationMediaRules::IMAGE_MAX_KB * 1024 }}">
+                                @if ($gallerySizeHint)
+                                    <p class="evt-muted evt-design-hint">{{ $gallerySizeHint }}</p>
+                                @endif
                                 @error('gallery_images')
                                     <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                                 @enderror
