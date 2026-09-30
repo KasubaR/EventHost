@@ -276,9 +276,14 @@ Route::prefix('v1/host')->middleware(['auth:sanctum', 'sanctum.active'])->group(
             Route::post('/bulk', [GuestBulkActionController::class, 'store'])
                 ->middleware('throttle:guest-bulk-send')
                 ->name('bulk');
+            Route::get('/{guest}', [GuestController::class, 'show'])->name('show');
             Route::patch('/{guest}', [GuestController::class, 'update'])->name('update');
             Route::delete('/{guest}', [GuestController::class, 'destroy'])->name('destroy');
             Route::patch('/{guest}/invitation-sent', [GuestController::class, 'markInvitationSent'])->name('mark-sent');
+            Route::get('/{guest}/qr.png', [GuestController::class, 'qr'])->name('qr');
+            Route::post('/{guest}/whatsapp-invite', [GuestController::class, 'sendWhatsAppInvitation'])
+                ->middleware('throttle:guest-whatsapp-send')
+                ->name('whatsapp-invite');
         });
 
         Route::prefix('{event}/guest-groups')->name('guest-groups.')->group(function (): void {

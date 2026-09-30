@@ -11,6 +11,7 @@ use App\Http\Resources\Api\V1\GuestResource;
 use App\Http\Resources\Api\V1\TableResource;
 use App\Models\Event;
 use App\Models\Guest;
+use App\Services\CommunicationService;
 use App\Services\QrCodeService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -25,9 +27,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * JSON sibling of App\Http\Controllers\GuestController — no session, no redirect+flash.
  * Authorizes every mutation via GuestPolicy/EventPolicy directly (owner or accepted
  * Manager staff) instead of the narrower owner-only FormRequest checks the web
- * controller relies on — see the Slice C3 plan, design decision #1. No qr() action:
- * GuestResource.check_in_qr_url replaces it (decision #4). The web controller is
- * untouched by this class.
+ * controller relies on — see the Slice C3 plan, design decision #1. GuestResource's
+ * check_in_qr_url carries the QR payload (decision #4); qr() adds a ready-made PNG
+ * of it for the app's guest details screen. The web controller is untouched by
+ * this class.
  */
 class GuestController extends Controller
 {
@@ -85,8 +88,74 @@ class GuestController extends Controller
             ],
             'stats' => $stats,
             'groups' => GuestGroupResource::collection($event->guestGroups()->get()),
-            'tables' => $event->tables()->orderBy('sort_order')->orderBy('label')->get()
-                ->map(fn ($t) => new TableResource($t, $event))->values(),
+            'tables' => $this->tablesFor($event),
+            'capabilities' => $this->capabilities($event),
+        ]);
+    }
+
+    /**
+     * One guest plus everything the app's details and edit screens need, so neither
+     * has to page through the list to find it.
+     */
+    public function show(Event $event, Guest $guest): JsonResponse
+    {
+        $guest->loadMissing('event.user');
+        $this->authorize('update', $guest);
+        abort_unless($guest->event_id === $event->id, 404);
+        abort_unless($event->isInvitation(), 404);
+
+        $event->loadMissing('user');
+        $guest->loadMissing(['rsvp', 'group', 'eventTable']);
+
+        return response()->json([
+            'guest' => new GuestResource($guest, $event),
+            'groups' => GuestGroupResource::collection($event->guestGroups()->get()),
+            'tables' => $this->tablesFor($event),
+            'capabilities' => $this->capabilities($event),
+        ]);
+    }
+
+    /**
+     * PNG twin of the web qr() action, which serves SVG — Android can't draw SVG
+     * without an extra renderer.
+     */
+    public function qr(Event $event, Guest $guest, QrCodeService $qrCodeService): Response|JsonResponse
+    {
+        $guest->loadMissing('event.user');
+        $this->authorize('update', $guest);
+        abort_unless($guest->event_id === $event->id, 404);
+        abort_unless($event->isInvitation(), 404);
+
+        if (! $event->ownerHasPremiumEventTools()) {
+            return response()->json(['error' => 'premium_required', 'required_tier' => 'pro'], 403);
+        }
+
+        $url = $guest->checkInQrUrl();
+        abort_if($url === null, 404);
+
+        return response($qrCodeService->png($url), 200, [
+            'Content-Type' => 'image/png',
+            'Content-Disposition' => 'inline; filename="guest-'.Str::slug($guest->name).'-qr.png"',
+        ]);
+    }
+
+    /**
+     * Server-initiated WhatsApp invitation — JSON twin of the web action, returning
+     * the CommunicationService outcome instead of a flash key.
+     */
+    public function sendWhatsAppInvitation(Event $event, Guest $guest, CommunicationService $communicationService): JsonResponse
+    {
+        $guest->loadMissing('event.user');
+        $this->authorize('update', $guest);
+        abort_unless($guest->event_id === $event->id, 404);
+        abort_unless($event->isInvitation(), 404);
+
+        if (! $event->ownerHasPremiumEventTools()) {
+            return response()->json(['error' => 'premium_required', 'required_tier' => 'pro'], 403);
+        }
+
+        return response()->json([
+            'outcome' => $communicationService->sendWhatsAppInvitation($event, $guest),
         ]);
     }
 
@@ -293,5 +362,26 @@ class GuestController extends Controller
         $this->authorize('update', $event);
 
         abort_unless($event->isInvitation(), 404);
+    }
+
+    private function tablesFor(Event $event): Collection
+    {
+        return $event->tables()->orderBy('sort_order')->orderBy('label')->get()
+            ->map(fn ($t) => new TableResource($t, $event))->values();
+    }
+
+    /**
+     * Which per-guest actions the app should offer. Same gates the web guests page
+     * reads: Pro tools for QR and the server WhatsApp send, plus whether that send
+     * is configured at all.
+     *
+     * @return array{premium_tools: bool, whatsapp_send_enabled: bool}
+     */
+    private function capabilities(Event $event): array
+    {
+        return [
+            'premium_tools' => $event->ownerHasPremiumEventTools(),
+            'whatsapp_send_enabled' => (bool) config('communications.whatsapp.enabled', false),
+        ];
     }
 }
