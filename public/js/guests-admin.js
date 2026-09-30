@@ -449,7 +449,32 @@
         });
     }
 
+    function initGuestToolsDrawer() {
+        var drawer = document.getElementById('guest-tools-drawer');
+        var backdrop = document.querySelector('.evt-guest-tools-backdrop');
+        var opener = document.querySelector('[data-guest-tools-open]');
+        if (!drawer || !backdrop || !opener) {
+            return;
+        }
+        function setOpen(open) {
+            drawer.classList.toggle('is-open', open);
+            backdrop.hidden = !open;
+            opener.setAttribute('aria-expanded', open ? 'true' : 'false');
+            document.body.style.overflow = open ? 'hidden' : '';
+        }
+        opener.addEventListener('click', function () { setOpen(true); });
+        document.querySelectorAll('[data-guest-tools-close]').forEach(function (el) {
+            el.addEventListener('click', function () { setOpen(false); });
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && drawer.classList.contains('is-open')) {
+                setOpen(false);
+            }
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
+        initGuestToolsDrawer();
         initConfirmForms();
         initCopyButtons(document);
         initBulkSelect(document);

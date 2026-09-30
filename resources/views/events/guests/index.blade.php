@@ -110,6 +110,46 @@
             @endif
         </div>
 
+        <button type="button" class="evt-btn-outline evt-guest-tools-toggle" data-guest-tools-open aria-controls="guest-tools-drawer" aria-expanded="false">Filters &amp; bulk actions</button>
+        <div class="evt-guest-tools-backdrop" data-guest-tools-close hidden></div>
+
+        <div class="evt-guest-tools-wrap">
+        <div class="evt-filter-row">
+            @php
+                $filters = [
+                    'all'       => 'All',
+                    'pending'   => 'Pending',
+                    'responded' => 'Responded',
+                    'accepted'  => 'Accepted',
+                    'declined'  => 'Declined',
+                    'maybe'     => 'Maybe',
+                ];
+                if ($event->require_rsvp_approval) {
+                    $filters['awaiting_approval'] = 'Awaiting approval';
+                }
+                $filterParams = array_filter([
+                    'q' => request('q'),
+                    'group' => request('group'),
+                    'invitation_sent' => request('invitation_sent'),
+                    'plus_one' => request('plus_one'),
+                    'checked_in' => request('checked_in'),
+                ], fn ($v) => $v !== null && $v !== '');
+            @endphp
+            @foreach ($filters as $key => $label)
+                @php
+                    $filterHrefParams = array_merge($filterParams, $key === 'all' ? [] : ['response' => $key]);
+                    $filterHref = route('events.guests.index', array_merge(['event' => $event], $filterHrefParams));
+                @endphp
+                <a href="{{ $filterHref }}"
+                   class="evt-filter-chip {{ $filter === $key ? 'evt-filter-chip--active' : '' }}">{{ $label }}</a>
+            @endforeach
+        </div>
+
+        <div id="guest-tools-drawer" class="evt-guest-tools" role="dialog" aria-label="Filters and bulk actions">
+        <div class="evt-guest-tools-head">
+            <strong>Filters &amp; bulk actions</strong>
+            <button type="button" class="evt-guest-tools-x" data-guest-tools-close aria-label="Close">&times;</button>
+        </div>
         <div class="evt-section evt-guest-toolbar-section">
             <div class="evt-section-body evt-guest-toolbar">
                 <form method="get" action="{{ route('events.guests.index', $event) }}" class="evt-guest-filter-form">
@@ -153,37 +193,6 @@
                     <button type="submit" class="evt-btn-outline evt-btn-tiny">Apply</button>
                 </form>
             </div>
-        </div>
-
-        <div class="evt-filter-row">
-            @php
-                $filters = [
-                    'all'       => 'All',
-                    'pending'   => 'Pending',
-                    'responded' => 'Responded',
-                    'accepted'  => 'Accepted',
-                    'declined'  => 'Declined',
-                    'maybe'     => 'Maybe',
-                ];
-                if ($event->require_rsvp_approval) {
-                    $filters['awaiting_approval'] = 'Awaiting approval';
-                }
-                $filterParams = array_filter([
-                    'q' => request('q'),
-                    'group' => request('group'),
-                    'invitation_sent' => request('invitation_sent'),
-                    'plus_one' => request('plus_one'),
-                    'checked_in' => request('checked_in'),
-                ], fn ($v) => $v !== null && $v !== '');
-            @endphp
-            @foreach ($filters as $key => $label)
-                @php
-                    $filterHrefParams = array_merge($filterParams, $key === 'all' ? [] : ['response' => $key]);
-                    $filterHref = route('events.guests.index', array_merge(['event' => $event], $filterHrefParams));
-                @endphp
-                <a href="{{ $filterHref }}"
-                   class="evt-filter-chip {{ $filter === $key ? 'evt-filter-chip--active' : '' }}">{{ $label }}</a>
-            @endforeach
         </div>
 
         <form id="guest-bulk-form" method="post" action="{{ route('events.guests.bulk', $event) }}" class="evt-guest-bulk-bar evt-confirm-form" data-evt-confirm="Apply this action to all selected guests?">
@@ -236,6 +245,8 @@
 
             <button type="submit" class="evt-btn-outline">Apply to selected</button>
         </form>
+        </div>
+        </div>
 
         <div class="evt-section">
             <div class="evt-section-body evt-table-wrap">

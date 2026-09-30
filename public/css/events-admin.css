@@ -2350,3 +2350,46 @@ nav.evt-kind-filter {
 }
 
 .evt-kind-card-icon .ticket-icon { width: 34px; height: 34px; }
+
+/* Guests: filter + bulk cards. Inline on desktop; right-hand slide-in drawer on mobile. */
+.evt-guest-tools-wrap { display: flex; flex-direction: column; }
+.evt-guest-tools { display: contents; }
+.evt-guest-tools-wrap > .evt-filter-row { order: 2; }
+.evt-guest-tools .evt-guest-toolbar-section { order: 1; }
+.evt-guest-tools .evt-guest-bulk-bar { order: 3; }
+.evt-guest-tools-toggle,
+.evt-guest-tools-backdrop,
+.evt-guest-tools-head { display: none; }
+
+@media (max-width: 768px) {
+    .evt-guest-tools-toggle { display: inline-flex; margin-bottom: 12px; }
+    .evt-guest-tools {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: min(92vw, 380px);
+        padding: 16px;
+        overflow-y: auto;
+        background: var(--surface, #fff);
+        box-shadow: -8px 0 30px rgba(15, 23, 42, 0.18);
+        transform: translateX(100%);
+        visibility: hidden;
+        transition: transform 0.28s ease, visibility 0s linear 0.28s;
+        z-index: 1001;
+    }
+    .evt-guest-tools.is-open {
+        transform: translateX(0);
+        visibility: visible;
+        transition: transform 0.28s ease;
+    }
+    .evt-guest-tools-head { display: flex; align-items: center; justify-content: space-between; }
+    .evt-guest-tools-x { background: none; border: 0; font-size: 28px; line-height: 1; cursor: pointer; }
+    .evt-guest-tools-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45); z-index: 1000; }
+    .evt-guest-tools-backdrop:not([hidden]) { display: block; }
+    .evt-guest-tools .evt-guest-search-input,
+    .evt-guest-tools .evt-guest-filter-select { max-width: none; width: 100%; flex: 1 1 100%; }
+}
