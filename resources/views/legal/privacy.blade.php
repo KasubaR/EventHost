@@ -61,6 +61,7 @@
 
                 <h3>Event content</h3>
                 <p>Everything you enter when building an event: its title, description, date, venue and location, cover image, chosen invitation template and design settings, table layouts, and any photos uploaded to the event gallery.</p>
+                <p>For an invitation event we also ask for a contact number. <strong>It is shown to your guests</strong> on the RSVP pages, with your name, so they can call you with questions. Give a number you are happy for your guests to see.</p>
 
                 <h3>Payment information</h3>
                 <p>

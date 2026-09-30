@@ -103,7 +103,7 @@
                 <div class="evt-stat-value">{{ $stats['declined'] }}</div>
                 <div class="evt-stat-label">Declined</div>
             </div>
-            @if ($event->require_rsvp_approval)
+            @if ($event->hasRsvpApprovalQueue())
                 <div class="evt-stat-card">
                     <div class="evt-stat-value">{{ $stats['awaiting_approval'] }}</div>
                     <div class="evt-stat-label">Awaiting your approval</div>
@@ -125,7 +125,7 @@
                     'declined'  => 'Declined',
                     'maybe'     => 'Maybe',
                 ];
-                if ($event->require_rsvp_approval) {
+                if ($event->hasRsvpApprovalQueue()) {
                     $filters['awaiting_approval'] = 'Awaiting approval';
                 }
                 $filterParams = array_filter([

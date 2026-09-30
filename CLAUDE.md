@@ -562,6 +562,37 @@ delivery, API fields).
 - Guest QRs use standard error correction, so state ("Checked in", cancelled, ended) is a pill **above** the
   code and a dimmed QR, never an overlay — unlike ticket QRs, which are `ECC_HIGH` for exactly that reason
 
+### Group RSVP Links (seat pools) and the host contact number
+
+A guest group can carry a **shared RSVP link with a seat pool** (`/g/{token}`), so a host can send one link to,
+say, a 100-person committee that gets 10 seats. Plan: `plans/group-rsvp-links.md` — built.
+
+- `guest_groups.seat_limit` + `rsvp_token` (unique, 48 chars) + `rsvp_link_closed_at`. `GuestGroup::hasSeatPool()` /
+  `isLinkOpen()` / `seatsTaken()` / `seatsPending()` / `seatsRemaining()` are the only place seats are counted. **Seats are
+  derived live, never stored**: accepted RSVPs from the group's guests that are not `Rejected`, so a pending request
+  *holds* its seats and approving can never overshoot the pool
+- **Enforced in `RsvpSubmissionService::submit()`, not in the controller**, so the personal-link edit path cannot bypass
+  it. Every submit locks the event row, which serialises two people racing for the last seat. Applies to every member of a
+  pooled group, including guests the host added by hand
+- Sign-ups through the link are **always held for host approval**, whatever `events.require_rsvp_approval` says — keyed on
+  `guests.group_link_joined_at`, so a guest the host added to the group by hand is *not* forced into review, but a
+  link joiner who declines then re-accepts still is. The link form only offers "request seats" (no decline), so a bot
+  cannot mint unlimited zero-seat guests
+- Each person becomes an ordinary `Guest` (own token, pass, QR) via `GroupRsvpService::request()`. An email or phone already
+  on the list is refused, never moved between groups. Plus-ones follow the event's `allow_plus_one` (max 2 seats)
+- `GroupRsvpResolver` decides open / full / closed / unavailable for both the page and the submit. A full or closed link shows
+  the host number. `Event::hasRsvpApprovalQueue()` is what the guest list reads to show the "Awaiting approval" chip — the event
+  toggle *or* any group with a link
+- Host controls are `GuestGroupLinkController` (`PUT` seat count / create, `PATCH` close-reopen, `DELETE` turn off) on the
+  groups page; the API adds `seat_limit` / `rsvp_link_closed` to the group endpoints and the `seat_limit`, `seats_taken`,
+  `seats_pending`, `rsvp_link`, `rsvp_link_closed` fields to `GuestGroupResource` (all null when there is no link)
+
+**Host contact number.** `events.host_contact_phone` is entered on the create/edit form and **required for web invitation
+events** (`StoreEventRequest` / `UpdateEventRequest`), optional for the Android API so its contract stays additive.
+`Event::hostContactPhone()` falls back to the host's profile phone. `rsvp/partials/host-contact.blade.php` renders "Questions?
+Call {host} on {number}" on every guest-facing RSVP page and **renders nothing** when there is no number — add it to any new
+RSVP page. Privacy §2 tells hosts the number is shown to guests
+
 ### Guest Event Reminders
 
 Accepted guests are reminded 7 days before, 1 day before and on the day of a private (invitation-kind) event, by WhatsApp

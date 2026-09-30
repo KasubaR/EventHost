@@ -100,6 +100,8 @@
             <p class="rsvp-lead">Your response has been recorded.</p>
             <p class="rsvp-muted">You can close this page. If you need to change your RSVP, use the same link you opened before.</p>
         @endif
+
+        @include('rsvp.partials.host-contact', ['event' => $event])
     </article>
 @endsection
 

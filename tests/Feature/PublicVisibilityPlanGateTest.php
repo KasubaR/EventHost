@@ -34,6 +34,7 @@ class PublicVisibilityPlanGateTest extends TestCase
             'event_type' => 'birthday',
             'audience' => EventAudience::Private->value,
             'product_kind' => EventProductKind::Invitation->value,
+            'host_contact_phone' => '0977123456',
             'event_date' => now()->addWeek()->format('Y-m-d'),
             'event_time' => '15:00',
         ], $overrides);

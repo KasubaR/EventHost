@@ -42,5 +42,7 @@
         @if ($guest)
             @include('rsvp.partials.entry-pass', ['guest' => $guest, 'showEntryPass' => $showEntryPass ?? false])
         @endif
+
+        @include('rsvp.partials.host-contact', ['event' => $event])
     </article>
 @endsection

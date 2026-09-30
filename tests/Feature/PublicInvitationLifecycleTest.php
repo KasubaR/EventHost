@@ -317,6 +317,7 @@ class PublicInvitationLifecycleTest extends TestCase
             'event_type' => 'wedding',
             'audience' => 'private',
             'product_kind' => 'invitation',
+            'host_contact_phone' => '0977123456',
             'event_date' => now()->addWeek()->format('Y-m-d'),
             'event_time' => '15:30',
             'allow_plus_one' => '0',

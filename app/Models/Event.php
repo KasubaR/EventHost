@@ -247,6 +247,7 @@ class Event extends Model
         'is_public',
         'rsvp_deadline',
         'guest_limit',
+        'host_contact_phone',
         'allow_plus_one',
         'require_rsvp_approval',
         'show_guest_list',
@@ -1118,6 +1119,32 @@ class Event extends Model
         return (int) $this->rsvps()
             ->where('status', RsvpStatus::Accepted)
             ->sum('attendee_count');
+    }
+
+    /**
+     * The number guests are told to call with questions — shown on every RSVP page
+     * (plans/group-rsvp-links.md). Falls back to the host's profile phone so events
+     * created before the field existed still show something; null when neither is set.
+     */
+    public function hostContactPhone(): ?string
+    {
+        foreach ([$this->host_contact_phone, $this->user?->phone] as $candidate) {
+            if (is_string($candidate) && trim($candidate) !== '') {
+                return trim($candidate);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Whether the guest list has an approval queue to show: the event-wide toggle, or any
+     * group with a shared RSVP link (those sign-ups are always held for review).
+     */
+    public function hasRsvpApprovalQueue(): bool
+    {
+        return $this->require_rsvp_approval
+            || $this->guestGroups()->whereNotNull('rsvp_token')->exists();
     }
 
     /**

@@ -6,6 +6,7 @@ use App\Enums\RsvpApprovalStatus;
 use App\Enums\RsvpStatus;
 use App\Models\Event;
 use App\Models\Guest;
+use App\Models\GuestGroup;
 use App\Models\Rsvp;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
@@ -54,6 +55,24 @@ class RsvpSubmissionService
                 }
             }
 
+            // A guest in a group with a seat pool (plans/group-rsvp-links.md) may not take more
+            // seats than remain. Every submit locks the event row above, so two people racing
+            // for the last seat are serialized here — exactly one gets it.
+            $group = $guest->guest_group_id !== null ? GuestGroup::query()->find($guest->guest_group_id) : null;
+            $hasSeatPool = $group !== null && $group->hasSeatPool();
+
+            if ($hasSeatPool && $status === RsvpStatus::Accepted
+                && $newAcceptedCount > $group->seatsRemaining($guest->id)) {
+                throw ValidationException::withMessages([
+                    'status' => ['This group has no seats left. Please call the host for more information.'],
+                ]);
+            }
+
+            // Guests who signed up through the group link are always held for the host, whatever
+            // the event-wide toggle says. A guest the host added by hand is not.
+            $requiresApproval = $locked->require_rsvp_approval
+                || ($hasSeatPool && $guest->group_link_joined_at !== null);
+
             // Approval only (re)opens on a transition into Accepted from something else — a
             // fresh accept, or an accept after a prior decline/maybe. Editing attendee_count/
             // message while already Accepted keeps whatever decision the host already made
@@ -61,7 +80,7 @@ class RsvpSubmissionService
             $approvalStatus = RsvpApprovalStatus::NotRequired;
             $resetReview = false;
 
-            if ($status === RsvpStatus::Accepted && $locked->require_rsvp_approval) {
+            if ($status === RsvpStatus::Accepted && $requiresApproval) {
                 $wasAccepted = $existing !== null && $existing->status === RsvpStatus::Accepted;
 
                 if ($wasAccepted) {

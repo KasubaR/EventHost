@@ -60,4 +60,5 @@
         'showEntryPass' => $showEntryPass ?? false,
     ])
 
+    <div class="rsvp-page">@include('rsvp.partials.host-contact', ['event' => $event])</div>
 @endsection

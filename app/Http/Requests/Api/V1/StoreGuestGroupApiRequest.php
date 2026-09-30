@@ -14,4 +14,14 @@ class StoreGuestGroupApiRequest extends StoreGuestGroupRequest
     {
         return true;
     }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function rules(): array
+    {
+        return array_merge(parent::rules(), [
+            'seat_limit' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:10000'],
+        ]);
+    }
 }

@@ -95,11 +95,31 @@ class UpdateEventRequest extends FormRequest
             // a time on it at all (i.e. almost every real deadline).
             'rsvp_deadline' => ['nullable', 'date'],
             'guest_limit' => $this->guestLimitRules(),
+            'host_contact_phone' => $this->hostContactPhoneRules($event),
             'allow_plus_one' => ['boolean'],
             'require_rsvp_approval' => ['boolean'],
             'show_guest_list' => ['boolean'],
             'photo_wall_enabled' => ['boolean'],
             'photo_wall_requires_approval' => ['boolean'],
+        ];
+    }
+
+    /**
+     * plans/group-rsvp-links.md — the number guests are told to call. A present-but-blank value is
+     * refused for an invitation event on the web; an absent one (a partial API patch) is left alone.
+     *
+     * @return list<mixed>
+     */
+    private function hostContactPhoneRules(?Event $event): array
+    {
+        $required = $event?->isInvitation() && ! $this->is('api/*');
+
+        return [
+            'sometimes',
+            $required ? 'required' : 'nullable',
+            'string',
+            'max:40',
+            'regex:/^[0-9+\s().-]{7,}$/',
         ];
     }
 

@@ -23,6 +23,7 @@ class EventCreditTest extends TestCase
             'event_type' => 'wedding',
             'audience' => 'private',
             'product_kind' => 'invitation',
+            'host_contact_phone' => '0977123456',
             'event_date' => now()->addMonth()->format('Y-m-d'),
             'event_time' => '14:00',
             'venue' => 'Lusaka Grand',

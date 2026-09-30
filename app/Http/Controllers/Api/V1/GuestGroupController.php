@@ -34,6 +34,10 @@ class GuestGroupController extends Controller
             'name' => $request->validated()['name'],
         ]);
 
+        if (isset($request->validated()['seat_limit'])) {
+            $group->enableLink((int) $request->validated()['seat_limit']);
+        }
+
         return response()->json(new GuestGroupResource($group), 201);
     }
 
@@ -47,6 +51,20 @@ class GuestGroupController extends Controller
         $guest_group->update([
             'name' => $request->validated()['name'],
         ]);
+
+        $validated = $request->validated();
+
+        if (array_key_exists('seat_limit', $validated)) {
+            $validated['seat_limit'] === null
+                ? $guest_group->disableLink()
+                : $guest_group->enableLink((int) $validated['seat_limit']);
+        }
+
+        if (array_key_exists('rsvp_link_closed', $validated) && $guest_group->hasSeatPool()) {
+            $guest_group->forceFill([
+                'rsvp_link_closed_at' => $validated['rsvp_link_closed'] ? now() : null,
+            ])->save();
+        }
 
         return response()->json(new GuestGroupResource($guest_group->fresh()))->setStatusCode(200);
     }

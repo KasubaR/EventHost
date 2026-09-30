@@ -41,6 +41,8 @@
                 'phoneRequired' => $isPrivateOpenRsvp ?? false,
                 'preselectedStatus' => $preselectedStatus ?? null,
             ])
+
+            @include('rsvp.partials.host-contact', ['event' => $event])
         </div>
     </article>
 @endsection

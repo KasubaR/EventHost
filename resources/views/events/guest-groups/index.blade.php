@@ -24,6 +24,14 @@
         <div class="evt-admin-flash">Group updated.</div>
     @elseif (session('status') === 'guest-group-deleted')
         <div class="evt-admin-flash">Group removed.</div>
+    @elseif (session('status') === 'guest-group-link-saved')
+        <div class="evt-admin-flash">Group link saved.</div>
+    @elseif (session('status') === 'guest-group-link-closed')
+        <div class="evt-admin-flash">Group link closed. Nobody can request new seats until you reopen it.</div>
+    @elseif (session('status') === 'guest-group-link-reopened')
+        <div class="evt-admin-flash">Group link reopened.</div>
+    @elseif (session('status') === 'guest-group-link-removed')
+        <div class="evt-admin-flash">Group link turned off. Its old address no longer works.</div>
     @endif
 
     <div class="evt-stack">
@@ -83,6 +91,59 @@
                                             @method('DELETE')
                                             <button type="submit" class="evt-btn-danger-outline evt-btn-tiny">Remove</button>
                                         </form>
+                                    </td>
+                                </tr>
+                                <tr class="evt-group-link-row">
+                                    <td colspan="3">
+                                        @if ($group->hasSeatPool())
+                                            @php
+                                                $taken = $group->seatsTaken();
+                                                $pending = $group->seatsPending();
+                                            @endphp
+                                            <div class="evt-group-link">
+                                                <p class="evt-group-link-count">
+                                                    <strong>{{ $taken }} of {{ $group->seat_limit }} seats taken</strong>
+                                                    @if ($pending > 0)
+                                                        &middot; {{ $pending }} awaiting your approval
+                                                    @endif
+                                                    @if ($group->rsvp_link_closed_at)
+                                                        &middot; <em>link closed</em>
+                                                    @endif
+                                                </p>
+                                                <div class="evt-copy-row">
+                                                    <input type="text" readonly class="profile-input" value="{{ $group->rsvpUrl() }}" aria-label="Group RSVP link" onclick="this.select()">
+                                                    <button type="button" class="evt-btn-outline evt-btn-tiny" data-copy-text="{{ $group->rsvpUrl() }}">Copy link</button>
+                                                </div>
+                                                <div class="evt-group-link-actions">
+                                                    <form method="post" action="{{ route('events.guest-groups.link.update', ['event' => $event, 'guest_group' => $group->id]) }}" class="evt-inline-form">
+                                                        @csrf
+                                                        @method('PUT')
+                                                        <label class="evt-sr-only" for="seat_limit_{{ $group->id }}">Seats</label>
+                                                        <input id="seat_limit_{{ $group->id }}" type="number" name="seat_limit" min="1" max="10000" class="profile-input" style="width:90px" value="{{ $group->seat_limit }}" required>
+                                                        <button type="submit" class="evt-btn-outline evt-btn-tiny">Update seats</button>
+                                                    </form>
+                                                    <form method="post" action="{{ route('events.guest-groups.link.toggle', ['event' => $event, 'guest_group' => $group->id]) }}" class="evt-inline-form">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <button type="submit" class="evt-btn-outline evt-btn-tiny">{{ $group->rsvp_link_closed_at ? 'Reopen link' : 'Close link' }}</button>
+                                                    </form>
+                                                    <form method="post" action="{{ route('events.guest-groups.link.destroy', ['event' => $event, 'guest_group' => $group->id]) }}" class="evt-inline-form evt-confirm-form" data-evt-confirm="Turn off this link? The address stops working; members and their RSVPs stay.">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="evt-btn-danger-outline evt-btn-tiny">Turn off link</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        @else
+                                            <form method="post" action="{{ route('events.guest-groups.link.update', ['event' => $event, 'guest_group' => $group->id]) }}" class="evt-inline-form">
+                                                @csrf
+                                                @method('PUT')
+                                                <span class="evt-muted">Share one link for this group, with a limited number of seats. You approve each request.</span>
+                                                <label class="evt-sr-only" for="seat_limit_{{ $group->id }}">Seats</label>
+                                                <input id="seat_limit_{{ $group->id }}" type="number" name="seat_limit" min="1" max="10000" class="profile-input" style="width:90px" placeholder="Seats" required>
+                                                <button type="submit" class="evt-btn-outline evt-btn-tiny">Create group link</button>
+                                            </form>
+                                        @endif
                                     </td>
                                 </tr>
                             @endforeach

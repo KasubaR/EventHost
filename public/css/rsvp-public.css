@@ -507,3 +507,16 @@
         font-size: 18px;
     }
 }
+
+/* Host contact line shown at the foot of every guest-facing RSVP page (plans/group-rsvp-links.md) */
+.rsvp-host-contact {
+    margin: 20px 0 0;
+    font-size: 14px;
+    text-align: center;
+    color: var(--text-muted, #64748b);
+}
+.rsvp-host-contact a {
+    font-weight: 600;
+    color: inherit;
+    white-space: nowrap;
+}

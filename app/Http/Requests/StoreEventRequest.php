@@ -118,9 +118,29 @@ class StoreEventRequest extends FormRequest
             // a time on it at all (i.e. almost every real deadline).
             'rsvp_deadline' => ['nullable', 'date'],
             'guest_limit' => $this->guestLimitRules(),
+            'host_contact_phone' => $this->hostContactPhoneRules($productKind),
             'allow_plus_one' => ['boolean'],
             'require_rsvp_approval' => ['boolean'],
             'show_guest_list' => ['boolean'],
+        ];
+    }
+
+    /**
+     * The number guests are told to call (plans/group-rsvp-links.md). Required on the web
+     * wizard for an invitation event; optional for the Android API, whose contract predates
+     * the field and stays additive-only. Ticketed creates ignore it.
+     *
+     * @return list<mixed>
+     */
+    private function hostContactPhoneRules(?EventProductKind $productKind): array
+    {
+        $required = $productKind === EventProductKind::Invitation && ! $this->is('api/*');
+
+        return [
+            $required ? 'required' : 'nullable',
+            'string',
+            'max:40',
+            'regex:/^[0-9+\s().-]{7,}$/',
         ];
     }
 

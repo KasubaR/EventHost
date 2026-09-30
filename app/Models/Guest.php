@@ -34,6 +34,7 @@ class Guest extends Model
     protected $fillable = [
         'event_id',
         'guest_group_id',
+        'group_link_joined_at',
         'event_table_id',
         'name',
         'email',
@@ -387,6 +388,7 @@ class Guest extends Model
             'plus_one_allowed' => 'boolean',
             'invitation_sent' => 'boolean',
             'invitation_sent_at' => 'datetime',
+            'group_link_joined_at' => 'datetime',
             'rsvp_reminders_sent' => AsRsvpRemindersSent::class,
             'whatsapp_event_reminders_sent' => AsWhatsAppEventRemindersSent::class,
             'email_reminders_stopped_at' => 'datetime',

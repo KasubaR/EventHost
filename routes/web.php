@@ -25,10 +25,12 @@ use App\Http\Controllers\EventTicketManagementController;
 use App\Http\Controllers\EventTicketPurchaseController;
 use App\Http\Controllers\EventTicketRevenueController;
 use App\Http\Controllers\EventTicketTypeController;
+use App\Http\Controllers\GroupRsvpController;
 use App\Http\Controllers\GuestBulkActionController;
 use App\Http\Controllers\GuestController;
 use App\Http\Controllers\GuestEmailReminderPreferenceController;
 use App\Http\Controllers\GuestGroupController;
+use App\Http\Controllers\GuestGroupLinkController;
 use App\Http\Controllers\GuestImportController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MapLinkController;
@@ -240,10 +242,13 @@ Route::get('/rsvp/{token}/pass.png', [RsvpController::class, 'passImage'])->name
 Route::get('/rsvp/{token}/entry-pass.svg', [RsvpController::class, 'entryPassQr'])->name('rsvp.token.entry-pass');
 Route::get('/rsvp/{token}/entry-pass.png', [RsvpController::class, 'entryPassQrPng'])->name('rsvp.token.entry-pass-png');
 Route::get('/e/{slug}/rsvp', [RsvpController::class, 'showOpen'])->name('rsvp.open.show');
+// Group seat-pool link (plans/group-rsvp-links.md). The secret is the group's own token, never the event slug.
+Route::get('/g/{token}', [GroupRsvpController::class, 'show'])->name('group-rsvp.show');
 
 Route::middleware('throttle:rsvp-submit')->group(function () {
     Route::post('/rsvp/{token}', [RsvpController::class, 'storeByToken'])->name('rsvp.token.store');
     Route::post('/e/{slug}/rsvp', [RsvpController::class, 'storeOpen'])->name('rsvp.open.store');
+    Route::post('/g/{token}', [GroupRsvpController::class, 'store'])->name('group-rsvp.store');
 });
 
 // Staff invite accept flow (Phase 18) — twin paths depending on whether the
@@ -309,6 +314,14 @@ Route::middleware(['auth', 'account.active', 'verified'])->group(function () {
 
     Route::resource('events.guest-groups', GuestGroupController::class)
         ->only(['index', 'store', 'update', 'destroy']);
+
+    // Shared RSVP link + seat pool for a group (plans/group-rsvp-links.md).
+    Route::put('/events/{event}/guest-groups/{guest_group}/link', [GuestGroupLinkController::class, 'update'])
+        ->name('events.guest-groups.link.update');
+    Route::patch('/events/{event}/guest-groups/{guest_group}/link', [GuestGroupLinkController::class, 'toggle'])
+        ->name('events.guest-groups.link.toggle');
+    Route::delete('/events/{event}/guest-groups/{guest_group}/link', [GuestGroupLinkController::class, 'destroy'])
+        ->name('events.guest-groups.link.destroy');
 
     Route::get('/events/{event}/guests/export', [GuestController::class, 'export'])
         ->name('events.guests.export');

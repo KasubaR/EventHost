@@ -82,6 +82,20 @@
                 @enderror
             </div>
 
+            @unless ($isTicketed)
+                <div class="profile-field">
+                    <label for="host_contact_phone" class="profile-label">Your contact number</label>
+                    <input id="host_contact_phone" name="host_contact_phone" type="tel" required maxlength="40" autocomplete="tel"
+                           placeholder="e.g. 0977 123 456"
+                           class="profile-input {{ $errors->has('host_contact_phone') ? 'profile-input--error' : '' }}"
+                           value="{{ old('host_contact_phone', $event?->host_contact_phone ?? auth()->user()?->phone ?? '') }}">
+                    <p class="evt-field-hint">Shown to guests on every RSVP page so they can call you with questions.</p>
+                    @error('host_contact_phone')
+                        <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
+                    @enderror
+                </div>
+            @endunless
+
             <div class="profile-field">
                 <label for="event_type" class="profile-label">Event type</label>
                 <select id="event_type" name="event_type" required data-cs data-cs-icon="fa-solid fa-tag"
