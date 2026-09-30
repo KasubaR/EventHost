@@ -205,6 +205,7 @@
 
     CustomSelect.prototype.syncFromSelect = function () {
         this.items = this.readOptions();
+        this.trigger.disabled = this.select.disabled;
         this.renderTrigger();
         if (this.isOpen) this.renderList();
     };

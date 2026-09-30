@@ -95,6 +95,10 @@
 
             groupSelect.disabled = !needsGroup;
             daysSelect.disabled = !needsDays;
+            // Custom selects mirror `disabled` on change, and setting it does not fire one.
+            [groupSelect, daysSelect].forEach(function (sel) {
+                sel.dispatchEvent(new Event('change'));
+            });
             updateInput.disabled = !needsUpdate;
             updateInput.required = needsUpdate;
 

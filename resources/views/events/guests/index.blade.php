@@ -1,6 +1,7 @@
 <x-app-layout>
     @push('styles')
         <link rel="stylesheet" href="{{ asset('css/events-admin.css') }}">
+        <link rel="stylesheet" href="{{ asset('css/custom-select.css') }}">
     @endpush
 
     @php $isRegistrations = $event->isFreeRegistration(); @endphp
@@ -157,7 +158,7 @@
                     <input id="guest_search_q" type="search" name="q" class="profile-input evt-guest-search-input" value="{{ request('q') }}" placeholder="Search name, email, phone" maxlength="255" autocomplete="off">
 
                     <label class="evt-sr-only" for="guest_filter_group">Group</label>
-                    <select id="guest_filter_group" name="group" class="profile-input evt-guest-filter-select" aria-label="Filter by group">
+                    <select id="guest_filter_group" name="group" class="profile-input evt-guest-filter-select" data-cs data-cs-search="never" aria-label="Filter by group">
                         <option value="all" @selected(request('group', 'all') === 'all')>All groups</option>
                         <option value="none" @selected(request('group') === 'none')>No group</option>
                         @foreach ($groups as $g)
@@ -166,21 +167,21 @@
                     </select>
 
                     <label class="evt-sr-only" for="guest_filter_sent">Invitation sent</label>
-                    <select id="guest_filter_sent" name="invitation_sent" class="profile-input evt-guest-filter-select" aria-label="Invitation sent">
+                    <select id="guest_filter_sent" name="invitation_sent" class="profile-input evt-guest-filter-select" data-cs data-cs-search="never" aria-label="Invitation sent">
                         <option value="" @selected(request('invitation_sent') === null || request('invitation_sent') === '')>Any invitation status</option>
                         <option value="yes" @selected(request('invitation_sent') === 'yes')>Invitation sent</option>
                         <option value="no" @selected(request('invitation_sent') === 'no')>Not marked sent</option>
                     </select>
 
                     <label class="evt-sr-only" for="guest_filter_plus_one">Plus-one</label>
-                    <select id="guest_filter_plus_one" name="plus_one" class="profile-input evt-guest-filter-select" aria-label="Plus-one allowed">
+                    <select id="guest_filter_plus_one" name="plus_one" class="profile-input evt-guest-filter-select" data-cs data-cs-search="never" aria-label="Plus-one allowed">
                         <option value="" @selected(request('plus_one') === null || request('plus_one') === '')>Any plus-one</option>
                         <option value="yes" @selected(request('plus_one') === 'yes')>Plus-one allowed</option>
                         <option value="no" @selected(request('plus_one') === 'no')>Plus-one not allowed</option>
                     </select>
 
                     <label class="evt-sr-only" for="guest_filter_checked_in">Checked in</label>
-                    <select id="guest_filter_checked_in" name="checked_in" class="profile-input evt-guest-filter-select" aria-label="Checked in">
+                    <select id="guest_filter_checked_in" name="checked_in" class="profile-input evt-guest-filter-select" data-cs data-cs-search="never" aria-label="Checked in">
                         <option value="" @selected(request('checked_in') === null || request('checked_in') === '')>Any check-in status</option>
                         <option value="yes" @selected(request('checked_in') === 'yes')>Checked in</option>
                         <option value="no" @selected(request('checked_in') === 'no')>Not checked in</option>
@@ -206,7 +207,7 @@
 
             @php $canSendReminders = $event->ownerCanSendAutomatedReminders(); @endphp
             <label class="evt-sr-only" for="bulk_action_select">Bulk action</label>
-            <select id="bulk_action_select" name="action" class="profile-input evt-guest-filter-select" required aria-label="Bulk action">
+            <select id="bulk_action_select" name="action" class="profile-input evt-guest-filter-select" data-cs data-cs-search="never" required aria-label="Bulk action">
                 <option value="" disabled selected>Bulk action…</option>
                 <option value="assign_group">Assign group</option>
                 <option value="assign_table">Assign table</option>
@@ -218,7 +219,7 @@
             </select>
 
             <label class="evt-sr-only" for="bulk_group_select">Group for bulk assign</label>
-            <select id="bulk_group_select" name="guest_group_id" class="profile-input evt-guest-filter-select" aria-label="Assign to group">
+            <select id="bulk_group_select" name="guest_group_id" class="profile-input evt-guest-filter-select" data-cs data-cs-search="never" aria-label="Assign to group">
                 <option value="">Clear group</option>
                 @foreach ($groups as $g)
                     <option value="{{ $g->id }}">{{ $g->name }}</option>
@@ -226,7 +227,7 @@
             </select>
 
             <label class="evt-sr-only" for="bulk_table_select">Table for bulk assign</label>
-            <select id="bulk_table_select" name="event_table_id" class="profile-input evt-guest-filter-select" aria-label="Assign to table">
+            <select id="bulk_table_select" name="event_table_id" class="profile-input evt-guest-filter-select" data-cs data-cs-search="never" aria-label="Assign to table">
                 <option value="">Clear table</option>
                 @foreach ($tables as $t)
                     <option value="{{ $t->id }}">{{ $t->label }}</option>
@@ -234,7 +235,7 @@
             </select>
 
             <label class="evt-sr-only" for="bulk_days_until">Reminder timing</label>
-            <select id="bulk_days_until" name="days_until" class="profile-input evt-guest-filter-select" aria-label="Reminder timing">
+            <select id="bulk_days_until" name="days_until" class="profile-input evt-guest-filter-select" data-cs data-cs-search="never" aria-label="Reminder timing">
                 <option value="7">7 days reminder</option>
                 <option value="3" selected>3 days reminder</option>
                 <option value="1">1 day reminder</option>
@@ -500,6 +501,7 @@
     </div>
 
     @push('scripts')
+        <script src="{{ asset('js/custom-select.js') }}" defer></script>
         <script src="{{ asset('js/guests-admin.js') }}" defer></script>
     @endpush
 </x-app-layout>
