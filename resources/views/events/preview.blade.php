@@ -43,7 +43,7 @@
 
 @section('content')
 
-    @unless ($event->isTicketed())
+    @unless ($event->isTicketed() || ($appPreview ?? false))
         <div class="evt-preview-bar" role="navigation" aria-label="Invitation preview">
             <a href="{{ $back['route'] }}" class="evt-preview-bar-back">
                 <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>

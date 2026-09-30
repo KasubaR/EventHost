@@ -698,6 +698,12 @@ public page uses — but gated on `EventPolicy::view` (owner-only) instead of `i
 - Does not increment `invitation_views_count` — that column is real guest traffic
 - Redirects to `events.choose-template` if `invitation_template_id` is still null; there is nothing to
   render yet
+- **The Android app previews through a signed link, not a session.** `GET /api/v1/host/events/{event}/preview`
+  (same `EventPolicy::view` check) returns `app_preview_url`, a relative-signed `events.app-preview` URL that expires
+  after `EventPreviewResource::APP_PREVIEW_TTL_MINUTES` (30). `EventPreviewController::showForApp()` renders the same
+  `events.preview` view with the preview bar hidden (its back link and publish form need a logged-in browser) and 404s
+  for ticketed events or no layout. The signature is the only guard on that route — don't add anything to the page that
+  a host-only session would normally protect
 - Reuses the `isPreview` flag the renderer already supported for `templates/preview.blade.php` (template
   preview with sample data). A `previewLabel` override on the include distinguishes "this is your real
   event" copy from the sample-data wording

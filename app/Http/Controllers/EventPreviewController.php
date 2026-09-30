@@ -67,6 +67,30 @@ class EventPreviewController extends Controller
     }
 
     /**
+     * The same render for the Android app's web view, reached through a signed link from
+     * the API instead of a session. No preview bar: its back link and publish form need a
+     * logged-in browser, which the app's web view never has.
+     */
+    public function showForApp(Event $event, InvitationCustomizationService $customizationService): View
+    {
+        abort_if($event->isTicketed() || $event->invitation_template_id === null, 404);
+
+        $rsvpOpen = $event->isRsvpOpen();
+        $rsvpPublicAvailable = $rsvpOpen;
+        $invitation = $customizationService->merge($event);
+
+        return view('events.preview', [
+            'event' => $event,
+            'rsvpOpen' => $rsvpOpen,
+            'rsvpPublicAvailable' => $rsvpPublicAvailable,
+            'invitation' => $invitation,
+            'back' => null,
+            'previewPalette' => null,
+            'appPreview' => true,
+        ]);
+    }
+
+    /**
      * Lets a host see images/audio they've picked on the edit form but not yet saved —
      * without this, "upload on pick" stages the file immediately but Preview kept showing
      * the last-saved design, which reads as "my upload didn't work". Only ever affects this

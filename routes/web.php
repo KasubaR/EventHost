@@ -232,6 +232,12 @@ Route::middleware(['signed:relative', 'throttle:30,1'])->group(function () {
         ->withoutMiddleware([VerifyCsrfToken::class])
         ->name('guest.email-reminders.resume');
 });
+// The Android app's invitation preview. The app holds a bearer token, not a web session, so
+// GET /api/v1/host/events/{event}/preview mints this signed link after the same EventPolicy
+// check the session route uses; the signature is the only guard here.
+Route::get('/events/{event}/app-preview', [EventPreviewController::class, 'showForApp'])
+    ->middleware(['signed:relative', 'throttle:60,1'])
+    ->name('events.app-preview');
 Route::get('/rsvp/{token}/pass/download', [RsvpController::class, 'passDownload'])
     ->middleware('throttle:guest-pass-download')
     ->name('rsvp.token.pass-download');

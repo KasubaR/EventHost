@@ -3,6 +3,7 @@
 namespace Tests\Feature\Api\V1\Events;
 
 use App\Enums\EventProductKind;
+use App\Http\Resources\Api\V1\EventPreviewResource;
 use App\Models\Event;
 use App\Models\EventStaff;
 use App\Models\InvitationTemplate;
@@ -99,6 +100,52 @@ class PreviewTest extends TestCase
         $this->withHeader('Authorization', 'Bearer '.$this->tokenFor($stranger))
             ->getJson("/api/v1/host/events/{$event->id}/preview")
             ->assertForbidden();
+    }
+
+    public function test_app_preview_url_renders_the_invitation_without_a_session(): void
+    {
+        $user = User::factory()->create();
+        $template = InvitationTemplate::factory()->create();
+        $event = Event::factory()->for($user)->create([
+            'is_public' => false,
+            'invitation_template_id' => $template->id,
+        ]);
+
+        $url = $this->withHeader('Authorization', 'Bearer '.$this->tokenFor($user))
+            ->getJson("/api/v1/host/events/{$event->id}/preview")
+            ->assertOk()
+            ->json('app_preview_url');
+
+        $this->assertIsString($url);
+
+        $this->app['auth']->forgetGuards();
+        $this->withoutHeader('Authorization')
+            ->get($url)
+            ->assertOk()
+            ->assertSee($event->name)
+            ->assertDontSee('evt-preview-bar', escape: false);
+
+        $this->assertSame(0, $event->fresh()->invitation_views_count);
+    }
+
+    public function test_app_preview_rejects_a_tampered_or_expired_link(): void
+    {
+        $user = User::factory()->create();
+        $template = InvitationTemplate::factory()->create();
+        $event = Event::factory()->for($user)->create(['invitation_template_id' => $template->id]);
+        $other = Event::factory()->for(User::factory())->create(['invitation_template_id' => $template->id]);
+
+        $url = $this->withHeader('Authorization', 'Bearer '.$this->tokenFor($user))
+            ->getJson("/api/v1/host/events/{$event->id}/preview")
+            ->json('app_preview_url');
+
+        $this->withoutHeader('Authorization');
+
+        $this->get(str_replace("/events/{$event->id}/", "/events/{$other->id}/", $url))->assertForbidden();
+        $this->get("/events/{$event->id}/app-preview")->assertForbidden();
+
+        $this->travel(EventPreviewResource::APP_PREVIEW_TTL_MINUTES + 1)->minutes();
+        $this->get($url)->assertForbidden();
     }
 
     public function test_unauthenticated_request_is_rejected(): void

@@ -5,6 +5,7 @@ namespace App\Http\Resources\Api\V1;
 use App\Models\Event;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\URL;
 
 /**
  * GET /api/v1/events/{event}/preview — host-only view of the event's real, current
@@ -19,6 +20,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class EventPreviewResource extends JsonResource
 {
     public static $wrap = null;
+
+    /** Lifetime of the signed `app_preview_url`. */
+    public const APP_PREVIEW_TTL_MINUTES = 30;
 
     /**
      * @param  array<string, mixed>  $invitation
@@ -57,6 +61,12 @@ class EventPreviewResource extends JsonResource
             'rsvp_open' => $this->rsvpOpen,
             'rsvp_public_available' => $this->rsvpPublicAvailable,
             'invitation' => $this->resolvedInvitation(),
+            'app_preview_url' => url(URL::temporarySignedRoute(
+                'events.app-preview',
+                now()->addMinutes(self::APP_PREVIEW_TTL_MINUTES),
+                ['event' => $this->id],
+                absolute: false,
+            )),
         ];
     }
 
