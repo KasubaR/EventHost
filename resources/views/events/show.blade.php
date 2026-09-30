@@ -49,7 +49,19 @@
                     </a>
                 @else
                     <a href="{{ route('events.tables.index', $event) }}" class="evt-btn-outline">
-                        <i class="fa-solid fa-qrcode"></i> QR check-in & photo wall
+                        <i class="fa-solid fa-chair"></i> Tables
+                        @unless ($event->ownerHasPremiumEventTools())
+                            <span class="evt-credit-badge">Pro</span>
+                        @endunless
+                    </a>
+                    <a href="{{ route('events.checkin.scan', $event) }}" class="evt-btn-outline">
+                        <i class="fa-solid fa-qrcode"></i> QR check-in
+                        @unless ($event->ownerHasPremiumEventTools())
+                            <span class="evt-credit-badge">Pro</span>
+                        @endunless
+                    </a>
+                    <a href="{{ route('events.photos.index', $event) }}" class="evt-btn-outline">
+                        <i class="fa-solid fa-images"></i> Photo wall
                         @unless ($event->ownerHasPremiumEventTools())
                             <span class="evt-credit-badge">Pro</span>
                         @endunless
