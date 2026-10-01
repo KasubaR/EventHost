@@ -89,9 +89,11 @@ class PublicDashboardAnalyticsService
                 'gross_amount' => $revenue['gross_amount'],
                 'host_amount' => $revenue['host_amount'],
             ],
+            // Same "today counts" rule as Event::scopeUpcoming(); a past event is not upcoming.
             'upcoming' => $events
                 ->where('is_published', true)
                 ->whereNull('cancelled_at')
+                ->filter(fn (Event $e): bool => $e->event_date !== null && $e->event_date->toDateString() >= today()->toDateString())
                 ->sortBy('event_date')
                 ->take(5)
                 ->values(),

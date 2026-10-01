@@ -96,6 +96,27 @@ class PublicPortalTest extends TestCase
             ->assertSee('K285.00', false); // host revenue
     }
 
+    public function test_public_dashboard_upcoming_skips_events_whose_date_has_passed(): void
+    {
+        $user = User::factory()->create();
+        Event::factory()->for($user)->ticketed()->approved()->published()->create([
+            'name' => 'Already Happened', 'event_date' => today()->subDays(3),
+        ]);
+        Event::factory()->for($user)->ticketed()->approved()->published()->create([
+            'name' => 'Happening Today', 'event_date' => today(),
+        ]);
+        Event::factory()->for($user)->ticketed()->approved()->published()->create([
+            'name' => 'Still To Come', 'event_date' => today()->addDays(5),
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('public-dashboard'))
+            ->assertOk()
+            ->assertDontSee('Already Happened')
+            ->assertSee('Happening Today')
+            ->assertSee('Still To Come');
+    }
+
     public function test_public_dashboard_lists_events_the_user_staffs_but_not_owns(): void
     {
         $owner = User::factory()->create();
