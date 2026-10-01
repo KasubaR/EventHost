@@ -7,6 +7,7 @@ use App\Models\Admin;
 use App\Models\AdminHelpRequest;
 use App\Models\User;
 use App\Notifications\HelpRequestClaimedNotification;
+use App\Notifications\HelpRequestCompletedNotification;
 use App\Notifications\HelpRequestDeclinedNotification;
 use Illuminate\Support\Facades\DB;
 
@@ -79,11 +80,17 @@ class HelpRequestService
 
     public function complete(AdminHelpRequest $helpRequest): bool
     {
-        return $this->transition($helpRequest, [HelpRequestStatus::InProgress], [
+        $completed = $this->transition($helpRequest, [HelpRequestStatus::InProgress], [
             'status' => HelpRequestStatus::Completed,
             'completed_at' => now(),
             'access_expires_at' => now(),
         ]);
+
+        if ($completed) {
+            $helpRequest->user->notify(new HelpRequestCompletedNotification($helpRequest));
+        }
+
+        return $completed;
     }
 
     public function decline(AdminHelpRequest $helpRequest, ?string $note): bool

@@ -8,6 +8,7 @@ use App\Enums\SubscriptionTier;
 use App\Models\Event;
 use App\Rules\EventSlugAvailable;
 use App\Rules\UserCanUseInvitationTemplate;
+use App\Services\ActingAsService;
 use App\Support\BillingPlan;
 use Carbon\Carbon;
 use Illuminate\Contracts\Validation\Validator;
@@ -238,6 +239,7 @@ class StoreEventRequest extends FormRequest
         $validator->errors()->add(
             'audience',
             'A free-registration public event requires the Base plan or higher. Choose Private, or upgrade to unlock this.'
+                .(app(ActingAsService::class)->isActive($this) ? ' Plan gates follow the client\'s plan: exit this session and change it from their admin page first.' : '')
         );
     }
 

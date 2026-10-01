@@ -22,7 +22,11 @@
         <div class="dph-inner">
             <div>
                 <h1 class="dph-title">Edit Event</h1>
-                <p class="dph-sub">{{ $event->name }}</p>
+                <p class="dph-sub">{{ $event->name }}
+                    @if ($event->created_by_admin_id)
+                        <span class="evt-type-tag"><i class="fa-solid fa-user-shield"></i> Set up by our team</span>
+                    @endif
+                </p>
             </div>
             <div class="evt-card-actions">
                 @if ($event->isTicketed())

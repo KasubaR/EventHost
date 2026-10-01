@@ -9,6 +9,10 @@
         <link rel="stylesheet" href="{{ asset('css/acting-as.css') }}">
     @endonce
 
+    @if (session('acting_notice'))
+        <div class="acting-as-notice" role="alert">{{ session('acting_notice') }}</div>
+    @endif
+
     {{-- Fixed to the bottom edge rather than the top, so it never pushes the sidebar or
          site header around. Always visible, on every page that uses a layout. --}}
     <div class="acting-as-bar" role="status">

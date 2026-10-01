@@ -28,6 +28,9 @@
                     @if ($event->isTicketed())
                         <span class="evt-type-tag">{{ $event->product_kind->label() }}</span>
                     @endif
+                    @if ($event->created_by_admin_id)
+                        <span class="evt-type-tag"><i class="fa-solid fa-user-shield"></i> Set up by our team</span>
+                    @endif
                 </p>
             </div>
             <div class="evt-card-actions">

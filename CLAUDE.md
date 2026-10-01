@@ -684,6 +684,61 @@ setting, so it can never promise a window the job is not enforcing. Account dele
 - **Slugs of purged events are freed** — a new event can later take a URL that was printed on an old invitation.
   Accepted deliberately (no tombstone table); see the plan §10
 
+### Admin acting as a client
+
+An admin can set an event up on a client's behalf by using the existing host screens **as that client**. Plan and
+decisions: `plans/admin-create-events.md` — all steps are built. Switched **off** by default
+(`ADMIN_ACT_AS_ENABLED=false`, `config/admin.php`).
+
+- **Mechanism:** `ActingAsService` logs the `web` guard in as the client while the admin stays on the `admin` guard in the
+  same session (`session('acting_as')`: admin id, client id, start time, return URL, help request id, scoped event id).
+  Credits, tier gates, ownership and staged-media scoping all behave as the client's, so nothing is duplicated.
+  It signs in and out **through the guard**, never the login/logout controllers: those write `last_login_*`, rotate the
+  client's remember token and invalidate the whole session (which would sign the admin out). `Auth::logout` for a normal
+  user is intercepted in `AuthenticatedSessionController::destroy()` — while acting it only leaves the client
+- **Consent gate (Step 0):** a client sends a request at `/help-request` (`AdminHelpRequest`, one current request per client);
+  an admin with `users.act_as` claims it at `/admin/help-requests`, which assigns them, opens an access window
+  (`ADMIN_HELP_REQUEST_ACCESS_DAYS`, 7) and emails the client. **A session can only start while the assigned admin holds a
+  claimed, unexpired request**, and `invalidReason()` re-checks it on every request, so cancel / decline / complete / expiry
+  ends a live session at once. `ADMIN_ACT_AS_REQUIRE_REQUEST=false` bypasses it and exists only for local development.
+  Every state change goes through `HelpRequestService` under a row lock. Stale requests are expired lazily
+  (`AdminHelpRequest::expireStale()`), not by a scheduler. `Declined` is an addition to the plan's status list
+- **A request about one event scopes the session to it** (`event_id` in the session): other events' pages and
+  `events.create` / `events.store` are 403. A request with no event can reach the whole account
+- **Permission:** `users.act_as`, given to `admin` and `super_admin`, **not** `support`. Re-seed `RolePermissionSeeder` on an
+  existing database. Refused for non-active or unverified clients, a client linked to an `Admin`, or when this browser already
+  has a `web` user signed in
+- **Route isolation:** `acting-as.block` (`BlockWhileActingAs`) 403s credentials (`/settings/security`, `password.update`),
+  account deletion, every payment action, help-request send/cancel, and **the whole admin panel** (only
+  `admin.acting-as.destroy` is exempt). The email field on the profile form cannot change. `acting-as.block:friendly` is on the
+  GETs that plan/credit gates redirect to (`billing.show`, remove-branding, public-registration pay): a safe request bounces
+  back with `acting_notice` (shown by the banner) instead of a dead 403; anything state-changing stays 403
+- **`EnforceActingAsSession`** is appended to the `web` group: ends a session when the admin guard is gone, the client is no
+  longer active, the request is no longer open, or `ADMIN_ACT_AS_TTL_MINUTES` (60) has passed
+- **Banner:** `<x-acting-as-banner />` (fixed to the bottom edge, so it never moves the sidebar) is included by
+  `layouts/app`, `layouts/site` and `layouts/guest`. Pages with their own standalone layout do not show it
+- **Audit trail:** `admin_activity_log` (its own table, every FK `nullOnDelete` so it outlives the admin, client and event).
+  One middleware step logs every state-changing request made while acting (action = a name from `ACTIONS` or the route name),
+  skipping failed and validation-rejected ones, plus `session_started` / `session_ended` (with a reason) and a
+  `credits_spent` entry when the balance moves. `events.store` is logged by the `Event` model's `created` hook instead, which
+  also sets `events.created_by_admin_id` — so every creation path is covered, including `TicketedEventCreator`. A logging
+  failure is reported, never thrown. Shown on the admin user and event pages and to the client under "What our team did"
+- **Entry points:** the admin help-request page ("Start acting as…", client credits, "Grant credits"), the admin event page
+  ("Edit as client", only when the signed-in admin holds a claimed request that **covers** that event — about it, or about the
+  whole account), and an events-index "Created by admin" filter. There is deliberately no client picker or start button on the
+  user page
+- **Per kind:** invitation events spend the **client's** credit on publish. Ticketed events and free-registration events never
+  spend one; their admin approval and the free-registration quote live in the admin panel, so the admin **exits first**, and the
+  client pays the quote themselves. Tier gates follow the client's tier — change it first via `PATCH /admin/users/{user}/tier`
+- **Hand-off:** completing a request emails the client (`HelpRequestCompletedNotification`: what was done from the audit trail,
+  an event link, and the one thing left for them) and a "Set up by our team" badge shows on events with `created_by_admin_id`
+- **Tests:** `ActingAsClientTest`, `HelpRequestTest`, `ActingAsAuditTest`, `AdminActingAsEntryPointsTest`,
+  `ActingAsEventKindsTest`, `HelpRequestHandoffTest`. `$this->actingAs($admin, 'admin')` makes `admin` the default guard for
+  the rest of the test; call `auth()->shouldUse('web')` after starting a session, and `auth()->guard('web')->forgetUser()` to
+  make the next request reload the client (a real request always does)
+- **Not done:** the Privacy page (§2/§7) does not yet say that our team only acts on an account after the client's request, and
+  the copy is unreviewed by a lawyer. Acting as exists on the web only — Sanctum tokens and the Android API are untouched
+
 ### Event Preview
 
 `GET /events/{event}/preview` (`EventPreviewController`) renders the event's real, current invitation —

@@ -171,7 +171,8 @@ class ActingAsClientTest extends TestCase
         $this->get(route('settings.account.edit'))->assertForbidden();
         $this->delete(route('settings.account.destroy'))->assertForbidden();
         $this->put(route('password.update'), [])->assertForbidden();
-        $this->get(route('billing.show'))->assertForbidden();
+        // The billing page bounces back with a note rather than dead-ending (Step 5); payment actions stay 403.
+        $this->get(route('billing.show'))->assertRedirect()->assertSessionHas('acting_notice');
         $this->post(route('payment.initiate'), [])->assertForbidden();
         $this->get(route('admin.dashboard'))->assertForbidden();
     }

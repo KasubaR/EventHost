@@ -32,6 +32,7 @@ use App\Http\Controllers\GuestEmailReminderPreferenceController;
 use App\Http\Controllers\GuestGroupController;
 use App\Http\Controllers\GuestGroupLinkController;
 use App\Http\Controllers\GuestImportController;
+use App\Http\Controllers\HelpRequestController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MapLinkController;
 use App\Http\Controllers\PaymentController;
@@ -42,7 +43,6 @@ use App\Http\Controllers\PublicTicketCheckInController;
 use App\Http\Controllers\RemoveBrandingController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\RsvpController;
-use App\Http\Controllers\HelpRequestController;
 use App\Http\Controllers\Settings\AccountController as SettingsAccountController;
 use App\Http\Controllers\Settings\NotificationController as SettingsNotificationController;
 use App\Http\Controllers\Settings\ProfileController as SettingsProfileController;
@@ -452,11 +452,11 @@ Route::middleware(['auth', 'account.active', 'verified'])->group(function () {
         ->name('events.checkin.links.destroy');
 
     Route::get('/events/{event}/remove-branding', [RemoveBrandingController::class, 'show'])
-        ->middleware('acting-as.block')
+        ->middleware('acting-as.block:friendly')
         ->name('events.remove-branding');
 
     Route::get('/events/{event}/public-registration/pay', [PublicRegistrationPaymentController::class, 'show'])
-        ->middleware('acting-as.block')
+        ->middleware('acting-as.block:friendly')
         ->name('events.public-registration.pay');
     Route::post('/events/{event}/public-registration/submit', [EventPublicRegistrationController::class, 'submit'])
         ->name('events.public-registration.submit');
@@ -519,8 +519,10 @@ Route::middleware(['auth', 'account.active', 'verified'])->group(function () {
 
     // Payments stay the client's own: an admin acting as the client never pays for them
     // (plans/admin-create-events.md Step 1).
+    // The billing page itself is a GET that every plan and credit gate redirects to, so it gets the
+    // friendly bounce (a note, not a dead 403); only the actions below are hard-blocked.
+    Route::get('/billing', [PaymentController::class, 'show'])->middleware('acting-as.block:friendly')->name('billing.show');
     Route::middleware('acting-as.block')->group(function (): void {
-        Route::get('/billing', [PaymentController::class, 'show'])->name('billing.show');
         Route::post('/billing/enterprise-request', [EnterpriseQuoteRequestController::class, 'store'])
             ->name('billing.enterprise-request.store');
         Route::post('/payment/initiate', [PaymentController::class, 'initiate'])
