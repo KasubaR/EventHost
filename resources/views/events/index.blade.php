@@ -11,13 +11,10 @@
                 <h1 class="dph-title">My Events</h1>
                 <p class="dph-sub">Drafts and published invitations for your invited guests.</p>
             </div>
-            <div class="evt-card-actions">
-            <a href="{{ route('help-request.show', ['kind' => 'create_event']) }}" class="evt-btn-outline"><i class="fa-solid fa-life-ring"></i> Ask our team to create it</a>
             <a href="{{ route('events.create', ['audience' => 'private']) }}" class="btn-primary">
                 <i class="fa-solid fa-plus"></i> New event
                 <span class="evt-credit-badge">{{ auth()->user()->event_credits }} credit{{ auth()->user()->event_credits === 1 ? '' : 's' }}</span>
             </a>
-            </div>
         </div>
     </x-slot>
 
@@ -48,18 +45,14 @@
                 <div class="dash-empty-icon"><i class="fa-solid fa-users"></i></div>
                 <h2>No Events Yet</h2>
                 <p>You need an event before you can manage guests and RSVPs. Create one to get started.</p>
-                <div class="evt-card-actions">
-            <a href="{{ route('help-request.show', ['kind' => 'create_event']) }}" class="evt-btn-outline"><i class="fa-solid fa-life-ring"></i> Ask our team to create it</a>
-            <a href="{{ route('events.create', ['audience' => 'private']) }}" class="btn-primary"><i class="fa-solid fa-plus"></i> Create event</a>
+                <a href="{{ route('events.create', ['audience' => 'private']) }}" class="btn-primary"><i class="fa-solid fa-plus"></i> Create event</a>
             </div>
         @else
             <div class="dash-empty">
                 <div class="dash-empty-icon"><i class="fa-solid fa-envelope-open-text"></i></div>
                 <h2>No Events Yet</h2>
                 <p>Create your first invitation to see it here.</p>
-                <div class="evt-card-actions">
-            <a href="{{ route('help-request.show', ['kind' => 'create_event']) }}" class="evt-btn-outline"><i class="fa-solid fa-life-ring"></i> Ask our team to create it</a>
-            <a href="{{ route('events.create', ['audience' => 'private']) }}" class="btn-primary"><i class="fa-solid fa-plus"></i> Create event</a>
+                <a href="{{ route('events.create', ['audience' => 'private']) }}" class="btn-primary"><i class="fa-solid fa-plus"></i> Create event</a>
             </div>
         @endif
     @else

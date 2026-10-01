@@ -28,6 +28,12 @@
         isset($event) && $event->isTicketed()
     );
     $anchoredTypes = [];
+
+    // These layouts draw the music button inside their own hero; every other layout gets a floating one.
+    $layoutsWithOwnAudioButton = ['standard', 'base_wedding', 'beauty_for_ashes', 'pro_magazine'];
+    $floatingAudioPath = in_array($layoutVariantKey, $layoutsWithOwnAudioButton, true)
+        ? null
+        : ($invitation['effects']['audio_track'] ?? null);
 @endphp
 
 @if ($sectionNavItems !== [])
@@ -63,4 +69,11 @@
             @endif
         @endforeach
     </section>
+
+    @if ($floatingAudioPath)
+        <button type="button" class="evt-inv-audio-play evt-inv-audio-play--floating" data-inv-audio-play data-audio-src="{{ asset('storage/'.$floatingAudioPath) }}">
+            <i class="fa-solid fa-music" aria-hidden="true"></i>
+            <span class="evt-inv-audio-label">Play music</span>
+        </button>
+    @endif
 </div>
