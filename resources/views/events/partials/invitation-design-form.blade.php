@@ -1032,6 +1032,23 @@
                                     <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                                 @enderror
                             </div>
+                            <div class="profile-field evt-design-inset-field">
+                                <label for="audio_title" class="profile-label evt-design-upload-micro">Song title</label>
+                                <input id="audio_title" name="audio_title" type="text" maxlength="100" class="profile-input"
+                                       value="{{ old('audio_title', $invitationMerged['effects']['audio_title'] ?? '') }}" placeholder="e.g. Heaven Baby">
+                                @error('audio_title')
+                                    <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
+                                @enderror
+                            </div>
+                            <div class="profile-field evt-design-inset-field">
+                                <label for="audio_artist" class="profile-label evt-design-upload-micro">Artist name</label>
+                                <input id="audio_artist" name="audio_artist" type="text" maxlength="100" class="profile-input"
+                                       value="{{ old('audio_artist', $invitationMerged['effects']['audio_artist'] ?? '') }}" placeholder="e.g. Ayra Starr">
+                                <span class="evt-muted evt-design-hint">Shown to guests next to the play button and used if someone reports the track.</span>
+                                @error('audio_artist')
+                                    <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
+                                @enderror
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -43,10 +43,14 @@ class InvitationAudioTakedown
 
             if ($path !== null) {
                 $customization['effects']['audio_track'] = null;
+                $customization['effects']['audio_title'] = null;
+                $customization['effects']['audio_artist'] = null;
                 $locked->invitation_customization = $customization;
             }
             if ($previousHadIt) {
                 $previous['effects']['audio_track'] = null;
+                $previous['effects']['audio_title'] = null;
+                $previous['effects']['audio_artist'] = null;
                 $locked->invitation_customization_previous = $previous;
             }
             $locked->save();

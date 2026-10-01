@@ -29,6 +29,13 @@
     );
     $anchoredTypes = [];
 
+    // "Title by Artist", or whichever half was given. The music button is drawn by the layout (or the
+    // floating card), so the caption is handed to invitation-public.js on the root instead.
+    $audioCaption = collect([
+        $invitation['effects']['audio_title'] ?? null,
+        $invitation['effects']['audio_artist'] ?? null,
+    ])->filter()->implode(' by ');
+
     // These layouts draw the music button inside their own hero; every other layout gets a floating one.
     $layoutsWithOwnAudioButton = ['standard', 'base_wedding', 'beauty_for_ashes', 'pro_magazine'];
     $floatingAudioPath = in_array($layoutVariantKey, $layoutsWithOwnAudioButton, true)
@@ -50,6 +57,12 @@
 @endif
 
 <div
+    @if (! empty($invitation['effects']['audio_track']) && $audioCaption !== '')
+        data-audio-caption="{{ $audioCaption }}"
+    @endif
+    @if (empty($isPreview) && isset($event) && ! empty($invitation['effects']['audio_track']))
+        data-audio-report-url="{{ route('audio-report.show', $event) }}"
+    @endif
     class="evt-invitation evt-skin-{{ $skinKey }} {{ $layoutClass }}@if ($invitation['effects']['animation_subtle']) evt-invitation--subtle-motion @endif"
     style="--evt-primary: {{ $invitation['theme']['primary'] }}; --evt-accent: {{ $invitation['theme']['accent'] }}; --evt-background: {{ $invitation['theme']['background'] }}; --evt-font-heading: {{ $invitation['theme']['font_heading_stack'] }}; --evt-font-body: {{ $invitation['theme']['font_body_stack'] }};"
 >
@@ -70,14 +83,12 @@
         @endforeach
     </section>
 
-    @if (empty($isPreview) && isset($event) && ! empty($invitation['effects']['audio_track']))
-        <p class="evt-inv-audio-report"><a href="{{ route('audio-report.show', $event) }}" rel="nofollow">Report this music</a></p>
-    @endif
-
     @if ($floatingAudioPath)
-        <button type="button" class="evt-inv-audio-play evt-inv-audio-play--floating" data-inv-audio-play data-audio-src="{{ asset('storage/'.$floatingAudioPath) }}">
-            <i class="fa-solid fa-music" aria-hidden="true"></i>
-            <span class="evt-inv-audio-label">Play music</span>
-        </button>
+        <div class="evt-inv-audio-floating">
+            <button type="button" class="evt-inv-audio-play" data-inv-audio-play data-audio-src="{{ asset('storage/'.$floatingAudioPath) }}">
+                <i class="fa-solid fa-music" aria-hidden="true"></i>
+                <span class="evt-inv-audio-label">Play music</span>
+            </button>
+        </div>
     @endif
 </div>

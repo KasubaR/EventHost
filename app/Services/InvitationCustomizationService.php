@@ -194,6 +194,8 @@ class InvitationCustomizationService
             'countdown_enabled' => $storedEffects['countdown_enabled'] ?? $defaults['effects']['countdown_enabled'],
             'video_background' => $storedEffects['video_background'] ?? $defaults['effects']['video_background'],
             'audio_track' => $storedEffects['audio_track'] ?? $defaults['effects']['audio_track'],
+            'audio_title' => $storedEffects['audio_title'] ?? null,
+            'audio_artist' => $storedEffects['audio_artist'] ?? null,
         ];
 
         $sections = $this->mergeSections(
@@ -357,6 +359,12 @@ class InvitationCustomizationService
                 'audio_track' => isset($effects['audio_track']) && $effects['audio_track'] !== ''
                     ? (string) $effects['audio_track']
                     : null,
+                'audio_title' => isset($effects['audio_title']) && $effects['audio_title'] !== ''
+                    ? (string) $effects['audio_title']
+                    : null,
+                'audio_artist' => isset($effects['audio_artist']) && $effects['audio_artist'] !== ''
+                    ? (string) $effects['audio_artist']
+                    : null,
             ],
             'rsvp_form' => $rsvpForm,
             'schema_version' => self::CURRENT_SCHEMA_VERSION,
@@ -514,6 +522,8 @@ class InvitationCustomizationService
                 'countdown_enabled' => (bool) ($dt['countdown_enabled'] ?? true),
                 'video_background' => null,
                 'audio_track' => null,
+                'audio_title' => null,
+                'audio_artist' => null,
             ],
         ];
     }

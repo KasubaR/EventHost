@@ -505,6 +505,11 @@ class EventInvitationDesignController extends Controller
                         'countdown_enabled' => $validated['countdown_enabled'],
                         'video_background' => $videoPath,
                         'audio_track' => $audioPath,
+                        // The API has no fields for the song details; keep them while the same track stays.
+                        'audio_title' => $audioPath !== null && $audioPath === ($prevEffects['audio_track'] ?? null)
+                            ? ($prevEffects['audio_title'] ?? null) : null,
+                        'audio_artist' => $audioPath !== null && $audioPath === ($prevEffects['audio_track'] ?? null)
+                            ? ($prevEffects['audio_artist'] ?? null) : null,
                     ],
                     'rsvp_form' => $validated['rsvp_form'],
                 ];

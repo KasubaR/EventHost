@@ -376,6 +376,17 @@ class EventInvitationDesignController extends Controller
                 $videoPath = $videoPath ?: null;
                 $audioPath = $audioPath ?: null;
 
+                // Song details travel with the track: gone when there is no track, and carried over
+                // when a client that does not send them (an older form) saves around an unchanged one.
+                $songDetail = function (string $key) use ($request, $audioPath, $prevEffects): ?string {
+                    if ($audioPath === null) {
+                        return null;
+                    }
+                    $value = $request->has($key) ? $request->input($key) : ($prevEffects[$key] ?? null);
+
+                    return is_string($value) && trim($value) !== '' ? trim($value) : null;
+                };
+
                 // Colours come from the curated catalogue rather than free-form hex, so an
                 // unreadable combination cannot reach a public invitation. Layouts that
                 // ignore the theme variables submit no palette and keep what they have.
@@ -440,6 +451,8 @@ class EventInvitationDesignController extends Controller
                         'countdown_enabled' => $validated['countdown_enabled'],
                         'video_background' => $videoPath,
                         'audio_track' => $audioPath,
+                        'audio_title' => $songDetail('audio_title'),
+                        'audio_artist' => $songDetail('audio_artist'),
                     ],
                     'rsvp_form' => $validated['rsvp_form'],
                 ];

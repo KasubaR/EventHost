@@ -201,6 +201,8 @@ class UpdateInvitationDesignRequest extends FormRequest
                 },
             ],
             'audio_track' => ['nullable', 'file', 'mimes:mp3,mpeg,ogg,wav', 'max:5120'],
+            'audio_title' => ['nullable', 'string', 'max:100'],
+            'audio_artist' => ['nullable', 'string', 'max:100'],
             'clear_video' => ['boolean'],
             'clear_audio' => ['boolean'],
 

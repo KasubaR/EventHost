@@ -181,6 +181,28 @@
         audio.loop = true;
         audio.preload = 'auto';
 
+        // Show what is playing, next to whichever music button this layout draws.
+        var caption = root.getAttribute('data-audio-caption');
+        if (caption && btn.parentNode) {
+            var song = document.createElement('span');
+            song.className = 'evt-inv-audio-caption';
+            song.textContent = caption;
+            btn.parentNode.insertBefore(song, btn.nextSibling);
+        }
+
+        // Attach the copyright report link to whichever music button this layout draws.
+        var reportUrl = root.getAttribute('data-audio-report-url');
+        if (reportUrl && btn.parentNode) {
+            var report = document.createElement('a');
+            report.className = 'evt-inv-audio-report';
+            report.href = reportUrl;
+            report.rel = 'nofollow';
+            report.textContent = 'Report this music';
+            // After the song caption when there is one, so the order is button, song, report link.
+            var after = btn.parentNode.querySelector('.evt-inv-audio-caption') || btn;
+            btn.parentNode.insertBefore(report, after.nextSibling);
+        }
+
         var label = btn.querySelector('.evt-inv-audio-label');
         var userPaused = false;
 

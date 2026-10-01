@@ -105,6 +105,8 @@ final class InvitationCustomizationPersistenceValidator
                 $rule($attribute, $value, $fail);
             }],
             'effects.audio_track' => ['nullable', self::mediaPathRule('audio')],
+            'effects.audio_title' => ['nullable', 'string', 'max:100'],
+            'effects.audio_artist' => ['nullable', 'string', 'max:100'],
 
             'rsvp_form' => ['required', 'array'],
             'rsvp_form.*.visible' => ['required', 'boolean'],

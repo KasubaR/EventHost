@@ -100,6 +100,50 @@ class InvitationCustomizationInfrastructureTest extends TestCase
             ->assertSessionHasErrors('gallery_images');
     }
 
+    public function test_song_title_and_artist_are_saved_with_the_track_and_dropped_with_it(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->proPlus()->create();
+        $tpl = InvitationTemplate::query()->where('slug', 'slate-minimal')->firstOrFail();
+        $event = Event::factory()->for($user)->create([
+            'invitation_template_id' => $tpl->id,
+            'invitation_customization' => null,
+        ]);
+        $payload = $this->designPayload($event, $tpl);
+
+        $this->actingAs($user)->patch(route('events.invitation-design.update', $event), array_merge($payload, [
+            'audio_track' => UploadedFile::fake()->create('song.mp3', 20, 'audio/mpeg'),
+            'audio_title' => '  Heaven Baby ',
+            'audio_artist' => 'Ayra Starr',
+        ]))->assertSessionDoesntHaveErrors();
+
+        $effects = $event->fresh()->invitation_customization['effects'];
+        $this->assertNotNull($effects['audio_track']);
+        $this->assertSame('Heaven Baby', $effects['audio_title']);
+        $this->assertSame('Ayra Starr', $effects['audio_artist']);
+
+        // Editing only the details keeps the file.
+        $this->actingAs($user)->patch(route('events.invitation-design.update', $event), array_merge($payload, [
+            'audio_title' => 'Heaven Baby (feat. ZAYN)',
+            'audio_artist' => 'Ayra Starr',
+        ]))->assertSessionDoesntHaveErrors();
+        $kept = $event->fresh()->invitation_customization['effects'];
+        $this->assertSame($effects['audio_track'], $kept['audio_track']);
+        $this->assertSame('Heaven Baby (feat. ZAYN)', $kept['audio_title']);
+
+        // Removing the track takes the details with it, even if the form still sends them.
+        $this->actingAs($user)->patch(route('events.invitation-design.update', $event), array_merge($payload, [
+            'clear_audio' => '1',
+            'audio_title' => 'Heaven Baby',
+            'audio_artist' => 'Ayra Starr',
+        ]))->assertSessionDoesntHaveErrors();
+        $gone = $event->fresh()->invitation_customization['effects'];
+        $this->assertNull($gone['audio_track']);
+        $this->assertNull($gone['audio_title']);
+        $this->assertNull($gone['audio_artist']);
+    }
+
     public function test_previous_customization_snapshot_stored_on_second_save(): void
     {
         Storage::fake('public');
