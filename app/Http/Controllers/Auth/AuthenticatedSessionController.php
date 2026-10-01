@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\Event;
 use App\Models\Review;
+use App\Services\ActingAsService;
 use App\Support\SafeIntendedUrl;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -49,6 +50,14 @@ class AuthenticatedSessionController extends Controller
 
     public function destroy(Request $request): RedirectResponse
     {
+        // While an admin is acting as a client, "log out" means leave the client's account,
+        // not invalidate the whole session, which would sign the admin out as well.
+        $acting = app(ActingAsService::class);
+
+        if ($acting->isActive($request)) {
+            return redirect($acting->stop($request) ?? route('admin.dashboard'));
+        }
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();

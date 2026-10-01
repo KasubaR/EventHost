@@ -14,6 +14,7 @@ class RolePermissionSeeder extends Seeder
         'users.manage_status',
         'users.delete',
         'users.password_reset',
+        'users.act_as',
         'events.view',
         'events.publish_toggle',
         'events.delete',

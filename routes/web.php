@@ -451,9 +451,11 @@ Route::middleware(['auth', 'account.active', 'verified'])->group(function () {
         ->name('events.checkin.links.destroy');
 
     Route::get('/events/{event}/remove-branding', [RemoveBrandingController::class, 'show'])
+        ->middleware('acting-as.block')
         ->name('events.remove-branding');
 
     Route::get('/events/{event}/public-registration/pay', [PublicRegistrationPaymentController::class, 'show'])
+        ->middleware('acting-as.block')
         ->name('events.public-registration.pay');
     Route::post('/events/{event}/public-registration/submit', [EventPublicRegistrationController::class, 'submit'])
         ->name('events.public-registration.submit');
@@ -514,18 +516,22 @@ Route::middleware(['auth', 'account.active', 'verified'])->group(function () {
     Route::resource('events', EventController::class)->except(['store', 'index']);
     Route::post('/events', [EventController::class, 'store'])->name('events.store')->middleware('throttle:10,1');
 
-    Route::get('/billing', [PaymentController::class, 'show'])->name('billing.show');
-    Route::post('/billing/enterprise-request', [EnterpriseQuoteRequestController::class, 'store'])
-        ->name('billing.enterprise-request.store');
-    Route::post('/payment/initiate', [PaymentController::class, 'initiate'])
-        ->middleware('throttle:payment-initiate')
-        ->name('payment.initiate');
-    Route::get('/payment/verify/{transactionId}', [PaymentController::class, 'verify'])
-        ->where('transactionId', '[A-Za-z0-9_\-]{1,64}')
-        ->name('payment.verify');
-    Route::get('/payment/verify-ref/{reference}', [PaymentController::class, 'verifyByReference'])
-        ->where('reference', '[A-Za-z0-9_\-]{1,128}')
-        ->name('payment.verify.ref');
+    // Payments stay the client's own: an admin acting as the client never pays for them
+    // (plans/admin-create-events.md Step 1).
+    Route::middleware('acting-as.block')->group(function (): void {
+        Route::get('/billing', [PaymentController::class, 'show'])->name('billing.show');
+        Route::post('/billing/enterprise-request', [EnterpriseQuoteRequestController::class, 'store'])
+            ->name('billing.enterprise-request.store');
+        Route::post('/payment/initiate', [PaymentController::class, 'initiate'])
+            ->middleware('throttle:payment-initiate')
+            ->name('payment.initiate');
+        Route::get('/payment/verify/{transactionId}', [PaymentController::class, 'verify'])
+            ->where('transactionId', '[A-Za-z0-9_\-]{1,64}')
+            ->name('payment.verify');
+        Route::get('/payment/verify-ref/{reference}', [PaymentController::class, 'verifyByReference'])
+            ->where('reference', '[A-Za-z0-9_\-]{1,128}')
+            ->name('payment.verify.ref');
+    });
 
     Route::get('/reviews', [ReviewController::class, 'index'])->name('reviews.index');
     Route::post('/reviews', [ReviewController::class, 'store'])
@@ -537,13 +543,16 @@ Route::middleware(['auth', 'account.active', 'verified'])->group(function () {
     Route::prefix('settings')->name('settings.')->group(function (): void {
         Route::redirect('/', '/settings/profile')->name('index');
 
-        Route::get('/security', [SettingsSecurityController::class, 'edit'])->name('security.edit');
-
         Route::get('/notifications', [SettingsNotificationController::class, 'edit'])->name('notifications.edit');
         Route::patch('/notifications', [SettingsNotificationController::class, 'update'])->name('notifications.update');
 
-        Route::get('/account', [SettingsAccountController::class, 'edit'])->name('account.edit');
-        Route::delete('/account', [SettingsAccountController::class, 'destroy'])->name('account.destroy');
+        // Credentials and account deletion stay the client's own while an admin acts as them.
+        Route::middleware('acting-as.block')->group(function (): void {
+            Route::get('/security', [SettingsSecurityController::class, 'edit'])->name('security.edit');
+
+            Route::get('/account', [SettingsAccountController::class, 'edit'])->name('account.edit');
+            Route::delete('/account', [SettingsAccountController::class, 'destroy'])->name('account.destroy');
+        });
     });
 
     // Kept for bookmarks and any older link that still points at /profile.

@@ -4,6 +4,8 @@ namespace App\Http\Requests;
 
 use App\Models\User;
 use App\Rules\ZambianPhoneNumber;
+use App\Services\ActingAsService;
+use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -29,6 +31,13 @@ class UpdateProfileRequest extends FormRequest
                 'email:rfc',
                 'max:255',
                 Rule::unique(User::class)->ignore($this->user()->id),
+                // An admin acting as the client must not be able to move the account to
+                // an address the client doesn't control.
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    if (app(ActingAsService::class)->isActive($this) && $value !== $this->user()->email) {
+                        $fail('The email address cannot be changed while our team is helping with your account.');
+                    }
+                },
             ],
             'phone' => ['nullable', 'string', 'max:20', new ZambianPhoneNumber],
             'company_name' => ['nullable', 'string', 'max:255'],

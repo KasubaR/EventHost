@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Middleware\AdminAuthenticate;
+use App\Http\Middleware\BlockWhileActingAs;
+use App\Http\Middleware\EnforceActingAsSession;
 use App\Http\Middleware\EnsureAccountIsActive;
 use App\Http\Middleware\EnsureEventAudience;
 use App\Http\Middleware\EnsureSanctumAccountIsActive;
@@ -37,7 +39,12 @@ return Application::configure(basePath: dirname(__DIR__))
             'webhooks/twilio/whatsapp',
         ]);
 
+        // After StartSession, so the session is readable. Ends an acting-as session the
+        // moment it stops being valid (plans/admin-create-events.md Step 1.3).
+        $middleware->web(append: [EnforceActingAsSession::class]);
+
         $middleware->alias([
+            'acting-as.block' => BlockWhileActingAs::class,
             'admin.auth' => AdminAuthenticate::class,
             'account.active' => EnsureAccountIsActive::class,
             'audience' => EnsureEventAudience::class,

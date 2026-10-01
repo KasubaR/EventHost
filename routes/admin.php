@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\ActingAsController as AdminActingAsController;
 use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\ContributionRevenueController;
@@ -37,9 +38,16 @@ Route::post('admin/logout', [AdminAuthController::class, 'destroy'])
 
 Route::prefix('admin')
     ->name('admin.')
-    ->middleware(['admin.auth', 'role:super_admin|admin|support,admin'])
+    // acting-as.block: nothing admin-only is reachable from inside a client's session.
+    // It exempts the exit route below, which is how the admin gets back out.
+    ->middleware(['admin.auth', 'role:super_admin|admin|support,admin', 'acting-as.block'])
     ->group(function (): void {
         Route::get('/', fn () => redirect()->route('admin.dashboard'));
+
+        Route::middleware(['permission:users.act_as,admin', 'throttle:admin-mutations'])->group(function (): void {
+            Route::post('/users/{user}/act-as', [AdminActingAsController::class, 'store'])->name('users.act-as');
+        });
+        Route::delete('/acting-as', [AdminActingAsController::class, 'destroy'])->name('acting-as.destroy');
 
         Route::middleware('permission:analytics.view,admin')->group(function (): void {
             Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
