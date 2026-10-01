@@ -3,7 +3,7 @@
 ## Status
 
 **Built (Steps 0-7).** Switched off by default (`ADMIN_ACT_AS_ENABLED`). See "Admin acting as a client" in `CLAUDE.md` for how it behaves today.
-Still open: the Privacy page copy (Risks, below).
+Privacy page copy: done (follows the feature flag).
 
 ## Decisions (confirmed)
 

@@ -39,6 +39,7 @@ class ReviewResource extends JsonResource
                 'label' => $this->status->label(),
             ],
             'is_featured' => $this->is_featured,
+            'moderation_note' => $this->moderation_note,
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

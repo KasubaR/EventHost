@@ -32,6 +32,8 @@
         <div class="evt-flash evt-flash--warn"><i class="fa-solid fa-triangle-exclamation"></i> You already have {{ \App\Models\Event::MAX_OPEN_DRAFTS }} unpublished drafts. Publish or delete one before creating another.</div>
     @endif
 
+    <x-help-card />
+
     {{-- Guests & RSVPs are managed per event — there's no single list across events, so the
          sidebar link lands here with a hint to pick one. Only shown when there's actually a
          choice to make; the empty-state branch below covers the zero-events case instead. --}}

@@ -105,9 +105,11 @@
                 <a href="{{ route('settings.profile.edit') }}" class="dash-nav-link {{ request()->routeIs('settings.*') ? 'is-active' : '' }}">
                     <i class="fa-solid fa-gear"></i> Settings
                 </a>
-                <a href="{{ route('help-request.show') }}" class="dash-nav-link {{ request()->routeIs('help-request.*') ? 'is-active' : '' }}">
-                    <i class="fa-solid fa-life-ring"></i> Get help
-                </a>
+                @if (config('admin.acting_as.enabled'))
+                    <a href="{{ route('help-request.show') }}" class="dash-nav-link {{ request()->routeIs('help-request.*') ? 'is-active' : '' }}">
+                        <i class="fa-solid fa-life-ring"></i> Get help
+                    </a>
+                @endif
                 <a href="{{ route('reviews.index') }}" class="dash-nav-link {{ request()->routeIs('reviews.*') ? 'is-active' : '' }}">
                     <i class="fa-solid fa-star"></i> My Reviews
                 </a>

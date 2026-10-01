@@ -49,6 +49,30 @@ class LegalPagesTest extends TestCase
         $this->get(route('legal.privacy'))->assertSee('for 45 days so you can restore it')->assertDontSee('for 30 days');
     }
 
+    // The help wording follows ADMIN_ACT_AS_ENABLED, like the reminder and purge wording above:
+    // the page must not describe a team-access feature the platform has switched off.
+    public function test_privacy_describes_help_from_our_team_only_while_it_is_switched_on(): void
+    {
+        config(['admin.acting_as.enabled' => true]);
+
+        $this->get(route('legal.privacy'))
+            ->assertOk()
+            ->assertSee('Help from our team')
+            ->assertSee('only opens your account after you')
+            ->assertSee('you can cancel it at any time')
+            ->assertSee('never pay on your behalf')
+            ->assertSee('Help requests')
+            ->assertSee('no longer linked to your account');
+
+        config(['admin.acting_as.enabled' => false]);
+
+        $this->get(route('legal.privacy'))
+            ->assertOk()
+            ->assertDontSee('Help from our team')
+            ->assertDontSee('only opens your account')
+            ->assertDontSee('what our team did');
+    }
+
     public function test_privacy_keeps_its_existing_wording_while_purging_is_off(): void
     {
         config(['events.retention.deleted_days' => 0]);

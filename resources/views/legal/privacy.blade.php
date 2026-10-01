@@ -71,6 +71,15 @@
                     currency, reference, status and timestamp.
                 </p>
 
+                @if (config('admin.acting_as.enabled'))
+                    <h3>Help from our team</h3>
+                    <p>
+                        If you ask our team to set up or fix an event for you, we store your request: what you asked for, the
+                        event it is about, how you would like to be contacted, which member of our team handles it, and a record
+                        of what they did on your account while helping.
+                    </p>
+                @endif
+
                 <h3>Technical information</h3>
                 <p>We record the time and IP address of your most recent sign-in, and our servers keep standard access logs. API tokens issued to your account expire after seven days.</p>
             </section>
@@ -119,6 +128,15 @@
                         <li>
                             To send WhatsApp messages about your event: an invitation when you send one from your guest
                             list, and a confirmation when a guest replies to it
+                        </li>
+                    @endif
+                    @if (config('admin.acting_as.enabled'))
+                        <li>
+                            To set up or fix an event for you when you ask us to. Our team only opens your account after you
+                            send a request and a member of our team picks it up, only for as long as that request is open, and
+                            you can cancel it at any time, which ends their access straight away. While helping, they never
+                            change your password or email address, never delete your account and never pay on your behalf.
+                            Everything they do is recorded and you can see it under Get help in your account
                         </li>
                     @endif
                     <li>To run guest check-in, QR badges and table photo uploads</li>
@@ -187,6 +205,14 @@
                         </li>
                     @else
                         <li><strong>Event and guest data</strong>: until you delete the event, or delete your account</li>
+                    @endif
+                    @if (config('admin.acting_as.enabled'))
+                        <li>
+                            <strong>Help requests</strong>: deleted when you delete your account.
+                            <strong>The record of what our team did</strong> while helping is kept for security and accountability,
+                            but it is no longer linked to your account once that is deleted. It may still show the name of an
+                            event and the address the change was made from
+                        </li>
                     @endif
                     <li>
                         <strong>Payment records</strong>: kept as long as required for tax and accounting purposes, even

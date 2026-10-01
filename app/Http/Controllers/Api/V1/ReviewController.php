@@ -37,13 +37,22 @@ class ReviewController extends Controller
             ->get();
 
         // The web index shows every past event with the review form or its
-        // current status inline; the API returns just the reviews that
-        // already exist — the app builds the "not yet reviewed" affordance
-        // for the rest from its own event list (Slice C's /host/events),
-        // which already flags isReviewable-equivalent state.
+        // current status inline. Here `data` stays the existing reviews, and
+        // `reviewable_events` lists the events that can still be reviewed, so
+        // the app never re-implements Event::isReviewable() itself.
         return ReviewResource::collection(
             $events->pluck('review')->filter()->values()
-        );
+        )->additional([
+            'reviewable_events' => $events
+                ->filter(fn (Event $event): bool => $event->isReviewable())
+                ->map(fn (Event $event): array => [
+                    'id' => $event->id,
+                    'name' => $event->name,
+                    'event_type_label' => $event->event_type_label,
+                    'event_date' => $event->event_date?->format('Y-m-d'),
+                ])
+                ->values(),
+        ]);
     }
 
     public function store(StoreReviewRequest $request): JsonResponse

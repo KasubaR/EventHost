@@ -90,6 +90,34 @@ class ReviewCrudTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_index_lists_existing_reviews_and_events_still_open_for_review(): void
+    {
+        $user = User::factory()->create();
+        $reviewed = $this->pastEventFor($user);
+        $review = Review::factory()->for($user)->for($reviewed)->create();
+        $open = $this->pastEventFor($user);
+        $future = Event::factory()->published()->create([
+            'user_id' => $user->id,
+            'event_date' => now()->addWeek()->format('Y-m-d'),
+        ]);
+        $unpublished = Event::factory()->create([
+            'user_id' => $user->id,
+            'event_date' => now()->subWeek()->format('Y-m-d'),
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$this->tokenFor($user))
+            ->getJson(route('api.v1.reviews.index'));
+
+        $response->assertOk();
+        $response->assertJsonCount(1, 'data');
+        $response->assertJsonPath('data.0.id', $review->id);
+
+        $reviewableIds = collect($response->json('reviewable_events'))->pluck('id')->all();
+        $this->assertSame([$open->id], $reviewableIds);
+        $this->assertNotContains($future->id, $reviewableIds);
+        $this->assertNotContains($unpublished->id, $reviewableIds);
+    }
+
     public function test_destroy_removes_the_review(): void
     {
         $user = User::factory()->create();

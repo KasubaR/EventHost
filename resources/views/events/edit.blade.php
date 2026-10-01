@@ -33,7 +33,6 @@
                     <a href="{{ route('public-events.ticket-types.index', $event) }}" class="evt-btn-outline"><x-ticket-icon /> Back to tickets</a>
                 @endif
                 <a href="{{ route('events.show', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-eye"></i> View</a>
-                <a href="{{ route('help-request.show', ['event' => $event->id]) }}" class="evt-btn-outline"><i class="fa-solid fa-life-ring"></i> Ask our team for help</a>
                 <a href="{{ route($event->isPublicAudience() ? 'public-events.index' : 'events.index') }}" class="evt-btn-outline"><i class="fa-solid fa-list"></i> All events</a>
             </div>
         </div>
@@ -43,6 +42,8 @@
         'current' => 4,
         'ticketed' => $event->isTicketed(),
     ])
+
+    <x-help-card :event="$event" />
 
     @if (session('status') === 'draft-saved')
         <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Draft saved. Continue editing or publish below.</div>

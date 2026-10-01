@@ -736,8 +736,11 @@ decisions: `plans/admin-create-events.md` — all steps are built. Switched **of
   `ActingAsEventKindsTest`, `HelpRequestHandoffTest`. `$this->actingAs($admin, 'admin')` makes `admin` the default guard for
   the rest of the test; call `auth()->shouldUse('web')` after starting a session, and `auth()->guard('web')->forgetUser()` to
   make the next request reload the client (a real request always does)
-- **Not done:** the Privacy page (§2/§7) does not yet say that our team only acts on an account after the client's request, and
-  the copy is unreviewed by a lawyer. Acting as exists on the web only — Sanctum tokens and the Android API are untouched
+- **Privacy §2, §4 and §7** describe the help request, the "only after you ask, cancel any time, never password/email/payments"
+  promise, and how long the audit record is kept — but **only while `ADMIN_ACT_AS_ENABLED` is on**, the same way the reminder
+  and purge wording follows its setting, so the page never describes access the platform has switched off. Change the feature
+  and you change that copy with it. Still unreviewed by a lawyer. Acting as exists on the web only — Sanctum tokens and the
+  Android API are untouched
 
 ### Event Preview
 
