@@ -37,7 +37,11 @@
                 <a href="{{ route('admin.users.show', $helpRequest->user) }}" class="admin-link">{{ $helpRequest->user->name }}</a>
                 ({{ $helpRequest->user->email }})
             </p>
-            <p class="admin-muted"><strong>Credits:</strong> {{ $helpRequest->user->event_credits }}</p>
+            <p class="admin-muted"><strong>Credits:</strong> {{ $helpRequest->user->event_credits }}
+                @if (auth('admin')->user()?->can('users.manage_status'))
+                    &middot; <a href="{{ route('admin.users.show', $helpRequest->user) }}#credits-input" class="admin-link">Grant credits</a>
+                @endif
+            </p>
             <p class="admin-muted"><strong>Request:</strong> {{ $helpRequest->kind->label() }}</p>
             @if ($helpRequest->event)
                 <p class="admin-muted"><strong>Event:</strong> {{ $helpRequest->event->name }}</p>

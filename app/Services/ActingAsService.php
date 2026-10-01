@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Admin;
 use App\Models\AdminActivityLog;
 use App\Models\AdminHelpRequest;
+use App\Models\Event;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -208,6 +209,16 @@ class ActingAsService
             ->grantingAccess()
             ->latest('claimed_at')
             ->first();
+    }
+
+    /**
+     * Whether a help request lets an admin work on this event: one about this event, or one
+     * about the whole account (no event named).
+     */
+    public function covers(AdminHelpRequest $helpRequest, Event $event): bool
+    {
+        return $helpRequest->user_id === $event->user_id
+            && ($helpRequest->event_id === null || $helpRequest->event_id === $event->id);
     }
 
     /**

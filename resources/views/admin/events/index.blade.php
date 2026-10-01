@@ -32,6 +32,9 @@
                 @endforeach
             </select>
         </div>
+        <label class="admin-muted" style="display:flex;align-items:center;gap:6px;">
+            <input type="checkbox" name="created_by_admin" value="1" @checked($createdByAdmin)> Created by admin
+        </label>
         <button type="submit" class="btn-primary">Search</button>
     </form>
 
@@ -55,6 +58,9 @@
                 <tr>
                     <td>
                         {{ $event->name }}
+                        @if ($event->created_by_admin_id)
+                            <div class="admin-muted"><i class="fa-solid fa-user-shield" aria-hidden="true"></i> Set up by our team</div>
+                        @endif
                         @if ($event->trashed())
                             @php $retention = \App\Support\EventRetentionNotice::for($event); @endphp
                             <div class="admin-muted">
