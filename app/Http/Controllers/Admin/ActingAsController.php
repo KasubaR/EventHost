@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\HelpRequestKind;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\ActingAsService;
@@ -19,9 +20,22 @@ class ActingAsController extends Controller
             return back()->with('error', $reason);
         }
 
-        $acting->start($request, $admin, $user, route('admin.users.show', $user));
+        $helpRequest = $acting->grantingRequest($admin, $user);
 
-        return redirect()->route('events.index');
+        $acting->start(
+            $request,
+            $admin,
+            $user,
+            $helpRequest ? route('admin.help-requests.show', $helpRequest) : route('admin.users.show', $user),
+            $helpRequest,
+        );
+
+        // Land on what the client asked for: their event, the new-event wizard, or the list.
+        if ($helpRequest?->event_id) {
+            return redirect()->route('events.edit', $helpRequest->event_id);
+        }
+
+        return redirect()->route($helpRequest?->kind === HelpRequestKind::CreateEvent ? 'events.create' : 'events.index');
     }
 
     public function destroy(Request $request, ActingAsService $acting): RedirectResponse

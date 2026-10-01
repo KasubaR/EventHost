@@ -105,6 +105,9 @@
                 <a href="{{ route('settings.profile.edit') }}" class="dash-nav-link {{ request()->routeIs('settings.*') ? 'is-active' : '' }}">
                     <i class="fa-solid fa-gear"></i> Settings
                 </a>
+                <a href="{{ route('help-request.show') }}" class="dash-nav-link {{ request()->routeIs('help-request.*') ? 'is-active' : '' }}">
+                    <i class="fa-solid fa-life-ring"></i> Get help
+                </a>
                 <a href="{{ route('reviews.index') }}" class="dash-nav-link {{ request()->routeIs('reviews.*') ? 'is-active' : '' }}">
                     <i class="fa-solid fa-star"></i> My Reviews
                 </a>
@@ -173,5 +176,6 @@
     });
 </script>
 
+<x-acting-as-banner />
 </body>
 </html>

@@ -31,5 +31,6 @@
 
 <script src="{{ asset('js/homepage.js') }}" defer></script>
 @stack('scripts')
+<x-acting-as-banner />
 </body>
 </html>

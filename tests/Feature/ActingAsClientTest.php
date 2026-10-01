@@ -59,6 +59,39 @@ class ActingAsClientTest extends TestCase
         $this->get(route('events.index'))->assertOk();
     }
 
+    public function test_banner_shows_the_client_and_an_exit_button_on_the_dashboard_and_site_layouts(): void
+    {
+        $admin = $this->adminWith('admin');
+        $client = $this->client(['name' => 'Chanda Mwila']);
+        $this->start($admin, $client);
+
+        foreach ([route('events.index'), route('settings.profile.edit')] as $url) {
+            $this->get($url)
+                ->assertOk()
+                ->assertSee('You are acting as')
+                ->assertSee('Chanda Mwila')
+                ->assertSee($admin->name)
+                ->assertSee(route('admin.acting-as.destroy'), false);
+        }
+    }
+
+    public function test_banner_is_absent_for_an_ordinary_session_and_after_exit(): void
+    {
+        $this->actingAs($this->client(), 'web')
+            ->get(route('events.index'))
+            ->assertOk()
+            ->assertDontSee('You are acting as');
+
+        $admin = $this->adminWith('admin');
+        $client = $this->client();
+        auth()->guard('web')->forgetUser();
+        $this->flushSession();
+        $this->start($admin, $client);
+        $this->delete(route('admin.acting-as.destroy'));
+
+        $this->get(route('login'))->assertDontSee('You are acting as');
+    }
+
     public function test_starting_does_not_touch_last_login_columns(): void
     {
         $client = $this->client(['last_login_at' => null, 'last_login_ip' => null]);

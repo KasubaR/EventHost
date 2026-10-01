@@ -106,6 +106,11 @@
                         <i class="fa-solid fa-hand-holding-dollar"></i> Contributions
                     </a>
                 @endif
+                @if(auth('admin')->user()?->can('users.act_as'))
+                    <a href="{{ route('admin.help-requests.index') }}" class="dash-nav-link {{ request()->routeIs('admin.help-requests.*') ? 'is-active' : '' }}">
+                        <i class="fa-solid fa-life-ring"></i> Help requests
+                    </a>
+                @endif
                 @if(auth('admin')->user()?->can('settings.manage'))
                     <a href="{{ route('admin.settings.edit') }}" class="dash-nav-link {{ request()->routeIs('admin.settings.*') ? 'is-active' : '' }}">
                         <i class="fa-solid fa-sliders"></i> Settings

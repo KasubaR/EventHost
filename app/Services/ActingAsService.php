@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Admin;
+use App\Models\AdminHelpRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -55,14 +56,14 @@ class ActingAsService
             return 'Sign out of the account this browser is already using first.';
         }
 
-        if (! $this->hasConsent($admin, $client)) {
+        if (config('admin.acting_as.require_help_request') && $this->grantingRequest($admin, $client) === null) {
             return 'This client has not asked for our help, so there is nothing to act on.';
         }
 
         return null;
     }
 
-    public function start(Request $request, Admin $admin, User $client, string $returnUrl): void
+    public function start(Request $request, Admin $admin, User $client, string $returnUrl, ?AdminHelpRequest $helpRequest = null): void
     {
         Auth::guard('web')->login($client);
 
@@ -71,6 +72,9 @@ class ActingAsService
             'user_id' => $client->id,
             'started_at' => now()->getTimestamp(),
             'return_url' => $returnUrl,
+            'help_request_id' => $helpRequest?->id,
+            // Set when the request is about one event: the session may then touch only that event.
+            'event_id' => $helpRequest?->event_id,
         ]);
     }
 
@@ -94,6 +98,18 @@ class ActingAsService
         $request ??= request();
 
         return $request->hasSession() && $request->session()->has(self::KEY.'.admin_id');
+    }
+
+    /**
+     * Whole minutes left before the session ceiling ends it, never below 1 while it is live.
+     */
+    public function minutesRemaining(?Request $request = null): int
+    {
+        $request ??= request();
+        $startedAt = (int) $request->session()->get(self::KEY.'.started_at', 0);
+        $left = $startedAt + max(1, (int) config('admin.acting_as.ttl_minutes')) * 60 - now()->getTimestamp();
+
+        return max(1, (int) ceil($left / 60));
     }
 
     public function admin(?Request $request = null): ?Admin
@@ -129,6 +145,14 @@ class ActingAsService
             return 'This client account is no longer active.';
         }
 
+        if (config('admin.acting_as.require_help_request')) {
+            $helpRequest = AdminHelpRequest::query()->find($session['help_request_id'] ?? 0);
+
+            if ($helpRequest === null || ! $helpRequest->grantsAccess() || $helpRequest->assigned_admin_id !== $session['admin_id']) {
+                return 'The client\'s help request is no longer open.';
+            }
+        }
+
         $ageSeconds = now()->getTimestamp() - (int) ($session['started_at'] ?? 0);
 
         if ($ageSeconds >= max(1, (int) config('admin.acting_as.ttl_minutes')) * 60) {
@@ -139,12 +163,28 @@ class ActingAsService
     }
 
     /**
-     * The consent gate. Plan Step 0 replaces the body with a lookup of an in-progress
-     * help request assigned to this admin (scoped to its event when it has one).
+     * The client's in-progress help request assigned to this admin — the consent that
+     * makes acting as them legitimate. Null when there is none.
      */
-    private function hasConsent(Admin $admin, User $client): bool
+    public function grantingRequest(Admin $admin, User $client): ?AdminHelpRequest
     {
-        return ! config('admin.acting_as.require_help_request');
+        return AdminHelpRequest::query()
+            ->where('user_id', $client->id)
+            ->where('assigned_admin_id', $admin->id)
+            ->grantingAccess()
+            ->latest('claimed_at')
+            ->first();
+    }
+
+    /**
+     * The one event this session is limited to, or null when it may use the whole account.
+     */
+    public function scopedEventId(?Request $request = null): ?int
+    {
+        $request ??= request();
+        $id = $this->isActive($request) ? $request->session()->get(self::KEY.'.event_id') : null;
+
+        return $id === null ? null : (int) $id;
     }
 
     private function isStaffIdentity(User $client): bool

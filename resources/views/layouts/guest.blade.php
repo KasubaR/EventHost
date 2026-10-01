@@ -30,5 +30,6 @@
 
 <x-site-footer />
 
+<x-acting-as-banner />
 </body>
 </html>

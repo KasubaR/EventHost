@@ -42,6 +42,7 @@ use App\Http\Controllers\PublicTicketCheckInController;
 use App\Http\Controllers\RemoveBrandingController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\RsvpController;
+use App\Http\Controllers\HelpRequestController;
 use App\Http\Controllers\Settings\AccountController as SettingsAccountController;
 use App\Http\Controllers\Settings\NotificationController as SettingsNotificationController;
 use App\Http\Controllers\Settings\ProfileController as SettingsProfileController;
@@ -531,6 +532,16 @@ Route::middleware(['auth', 'account.active', 'verified'])->group(function () {
         Route::get('/payment/verify-ref/{reference}', [PaymentController::class, 'verifyByReference'])
             ->where('reference', '[A-Za-z0-9_\-]{1,128}')
             ->name('payment.verify.ref');
+    });
+
+    // Ask our team for hands-on help. This request is also the consent that lets an admin act on the
+    // account (plans/admin-create-events.md Step 0), so sending and cancelling are the client's alone.
+    Route::get('/help-request', [HelpRequestController::class, 'show'])->name('help-request.show');
+    Route::middleware('acting-as.block')->group(function (): void {
+        Route::post('/help-request', [HelpRequestController::class, 'store'])
+            ->middleware('throttle:5,1')
+            ->name('help-request.store');
+        Route::delete('/help-request/{helpRequest}', [HelpRequestController::class, 'destroy'])->name('help-request.destroy');
     });
 
     Route::get('/reviews', [ReviewController::class, 'index'])->name('reviews.index');

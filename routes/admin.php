@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\EventContributionController as AdminEventContribu
 use App\Http\Controllers\Admin\EventController as AdminEventController;
 use App\Http\Controllers\Admin\FaqController as AdminFaqController;
 use App\Http\Controllers\Admin\GuestController as AdminGuestController;
+use App\Http\Controllers\Admin\HelpRequestController as AdminHelpRequestController;
 use App\Http\Controllers\Admin\InvitationTemplateController as AdminInvitationTemplateController;
 use App\Http\Controllers\Admin\NotificationLogController;
 use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
@@ -44,7 +45,15 @@ Route::prefix('admin')
     ->group(function (): void {
         Route::get('/', fn () => redirect()->route('admin.dashboard'));
 
+        Route::middleware('permission:users.act_as,admin')->group(function (): void {
+            Route::get('/help-requests', [AdminHelpRequestController::class, 'index'])->name('help-requests.index');
+            Route::get('/help-requests/{helpRequest}', [AdminHelpRequestController::class, 'show'])->name('help-requests.show');
+        });
+
         Route::middleware(['permission:users.act_as,admin', 'throttle:admin-mutations'])->group(function (): void {
+            Route::post('/help-requests/{helpRequest}/claim', [AdminHelpRequestController::class, 'claim'])->name('help-requests.claim');
+            Route::post('/help-requests/{helpRequest}/complete', [AdminHelpRequestController::class, 'complete'])->name('help-requests.complete');
+            Route::post('/help-requests/{helpRequest}/decline', [AdminHelpRequestController::class, 'decline'])->name('help-requests.decline');
             Route::post('/users/{user}/act-as', [AdminActingAsController::class, 'store'])->name('users.act-as');
         });
         Route::delete('/acting-as', [AdminActingAsController::class, 'destroy'])->name('acting-as.destroy');

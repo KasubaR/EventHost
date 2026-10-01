@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Event;
 use App\Services\ActingAsService;
 use Closure;
 use Illuminate\Http\Request;
@@ -26,6 +27,8 @@ class EnforceActingAsSession
         $reason = $this->acting->invalidReason($request);
 
         if ($reason === null) {
+            $this->enforceEventScope($request);
+
             return $next($request);
         }
 
@@ -36,5 +39,25 @@ class EnforceActingAsSession
         }
 
         return redirect()->route('admin.login')->withErrors(['email' => $reason]);
+    }
+
+    /**
+     * A request about one event limits the session to that event: any other event's pages,
+     * and creating a new one, are refused. A request not about an event has no such limit.
+     */
+    private function enforceEventScope(Request $request): void
+    {
+        $scoped = $this->acting->scopedEventId($request);
+
+        if ($scoped === null) {
+            return;
+        }
+
+        $event = $request->route('event');
+        $eventId = $event instanceof Event ? $event->id : (is_scalar($event) ? (int) $event : null);
+
+        if (($eventId !== null && $eventId !== $scoped) || $request->routeIs('events.create', 'events.store')) {
+            abort(403, 'This help request is about one event only. Exit the session to work on anything else.');
+        }
     }
 }

@@ -1,0 +1,71 @@
+/* "You are acting as {client}" bar — resources/views/components/acting-as-banner.blade.php.
+   Plan: plans/admin-create-events.md (Step 2). Deliberately loud (amber) so an admin can
+   never mistake a client's account for their own. */
+
+.acting-as-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 20px;
+  background: #b45309;
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.4;
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.25);
+}
+
+.acting-as-bar__text {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.acting-as-bar__meta {
+  opacity: 0.85;
+}
+
+.acting-as-bar form {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.acting-as-bar__exit {
+  padding: 7px 18px;
+  border: 0;
+  border-radius: 6px;
+  background: #fff;
+  color: #92400e;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.acting-as-bar__exit:hover {
+  background: #fef3c7;
+}
+
+/* Keep the last bit of every page clear of the bar. */
+body.has-acting-as-bar {
+  padding-bottom: 56px;
+}
+
+@media (max-width: 640px) {
+  .acting-as-bar {
+    padding: 10px 14px;
+  }
+
+  .acting-as-bar__meta {
+    display: block;
+  }
+
+  body.has-acting-as-bar {
+    padding-bottom: 84px;
+  }
+}
