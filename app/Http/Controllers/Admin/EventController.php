@@ -6,6 +6,7 @@ use App\Enums\EventAudience;
 use App\Exceptions\InsufficientCreditsException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateAdminEventPublishRequest;
+use App\Models\AdminActivityLog;
 use App\Models\Event;
 use App\Models\User;
 use App\Services\EventCreditService;
@@ -48,11 +49,17 @@ class EventController extends Controller
 
     public function show(Event $event): View
     {
-        $event->load(['user:id,name,email,phone,status']);
+        $event->load(['user:id,name,email,phone,status', 'createdByAdmin:id,name']);
         $event->loadCount(['guests', 'rsvps']);
 
         return view('admin.events.show', [
             'adminEvent' => $event,
+            'actingLog' => AdminActivityLog::query()
+                ->where('event_id', $event->id)
+                ->with(['admin:id,name', 'event:id,name'])
+                ->latest('id')
+                ->limit(25)
+                ->get(),
         ]);
     }
 

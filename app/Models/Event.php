@@ -12,6 +12,7 @@ use App\Enums\RsvpStatus;
 use App\Enums\SubscriptionTier;
 use App\Enums\TicketingStatus;
 use App\Enums\TicketOrderStatus;
+use App\Services\ActingAsService;
 use App\Support\BillingPlan;
 use App\Support\EventReminderBuckets;
 use App\Support\TicketingSettings;
@@ -291,6 +292,17 @@ class Event extends Model
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * The admin who created this event while acting as its owner (plans/admin-create-events.md
+     * Step 3). Read-only provenance; nothing gates on it.
+     *
+     * @return BelongsTo<Admin, $this>
+     */
+    public function createdByAdmin(): BelongsTo
+    {
+        return $this->belongsTo(Admin::class, 'created_by_admin_id');
+    }
+
     public function invitationTemplate(): BelongsTo
     {
         return $this->belongsTo(InvitationTemplate::class);
@@ -389,6 +401,25 @@ class Event extends Model
      */
     protected static function booted(): void
     {
+        // An event created inside an acting-as session records which admin made it, and
+        // lands in the audit trail with its id. Done here rather than in EventController::store()
+        // so every creation path (the invitation wizard, TicketedEventCreator) is covered.
+        static::creating(function (self $event): void {
+            $acting = app(ActingAsService::class);
+
+            if ($event->created_by_admin_id === null && $acting->isActive()) {
+                $event->created_by_admin_id = $acting->admin()?->id;
+            }
+        });
+
+        static::created(function (self $event): void {
+            $acting = app(ActingAsService::class);
+
+            if ($event->created_by_admin_id !== null && $acting->isActive()) {
+                $acting->log(request(), 'event_created', $event->id, ['name' => $event->name]);
+            }
+        });
+
         static::saving(function (self $event): void {
             if ($event->isTicketed()) {
                 if ($event->isDirty('audience') && $event->audience === EventAudience::Private) {

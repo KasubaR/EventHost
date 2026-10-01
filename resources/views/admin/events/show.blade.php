@@ -307,6 +307,9 @@
         <div class="admin-panel-card">
             <h2>Owner account</h2>
             <p class="admin-muted admin-mt-sm">{{ $ev->user?->name ?? '-' }}</p>
+            @if ($ev->createdByAdmin)
+                <p class="admin-muted"><i class="fa-solid fa-user-shield"></i> Created by admin {{ $ev->createdByAdmin->name }} on behalf of the client.</p>
+            @endif
             <p class="admin-muted">{{ $ev->user?->phone ?? 'No phone' }} · Status {{ $ev->user?->status ?? '-' }}</p>
             @if(auth('admin')->user()?->can('users.view'))
                 @if ($ev->user)
@@ -315,4 +318,10 @@
             @endif
         </div>
     </div>
+
+    @if ($actingLog->isNotEmpty() || $ev->created_by_admin_id)
+        <div class="admin-mt-md">
+            @include('admin.partials.acting-log', ['entries' => $actingLog])
+        </div>
+    @endif
 </x-admin-layout>

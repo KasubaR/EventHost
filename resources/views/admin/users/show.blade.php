@@ -277,6 +277,8 @@
             @endif
         </div>
 
+        @include('admin.partials.acting-log', ['entries' => $actingLog])
+
         <div class="admin-panel-card">
             <h2>Credit history</h2>
             <p class="admin-muted admin-mt-sm">

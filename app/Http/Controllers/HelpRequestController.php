@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\HelpRequestKind;
 use App\Http\Requests\StoreHelpRequestRequest;
+use App\Models\AdminActivityLog;
 use App\Models\AdminHelpRequest;
 use App\Services\HelpRequestService;
 use Illuminate\Http\RedirectResponse;
@@ -38,7 +39,16 @@ class HelpRequestController extends Controller
 
         $preselectedEvent = $user->events()->whereKey($request->integer('event'))->first();
 
+        // What our team did on the client's behalf, for every request they have sent.
+        $activity = AdminActivityLog::query()
+            ->where('user_id', $user->id)
+            ->with(['admin:id,name', 'event:id,name'])
+            ->latest('id')
+            ->limit(25)
+            ->get();
+
         return view('help.show', [
+            'activity' => $activity,
             'current' => $current,
             'past' => $past,
             'events' => $user->events()->orderByDesc('created_at')->get(['id', 'name']),

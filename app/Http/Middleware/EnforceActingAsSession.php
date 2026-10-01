@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Event;
+use App\Models\User;
 use App\Services\ActingAsService;
 use Closure;
 use Illuminate\Http\Request;
@@ -29,10 +30,10 @@ class EnforceActingAsSession
         if ($reason === null) {
             $this->enforceEventScope($request);
 
-            return $next($request);
+            return $this->audited($request, $next);
         }
 
-        $returnUrl = $this->acting->stop($request);
+        $returnUrl = $this->acting->stop($request, $reason);
 
         if (Auth::guard('admin')->check()) {
             return redirect($returnUrl ?? route('admin.dashboard'))->with('error', $reason);
@@ -59,5 +60,62 @@ class EnforceActingAsSession
         if (($eventId !== null && $eventId !== $scoped) || $request->routeIs('events.create', 'events.store')) {
             abort(403, 'This help request is about one event only. Exit the session to work on anything else.');
         }
+    }
+
+    /**
+     * Route names whose audit entry is something other than the route name itself.
+     * events.store is absent on purpose: the Event model's created hook logs it, with the new id.
+     *
+     * @var array<string, string>
+     */
+    private const ACTIONS = [
+        'events.update' => 'event_updated',
+        'events.publish' => 'event_published',
+        'events.pause' => 'event_paused',
+        'events.cancel' => 'event_cancelled',
+        'events.destroy' => 'event_deleted',
+        'events.restore' => 'event_restored',
+    ];
+
+    /**
+     * One middleware tags every state-changing request made while acting as a client, instead
+     * of each controller remembering to. Failed and validation-rejected requests are not
+     * recorded: nothing changed. A change in the client's credit balance gets its own entry.
+     */
+    private function audited(Request $request, Closure $next): Response
+    {
+        $mutating = ! $request->isMethodSafe();
+        $clientId = Auth::guard('web')->id();
+        $creditsBefore = $mutating ? User::query()->whereKey($clientId)->value('event_credits') : null;
+
+        $response = $next($request);
+
+        if (! $mutating || ! $this->acting->isActive($request) || $response->getStatusCode() >= 400
+            || $request->session()->has('errors')) {
+            return $response;
+        }
+
+        $route = $request->route();
+        $name = $route?->getName();
+
+        if ($name === null || $name === 'events.store') {
+            return $response;
+        }
+
+        $event = $route->parameter('event');
+        $eventId = $event instanceof Event ? $event->id : (is_scalar($event) ? (int) $event : null);
+
+        $this->acting->log($request, self::ACTIONS[$name] ?? $name, $eventId, ['method' => $request->method()]);
+
+        $creditsAfter = User::query()->whereKey($clientId)->value('event_credits');
+
+        if ($creditsBefore !== null && $creditsAfter !== null && (int) $creditsAfter !== (int) $creditsBefore) {
+            $this->acting->log($request, $creditsAfter < $creditsBefore ? 'credits_spent' : 'credits_added', $eventId, [
+                'before' => (int) $creditsBefore,
+                'after' => (int) $creditsAfter,
+            ]);
+        }
+
+        return $response;
     }
 }

@@ -117,6 +117,23 @@
             </article>
         @endif
 
+        @if ($activity->isNotEmpty())
+            <article class="evt-section">
+                <div class="evt-section-head">
+                    <h2>What our team did</h2>
+                    <p>Everything done on your account while we were helping, newest first.</p>
+                </div>
+                <div class="evt-section-body">
+                    @foreach ($activity as $entry)
+                        <p>
+                            {{ $entry->created_at->timezone(config('events.timezone'))->format('j M Y, H:i') }} &middot;
+                            {{ $entry->admin?->name ?? 'Our team' }} &middot; {{ $entry->label() }}@if ($entry->event) &middot; {{ $entry->event->name }}@endif
+                        </p>
+                    @endforeach
+                </div>
+            </article>
+        @endif
+
         @if ($past->isNotEmpty())
             <article class="evt-section">
                 <div class="evt-section-head"><h2>Earlier requests</h2></div>

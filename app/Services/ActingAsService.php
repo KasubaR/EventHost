@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Admin;
+use App\Models\AdminActivityLog;
 use App\Models\AdminHelpRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -76,13 +77,17 @@ class ActingAsService
             // Set when the request is about one event: the session may then touch only that event.
             'event_id' => $helpRequest?->event_id,
         ]);
+
+        $this->log($request, 'session_started', $helpRequest?->event_id);
     }
 
     /**
      * End the session and return the URL to send the admin back to.
      */
-    public function stop(Request $request): ?string
+    public function stop(Request $request, string $reason = 'exited'): ?string
     {
+        $this->log($request, 'session_ended', null, ['reason' => $reason]);
+
         $returnUrl = $request->session()->get(self::KEY.'.return_url');
 
         $guard = Auth::guard('web');
@@ -91,6 +96,35 @@ class ActingAsService
         $request->session()->regenerate();
 
         return is_string($returnUrl) ? $returnUrl : null;
+    }
+
+    /**
+     * Append one row to the audit trail for the live session. Never throws: a logging fault
+     * must not break the client's save, but it is reported so it cannot go unnoticed.
+     *
+     * @param  array<string, mixed>  $properties
+     */
+    public function log(Request $request, string $action, ?int $eventId = null, array $properties = []): void
+    {
+        if (! $this->isActive($request)) {
+            return;
+        }
+
+        $session = $request->session()->get(self::KEY, []);
+
+        try {
+            AdminActivityLog::query()->create([
+                'admin_id' => $session['admin_id'] ?? null,
+                'user_id' => $session['user_id'] ?? null,
+                'event_id' => $eventId,
+                'help_request_id' => $session['help_request_id'] ?? null,
+                'action' => $action,
+                'properties' => $properties === [] ? null : $properties,
+                'ip' => $request->ip(),
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     public function isActive(?Request $request = null): bool
