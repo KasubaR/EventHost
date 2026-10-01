@@ -70,6 +70,10 @@
         @endforeach
     </section>
 
+    @if (empty($isPreview) && isset($event) && ! empty($invitation['effects']['audio_track']))
+        <p class="evt-inv-audio-report"><a href="{{ route('audio-report.show', $event) }}" rel="nofollow">Report this music</a></p>
+    @endif
+
     @if ($floatingAudioPath)
         <button type="button" class="evt-inv-audio-play evt-inv-audio-play--floating" data-inv-audio-play data-audio-src="{{ asset('storage/'.$floatingAudioPath) }}">
             <i class="fa-solid fa-music" aria-hidden="true"></i>

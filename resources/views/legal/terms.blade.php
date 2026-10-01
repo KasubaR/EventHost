@@ -122,6 +122,26 @@
                     You confirm you have the rights to what you upload, including any photographs, and the
                     permission of anyone identifiable in them.
                 </p>
+                <p id="music">
+                    <strong>Music and other audio.</strong> You may upload background music or other audio
+                    only if you own it or hold a licence that allows you to copy it and play it to your
+                    guests on the internet. That usually means music you made yourself or royalty-free
+                    music with a licence that covers this use. A commercial song you merely bought or
+                    streamed is normally not enough.
+                </p>
+                <p>
+                    You are responsible for everything you upload. If someone brings a claim because of
+                    audio you uploaded, you will cover our reasonable costs and losses from it
+                    (including legal fees) and any amount we have to pay, to the extent the claim comes
+                    from your upload or your breach of these terms.
+                </p>
+                <p>
+                    If you believe audio on an invitation infringes your copyright, tell us using the
+                    &ldquo;Report this music&rdquo; link at the foot of that invitation, or through the
+                    <a href="{{ route('contact') }}">contact page</a>. We act on reports promptly: we may
+                    remove the audio without notice, and we may suspend accounts that repeatedly upload
+                    audio they have no right to use.
+                </p>
             </section>
 
             <section>

@@ -217,6 +217,18 @@
     cursor: pointer;
 }
 
+.evt-inv-audio-report {
+    margin: 16px 0 8px;
+    text-align: center;
+    font-size: 12px;
+}
+
+.evt-inv-audio-report a {
+    color: inherit;
+    opacity: 0.6;
+    text-decoration: underline;
+}
+
 .evt-inv-audio-play--floating {
     position: fixed;
     right: 16px;

@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\CustomQuoteController as AdminCustomQuoteControll
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EventContributionController as AdminEventContributionController;
 use App\Http\Controllers\Admin\EventController as AdminEventController;
+use App\Http\Controllers\Admin\AudioReportController as AdminAudioReportController;
 use App\Http\Controllers\Admin\FaqController as AdminFaqController;
 use App\Http\Controllers\Admin\GuestController as AdminGuestController;
 use App\Http\Controllers\Admin\HelpRequestController as AdminHelpRequestController;
@@ -185,6 +186,16 @@ Route::prefix('admin')
             Route::post('/faqs', [AdminFaqController::class, 'store'])->name('faqs.store');
             Route::patch('/faqs/{faq}', [AdminFaqController::class, 'update'])->name('faqs.update');
             Route::delete('/faqs/{faq}', [AdminFaqController::class, 'destroy'])->name('faqs.destroy');
+        });
+
+        Route::middleware('permission:audio_reports.manage,admin')->group(function (): void {
+            Route::get('/audio-reports', [AdminAudioReportController::class, 'index'])->name('audio-reports.index');
+        });
+
+        Route::middleware(['permission:audio_reports.manage,admin', 'throttle:admin-mutations'])->group(function (): void {
+            Route::post('/audio-reports/{audio_report}/remove', [AdminAudioReportController::class, 'remove'])->name('audio-reports.remove');
+            Route::post('/audio-reports/{audio_report}/dismiss', [AdminAudioReportController::class, 'dismiss'])->name('audio-reports.dismiss');
+            Route::post('/events/{event}/remove-audio', [AdminAudioReportController::class, 'removeFromEvent'])->withTrashed()->name('events.remove-audio');
         });
 
         Route::middleware('permission:reviews.manage,admin')->group(function (): void {

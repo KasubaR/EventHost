@@ -84,6 +84,21 @@
                 </div>
             </dl>
 
+            @php $audioTrack = $ev->invitation_customization['effects']['audio_track'] ?? null; @endphp
+            @if ($audioTrack && auth('admin')->user()?->can('audio_reports.manage'))
+                <div class="admin-fact admin-mt-md">
+                    <dt>Background music</dt>
+                    <dd>
+                        <code>{{ $audioTrack }}</code>
+                        <form method="post" action="{{ route('admin.events.remove-audio', $ev) }}" class="admin-mt-sm"
+                              onsubmit="return confirm('Remove the background music from this invitation? The file is deleted.');">
+                            @csrf
+                            <button type="submit" class="evt-btn-outline"><i class="fa-solid fa-music"></i> Remove music</button>
+                        </form>
+                    </dd>
+                </div>
+            @endif
+
             @if ($ev->trashed())
                 <div class="admin-callout admin-callout--danger admin-mt-md">
                     <div class="admin-callout-icon" aria-hidden="true"><i class="fa-solid fa-trash"></i></div>

@@ -91,6 +91,11 @@
                         <i class="fa-solid fa-circle-question"></i> FAQs
                     </a>
                 @endif
+                @if(auth('admin')->user()?->can('audio_reports.manage'))
+                    <a href="{{ route('admin.audio-reports.index') }}" class="dash-nav-link {{ request()->routeIs('admin.audio-reports.*') ? 'is-active' : '' }}">
+                        <i class="fa-solid fa-music"></i> Music reports
+                    </a>
+                @endif
                 @if(auth('admin')->user()?->can('reviews.manage'))
                     <a href="{{ route('admin.reviews.index') }}" class="dash-nav-link {{ request()->routeIs('admin.reviews.*') ? 'is-active' : '' }}">
                         <i class="fa-solid fa-star"></i> Reviews

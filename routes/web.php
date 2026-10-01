@@ -2,6 +2,7 @@
 
 use App\Enums\EventAudience;
 use App\Http\Controllers\CheckInController;
+use App\Http\Controllers\AudioReportController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EnterpriseQuoteRequestController;
@@ -114,6 +115,10 @@ Route::get('/.well-known/assetlinks.json', function () {
 
 Route::get('/contact', [ContactController::class, 'show'])->name('contact');
 Route::post('/contact', [ContactController::class, 'store'])->name('contact.store')->middleware('throttle:5,1');
+
+// Copyright / takedown reports about invitation music. Public, no login.
+Route::get('/report-audio/{event}', [AudioReportController::class, 'show'])->withTrashed()->name('audio-report.show');
+Route::post('/report-audio/{event}', [AudioReportController::class, 'store'])->withTrashed()->name('audio-report.store')->middleware('throttle:5,1');
 
 // Public browse listing. Note /events is taken by the authenticated events.index.
 Route::get('/discover', [PublicEventController::class, 'index'])->name('events.discover');

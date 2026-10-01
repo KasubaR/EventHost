@@ -1007,6 +1007,7 @@
             <fieldset class="evt-design-fieldset">
                 <legend class="profile-label">Background music</legend>
                 <p class="evt-muted evt-design-hint">Optional audio with an explicit play button on the invitation.</p>
+                <p class="evt-muted evt-design-hint"><strong>Only upload music you have the rights to.</strong> Copyrighted songs you do not own or hold a licence for may be reported and removed.</p>
                 <div class="evt-design-inset-stack">
                     <div class="evt-design-inset-panel">
                         <div class="evt-design-inset-head-row">
