@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <title>Guest List — {{ $event->name }}</title>
+    <title>Guest List | {{ $event->name }}</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: DejaVu Sans, sans-serif; font-size: 11px; color: #1a1a1a; background: #fff; }
@@ -29,7 +29,7 @@
 </head>
 <body>
     <div class="header">
-        <h1>Guest List — {{ $event->name }}</h1>
+        <h1>Guest List: {{ $event->name }}</h1>
         <p>
             Exported {{ now()->format('F j, Y') }}
             @if ($filterLabel) &nbsp;·&nbsp; Filter: {{ $filterLabel }} @endif
@@ -58,9 +58,9 @@
                 <tr>
                     <td>{{ $i + 1 }}</td>
                     <td>{{ $guest->name }}</td>
-                    <td>{{ $guest->email ?? '—' }}</td>
-                    <td>{{ $guest->phone ?? '—' }}</td>
-                    <td>{{ $guest->group?->name ?? '—' }}</td>
+                    <td>{{ $guest->email ?? '-' }}</td>
+                    <td>{{ $guest->phone ?? '-' }}</td>
+                    <td>{{ $guest->group?->name ?? '-' }}</td>
                     <td>
                         @if ($rsvp)
                             <span class="pill pill-{{ $rsvp->status->value }}">{{ ucfirst($rsvp->status->value) }}</span>
@@ -68,7 +68,7 @@
                             <span class="pill pill-pending">Pending</span>
                         @endif
                     </td>
-                    <td>{{ $rsvp && $rsvp->status->countsTowardGuestLimit() ? $rsvp->attendee_count : '—' }}</td>
+                    <td>{{ $rsvp && $rsvp->status->countsTowardGuestLimit() ? $rsvp->attendee_count : '-' }}</td>
                     <td>{{ $rsvp?->message ?? '' }}</td>
                     <td>
                         @if ($guest->checked_in_at)

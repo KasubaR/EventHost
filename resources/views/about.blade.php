@@ -12,7 +12,7 @@
 <section class="about-hero">
     <div class="about-hero-inner">
         <h1>Building a better way to celebrate together</h1>
-        <p>Event Host was born from a simple idea — that every host deserves beautiful, stress-free invitations and every guest deserves a seamless experience, no matter where they are.</p>
+        <p>Event Host was born from a simple idea: that every host deserves beautiful, stress-free invitations and every guest deserves a seamless experience, no matter where they are.</p>
         <div class="about-hero-ctas">
             <a href="{{ route('register') }}" class="btn-hero-primary">
                 <i class="fa-solid fa-plus" aria-hidden="true"></i> Create Your Event
@@ -51,8 +51,8 @@
             <div class="about-split-text">
                 <span class="about-label">How we started</span>
                 <h2>We've been to one too many poorly organized events</h2>
-                <p>Managing a guest list in spreadsheets, sending invitations one by one on WhatsApp, and chasing RSVPs through voice notes — we've all been there. Event Host was created because hosts in Zambia deserved better tools, built for the way we actually celebrate.</p>
-                <p>We launched with a single mission: make every event — from an intimate birthday dinner to a 500-person wedding — easier to plan, more beautiful to experience, and simpler to track.</p>
+                <p>Managing a guest list in spreadsheets, sending invitations one by one on WhatsApp, and chasing RSVPs through voice notes. We've all been there. Event Host was created because hosts in Zambia deserved better tools, built for the way we actually celebrate.</p>
+                <p>We launched with a single mission: make every event, from an intimate birthday dinner to a 500-person wedding, easier to plan, more beautiful to experience, and simpler to track.</p>
             </div>
             <div class="about-split-img">
                 <img
@@ -70,7 +70,7 @@
         <div class="about-section-header">
             <span class="about-label">New capability</span>
             <h2>Now powering ticketed events too</h2>
-            <p>Event Host isn't just invitations anymore. Sell tickets for concerts, conferences, fundraisers and parties — right from the same dashboard you already use.</p>
+            <p>Event Host isn't just invitations anymore. Sell tickets for concerts, conferences, fundraisers and parties, right from the same dashboard you already use.</p>
         </div>
         <div class="about-values-grid">
             <div class="about-value-card">
@@ -85,14 +85,14 @@
                     <i class="fa-solid fa-credit-card" aria-hidden="true"></i>
                 </div>
                 <h3>Secure Checkout</h3>
-                <p>Buyers pay by MTN Money, Airtel Money or card through EventHost Payments — no account needed.</p>
+                <p>Buyers pay by MTN Money, Airtel Money or card through EventHost Payments. No account needed.</p>
             </div>
             <div class="about-value-card">
                 <div class="about-value-icon" style="background:rgba(224,14,79,0.12);color:var(--pink)">
                     <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
                 </div>
                 <h3>Instant QR Tickets</h3>
-                <p>Every paid order issues a QR ticket by email the moment payment clears — nothing to print or design.</p>
+                <p>Every paid order issues a QR ticket by email the moment payment clears. Nothing to print or design.</p>
             </div>
             <div class="about-value-card">
                 <div class="about-value-icon" style="background:rgba(72,199,142,0.12);color:#27ae60">
@@ -133,7 +133,7 @@
                     <i class="fa-solid fa-heart" aria-hidden="true"></i>
                 </div>
                 <h3>Host-First Design</h3>
-                <p>Every feature starts with one question: does this make the host's life easier? We obsess over the details so you don't have to — from the first invitation to the final RSVP.</p>
+                <p>Every feature starts with one question: does this make the host's life easier? We obsess over the details so you don't have to, from the first invitation to the final RSVP.</p>
             </div>
             <div class="about-value-card">
                 <div class="about-value-icon" style="background:rgba(30,71,187,0.12);color:var(--accent)">
@@ -147,7 +147,7 @@
                     <i class="fa-solid fa-lock" aria-hidden="true"></i>
                 </div>
                 <h3>Privacy & Trust</h3>
-                <p>Your guest data is yours — always. We never sell personal information or share your guest list. Security and privacy are baked into everything we build.</p>
+                <p>Your guest data is yours, always. We never sell personal information or share your guest list. Security and privacy are baked into everything we build.</p>
             </div>
             <div class="about-value-card">
                 <div class="about-value-icon" style="background:rgba(72,199,142,0.12);color:#27ae60">
@@ -161,14 +161,14 @@
                     <i class="fa-solid fa-palette" aria-hidden="true"></i>
                 </div>
                 <h3>Beauty in Every Detail</h3>
-                <p>Great design isn't a luxury — it sets the tone for the event itself. We pour craftsmanship into every template, every button, and every invitation link your guests open.</p>
+                <p>Great design isn't a luxury. It sets the tone for the event itself. We pour craftsmanship into every template, every button, and every invitation link your guests open.</p>
             </div>
             <div class="about-value-card">
                 <div class="about-value-icon" style="background:rgba(79,62,200,0.1);color:var(--purple-mid)">
                     <i class="fa-solid fa-comments" aria-hidden="true"></i>
                 </div>
                 <h3>Always Improving</h3>
-                <p>We ship updates constantly based on what hosts actually need. Your feedback shapes the product — and we're only getting started.</p>
+                <p>We ship updates constantly based on what hosts actually need. Your feedback shapes the product, and we're only getting started.</p>
             </div>
         </div>
     </div>
@@ -187,7 +187,7 @@
             <div class="about-split-text">
                 <span class="about-label">Built for Zambia</span>
                 <h2>Designed for the way Zambians celebrate</h2>
-                <p>We know how Zambians host — from weddings and Kitchen Parties to graduations and corporate launches. Event Host integrates the payment methods guests trust and the platforms they already use every day.</p>
+                <p>We know how Zambians host, from weddings and Kitchen Parties to graduations and corporate launches. Event Host integrates the payment methods guests trust and the platforms they already use every day.</p>
                 <div class="about-zambia-points">
                     <div class="about-zambia-point">
                         <div class="about-zp-icon" style="background:rgba(30,71,187,0.12);color:var(--accent)">

@@ -27,7 +27,7 @@
         <span class="auth-hero-accent">Event Host</span> account
       </h1>
       <p class="auth-hero-sub">
-        Pick up right where you left off — manage your events, track RSVPs live, and keep your guests in the loop.
+        Pick up right where you left off. Manage your events, track RSVPs live, and keep your guests in the loop.
       </p>
 
       {{-- Stats row --}}

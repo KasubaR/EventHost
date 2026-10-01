@@ -9,7 +9,7 @@
         <div class="dph-inner">
             <div>
                 <h1 class="dph-title">Ticketing Revenue</h1>
-                <p class="dph-sub">Platform-wide totals. Commission is a percentage of each event's own sales — drill into an event for its own breakdown.</p>
+                <p class="dph-sub">Platform-wide totals. Commission is a percentage of each event's own sales. Drill into an event for its own breakdown.</p>
             </div>
         </div>
     </x-slot>

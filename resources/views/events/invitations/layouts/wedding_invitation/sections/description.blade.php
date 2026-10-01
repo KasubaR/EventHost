@@ -23,7 +23,7 @@
 <section class="wi-save-date wi-reveal" id="save-the-date" data-wi-reveal>
     <p class="wi-section-tag">You are cordially invited</p>
     <h2 class="wi-section-title">Save the <em>Date</em></h2>
-    <div class="wi-orn" aria-hidden="true">— ◆ —</div>
+    <div class="wi-orn" aria-hidden="true">· ◆ ·</div>
     <p class="wi-section-body">{{ $intro }}</p>
     <div class="wi-date-badge">
         <span class="wi-date-badge-weekday">{{ $event->event_date->format('l') }}</span>

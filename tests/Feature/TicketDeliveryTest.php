@@ -109,7 +109,7 @@ class TicketDeliveryTest extends TestCase
             ->assertOk()
             ->assertSee('tkc-qr-frame--void', escape: false)
             ->assertSee('tkc-qr-badge--void', escape: false)
-            ->assertSee('Cancelled — not valid for entry', escape: false)
+            ->assertSee('Cancelled: not valid for entry', escape: false)
             ->assertSee('no longer valid for entry');
     }
 

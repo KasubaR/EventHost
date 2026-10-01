@@ -14,8 +14,8 @@
         $isVoid = in_array($ticket->status, [\App\Enums\TicketStatus::Cancelled, \App\Enums\TicketStatus::Refunded], true);
         $isCheckedIn = ! $isVoid && $ticket->isCheckedIn();
         $qrAlt = match (true) {
-            $isVoid => 'Ticket QR code — '.$ticket->status->label(),
-            $isCheckedIn => 'Ticket QR code — already checked in',
+            $isVoid => 'Ticket QR code: '.$ticket->status->label(),
+            $isCheckedIn => 'Ticket QR code: already checked in',
             default => 'Ticket QR code',
         };
     @endphp
@@ -44,7 +44,7 @@
                     @if ($isVoid)
                         <p class="tkc-qr-stamp">
                             <i class="fa-solid fa-ban" aria-hidden="true"></i>
-                            {{ $ticket->status->label() }} — not valid for entry
+                            {{ $ticket->status->label() }}: not valid for entry
                         </p>
                     @elseif ($isCheckedIn)
                         <p class="tkc-qr-stamp">
@@ -73,7 +73,7 @@
                 </div>
                 <div>
                     <dt>Ticket</dt>
-                    <dd>{{ $ticket->ticketType?->name ?? '—' }}</dd>
+                    <dd>{{ $ticket->ticketType?->name ?? '-' }}</dd>
                 </div>
                 <div>
                     <dt>Order reference</dt>

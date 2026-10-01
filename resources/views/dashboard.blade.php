@@ -43,7 +43,7 @@
                     <p>
                         Amount due: {{ $pendingCustomQuote->formattedAmount() }}
                         @if ($pendingCustomQuote->note)
-                            — {{ $pendingCustomQuote->note }}
+                            · {{ $pendingCustomQuote->note }}
                         @endif
                     </p>
                 </div>
@@ -77,7 +77,7 @@
         <div class="dash-stat-card">
             <div class="dsc-icon dsc-icon--purple"><i class="fa-solid fa-chart-line" aria-hidden="true"></i></div>
             <div class="dsc-body">
-                <div class="dsc-value">{{ $t['conversion_pct'] !== null ? $t['conversion_pct'].'%' : '—' }}</div>
+                <div class="dsc-value">{{ $t['conversion_pct'] !== null ? $t['conversion_pct'].'%' : '-' }}</div>
                 <div class="dsc-label">RSVP conversion</div>
                 <div class="dsc-hint">{{ number_format($t['responded_guests']) }} / {{ number_format($t['guests']) }} responded</div>
             </div>
@@ -98,7 +98,7 @@
                     @if ($t['attendance_pct'] !== null)
                         {{ $t['attendance_pct'] }}% vs guest list rows
                     @else
-                        —
+                        -
                     @endif
                 </div>
             </div>

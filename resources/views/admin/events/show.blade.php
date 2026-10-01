@@ -19,7 +19,7 @@
                     <span>{{ $ev->name }}</span>
                 </nav>
                 <h1 class="dph-title">{{ $ev->name }}</h1>
-                <p class="dph-sub">Owner: {{ $ev->user?->email ?? '—' }}</p>
+                <p class="dph-sub">Owner: {{ $ev->user?->email ?? '-' }}</p>
             </div>
             <div class="admin-actions">
                 <a href="{{ route('admin.events.index') }}" class="evt-btn-outline dash-header-cta">Back</a>
@@ -94,7 +94,7 @@
                         @if ($retention?->isKept())
                             <p class="admin-callout-body"><strong>Retained: payment records.</strong> This event has taken money (ticket orders or contribution payments), so it is never permanently deleted. It can still be restored.</p>
                         @elseif ($retention)
-                            <p class="admin-callout-body"><strong>{{ $retention->label }}</strong> — on {{ $retention->purgeAt->format('M j, Y') }}, together with its guest list, RSVPs and uploaded media. Restore it before then to keep it.</p>
+                            <p class="admin-callout-body"><strong>{{ $retention->label }}</strong>, on {{ $retention->purgeAt->format('M j, Y') }}, together with its guest list, RSVPs and uploaded media. Restore it before then to keep it.</p>
                         @endif
                         @if(auth('admin')->user()?->can('events.delete'))
                             <div class="admin-callout-actions">
@@ -117,7 +117,7 @@
                     </div>
                     <div>
                         <p class="admin-callout-kicker">Ticketing</p>
-                        <p class="admin-callout-body">Ticketed events go live from the Ticketing queue — they do not use event credits.</p>
+                        <p class="admin-callout-body">Ticketed events go live from the Ticketing queue. They do not use event credits.</p>
                         @if(auth('admin')->user()?->can('ticketing.view'))
                             <div class="admin-callout-actions">
                                 <a href="{{ route('admin.ticketing.show', $ev) }}" class="btn-primary">
@@ -138,7 +138,7 @@
                         @csrf
                         @method('PATCH')
                         <fieldset>
-                            <legend class="admin-muted">Draft — first publish</legend>
+                            <legend class="admin-muted">Draft: first publish</legend>
                             <label class="admin-mt-sm">
                                 <input type="hidden" name="is_published" value="0">
                                 <input type="checkbox" name="is_published" value="1" @checked($ev->is_published)>
@@ -151,7 +151,7 @@
                     </form>
                 @else
                     <div class="admin-mt-md">
-                        <p class="admin-muted">Live invitation — pause or cancel instead of unpublishing.</p>
+                        <p class="admin-muted">Live invitation. Pause or cancel instead of unpublishing.</p>
                         <div class="admin-actions admin-mt-sm">
                             @include('admin.events.partials.lifecycle-actions', ['ev' => $ev])
                         </div>
@@ -171,7 +171,7 @@
         @if ($ev->isInvitation() && auth('admin')->user()?->can('events.contribution_manage'))
             <div class="admin-panel-card">
                 <h2>Contribution</h2>
-                <p class="admin-muted admin-mt-sm">Admin-only — the host cannot turn this on or set the amount. When enabled, guests can pledge and pay this fixed amount, in installments, from the event's public page.</p>
+                <p class="admin-muted admin-mt-sm">Admin-only. The host cannot turn this on or set the amount. When enabled, guests can pledge and pay this fixed amount, in installments, from the event's public page.</p>
 
                 @unless (config('events.contributions.enabled'))
                     <div class="admin-callout admin-callout--warn admin-mt-md">
@@ -242,14 +242,14 @@
             @endphp
             <div class="admin-panel-card">
                 <h2>Public registration</h2>
-                <p class="admin-muted admin-mt-sm">Free-registration events are admin-approved and admin-priced instead of using an event credit — the host pays this quote to publish.</p>
+                <p class="admin-muted admin-mt-sm">Free-registration events are admin-approved and admin-priced instead of using an event credit. The host pays this quote to publish.</p>
 
                 <div class="admin-callout admin-callout--{{ $ev->public_registration_status->tone() }} admin-mt-md">
                     <div class="admin-callout-icon" aria-hidden="true"><i class="fa-solid {{ $ev->public_registration_status->icon() }}"></i></div>
                     <div>
                         <p class="admin-callout-kicker">
                             @if ($registrationPaid)
-                                Approved — paid and live
+                                Approved: paid and live
                             @else
                                 {{ $ev->public_registration_status->label() }}
                             @endif
@@ -306,8 +306,8 @@
 
         <div class="admin-panel-card">
             <h2>Owner account</h2>
-            <p class="admin-muted admin-mt-sm">{{ $ev->user?->name ?? '—' }}</p>
-            <p class="admin-muted">{{ $ev->user?->phone ?? 'No phone' }} · Status {{ $ev->user?->status ?? '—' }}</p>
+            <p class="admin-muted admin-mt-sm">{{ $ev->user?->name ?? '-' }}</p>
+            <p class="admin-muted">{{ $ev->user?->phone ?? 'No phone' }} · Status {{ $ev->user?->status ?? '-' }}</p>
             @if(auth('admin')->user()?->can('users.view'))
                 @if ($ev->user)
                     <p class="admin-mt-md"><a href="{{ route('admin.users.show', $ev->user) }}" class="admin-link">Open user</a></p>

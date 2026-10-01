@@ -339,13 +339,13 @@ class EventController extends Controller
 
                 if ($shouldPublish && $event->isTicketed()) {
                     throw ValidationException::withMessages([
-                        'publish' => 'Ticketed events go live after EventHost activates ticket sales — they do not use event credits.',
+                        'publish' => 'Ticketed events go live after EventHost activates ticket sales. They do not use event credits.',
                     ]);
                 }
 
                 if ($shouldPublish && $event->isFreeRegistration()) {
                     throw ValidationException::withMessages([
-                        'publish' => 'Public events go live after EventHost approves them and you pay the quoted amount — they do not use event credits.',
+                        'publish' => 'Public events go live after EventHost approves them and you pay the quoted amount. They do not use event credits.',
                     ]);
                 }
 
@@ -592,7 +592,7 @@ class EventController extends Controller
             return redirect()
                 ->route('public-events.ticket-types.index', $event)
                 ->withErrors([
-                    'publish' => 'Ticketed events go live after EventHost activates ticket sales — they do not use event credits.',
+                    'publish' => 'Ticketed events go live after EventHost activates ticket sales. They do not use event credits.',
                 ]);
         }
 
@@ -606,7 +606,7 @@ class EventController extends Controller
             return redirect()
                 ->route('events.show', $event)
                 ->withErrors([
-                    'publish' => 'Public events go live after EventHost approves them and you pay the quoted amount — they do not use event credits.',
+                    'publish' => 'Public events go live after EventHost approves them and you pay the quoted amount. They do not use event credits.',
                 ]);
         }
 

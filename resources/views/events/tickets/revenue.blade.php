@@ -3,7 +3,7 @@
         <link rel="stylesheet" href="{{ asset('css/events-admin.css') }}">
     @endpush
 
-    <x-slot name="title">Revenue — {{ $event->name }}</x-slot>
+    <x-slot name="title">Revenue | {{ $event->name }}</x-slot>
 
     <x-slot name="pageHeader">
         <div class="dph-inner">

@@ -95,7 +95,7 @@
             <span class="auth-wizard-step-label">Finish up</span>
           </div>
         </div>
-        <p class="auth-step-hint">Step 1 of 3 — takes about 30 seconds</p>
+        <p class="auth-step-hint">Step 1 of 3. Takes about 30 seconds</p>
       </div>
 
       <form method="POST" action="{{ route('register') }}" id="register-form" data-initial-step="{{ $initialStep }}">
@@ -191,7 +191,7 @@
         {{-- Step 3: Optional + submit --}}
         <div class="auth-step-panel" data-step="3" hidden>
           <h3 class="auth-step-panel-title">Almost done</h3>
-          <p class="auth-step-panel-desc">Phone and business name are optional — add them now or update later in your profile.</p>
+          <p class="auth-step-panel-desc">Phone and business name are optional. Add them now or update later in your profile.</p>
 
           <div class="auth-fields">
             <div class="auth-field">
@@ -248,7 +248,7 @@
             <span class="auth-journey-icon"><i class="fa-solid fa-user-plus"></i></span>
             <div class="auth-journey-body">
               <strong>Create account</strong>
-              <span>You are here — three quick steps on this page.</span>
+              <span>You are here: three quick steps on this page.</span>
             </div>
           </li>
           <li class="is-upcoming">
@@ -262,7 +262,7 @@
             <span class="auth-journey-icon"><i class="fa-solid fa-credit-card"></i></span>
             <div class="auth-journey-body">
               <strong>Buy an event credit</strong>
-              <span>Pay with MTN or Airtel when you are ready — from K450.</span>
+              <span>Pay with MTN or Airtel when you are ready, from K450.</span>
             </div>
           </li>
           <li class="is-upcoming">

@@ -4,7 +4,7 @@
         <link rel="stylesheet" href="{{ asset('css/tables-admin.css') }}">
     @endpush
 
-    <x-slot name="title">Photo wall — {{ $event->name }}</x-slot>
+    <x-slot name="title">Photo wall | {{ $event->name }}</x-slot>
 
     <x-slot name="pageHeader">
         <div class="dph-inner">

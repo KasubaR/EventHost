@@ -9,7 +9,7 @@
         <div class="dph-inner">
             <div>
                 <h1 class="dph-title">Contributions Revenue</h1>
-                <p class="dph-sub">Platform-wide totals across every event with contributions enabled — drill into an event for its own breakdown.</p>
+                <p class="dph-sub">Platform-wide totals across every event with contributions enabled. Drill into an event for its own breakdown.</p>
             </div>
         </div>
     </x-slot>

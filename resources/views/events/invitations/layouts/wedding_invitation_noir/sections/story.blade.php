@@ -8,7 +8,7 @@
 
     $cite = trim((string) ($invitation['content']['wi2_photo_quote_cite'] ?? ''));
     if ($cite === '') {
-        $cite = '— Friedrich Halm';
+        $cite = 'Friedrich Halm';
     }
 
     $photoSrc = $event->cover_image_url;

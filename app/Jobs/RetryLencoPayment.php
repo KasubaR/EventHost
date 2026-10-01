@@ -56,7 +56,7 @@ class RetryLencoPayment implements ShouldQueue
             'ref' => $this->payment->user_ref,
             'amount' => (float) $this->payment->amount,
             'currency' => $this->payment->currency,
-            'description' => "Event Host — {$planLabel} event credit",
+            'description' => "Event Host: {$planLabel} event credit",
             'reference' => $this->payment->payment_reference,
         ];
 

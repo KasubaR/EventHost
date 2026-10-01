@@ -24,7 +24,7 @@
     </x-slot>
 
     @if (session('status') === 'reverified')
-        <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Re-verified with Lenco — status below is current.</div>
+        <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Re-verified with Lenco. Status below is current.</div>
     @endif
     @if ($errors->has('reverify'))
         <div class="evt-flash admin-tpl-error" role="alert"><i class="fa-solid fa-circle-exclamation"></i> {{ $errors->first('reverify') }}</div>
@@ -33,7 +33,7 @@
     <div class="admin-panel-card admin-mt-lg">
         <h2>1. Lenco payment</h2>
         @if ($payment === null)
-            <p class="admin-muted">No TicketPayment record exists for this order — checkout never reached the payment step.</p>
+            <p class="admin-muted">No TicketPayment record exists for this order. Checkout never reached the payment step.</p>
         @else
             <table class="admin-table">
                 <tbody>
@@ -41,9 +41,9 @@
                     <tr><td>Method</td><td>{{ $payment->payment_method }} @if ($payment->provider) ({{ $payment->provider }}) @endif</td></tr>
                     <tr><td>Amount</td><td>{{ \App\Support\TicketingSettings::formatZmw($payment->amount) }} {{ $payment->currency }}</td></tr>
                     <tr><td>Status</td><td>{{ $payment->status }} @if ($payment->lenco_status) (Lenco: {{ $payment->lenco_status }}) @endif</td></tr>
-                    <tr><td>Lenco transaction ID</td><td>{{ $payment->lenco_transaction_id ?? '—' }}</td></tr>
-                    <tr><td>Lenco reference</td><td>{{ $payment->lenco_reference ?? '—' }}</td></tr>
-                    <tr><td>Webhook received</td><td>{{ $payment->webhook_received ? 'Yes, '.$payment->webhook_received_at?->format('j M Y H:i') : 'No — status came from a poll/verify call, not a webhook' }}</td></tr>
+                    <tr><td>Lenco transaction ID</td><td>{{ $payment->lenco_transaction_id ?? '-' }}</td></tr>
+                    <tr><td>Lenco reference</td><td>{{ $payment->lenco_reference ?? '-' }}</td></tr>
+                    <tr><td>Webhook received</td><td>{{ $payment->webhook_received ? 'Yes, '.$payment->webhook_received_at?->format('j M Y H:i') : 'No, status came from a poll/verify call, not a webhook' }}</td></tr>
                     <tr><td>Created</td><td>{{ $payment->created_at?->format('j M Y H:i') }} ({{ $payment->created_at?->diffForHumans() }})</td></tr>
                     @if ($payment->completed_at)
                         <tr><td>Completed</td><td>{{ $payment->completed_at->format('j M Y H:i') }}</td></tr>
@@ -65,7 +65,7 @@
                 <form method="post" action="{{ route('admin.ticketing.reconciliation.reverify', $order) }}" class="admin-mt-lg">
                     @csrf
                     <button type="submit" class="btn-primary">Re-verify with Lenco</button>
-                    <p class="admin-muted">Asks Lenco for this payment's current status right now and applies it — same check the buyer's own "check status" button runs.</p>
+                    <p class="admin-muted">Asks Lenco for this payment's current status right now and applies it, the same check the buyer's own "check status" button runs.</p>
                 </form>
             @endif
         @endif
@@ -83,7 +83,7 @@
                 <tr><td>Buyer fee</td><td>{{ \App\Support\TicketingSettings::formatZmw($order->buyer_fee) }}</td></tr>
                 <tr><td>Buyer total paid</td><td><strong>{{ \App\Support\TicketingSettings::formatZmw($order->buyer_total) }}</strong></td></tr>
                 <tr><td>Host amount</td><td>{{ \App\Support\TicketingSettings::formatZmw($order->host_amount) }}</td></tr>
-                <tr><td>Paid at</td><td>{{ $order->paid_at?->format('j M Y H:i') ?? '—' }}</td></tr>
+                <tr><td>Paid at</td><td>{{ $order->paid_at?->format('j M Y H:i') ?? '-' }}</td></tr>
             </tbody>
         </table>
 
@@ -115,7 +115,7 @@
                         <tr>
                             <td>{{ $ticket->attendee_name }}</td>
                             <td>{{ $ticket->status->value }}</td>
-                            <td>{{ $ticket->checked_in_at?->format('j M Y H:i') ?? '—' }}</td>
+                            <td>{{ $ticket->checked_in_at?->format('j M Y H:i') ?? '-' }}</td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -160,8 +160,8 @@
                             <tr>
                                 <td>{{ $payout->paid_on->format('j M Y') }}</td>
                                 <td>{{ \App\Support\TicketingSettings::formatZmw($payout->amount) }}</td>
-                                <td>{{ $payout->note ?? '—' }}</td>
-                                <td>{{ $payout->paidBy?->name ?? '—' }}</td>
+                                <td>{{ $payout->note ?? '-' }}</td>
+                                <td>{{ $payout->paidBy?->name ?? '-' }}</td>
                             </tr>
                         @endforeach
                     </tbody>

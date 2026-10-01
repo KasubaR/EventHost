@@ -36,7 +36,7 @@
             </div>
         @elseif (session('status') === 'enterprise-request-submitted')
             <div class="evt-flash evt-flash--info">
-                <i class="fa-solid fa-circle-check"></i> Your Enterprise request has been sent — our team will follow up by email.
+                <i class="fa-solid fa-circle-check"></i> Your Enterprise request has been sent. Our team will follow up by email.
             </div>
         @endif
 
@@ -85,7 +85,7 @@
                             <span class="billing-plan-currency">{{ $currency === 'ZMW' ? 'K' : $currency }}</span>{{ number_format($plan['amount'], 0) }}
                         </div>
                         @if ($isUpgrade)
-                            <div class="billing-plan-period">upgrade — keep your unused credit</div>
+                            <div class="billing-plan-period">upgrade and keep your unused credit</div>
                         @else
                             <div class="billing-plan-period">per event</div>
                         @endif
@@ -151,7 +151,7 @@
                         </ul>
                         @if ($pendingEnterpriseRequest)
                             <p class="billing-plan-request-pending">
-                                <i class="fa-solid fa-circle-check" aria-hidden="true"></i> Request sent — our team will follow up by email.
+                                <i class="fa-solid fa-circle-check" aria-hidden="true"></i> Request sent. Our team will follow up by email.
                             </p>
                         @else
                             <form method="post" action="{{ route('billing.enterprise-request.store') }}" class="billing-plan-request-form">

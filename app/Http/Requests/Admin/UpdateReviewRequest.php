@@ -93,7 +93,7 @@ class UpdateReviewRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'moderation_note.required' => 'Give the host a reason — they see this note on their reviews page.',
+            'moderation_note.required' => 'Give the host a reason. They see this note on their reviews page.',
         ];
     }
 }

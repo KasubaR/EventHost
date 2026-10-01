@@ -12,7 +12,7 @@
         <script src="{{ asset('js/guests-admin.js') }}" defer></script>
     @endpush
 
-    <x-slot name="title">Tickets — {{ $event->name }}</x-slot>
+    <x-slot name="title">Tickets | {{ $event->name }}</x-slot>
 
     <x-slot name="pageHeader">
         <div class="dph-inner">
@@ -67,13 +67,13 @@
                                 @php
                                     $buyer = $ticketRow->attendee_name ?: $ticketRow->order?->buyer_name;
                                     $checkInLabel = in_array($ticketRow->status, [\App\Enums\TicketStatus::Refunded, \App\Enums\TicketStatus::Cancelled], true)
-                                        ? '—'
+                                        ? '-'
                                         : ($ticketRow->isCheckedIn() ? 'Yes' : 'No');
                                 @endphp
                                 <tr>
                                     <td>EH-{{ str_pad((string) ($startingOrdinal + $i), 3, '0', STR_PAD_LEFT) }}</td>
-                                    <td>{{ $ticketRow->ticketType?->name ?? '—' }}</td>
-                                    <td>{{ $buyer ?: '—' }}</td>
+                                    <td>{{ $ticketRow->ticketType?->name ?? '-' }}</td>
+                                    <td>{{ $buyer ?: '-' }}</td>
                                     <td><span class="evt-pill evt-pill--{{ $ticketRow->status->value }}">{{ $ticketRow->status->label() }}</span></td>
                                     <td>
                                         {{ $checkInLabel }}

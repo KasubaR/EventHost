@@ -34,13 +34,13 @@
     <div class="admin-panel-card">
         <p class="admin-muted">
             The homepage shows the {{ $homepageLimit }} featured templates with the lowest order number, and hides the
-            whole section when nothing is featured. A template needs a preview image before it can be featured — the
+            whole section when nothing is featured. A template needs a preview image before it can be featured. The
             same image is used on <span class="admin-tpl-inline-code">/templates</span> and in the event wizard.
         </p>
         <p class="admin-muted admin-mt-sm">
             <strong>{{ $featuredCount }}</strong> featured
             @if ($featuredCount > $homepageLimit)
-                — only the first {{ $homepageLimit }} appear on the homepage.
+                (only the first {{ $homepageLimit }} appear on the homepage)
             @endif
         </p>
     </div>

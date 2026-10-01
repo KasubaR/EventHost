@@ -85,7 +85,7 @@
                     <li>Prices may change; a change never affects credits you have already bought</li>
                 </ul>
                 <p>
-                    We may also grant credits manually — for support cases or promotions. Granted credits
+                    We may also grant credits manually, for support cases or promotions. Granted credits
                     work the same way but are not refundable in cash.
                 </p>
             </section>
@@ -94,13 +94,13 @@
                 <h2 id="refunds">4. Refunds</h2>
                 <p>
                     <strong>Event credit purchases are final and non-refundable.</strong> Once a payment
-                    has been completed, the credits are added to your account and we do not refund them —
+                    has been completed, the credits are added to your account and we do not refund them,
                     whether or not you go on to use them. Because credits do not expire, a credit you have
                     not used remains available on your account for a future event.
                 </p>
                 <p>
                     If you were charged in error, charged twice, or paid for credits that were never added
-                    to your account, that is not a refund request but a payment fault — email
+                    to your account, that is not a refund request but a payment fault. Email
                     <a href="mailto:info@eventhostzm.com">info@eventhostzm.com</a> and we will put it right.
                 </p>
                 <p>
@@ -112,14 +112,14 @@
             <section>
                 <h2 id="your-content">5. Your content</h2>
                 <p>
-                    You keep ownership of everything you upload — event details, cover images, gallery
+                    You keep ownership of everything you upload: event details, cover images, gallery
                     photos, guest lists and text. You grant us a non-exclusive, worldwide, royalty-free
                     licence to store, reproduce and display that content, strictly for the purpose of
                     operating the service: rendering your invitation page, sending your invitations and
                     showing your event where you have chosen to make it public.
                 </p>
                 <p>
-                    You confirm you have the rights to what you upload — including any photographs, and the
+                    You confirm you have the rights to what you upload, including any photographs, and the
                     permission of anyone identifiable in them.
                 </p>
             </section>

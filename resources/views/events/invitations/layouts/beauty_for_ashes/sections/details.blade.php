@@ -9,7 +9,7 @@
     }
     $dateTimeLine = $event->event_date->format('l, jS F Y');
     if ($timeFmt !== '') {
-        $dateTimeLine .= ' — '.$timeFmt;
+        $dateTimeLine .= ' · '.$timeFmt;
     }
 @endphp
 

@@ -47,7 +47,7 @@
             @if ($contribution->isCompleted())
                 <div class="tkc-result tkc-result--success">
                     <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
-                    <h2 class="tkc-title">Paid in full — thank you!</h2>
+                    <h2 class="tkc-title">Paid in full. Thank you!</h2>
                     <p class="tkc-muted">Your contribution of K{{ number_format((float) $contribution->target_amount, 2) }} is complete.</p>
                 </div>
             @elseif ($latestPayment && $latestPayment->status === 'processing')

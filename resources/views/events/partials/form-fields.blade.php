@@ -115,11 +115,11 @@
                 <span class="profile-label">How people join</span>
                 <p class="evt-readonly-note">
                     @if ($audience === \App\Enums\EventAudience::Private)
-                        Private — invite-only, guests join via a personal link.
+                        Private: invite-only, guests join via a personal link.
                     @elseif ($isTicketed)
-                        Public — Ticketed, via EventHost checkout.
+                        Public: Ticketed, via EventHost checkout.
                     @else
-                        Public — free registration, open RSVP, listed on Discover.
+                        Public: free registration, open RSVP, listed on Discover.
                     @endif
                     @if ($event)
                         This is set when the event is created and cannot be changed.
@@ -163,7 +163,7 @@
                                autocomplete="off"
                                spellcheck="false">
                     </div>
-                    <p class="evt-field-hint">Lowercase letters, numbers, and hyphens. Leave blank on create to generate from the event name. It can be changed once after saving — after that it's locked, and the old link redirects to the new one.</p>
+                    <p class="evt-field-hint">Lowercase letters, numbers, and hyphens. Leave blank on create to generate from the event name. It can be changed once after saving. After that it's locked, and the old link redirects to the new one.</p>
                 @elseif ($slugAlreadyChanged)
                     <div class="evt-slug-input evt-slug-input--locked" aria-disabled="true">
                         <span class="evt-slug-prefix">{{ rtrim(config('app.url'), '/') }}/e/</span>
@@ -180,7 +180,7 @@
                     </div>
                     <p class="evt-field-hint evt-palette-lock-hint">
                         <i class="fa-solid fa-lock" aria-hidden="true"></i>
-                        Requires the {{ \App\Enums\SubscriptionTier::Pro->label() }} plan — the URL is generated from the event name until then.
+                        Requires the {{ \App\Enums\SubscriptionTier::Pro->label() }} plan. The URL is generated from the event name until then.
                     </p>
                     <a href="{{ \App\Support\BillingPlan::checkoutUrlForTier(\App\Enums\SubscriptionTier::Pro) }}" class="btn-outline evt-palette-upgrade-link">
                         Upgrade to {{ \App\Enums\SubscriptionTier::Pro->label() }}
@@ -311,7 +311,7 @@
             <p>EventHost checkout is the only online payment path for this event.</p>
         </div>
         <div class="evt-section-body">
-            <p class="evt-muted">After you save this draft you can add ticket types, then submit them for EventHost to activate. Buyers will pay through Lenco — you cannot add an MTN number, bank details, or “pay me on WhatsApp” on the EventHost ticket page.</p>
+            <p class="evt-muted">After you save this draft you can add ticket types, then submit them for EventHost to activate. Buyers will pay through Lenco. You cannot add an MTN number, bank details, or “pay me on WhatsApp” on the EventHost ticket page.</p>
         </div>
     </div>
 
@@ -404,7 +404,7 @@
                 Review RSVPs before sending passes
             </label>
             <p class="evt-muted evt-guest-capacity-hint">
-                When on, an accepted RSVP is held for your approval — the guest's confirmation and entry pass go out once you approve it, not right away.
+                When on, an accepted RSVP is held for your approval. The guest's confirmation and entry pass go out once you approve it, not right away.
             </p>
 
             <label class="profile-label evt-check-label">

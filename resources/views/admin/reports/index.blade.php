@@ -52,8 +52,8 @@
                     <td>#{{ $report->id }}</td>
                     <td>{{ $report->type }}</td>
                     <td>{{ $report->status }}</td>
-                    <td>{{ $report->user?->email ?? '—' }}</td>
-                    <td>{{ $report->event?->name ?? '—' }}</td>
+                    <td>{{ $report->user?->email ?? '-' }}</td>
+                    <td>{{ $report->event?->name ?? '-' }}</td>
                     <td>{{ $report->created_at->format('M j, Y') }}</td>
                     <td><a href="{{ route('admin.reports.show', $report) }}" class="evt-btn-outline evt-btn-tiny">Review</a></td>
                 </tr>

@@ -1,7 +1,7 @@
 @php
     [$nameBefore, $nameAfter] = \App\Support\WeddingInvitationView::for($event, $invitation)->names();
     $footerNames = $nameAfter !== '' ? $nameBefore.' & '.$nameAfter : $nameBefore;
-    $footerLine = $footerNames.' — '.$event->event_date->format('Y');
+    $footerLine = $footerNames.' · '.$event->event_date->format('Y');
 
     $rsvpNote = '';
     if ($event->rsvp_deadline) {

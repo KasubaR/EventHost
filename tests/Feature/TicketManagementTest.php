@@ -57,10 +57,11 @@ class TicketManagementTest extends TestCase
         $event = $this->ticketedEvent($owner);
         Ticket::factory()->for($event)->create(['status' => TicketStatus::Cancelled]);
 
-        $this->actingAs($owner)
+        $response = $this->actingAs($owner)
             ->get(route('public-events.tickets.index', $event))
-            ->assertOk()
-            ->assertSee('—', escape: false);
+            ->assertOk();
+
+        $this->assertMatchesRegularExpression('#<td>\s*-\s*</td>#', $response->getContent());
     }
 
     public function test_resend_sends_the_order_confirmation_notification_to_the_buyer(): void

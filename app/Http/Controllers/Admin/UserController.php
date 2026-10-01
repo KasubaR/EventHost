@@ -162,7 +162,7 @@ class UserController extends Controller
 
         $note = 'Granted by '.(auth('admin')->user()?->email ?? 'an admin');
         if (! empty($validated['reason'])) {
-            $note .= ' — '.$validated['reason'];
+            $note .= ': '.$validated['reason'];
         }
 
         $credits->grant(

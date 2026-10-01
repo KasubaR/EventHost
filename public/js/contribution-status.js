@@ -136,7 +136,7 @@
                     return;
                 }
 
-                showStatus('Payment started — refreshing…', 'success');
+                showStatus('Payment started. Refreshing…', 'success');
                 window.location.reload();
             } catch (err) {
                 showStatus('Network error. Please check your connection and try again.', 'error');

@@ -3,7 +3,7 @@
         <link rel="stylesheet" href="{{ asset('css/events-admin.css') }}">
     @endpush
 
-    <x-slot name="title">Staff — {{ $event->name }}</x-slot>
+    <x-slot name="title">Staff | {{ $event->name }}</x-slot>
 
     <x-slot name="pageHeader">
         <div class="dph-inner">
@@ -41,7 +41,7 @@
             <div class="evt-section">
                 <div class="evt-section-head">
                     <h2>Invite staff</h2>
-                    <p>Event Manager gets full ticketing access — ticket types, orders, and check-in — short of activating sales, deleting the event, or managing staff. Check-in Staff can only scan at the door.</p>
+                    <p>Event Manager gets full ticketing access (ticket types, orders, and check-in), short of activating sales, deleting the event, or managing staff. Check-in Staff can only scan at the door.</p>
                 </div>
                 <div class="evt-section-body profile-card-like">
                     <form method="post" action="{{ route('public-events.staff.store', $event) }}" class="profile-form-stack evt-staff-invite-form">

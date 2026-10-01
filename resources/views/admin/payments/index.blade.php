@@ -108,7 +108,7 @@
                         @elseif ($payment->payer_name)
                             {{ $payment->payer_name }} <span class="admin-muted">(deleted account)</span>
                         @else
-                            —
+                            -
                         @endif
                     </td>
                     <td>{{ $plans[$payment->plan_key]['label'] ?? $payment->plan_key }}</td>

@@ -65,7 +65,7 @@ class StoreReviewRequest extends FormRequest
     {
         return [
             'event_id.exists' => 'Pick one of your own events.',
-            'body.min' => 'Tell us a little more — at least 20 characters.',
+            'body.min' => 'Tell us a little more: at least 20 characters.',
         ];
     }
 

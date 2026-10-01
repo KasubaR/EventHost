@@ -21,7 +21,7 @@
                 <div class="tkc-result tkc-result--success">
                     <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
                     <h1 class="tkc-title">Payment successful</h1>
-                    <p class="tkc-muted">Your tickets are ready — also emailed to {{ $order->buyer_email }}.</p>
+                    <p class="tkc-muted">Your tickets are ready and also emailed to {{ $order->buyer_email }}.</p>
                 </div>
 
                 <div class="tkc-ticket-list">
@@ -52,7 +52,7 @@
                 <div class="tkc-result tkc-result--pending">
                     <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
                     <h1 class="tkc-title">Starting your payment…</h1>
-                    <p class="tkc-muted">We're contacting the payment provider. This usually takes a few seconds — stay on this page.</p>
+                    <p class="tkc-muted">We're contacting the payment provider. This usually takes a few seconds. Stay on this page.</p>
                 </div>
             @endif
         </div>

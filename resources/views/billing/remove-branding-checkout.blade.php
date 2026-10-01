@@ -7,7 +7,7 @@
         <script src="{{ asset('js/remove-branding-checkout.js') }}" defer></script>
     @endpush
 
-    <x-slot name="title">Remove Branding — {{ $event->name }}</x-slot>
+    <x-slot name="title">Remove Branding | {{ $event->name }}</x-slot>
 
     <x-slot name="pageHeader">
         <div class="dph-inner">
@@ -36,7 +36,7 @@
                 <h2 class="billing-section-title">What this does</h2>
                 <p class="billing-section-sub">
                     Removes the "{{ config('app.name') }}" bar (logo, tagline and the "Get started free" link) from the
-                    top of this event's public pages — the invitation, RSVP links, and its status page. One-time,
+                    top of this event's public pages: the invitation, RSVP links, and its status page. One-time,
                     this event only. Available on every plan.
                 </p>
 

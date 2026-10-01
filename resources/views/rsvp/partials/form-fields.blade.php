@@ -45,7 +45,7 @@
     <select id="rsvp_attendee_count" name="attendee_count" class="rsvp-select" required>
         @for ($n = 0; $n <= $maxAttendees; $n++)
             <option value="{{ $n }}" @selected((int) $countOld === $n)>
-                {{ $n === 0 ? '0 — not attending' : $n.' '.($n === 1 ? 'guest' : 'guests') }}
+                {{ $n === 0 ? '0 (not attending)' : $n.' '.($n === 1 ? 'guest' : 'guests') }}
             </option>
         @endfor
     </select>

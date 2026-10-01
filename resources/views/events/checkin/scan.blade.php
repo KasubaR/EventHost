@@ -4,7 +4,7 @@
         <link rel="stylesheet" href="{{ asset('css/checkin-scanner.css') }}">
     @endpush
 
-    <x-slot name="title">Check-in scanner — {{ $event->name }}</x-slot>
+    <x-slot name="title">Check-in scanner | {{ $event->name }}</x-slot>
 
     <x-slot name="pageHeader">
         <div class="dph-inner">
@@ -23,7 +23,7 @@
     </x-slot>
 
     @if (session('status') === 'staff-link-created')
-        <div class="evt-admin-flash">Scanner link created — share it with door staff.</div>
+        <div class="evt-admin-flash">Scanner link created. Share it with door staff.</div>
     @elseif (session('status') === 'staff-link-revoked')
         <div class="evt-admin-flash">Scanner link revoked.</div>
     @endif
@@ -76,7 +76,7 @@
         <div class="evt-section">
             <div class="evt-section-head">
                 <h2>Door staff links</h2>
-                <p>Share a link with staff who don't have a dashboard login — no account needed, just this link.</p>
+                <p>Share a link with staff who don't have a dashboard login. No account needed, just this link.</p>
             </div>
             <div class="evt-section-body">
                 <form method="post" action="{{ route('events.checkin.links.store', $event) }}" class="ckin-link-form">

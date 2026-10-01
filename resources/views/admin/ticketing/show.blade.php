@@ -24,7 +24,7 @@
         $commissionPercent = $commissionPercent ?? $ev->commissionPercent();
     @endphp
 
-    <x-slot name="title">Ticketing — {{ $ev->name }}</x-slot>
+    <x-slot name="title">Ticketing | {{ $ev->name }}</x-slot>
 
     <x-slot name="pageHeader">
         <div class="dph-inner">
@@ -119,7 +119,7 @@
                 </div>
                 <div class="admin-fact">
                     <dt>Commission mode</dt>
-                    <dd>{{ $ev->commission_mode?->label() ?? '—' }}</dd>
+                    <dd>{{ $ev->commission_mode?->label() ?? '-' }}</dd>
                 </div>
                 <div class="admin-fact">
                     <dt>Commission rate</dt>

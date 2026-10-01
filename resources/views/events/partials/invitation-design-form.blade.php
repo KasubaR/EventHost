@@ -323,7 +323,7 @@
 
             <fieldset class="evt-design-fieldset">
                 <legend class="profile-label">Story</legend>
-                <p class="evt-muted evt-design-hint">Separate from the short event description in Event details — optional longer narrative for guests.</p>
+                <p class="evt-muted evt-design-hint">Separate from the short event description in Event details. Optional longer narrative for guests.</p>
                 <div class="profile-field">
                     <label for="content_story" class="profile-label">Story body</label>
                     <textarea id="content_story" name="content_story" rows="5" maxlength="12000"
@@ -410,7 +410,7 @@
 
             @if ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION_NOIR)
                 <fieldset class="evt-design-fieldset">
-                    <legend class="profile-label">Noir wedding — copy &amp; footer</legend>
+                    <legend class="profile-label">Noir wedding: copy &amp; footer</legend>
                     <p class="evt-muted evt-design-hint">Headlines for the split hero, formal card, couple grid caption, and closing monogram. The photo quote shows when the Story is empty.</p>
 
                     <div class="evt-grid-2 profile-fields">
@@ -464,7 +464,7 @@
 
             @if ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION)
                 <fieldset class="evt-design-fieldset">
-                    <legend class="profile-label">Wedding invitation — headlines</legend>
+                    <legend class="profile-label">Wedding invitation: headlines</legend>
                     <p class="evt-muted evt-design-hint">Copy shown on the full-screen hero, couple grid caption, and closing footer.</p>
 
                     <div class="profile-field">
@@ -490,8 +490,8 @@
 
             @if ($layoutVariant === InvitationLayoutVariant::MODERN_MINIMAL)
                 <fieldset class="evt-design-fieldset">
-                    <legend class="profile-label">Modern minimal — caption</legend>
-                    <p class="evt-muted evt-design-hint">Optional line under the three couple portraits — a dress code works well here. Leave it empty to show no caption.</p>
+                    <legend class="profile-label">Modern minimal: caption</legend>
+                    <p class="evt-muted evt-design-hint">Optional line under the three couple portraits. A dress code works well here. Leave it empty to show no caption.</p>
 
                     <div class="profile-field">
                         <label for="wi_couple_caption" class="profile-label">Couple photo caption</label>
@@ -511,14 +511,14 @@
                         <label for="wi_couple_caption" class="profile-label">Dress code</label>
                         <input id="wi_couple_caption" name="wi_couple_caption" type="text" maxlength="160" class="profile-input"
                                value="{{ old('wi_couple_caption', $invitationMerged['content']['wi_couple_caption'] ?? '') }}"
-                               placeholder="Formal — navy, gold and soft neutrals">
+                               placeholder="Formal: navy, gold and soft neutrals">
                     </div>
                 </fieldset>
             @endif
 
             @if ($layoutVariant === InvitationLayoutVariant::BASE_WEDDING)
                 <fieldset class="evt-design-fieldset">
-                    <legend class="profile-label">Wedding invitation — wording</legend>
+                    <legend class="profile-label">Wedding invitation: wording</legend>
                     <p class="evt-muted evt-design-hint">This layout is text only. The invitation wording comes from your event description; these lines frame it.</p>
 
                     <div class="profile-field">
@@ -538,7 +538,7 @@
 
             @if ($layoutVariant === InvitationLayoutVariant::EVENT_INVITE)
                 <fieldset class="evt-design-fieldset">
-                    <legend class="profile-label">Celebration card — extra details</legend>
+                    <legend class="profile-label">Celebration card: extra details</legend>
                     <p class="evt-muted evt-design-hint">Optional rows shown on the blush invitation card beneath the date.</p>
 
                     <div class="profile-field">
@@ -593,7 +593,7 @@
                     }
                 @endphp
                 <fieldset class="evt-design-fieldset">
-                    <legend class="profile-label">Beauty for Ashes — presenter &amp; headline</legend>
+                    <legend class="profile-label">Beauty for Ashes: presenter &amp; headline</legend>
                     <p class="evt-muted evt-design-hint">How the jewel-tone invitation introduces your ministry and the main title row.</p>
 
                     <div class="evt-grid-2 profile-fields">
@@ -619,7 +619,7 @@
                 </fieldset>
 
                 <fieldset class="evt-design-fieldset">
-                    <legend class="profile-label">Beauty for Ashes — logistics &amp; contact</legend>
+                    <legend class="profile-label">Beauty for Ashes: logistics &amp; contact</legend>
                     <p class="evt-muted evt-design-hint">Theme, venue note, and phone lines shown alongside your event details.</p>
 
                     <div class="evt-grid-2 profile-fields">
@@ -655,7 +655,7 @@
                 </fieldset>
 
                 <fieldset class="evt-design-fieldset">
-                    <legend class="profile-label">Beauty for Ashes — speakers</legend>
+                    <legend class="profile-label">Beauty for Ashes: speakers</legend>
                     <div class="profile-field" style="max-width:220px; margin-bottom:14px;">
                         <label for="bfa_host_slot" class="profile-label">Host badge position</label>
                         <select id="bfa_host_slot" name="bfa_host_slot" class="profile-input">
@@ -668,7 +668,7 @@
                     </div>
                     <p class="evt-muted evt-design-hint evt-bfa-speakers-intro">
                         <span class="evt-bfa-speakers-badge">Optional</span>
-                        <span>Upload a portrait for each slot — it appears on their card on the public invitation.</span>
+                        <span>Upload a portrait for each slot. It appears on their card on the public invitation.</span>
                     </p>
                     <div class="evt-bfa-speakers" aria-label="Speaker portrait slots">
                         <ul class="evt-design-schedule-list evt-bfa-speaker-list">
@@ -771,11 +771,11 @@
                     </legend>
                     <p class="evt-muted evt-design-hint">
                         @if ($layoutVariant === InvitationLayoutVariant::WEDDING_MIDNIGHT_GOLD)
-                            Upload three photos. Each sits in a round frame beside one paragraph of your story — separate paragraphs with a blank line. When fewer than three are uploaded, the last image repeats.
+                            Upload three photos. Each sits in a round frame beside one paragraph of your story. Separate paragraphs with a blank line. When fewer than three are uploaded, the last image repeats.
                         @elseif ($layoutVariant === InvitationLayoutVariant::WEDDING_DUSTY_BLUE)
-                            Upload three photos for the tilted photo strip in the opening screen. The same photos sit in round frames beside each paragraph of your story — separate paragraphs with a blank line. When fewer than three are uploaded, the last image repeats.
+                            Upload three photos for the tilted photo strip in the opening screen. The same photos sit in round frames beside each paragraph of your story. Separate paragraphs with a blank line. When fewer than three are uploaded, the last image repeats.
                         @elseif ($isWeddingLayout)
-                            Upload three separate photos for the couple portrait grid — left portrait, centre portrait, and right portrait. When fewer than three are uploaded, the last image repeats to fill the grid.
+                            Upload three separate photos for the couple portrait grid: left portrait, centre portrait, and right portrait. When fewer than three are uploaded, the last image repeats to fill the grid.
                         @elseif ($layoutVariant === InvitationLayoutVariant::BOTANICAL_GRADUATION)
                             Optional. Two photos create the side-by-side framed look; one shows a single frame. Select both at once or upload one then the other.
                         @else
@@ -847,7 +847,7 @@
                                 <div class="evt-design-inset-head-row">
                                     <span class="evt-design-inset-title">
                                         @if ($isWeddingLayout)
-                                            {{ $currentCouple !== [] ? 'Add more portraits' : 'Couple portraits (3 slots — left, centre, right)' }}
+                                            {{ $currentCouple !== [] ? 'Add more portraits' : 'Couple portraits (3 slots: left, centre, right)' }}
                                         @elseif ($layoutVariant === InvitationLayoutVariant::BOTANICAL_GRADUATION)
                                             {{ $currentCouple !== [] ? 'Add more portraits' : 'Portrait photos (up to 2)' }}
                                         @else
@@ -865,7 +865,7 @@
                                                @if ($coupleSlotsRemaining === 0) disabled @endif>
                                         <p class="evt-muted evt-design-hint">
                                             @if ($isWeddingLayout)
-                                                Select up to 3 different images — they fill the left, centre, and right columns of the portrait grid. You can select all three at once or upload in batches.
+                                                Select up to 3 different images. They fill the left, centre, and right columns of the portrait grid. You can select all three at once or upload in batches.
                                             @else
                                                 Displayed as one or two framed portraits in the hero.
                                             @endif
@@ -901,11 +901,11 @@
                     @if ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION_NOIR)
                         Up to {{ $galleryMaxWord }} photos in two rows of three. One of these also appears behind the story or quote section (or the hero photo if the gallery is empty). Stored as WebP after upload.
                     @elseif ($layoutVariant === InvitationLayoutVariant::MODERN_MINIMAL)
-                        Up to {{ $galleryMaxWord }} photos — six fill two rows of three. Stored as WebP after upload (converted from JPG/PNG).
+                        Up to {{ $galleryMaxWord }} photos. Six fill two rows of three. Stored as WebP after upload (converted from JPG/PNG).
                     @elseif ($layoutVariant === InvitationLayoutVariant::WEDDING_MIDNIGHT_GOLD)
-                        Up to {{ $galleryMaxWord }} photos in a mosaic — six zigzag wide and square tiles across three rows. Stored as WebP after upload.
+                        Up to {{ $galleryMaxWord }} photos in a mosaic. Six zigzag wide and square tiles across three rows. Stored as WebP after upload.
                     @elseif ($layoutVariant === InvitationLayoutVariant::WEDDING_DUSTY_BLUE)
-                        Up to {{ $galleryMaxWord }} photos shown as tilted white-bordered prints — six zigzag across three rows. Stored as WebP after upload.
+                        Up to {{ $galleryMaxWord }} photos shown as tilted white-bordered prints. Six zigzag across three rows. Stored as WebP after upload.
                     @elseif ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION)
                         Up to {{ $galleryMaxWord }} photos for the masonry gallery. The story panel can also use a gallery photo when one is available. Stored as WebP after upload.
                     @else
@@ -962,7 +962,7 @@
             @unless (InvitationLayoutVariant::isImageFree($layoutVariant))
             <fieldset class="evt-design-fieldset">
                 <legend class="profile-label">Background video</legend>
-                <p class="evt-muted evt-design-hint">Optional looping video behind the hero. Paste a public YouTube link or video ID — it plays muted, similar to an uploaded clip. Use <strong>Remove</strong> to clear.</p>
+                <p class="evt-muted evt-design-hint">Optional looping video behind the hero. Paste a public YouTube link or video ID. It plays muted, similar to an uploaded clip. Use <strong>Remove</strong> to clear.</p>
                 <div class="evt-design-inset-stack">
                     <div class="evt-design-inset-panel">
                         <div class="evt-design-inset-head-row">

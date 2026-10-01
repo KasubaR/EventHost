@@ -39,7 +39,7 @@ class TicketReconciliationService
             [
                 'key' => 'payment_without_paid_order',
                 'label' => 'Payment completed, order not paid',
-                'description' => 'The buyer was charged but TicketOrderFulfillmentService::complete() never ran or failed silently — tickets were never issued for money already collected.',
+                'description' => 'The buyer was charged but TicketOrderFulfillmentService::complete() never ran or failed silently, so tickets were never issued for money already collected.',
                 'rows' => $this->normalizePayments($this->completedPaymentsWithUnpaidOrder()),
             ],
             [
@@ -57,19 +57,19 @@ class TicketReconciliationService
             [
                 'key' => 'missing_sale_entry',
                 'label' => 'Paid order with no sale ledger entry',
-                'description' => 'No TicketRevenueEntry (type=sale) row exists for this paid order — it never entered the revenue ledger.',
+                'description' => 'No TicketRevenueEntry (type=sale) row exists for this paid order. It never entered the revenue ledger.',
                 'rows' => $this->normalizeOrders($this->ordersMissingSaleEntry()),
             ],
             [
                 'key' => 'ledger_amount_drift',
                 'label' => 'Ledger entry amount differs from its order',
-                'description' => 'Sale entries are copied verbatim from the order at write time — a mismatch means one side was edited after the fact.',
+                'description' => 'Sale entries are copied verbatim from the order at write time. A mismatch means one side was edited after the fact.',
                 'rows' => $this->normalizeOrders($this->ordersWithLedgerAmountDrift()),
             ],
             [
                 'key' => 'negative_balance',
                 'label' => 'Event with a negative running balance',
-                'description' => 'Sum of ledger entries for the event is negative — payouts should never be able to exceed revenue.',
+                'description' => 'Sum of ledger entries for the event is negative. Payouts should never be able to exceed revenue.',
                 'rows' => $this->normalizeBalances($this->negativeEventBalances()),
             ],
             [
@@ -81,7 +81,7 @@ class TicketReconciliationService
             [
                 'key' => 'settlement_mismatch',
                 'label' => 'Amount/currency mismatch caught at verification',
-                'description' => 'TicketPaymentStatusService already failed these automatically rather than accept a settlement that did not match the recorded amount — surfaced here so it does not require a log search.',
+                'description' => 'TicketPaymentStatusService already failed these automatically rather than accept a settlement that did not match the recorded amount. They are surfaced here so it does not require a log search.',
                 'rows' => $this->normalizePayments($this->settlementMismatches()),
             ],
         ];

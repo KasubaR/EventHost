@@ -7,7 +7,7 @@
         <script src="{{ asset('js/public-registration-checkout.js') }}" defer></script>
     @endpush
 
-    <x-slot name="title">Pay registration quote — {{ $event->name }}</x-slot>
+    <x-slot name="title">Pay registration quote | {{ $event->name }}</x-slot>
 
     <x-slot name="pageHeader">
         <div class="dph-inner">
@@ -36,7 +36,7 @@
                 <h2 class="billing-section-title">What this does</h2>
                 <p class="billing-section-sub">
                     EventHost reviewed "{{ $event->name }}" and approved it for {{ $currency === 'ZMW' ? 'K' : $currency }}{{ number_format($amount, 2) }}.
-                    Paying this quote makes the invitation live at its public link — one-time, this event only.
+                    Paying this quote makes the invitation live at its public link. One-time, this event only.
                 </p>
 
                 <h2 class="billing-section-title">Payment method</h2>

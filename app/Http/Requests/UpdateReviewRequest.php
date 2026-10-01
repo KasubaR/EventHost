@@ -31,7 +31,7 @@ class UpdateReviewRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'body.min' => 'Tell us a little more — at least 20 characters.',
+            'body.min' => 'Tell us a little more: at least 20 characters.',
         ];
     }
 }

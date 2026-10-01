@@ -61,10 +61,10 @@
                             <td>
                                 <a href="{{ route('admin.ticketing.show', $row) }}">{{ $row->name }}</a>
                             </td>
-                            <td>{{ $row->user?->email ?? '—' }}</td>
+                            <td>{{ $row->user?->email ?? '-' }}</td>
                             <td>{{ $row->ticket_types_count }}</td>
                             <td>{{ $row->ticketing_status->label() }}</td>
-                            <td>{{ $row->ticketing_submitted_at?->format('j M Y H:i') ?? '—' }}</td>
+                            <td>{{ $row->ticketing_submitted_at?->format('j M Y H:i') ?? '-' }}</td>
                             <td><a href="{{ route('admin.ticketing.show', $row) }}" class="evt-btn-outline evt-btn-tiny">Review</a></td>
                         </tr>
                     @endforeach

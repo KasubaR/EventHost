@@ -25,7 +25,7 @@ final class WhatsAppInviteLink
     public static function invitationMessage(string $guestName, string $eventName, string $rsvpUrl): string
     {
         return sprintf(
-            "You are invited to %s!\n\nHi %s — RSVP here:\n%s",
+            "You are invited to %s!\n\nHi %s, RSVP here:\n%s",
             $eventName,
             $guestName,
             $rsvpUrl

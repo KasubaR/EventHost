@@ -90,7 +90,7 @@
             </div>
 
             @unless ($refreshable)
-                <p class="rsvp-muted">Reloading this page won't show your details again — bookmark the RSVP link from your invite instead if you want to come back.</p>
+                <p class="rsvp-muted">Reloading this page won't show your details again. Bookmark the RSVP link from your invite instead if you want to come back.</p>
             @endunless
         @else
             <div class="evt-rsvp-banner evt-rsvp-banner--open rsvp-thanks-banner">

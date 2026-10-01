@@ -55,10 +55,10 @@ class AccountDeletionService
     {
         return match ($blocker) {
             self::BLOCKED_BY_EVENTS => 'One of your events (including any in Recently deleted) has ticket sales, refunds or '
-                .'contribution payments on record, which we have to keep. Contact support to wind them down — and settle '
-                .'any pending payout — before deleting your account.',
-            default => 'A payment on your account is still being processed. Wait for it to finish — it can take up to '
-                .Payment::IN_FLIGHT_HOURS.' hours — then try again.',
+                .'contribution payments on record, which we have to keep. Contact support to wind them down, and settle '
+                .'any pending payout, before deleting your account.',
+            default => 'A payment on your account is still being processed. Wait for it to finish (it can take up to '
+                .Payment::IN_FLIGHT_HOURS.' hours), then try again.',
         };
     }
 

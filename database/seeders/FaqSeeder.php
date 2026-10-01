@@ -17,7 +17,7 @@ class FaqSeeder extends Seeder
         [
             'placement' => 'homepage',
             'question' => 'Is Event Host really free to use?',
-            'answer' => 'Creating an account is free. Each event requires a paid credit — Base from K450, Pro from K750, or Pro+ from K1500. Pay with MTN, Airtel, or bank transfer after you sign up.',
+            'answer' => 'Creating an account is free. Each event requires a paid credit: Base from K450, Pro from K750, or Pro+ from K1500. Pay with MTN, Airtel, or bank transfer after you sign up.',
         ],
         [
             'placement' => 'homepage',
@@ -37,12 +37,12 @@ class FaqSeeder extends Seeder
         [
             'placement' => 'homepage',
             'question' => 'Can I send invitations via WhatsApp?',
-            'answer' => 'Yes — WhatsApp sharing is built in. You get a shareable link you can forward in any WhatsApp chat or group. Guests can RSVP directly from the link without leaving WhatsApp.',
+            'answer' => 'Yes, WhatsApp sharing is built in. You get a shareable link you can forward in any WhatsApp chat or group. Guests can RSVP directly from the link without leaving WhatsApp.',
         ],
         [
             'placement' => 'homepage',
             'question' => 'What payment methods are supported?',
-            'answer' => 'You can pay with MTN Mobile Money, Airtel Money, or a bank transfer from any major Zambian bank. You pay only when you buy an event credit — your guests never pay anything to view an invitation or RSVP.',
+            'answer' => 'You can pay with MTN Mobile Money, Airtel Money, or a bank transfer from any major Zambian bank. You pay only when you buy an event credit. Your guests never pay anything to view an invitation or RSVP.',
         ],
         [
             'placement' => 'contact',
@@ -52,7 +52,7 @@ class FaqSeeder extends Seeder
         [
             'placement' => 'contact',
             'question' => 'How do guests RSVP?',
-            'answer' => 'Guests click a personalised link — no account required. RSVPs work seamlessly via WhatsApp, SMS, or any browser.',
+            'answer' => 'Guests click a personalised link. No account required. RSVPs work seamlessly via WhatsApp, SMS, or any browser.',
         ],
         [
             'placement' => 'contact',
@@ -62,7 +62,7 @@ class FaqSeeder extends Seeder
         [
             'placement' => 'contact',
             'question' => 'What payment methods are supported?',
-            'answer' => 'You can pay with MTN Mobile Money, Airtel Money, or a bank transfer. Payment is only ever for your own event credits — guests never pay to RSVP.',
+            'answer' => 'You can pay with MTN Mobile Money, Airtel Money, or a bank transfer. Payment is only ever for your own event credits. Guests never pay to RSVP.',
         ],
     ];
 

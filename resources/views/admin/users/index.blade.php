@@ -49,7 +49,7 @@
                 <tr>
                     <td>{{ $user->name }}</td>
                     <td>{{ $user->email }}</td>
-                    <td>{{ $user->phone ?? '—' }}</td>
+                    <td>{{ $user->phone ?? '-' }}</td>
                     <td>{{ $user->events_count }}</td>
                     <td>{{ $user->subscriptionTier()->label() }}</td>
                     <td>{{ $user->status }}</td>

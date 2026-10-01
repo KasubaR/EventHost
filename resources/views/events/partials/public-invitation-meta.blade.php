@@ -1,7 +1,7 @@
 @php
     use Illuminate\Support\Str;
     $publicUrl = route('events.public', ['slug' => $event->slug]);
-    $title = $event->name.' — '.config('app.name');
+    $title = $event->name.' | '.config('app.name');
     $descRaw = trim(strip_tags((string) ($event->description ?? '')));
     $description = $descRaw !== ''
         ? Str::limit($descRaw, 200, preserveWords: true)

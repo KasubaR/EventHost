@@ -6,7 +6,7 @@
     <section class="wi-schedule-section wi-reveal" data-wi-reveal>
         <p class="wi-section-tag">Order of the Day</p>
         <h2 class="wi-section-title">The <em>Programme</em></h2>
-        <div class="wi-orn" aria-hidden="true">— ◆ —</div>
+        <div class="wi-orn" aria-hidden="true">· ◆ ·</div>
         <ol class="wi-timeline">
             @foreach ($schedule as $row)
                 <li class="wi-timeline-item">

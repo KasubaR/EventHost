@@ -3,7 +3,7 @@
         <link rel="stylesheet" href="{{ asset('css/events-admin.css') }}">
     @endpush
 
-    <x-slot name="title">Payouts — {{ $event->name }}</x-slot>
+    <x-slot name="title">Payouts | {{ $event->name }}</x-slot>
 
     <x-slot name="pageHeader">
         <div class="dph-inner">
@@ -30,7 +30,7 @@
         <div class="evt-section">
             <div class="evt-section-head">
                 <h2>Payout history</h2>
-                <p>Payouts are recorded by EventHost on the date agreed with you — there is no self-service payout request here.</p>
+                <p>Payouts are recorded by EventHost on the date agreed with you. There is no self-service payout request here.</p>
             </div>
             <div class="evt-section-body evt-table-wrap">
                 @if ($payouts->isEmpty())
@@ -49,7 +49,7 @@
                                 <tr>
                                     <td>{{ $payout->paid_on->format('j M Y') }}</td>
                                     <td>{{ \App\Support\TicketingSettings::formatZmw($payout->amount) }}</td>
-                                    <td>{{ $payout->note ?? '—' }}</td>
+                                    <td>{{ $payout->note ?? '-' }}</td>
                                 </tr>
                             @endforeach
                         </tbody>

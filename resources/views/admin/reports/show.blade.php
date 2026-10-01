@@ -35,7 +35,7 @@
             <p class="admin-muted"><strong>Message:</strong></p>
             <p class="admin-mt-sm">{{ $report->message }}</p>
             <p class="admin-muted admin-mt-md"><strong>Reporter:</strong> {{ $report->user?->email ?? 'Anonymous' }}</p>
-            <p class="admin-muted"><strong>Related event:</strong> {{ $report->event?->name ?? '—' }}</p>
+            <p class="admin-muted"><strong>Related event:</strong> {{ $report->event?->name ?? '-' }}</p>
             @if(auth('admin')->user()?->can('events.view'))
                 @if ($report->event)
                     <p class="admin-mt-sm"><a href="{{ route('admin.events.show', $report->event) }}" class="admin-link">Open event</a></p>

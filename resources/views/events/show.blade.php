@@ -91,7 +91,7 @@
 
     <div class="evt-stack">
         @if (session('status') === 'invitation-paused')
-            <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Invitation paused — guests see “Invitation unavailable”.</div>
+            <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Invitation paused. Guests see “Invitation unavailable”.</div>
         @elseif (session('status') === 'invitation-resumed')
             <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Invitation is live again.</div>
         @elseif (session('status') === 'event-cancelled')
@@ -110,7 +110,7 @@
                         <p>
                             Pause, cancel, or share <code>/e/{{ $event->slug }}</code>.
                             @unless ($event->is_public)
-                                Not listed anywhere — only guests you send it to can find it.
+                                Not listed anywhere. Only guests you send it to can find it.
                             @endunless
                         </p>
                     </div>
@@ -163,7 +163,7 @@
                     <div class="evt-stat-label">Ticket sales</div>
                 </div>
                 <div class="evt-stat-card">
-                    <div class="evt-stat-value">{{ $event->commission_mode?->label() ?? '—' }}</div>
+                    <div class="evt-stat-value">{{ $event->commission_mode?->label() ?? '-' }}</div>
                     <div class="evt-stat-label">Commission</div>
                 </div>
                 <div class="evt-stat-card evt-stat-card--accent">
@@ -203,7 +203,7 @@
             <section class="evt-section" aria-labelledby="evt-contributions-title">
                 <div class="evt-section-head">
                     <h2 id="evt-contributions-title">Contributions</h2>
-                    <p>Set by EventHost admin — you can't change whether this is on or the amount.</p>
+                    <p>Set by EventHost admin. You can't change whether this is on or the amount.</p>
                 </div>
                 <div class="evt-section-body">
                     <div class="evt-grid-2 evt-rsvp-summary-grid">
@@ -236,7 +236,7 @@
             <div class="evt-section-body">
                 @if ($event->branding_removed)
                     <div class="evt-flash evt-flash--info">
-                        <i class="fa-solid fa-circle-check"></i> Branding removed — the {{ config('app.name') }} bar no longer shows on this event's public pages.
+                        <i class="fa-solid fa-circle-check"></i> Branding removed. The {{ config('app.name') }} bar no longer shows on this event's public pages.
                     </div>
                 @else
                     <p class="evt-muted">
@@ -245,7 +245,7 @@
                     </p>
                     <div class="evt-card-actions">
                         <a href="{{ route('events.remove-branding', $event) }}" class="btn-primary">
-                            <i class="fa-solid fa-eye-slash"></i> Remove branding — K250
+                            <i class="fa-solid fa-eye-slash"></i> Remove branding (K250)
                         </a>
                     </div>
                 @endif
@@ -266,7 +266,7 @@
                         <div class="evt-stat-label">Invitation views</div>
                     </div>
                     <div class="evt-stat-card">
-                        <div class="evt-stat-value">{{ $eaTotals['conversion_pct'] !== null ? $eaTotals['conversion_pct'].'%' : '—' }}</div>
+                        <div class="evt-stat-value">{{ $eaTotals['conversion_pct'] !== null ? $eaTotals['conversion_pct'].'%' : '-' }}</div>
                         <div class="evt-stat-label">RSVP conversion</div>
                         <div class="evt-analytics-kpi-hint">{{ number_format($eaTotals['responded_guests']) }} / {{ number_format($eaTotals['guests']) }} responded</div>
                     </div>
@@ -281,7 +281,7 @@
                             @if ($eaTotals['attendance_pct'] !== null)
                                 {{ $eaTotals['attendance_pct'] }}% vs guest list rows
                             @else
-                                —
+                                -
                             @endif
                         </div>
                     </div>
@@ -371,7 +371,7 @@
         @if ($event->isTicketed() && ! $event->ticketSalesAreApproved())
             <div class="evt-section">
                 <div class="evt-section-body">
-                    <p class="evt-muted">{{ $event->ticketing_status->label() }}. <a href="{{ route($event->canSubmitTicketing() ? 'public-events.ticket-types.index' : 'public-events.tickets.overview', $event) }}">Manage tickets</a> — sales go live after EventHost activates them.</p>
+                    <p class="evt-muted">{{ $event->ticketing_status->label() }}. <a href="{{ route($event->canSubmitTicketing() ? 'public-events.ticket-types.index' : 'public-events.tickets.overview', $event) }}">Manage tickets</a>. Sales go live after EventHost activates them.</p>
                 </div>
             </div>
         @elseif (! $event->is_published)

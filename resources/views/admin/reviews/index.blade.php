@@ -62,16 +62,16 @@
         <p class="admin-muted admin-help-body">
             Hosts can review each event they ran once the date has passed. New reviews arrive below as
             <strong>Awaiting review</strong> and are invisible to the public until approved. Approving a review does not
-            put it on the homepage — tick <strong>Feature on homepage</strong> as well. The homepage shows up to
+            put it on the homepage. Tick <strong>Feature on homepage</strong> as well. The homepage shows up to
             {{ $homepageLimit }} featured reviews in ascending order number, lowest first; right now
             <strong>{{ $featuredCount }}</strong> {{ Str::plural('review', $featuredCount) }}
             {{ $featuredCount === 1 ? 'is' : 'are' }} featured. If a host edits a review it comes straight back here as
-            pending and drops off the homepage. Review text is plain text — HTML is escaped, not rendered.
+            pending and drops off the homepage. Review text is plain text. HTML is escaped, not rendered.
         </p>
     </details>
 
     @foreach ([
-        ['title' => 'Awaiting review', 'items' => $pending, 'empty' => 'Nothing waiting — the queue is clear.'],
+        ['title' => 'Awaiting review', 'items' => $pending, 'empty' => 'Nothing waiting. The queue is clear.'],
         ['title' => 'Published', 'items' => $approved, 'empty' => 'No approved reviews yet.'],
         ['title' => 'Not published', 'items' => $rejected, 'empty' => 'Nothing has been turned down.'],
     ] as $group)
@@ -130,7 +130,7 @@
                                         <i class="fa-brands fa-youtube"></i> {{ $review->videoWatchUrl() }}
                                     </a>
                                 @else
-                                    <span class="admin-muted"><i class="fa-solid fa-triangle-exclamation"></i> No video set — this review cannot be featured.</span>
+                                    <span class="admin-muted"><i class="fa-solid fa-triangle-exclamation"></i> No video set. This review cannot be featured.</span>
                                 @endif
                             </div>
                         </div>
@@ -237,8 +237,8 @@
                 </button>
             </div>
             <p class="admin-muted admin-form-modal-intro">
-                Video testimonials are added here by you, never uploaded by hosts. Paste a public or unlisted YouTube link —
-                only videos that allow embedding will play. The poster image is the still shown before someone clicks play;
+                Video testimonials are added here by you, never uploaded by hosts. Paste a public or unlisted YouTube link.
+                Only videos that allow embedding will play. The poster image is the still shown before someone clicks play;
                 without one the card falls back to a plain play button. A video review is published as soon as you add it,
                 and appears in <strong>Published</strong> below where you can edit or unpublish it like any other.
             </p>

@@ -3,7 +3,7 @@
         <link rel="stylesheet" href="{{ asset('css/events-admin.css') }}">
     @endpush
 
-    <x-slot name="title">Import guests — {{ $event->name }}</x-slot>
+    <x-slot name="title">Import guests | {{ $event->name }}</x-slot>
 
     <x-slot name="pageHeader">
         <div class="dph-inner">
@@ -23,7 +23,7 @@
             <div class="evt-section-head">
                 <h2>Upload spreadsheet</h2>
                 <p>Required column: <strong>name</strong>. Optional: email, phone, group (creates groups automatically),
-                    table (must match an existing table's name exactly — mismatched values are left unassigned rather than creating a new table).</p>
+                    table (must match an existing table's name exactly; mismatched values are left unassigned rather than creating a new table).</p>
             </div>
             <div class="evt-section-body profile-card-like">
                 <form method="post" action="{{ route('events.guests.import.store', $event) }}" enctype="multipart/form-data" class="profile-form-stack">

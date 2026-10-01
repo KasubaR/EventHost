@@ -21,7 +21,7 @@
         $venueLine = trim((string) $event->location_name);
     }
     if ($venueLine === '') {
-        $venueLine = '—';
+        $venueLine = '-';
     }
 
     $timeLine = '';
@@ -94,7 +94,7 @@
 
     <p class="ei-event-type">{{ $typeLabel }}</p>
 
-    <div class="ei-ornament" aria-hidden="true">— <i class="fa-solid fa-spa"></i> —</div>
+    <div class="ei-ornament" aria-hidden="true">· <i class="fa-solid fa-spa"></i> ·</div>
 
     <p class="ei-on-the">On The</p>
     <p class="ei-date-block">{{ $dayNum }}<sup>{{ $daySuffix }}</sup> {{ $dateRest }}</p>

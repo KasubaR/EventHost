@@ -58,7 +58,7 @@ class RetryLencoContributionPayment implements ShouldQueue
             'ref' => $this->payment->payment_reference,
             'amount' => (float) $this->payment->amount,
             'currency' => $this->payment->currency,
-            'description' => 'Contribution — '.($contribution->event?->name ?? 'event'),
+            'description' => 'Contribution: '.($contribution->event?->name ?? 'event'),
             'reference' => $this->payment->payment_reference,
         ];
 

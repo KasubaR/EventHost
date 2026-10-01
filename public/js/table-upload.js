@@ -147,13 +147,13 @@
 
                 if (failed === 0) {
                     status.className = 'tbup-status tbup-status--success';
-                    status.textContent = done + ' photo' + (done !== 1 ? 's' : '') + " added — thank you! Add more whenever you'd like.";
+                    status.textContent = done + ' photo' + (done !== 1 ? 's' : '') + " added. Thank you! Add more whenever you'd like.";
                 } else if (done > 0) {
                     status.className = 'tbup-status tbup-status--error';
-                    status.textContent = done + ' added, ' + failed + " couldn't upload — try those again.";
+                    status.textContent = done + ' added, ' + failed + " couldn't upload. Try those again.";
                 } else {
                     status.className = 'tbup-status tbup-status--error';
-                    status.textContent = "Upload failed — try again.";
+                    status.textContent = "Upload failed. Try again.";
                 }
             });
         });

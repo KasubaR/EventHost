@@ -57,7 +57,7 @@ class RsvpAwaitingApprovalNotification extends Notification implements ShouldQue
     {
         return [
             'title' => 'RSVP awaiting your review: '.$this->event->name,
-            'body' => $this->guest->name.' accepted — approve or decline before their pass goes out.',
+            'body' => $this->guest->name.' accepted. Approve or decline before their pass goes out.',
             'data' => [
                 'type' => 'rsvp_awaiting_approval',
                 'event_id' => (string) $this->event->id,

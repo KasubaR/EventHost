@@ -120,7 +120,7 @@ class WhatsAppInboundRsvpService
         if ($status === RsvpStatus::Accepted && $guest->hasEntryPassFor($rsvp, $event)) {
             $pngUrl = $guest->entryPassPngUrl();
             if (is_string($pngUrl) && $pngUrl !== '') {
-                $caption .= "\n\nYour entry pass is attached — show it at the door.";
+                $caption .= "\n\nYour entry pass is attached. Show it at the door.";
                 $passUrl = $guest->passPageUrl();
                 if ($passUrl !== null) {
                     $caption .= "\nSave it or open it any time: {$passUrl}";

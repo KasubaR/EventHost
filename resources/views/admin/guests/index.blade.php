@@ -20,7 +20,7 @@
                     <span>Guests</span>
                 </nav>
                 <h1 class="dph-title">{{ $ev->name }}</h1>
-                <p class="dph-sub">Owner: {{ $ev->user?->email ?? '—' }}</p>
+                <p class="dph-sub">Owner: {{ $ev->user?->email ?? '-' }}</p>
             </div>
             <div class="admin-actions">
                 <a href="{{ route('admin.events.show', $ev) }}" class="evt-btn-outline dash-header-cta">Back to event</a>
@@ -49,7 +49,7 @@
             @forelse ($guests as $guest)
                 <tr>
                     <td>{{ $guest->name }}</td>
-                    <td>{{ $guest->email ?? '—' }}</td>
+                    <td>{{ $guest->email ?? '-' }}</td>
                     <td>{{ $guest->created_at->format('M j, Y') }}</td>
                 </tr>
             @empty

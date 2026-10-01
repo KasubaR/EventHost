@@ -49,7 +49,7 @@ class ContributionReceiptNotification extends Notification implements ShouldQueu
             ->line('Total paid so far: '.$contribution->currency.' '.number_format((float) $contribution->amount_paid, 2).' of '.number_format((float) $contribution->target_amount, 2).'.');
 
         if ($contribution->isCompleted()) {
-            $mail->line('Your contribution is now paid in full — thank you!');
+            $mail->line('Your contribution is now paid in full. Thank you!');
         } else {
             $mail->line('Remaining balance: '.$contribution->currency.' '.number_format($remaining, 2).'.')
                 ->action('Pay the rest', route('contributions.show', $contribution->reference, absolute: true));

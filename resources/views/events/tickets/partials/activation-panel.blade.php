@@ -74,7 +74,7 @@
     <div class="evt-section">
         <div class="evt-section-body">
             <p class="evt-muted">Public ticket page: <a href="{{ route('events.public', $event->slug) }}" class="evt-public-url">{{ url('/e/'.$event->slug) }}</a></p>
-            <p class="evt-muted">Checkout is not live yet — buyers cannot pay until the next ticketing phase ships.</p>
+            <p class="evt-muted">Checkout is not live yet. Buyers cannot pay until the next ticketing phase ships.</p>
         </div>
     </div>
 @endif

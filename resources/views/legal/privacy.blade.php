@@ -48,7 +48,7 @@
                     Shopping Plaza, Maposa Road, Lusaka, Zambia.
                 </p>
                 <p>
-                    In this policy, "we" and "us" mean that company. "You" means whoever is reading it —
+                    In this policy, "we" and "us" mean that company. "You" means whoever is reading it:
                     a host with an account, or a guest who received an invitation from one.
                 </p>
             </section>
@@ -66,7 +66,7 @@
                 <h3>Payment information</h3>
                 <p>
                     Event credits are purchased through our payment provider, Lenco. Card and mobile-money
-                    details are entered on their systems, not ours — <strong>we never see or store your full
+                    details are entered on their systems, not ours. <strong>We never see or store your full
                     card number or mobile-money PIN</strong>. We keep a record of each transaction: amount,
                     currency, reference, status and timestamp.
                 </p>
@@ -78,7 +78,7 @@
             <section>
                 <h2 id="guest-data">3. Guest data you upload</h2>
                 <p>
-                    When you add or import a guest list, you give us other people's information — typically
+                    When you add or import a guest list, you give us other people's information, typically
                     names, email addresses and phone numbers. When those guests respond, we also store their
                     RSVP status, party size, dietary notes or other answers you asked for, their check-in
                     time if you scan them at the door, and any photos they upload to your event gallery.
@@ -86,8 +86,8 @@
                 <p>
                     <strong>You are responsible for that data.</strong> You must have a legitimate reason to
                     hold your guests' contact details and to pass them to us for the purpose of inviting
-                    them. We process that data on your instructions — to deliver invitations, collect RSVPs,
-                    remind guests about your event and run check-in — and for nothing else. We do not use your guest list to market to
+                    them. We process that data on your instructions (to deliver invitations, collect RSVPs,
+                    remind guests about your event and run check-in) and for nothing else. We do not use your guest list to market to
                     those guests, and we do not sell it.
                 </p>
             </section>
@@ -123,7 +123,7 @@
                     @endif
                     <li>To run guest check-in, QR badges and table photo uploads</li>
                     <li>To process event credit purchases and keep a billing history</li>
-                    <li>To send service email you cannot opt out of — email verification, password resets, and notices when your account email is changed</li>
+                    <li>To send service email you cannot opt out of: email verification, password resets, and notices when your account email is changed</li>
                     <li>To send optional notification email, controlled by the toggles in your account settings</li>
                     <li>To publish a review on our homepage, but only one you wrote and submitted yourself, and only after we approve it</li>
                     <li>To keep the service secure, prevent abuse, and meet our legal obligations</li>
@@ -134,15 +134,15 @@
                 <h2 id="sharing">5. Who we share it with</h2>
                 <p>We do not sell personal information. We share it only with the service providers we need to run the platform:</p>
                 <ul>
-                    <li><strong>Lenco</strong> — payment processing for event credits</li>
-                    <li><strong>Our email delivery provider</strong> — delivery of invitation, reminder and account email</li>
+                    <li><strong>Lenco</strong>: payment processing for event credits</li>
+                    <li><strong>Our email delivery provider</strong>: delivery of invitation, reminder and account email</li>
                     @if (config('communications.whatsapp.enabled'))
                         <li>
-                            <strong>Twilio</strong> — delivery of WhatsApp invitations, confirmations and reminders. It receives
+                            <strong>Twilio</strong>: delivery of WhatsApp invitations, confirmations and reminders. It receives
                             the guest's phone number and the message, and their replies come back through it
                         </li>
                     @endif
-                    <li><strong>Our hosting provider</strong> — servers and database storage</li>
+                    <li><strong>Our hosting provider</strong>: servers and database storage</li>
                 </ul>
                 <p>
                     We may also disclose information where we are legally required to, or where it is
@@ -150,7 +150,7 @@
                 </p>
                 <p>
                     Note that <strong>a published event invitation page is public</strong>. Anything you put
-                    on it — including the venue, the date and any photos in the gallery — can be seen by
+                    on it, including the venue, the date and any photos in the gallery, can be seen by
                     anyone with the link, and events listed on our Discover page can be found by anyone.
                 </p>
             </section>
@@ -170,26 +170,26 @@
                      what it always did. Both branches want a lawyer's eye (see CLAUDE.md, Legal Pages). --}}
                 @php $retentionDays = \App\Models\Event::retentionDays(); @endphp
                 <ul>
-                    <li><strong>Account data</strong> — until you delete your account</li>
+                    <li><strong>Account data</strong>: until you delete your account</li>
                     @if ($retentionDays > 0)
                         <li>
-                            <strong>Event and guest data</strong> — until you delete the event. A deleted event stays in
+                            <strong>Event and guest data</strong>: until you delete the event. A deleted event stays in
                             <em>Recently deleted</em> for {{ $retentionDays }} days so you can restore it, then it is
                             permanently removed together with its guest list, RSVPs and uploaded photos and media. We
                             email you about a week before that happens. Deleting your account removes your events
                             straight away, without that waiting period.
                         </li>
                         <li>
-                            <strong>Events with ticket sales or contribution payments</strong> — not permanently removed
+                            <strong>Events with ticket sales or contribution payments</strong>: not permanently removed
                             when you delete them. We keep the event and its orders or payments, including the buyer or
                             contributor details attached to them, for as long as needed for tax and accounting, in the
                             same way as other payment records below. You can still restore such an event.
                         </li>
                     @else
-                        <li><strong>Event and guest data</strong> — until you delete the event, or delete your account</li>
+                        <li><strong>Event and guest data</strong>: until you delete the event, or delete your account</li>
                     @endif
                     <li>
-                        <strong>Payment records</strong> — kept as long as required for tax and accounting purposes, even
+                        <strong>Payment records</strong>: kept as long as required for tax and accounting purposes, even
                         after account deletion. That includes your own subscription and credit purchases: when you delete
                         your account we keep the payments that went through, with the name and email address you paid
                         under, and delete the ones that never did.
@@ -198,9 +198,9 @@
                 <p>
                     Deleting your account from account settings removes your profile, your events and their
                     guest lists. We cannot delete an account while one of its events has ticket sales, refunds or
-                    contribution payments on record, or while a payment is still being processed — those records are
+                    contribution payments on record, or while a payment is still being processed. Those records are
                     kept, so contact support to wind the event down first. Reviews you have written are kept when you delete
-                    your account, under the name and business details you gave when you wrote them — including any published
+                    your account, under the name and business details you gave when you wrote them, including any published
                     on our homepage. Your profile photo is not kept with them. Ask us and we will delete a review.
                 </p>
             </section>
@@ -210,7 +210,7 @@
                 <p>You can ask us to:</p>
                 <ul>
                     <li>Give you a copy of the personal information we hold about you</li>
-                    <li>Correct anything inaccurate — most of it you can edit yourself in account settings</li>
+                    <li>Correct anything inaccurate. Most of it you can edit yourself in account settings</li>
                     <li>Delete your account and its data</li>
                     <li>Stop sending you optional email, which you can also do from the notification toggles</li>
                 </ul>

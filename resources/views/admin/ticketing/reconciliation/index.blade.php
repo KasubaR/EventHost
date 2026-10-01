@@ -9,7 +9,7 @@
         <div class="dph-inner">
             <div>
                 <h1 class="dph-title">Ticketing Reconciliation</h1>
-                <p class="dph-sub">Prove the chain balances — Lenco payment → order → tickets → ledger → payouts — and trace any single payment.</p>
+                <p class="dph-sub">Prove the chain balances (Lenco payment → order → tickets → ledger → payouts) and trace any single payment.</p>
             </div>
         </div>
     </x-slot>
@@ -43,7 +43,7 @@
                         @foreach ($searchResults as $order)
                             <tr>
                                 <td>{{ $order->order_reference }}</td>
-                                <td>{{ $order->event->name ?? '—' }}</td>
+                                <td>{{ $order->event->name ?? '-' }}</td>
                                 <td>{{ $order->buyer_name }}<br><span class="admin-muted">{{ $order->buyer_email }}</span></td>
                                 <td>{{ $order->status->label() }}</td>
                                 <td>{{ \App\Support\TicketingSettings::formatZmw($order->buyer_total) }}</td>
@@ -58,7 +58,7 @@
 
     <div class="admin-panel-card admin-mt-lg">
         <h2>System health checks</h2>
-        <p class="admin-muted">Every check should read zero. A count above zero needs a look — click a row to open its full trace.</p>
+        <p class="admin-muted">Every check should read zero. A count above zero needs a look. Click a row to open its full trace.</p>
 
         @foreach ($checks as $check)
             <div class="admin-mt-lg">

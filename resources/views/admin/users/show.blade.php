@@ -48,7 +48,7 @@
     <div class="admin-detail-grid">
         <div class="admin-panel-card">
             <h2>Account</h2>
-            <p class="admin-muted admin-mt-sm">Status: {{ $u->status }} · Events: {{ $u->events_count }} · Credits: {{ $u->event_credits }} · Phone: {{ $u->phone ?? '—' }}</p>
+            <p class="admin-muted admin-mt-sm">Status: {{ $u->status }} · Events: {{ $u->events_count }} · Credits: {{ $u->event_credits }} · Phone: {{ $u->phone ?? '-' }}</p>
             <p class="admin-muted">Registered {{ $u->created_at->format('M j, Y g:i a') }}</p>
 
             @if(auth('admin')->user()?->can('users.manage_status'))
@@ -96,7 +96,7 @@
                         @method('PATCH')
                         <label for="user-email">Account email</label>
                         <input id="user-email" type="email" name="email" value="{{ old('email', $u->email) }}" class="profile-input">
-                        <p class="admin-muted" style="margin-top:6px;">Use this if the user lost access to their inbox — password reset and re-verification both go to whatever address is on file. The old address is notified, and the new one has to be re-verified.</p>
+                        <p class="admin-muted" style="margin-top:6px;">Use this if the user lost access to their inbox. Password reset and re-verification both go to whatever address is on file. The old address is notified, and the new one has to be re-verified.</p>
                         <div class="admin-actions admin-mt-md">
                             <button type="submit" class="btn-primary">Update email</button>
                         </div>
@@ -124,7 +124,7 @@
                         <p class="admin-muted" style="margin-bottom:10px;">
                             Requested {{ $pendingEnterpriseRequest->created_at->format('M j, Y g:i a') }}
                             @if ($pendingEnterpriseRequest->message)
-                                — "{{ $pendingEnterpriseRequest->message }}"
+                                · "{{ $pendingEnterpriseRequest->message }}"
                             @endif
                         </p>
                         <form method="post" action="{{ route('admin.users.enterprise-request.dismiss', [$u, $pendingEnterpriseRequest]) }}" class="profile-form" data-confirm="Mark this request as handled?">
@@ -138,7 +138,7 @@
                 <div class="admin-mt-md">
                     <h3 style="font-size:14px;font-weight:600;margin-bottom:8px;">Custom Enterprise quote</h3>
                     <p class="admin-muted" style="margin-bottom:10px;">
-                        After a Contact Sales deal, set the amount this user should pay. It appears only on their billing Custom card — never on the public homepage.
+                        After a Contact Sales deal, set the amount this user should pay. It appears only on their billing Custom card, never on the public homepage.
                     </p>
 
                     @if ($pendingCustomQuote)
@@ -291,7 +291,7 @@
                     <tbody>
                     @forelse ($creditHistory as $entry)
                         <tr>
-                            <td>{{ $entry->created_at?->format('M j, Y H:i') ?? '—' }}</td>
+                            <td>{{ $entry->created_at?->format('M j, Y H:i') ?? '-' }}</td>
                             <td>{{ $entry->reasonLabel() }}</td>
                             <td class="{{ $entry->delta < 0 ? 'admin-credit-spend' : 'admin-credit-grant' }}">
                                 {{ $entry->delta > 0 ? '+' : '' }}{{ $entry->delta }}
@@ -303,7 +303,7 @@
                                 @elseif ($entry->payment)
                                     {{ \App\Support\BillingPlan::labelForPlanKey($entry->payment->plan_key) }}
                                 @else
-                                    {{ $entry->note ?? '—' }}
+                                    {{ $entry->note ?? '-' }}
                                 @endif
                             </td>
                         </tr>

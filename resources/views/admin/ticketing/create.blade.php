@@ -21,7 +21,7 @@
                     <span>Create</span>
                 </nav>
                 <h1 class="dph-title">Create ticketed event</h1>
-                <p class="dph-sub">Assign the event to a client account. You can add ticket types and activate sales from the review page — no event credit.</p>
+                <p class="dph-sub">Assign the event to a client account. You can add ticket types and activate sales from the review page. No event credit.</p>
             </div>
             <a href="{{ route('admin.ticketing.index') }}" class="evt-btn-outline">Back to queue</a>
         </div>
@@ -47,7 +47,7 @@
                     <option value="">Select a client…</option>
                     @foreach ($clients as $client)
                         <option value="{{ $client->id }}" @selected((int) old('user_id', $preselectedUserId) === $client->id)>
-                            {{ $client->name }} — {{ $client->email }}
+                            {{ $client->name }} ({{ $client->email }})
                         </option>
                     @endforeach
                 </select>

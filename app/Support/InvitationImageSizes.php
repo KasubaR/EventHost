@@ -93,7 +93,7 @@ final class InvitationImageSizes
         $hint = "Recommended size: {$width} × {$height} px ({$shape}).";
 
         if ($slot === 'cover' && in_array(InvitationLayoutVariant::normalize($variant), self::COVER_CROPPED_TALL, true)) {
-            $hint .= ' Keep faces near the centre — the sides are cropped.';
+            $hint .= ' Keep faces near the centre. The sides are cropped.';
         }
 
         return $hint;

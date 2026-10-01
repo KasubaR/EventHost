@@ -39,7 +39,7 @@
     @endpush
 @endunless
 
-@section('title', 'Preview — '.$event->name.' | '.config('app.name'))
+@section('title', 'Preview: '.$event->name.' | '.config('app.name'))
 
 @section('content')
 
@@ -55,7 +55,7 @@
             @if ($event->is_published)
                 <span class="evt-preview-bar-note">
                     <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
-                    {{ $event->is_public ? 'Live' : 'Published — private' }}
+                    {{ $event->is_public ? 'Live' : 'Published (private)' }}
                 </span>
             @else
                 <form method="post" action="{{ route('events.publish', $event) }}">
@@ -72,7 +72,7 @@
             <div class="evt-preview-palette" role="status">
                 <i class="fa-solid fa-palette" aria-hidden="true"></i>
                 <span class="evt-preview-palette-text">
-                    Previewing the <strong>{{ $previewPalette['label'] }}</strong> palette — not saved
+                    Previewing the <strong>{{ $previewPalette['label'] }}</strong> palette (not saved)
                 </span>
                 <a href="{{ route('events.preview', array_filter(['event' => $event, 'from' => request()->query('from') === 'show' ? 'show' : null])) }}" class="evt-preview-palette-reset">
                     Show saved colours
@@ -84,7 +84,7 @@
     @unless ($event->is_public)
         <div class="evt-session-banner evt-session-banner--info">
             <i class="fa-solid fa-lock"></i>
-            Private event — guests only ever see this through their personal RSVP link. This page is host-only.
+            Private event. Guests only ever see this through their personal RSVP link. This page is host-only.
         </div>
     @endunless
 
@@ -101,8 +101,8 @@
             'invitation' => $invitation,
             'isPreview' => true,
             'previewLabel' => $previewPalette
-                ? 'Preview — your invitation in the '.$previewPalette['label'].' palette. Guests still see your saved colours until you save this palette.'
-                : 'Preview — this is exactly how your invitation looks to guests.',
+                ? 'Preview: your invitation in the '.$previewPalette['label'].' palette. Guests still see your saved colours until you save this palette.'
+                : 'Preview: this is exactly how your invitation looks to guests.',
         ])
     @endif
 

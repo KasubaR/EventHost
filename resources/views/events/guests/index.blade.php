@@ -6,7 +6,7 @@
 
     @php $isRegistrations = $event->isFreeRegistration(); @endphp
 
-    <x-slot name="title">{{ $isRegistrations ? 'Registrations' : 'Guests' }} — {{ $event->name }}</x-slot>
+    <x-slot name="title">{{ $isRegistrations ? 'Registrations' : 'Guests' }} | {{ $event->name }}</x-slot>
 
     <x-slot name="pageHeader">
         <div class="dph-inner">
@@ -53,9 +53,9 @@
     @elseif (session('status') === 'guest-whatsapp-sent')
         <div class="evt-admin-flash">WhatsApp invitation sent.</div>
     @elseif (session('status') === 'guest-whatsapp-invalid-phone')
-        <div class="evt-admin-flash">Couldn't send — this guest needs a valid Zambian phone number.</div>
+        <div class="evt-admin-flash">Couldn't send. This guest needs a valid Zambian phone number.</div>
     @elseif (session('status') === 'guest-whatsapp-rate-limited')
-        <div class="evt-admin-flash">This event has hit its hourly WhatsApp sending limit — try again shortly.</div>
+        <div class="evt-admin-flash">This event has hit its hourly WhatsApp sending limit. Try again shortly.</div>
     @elseif (session('status') === 'guest-whatsapp-disabled')
         <div class="evt-admin-flash">WhatsApp sending isn't set up for this account yet.</div>
     @elseif (session('status') === 'guest-whatsapp-failed')
@@ -64,7 +64,7 @@
         <div class="evt-admin-flash">
             Import finished. Added {{ session('import_created', 0) }}, skipped {{ session('import_skipped', 0) }}.
             @if (session('import_capped', 0) > 0)
-                {{ session('import_capped') }} more {{ Str::plural('guest', session('import_capped')) }} weren't added — this event is at its plan's guest limit.
+                {{ session('import_capped') }} more {{ Str::plural('guest', session('import_capped')) }} weren't added. This event is at its plan's guest limit.
             @endif
         </div>
     @elseif (session('status') === 'guests-bulk-group')
@@ -295,11 +295,11 @@
                                             <span class="evt-guest-contact-line">{{ $guestRow->phone }}</span>
                                         @endif
                                         @if (!$guestRow->email && !$guestRow->phone)
-                                            <span class="evt-muted">—</span>
+                                            <span class="evt-muted">-</span>
                                         @endif
                                     </td>
-                                    <td>{{ $guestRow->group?->name ?? '—' }}</td>
-                                    <td>{{ $guestRow->tableLabel() ?? '—' }}</td>
+                                    <td>{{ $guestRow->group?->name ?? '-' }}</td>
+                                    <td>{{ $guestRow->tableLabel() ?? '-' }}</td>
                                     <td>
                                         @if ($rsvpRow)
                                             <span class="evt-pill evt-pill--{{ $rsvpRow->status->value }}">{{ ucfirst($rsvpRow->status->value) }}</span>
@@ -320,7 +320,7 @@
                                             <span class="evt-pill evt-pill--pending">Pending</span>
                                         @endif
                                     </td>
-                                    <td>{{ $rsvpRow && $rsvpRow->status->countsTowardGuestLimit() ? $rsvpRow->attendee_count : '—' }}</td>
+                                    <td>{{ $rsvpRow && $rsvpRow->status->countsTowardGuestLimit() ? $rsvpRow->attendee_count : '-' }}</td>
                                     <td>
                                         @if ($guestRow->invitation_token === null)
                                             {{-- No personal invite link was ever issued — this row came

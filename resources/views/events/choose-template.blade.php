@@ -4,13 +4,13 @@
         <link rel="stylesheet" href="{{ asset('css/templates.css') }}">
     @endpush
 
-    <x-slot name="title">Choose invitation layout — {{ $event->name }}</x-slot>
+    <x-slot name="title">Choose invitation layout | {{ $event->name }}</x-slot>
 
     <x-slot name="pageHeader">
         <div class="dph-inner">
             <div>
                 <h1 class="dph-title">Choose an invitation layout</h1>
-                <p class="dph-sub">{{ $event->name }} — preview styles, then pick one to customize colors and sections.</p>
+                <p class="dph-sub">{{ $event->name }}: preview styles, then pick one to customize colors and sections.</p>
             </div>
             <div class="evt-card-actions">
                 <a href="{{ route('events.edit', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-arrow-left"></i> Back to edit event</a>
@@ -21,7 +21,7 @@
     @include('events.partials.steps', ['current' => 3])
 
     @if (session('status') === 'draft-saved')
-        <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Details saved — choose a layout below.</div>
+        <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Details saved. Choose a layout below.</div>
     @endif
 
     @if ($errors->has('invitation_template_id'))
@@ -86,9 +86,9 @@
                         </form>
                     @else
                         @if (auth()->user()?->isActive())
-                            <p class="tpl-tier-lock-msg">Requires {{ $tpl->requiredTier()->label() }}. Preview anytime — upgrade to apply.</p>
+                            <p class="tpl-tier-lock-msg">Requires {{ $tpl->requiredTier()->label() }}. Preview anytime. Upgrade to apply.</p>
                         @else
-                            <p class="tpl-tier-lock-msg">Requires an active subscription. Preview anytime — subscribe to apply.</p>
+                            <p class="tpl-tier-lock-msg">Requires an active subscription. Preview anytime. Subscribe to apply.</p>
                         @endif
                         <div class="tpl-tier-actions">
                             <a href="{{ \App\Support\BillingPlan::checkoutUrlForTier($tpl->requiredTier()) }}" class="btn-outline tpl-btn-small">Upgrade to {{ $tpl->requiredTier()->label() }}</a>

@@ -27,7 +27,7 @@
                 <hr class="rsvp-divider">
                 <p class="rsvp-lead">
                     @if ($isPrivateOpenRsvp ?? false)
-                        Enter your details and let the host know if you can make it — we'll email you a personal link so you can view or change your response anytime.
+                        Enter your details and let the host know if you can make it. We'll email you a personal link so you can view or change your response anytime.
                     @else
                         Enter your details and let the host know if you can make it.
                     @endif

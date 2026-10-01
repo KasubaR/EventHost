@@ -75,8 +75,8 @@
                     <td>{{ $log->channel }}</td>
                     <td>{{ $log->type }}</td>
                     <td>{{ $log->status }}</td>
-                    <td>{{ $log->event?->name ?? '—' }}</td>
-                    <td>{{ $log->guest?->name ?? '—' }}</td>
+                    <td>{{ $log->event?->name ?? '-' }}</td>
+                    <td>{{ $log->guest?->name ?? '-' }}</td>
                 </tr>
             @empty
                 <tr><td colspan="6" class="admin-muted">No log rows.</td></tr>

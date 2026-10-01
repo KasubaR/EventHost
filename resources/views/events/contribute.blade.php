@@ -29,7 +29,7 @@
             <div class="ctb-amount-banner">
                 <span>Requested contribution</span>
                 <strong>K{{ number_format((float) $event->contribution_amount, 2) }}</strong>
-                <p class="ctb-amount-note">You can pay this in one go or in installments — enter what you're paying now below.</p>
+                <p class="ctb-amount-note">You can pay this in one go or in installments. Enter what you're paying now below.</p>
             </div>
 
             <div class="tkc-checkout-grid">

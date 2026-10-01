@@ -221,7 +221,7 @@ class InvitationTemplate extends Model
                     'schedule' => [
                         ['title' => 'Ceremony', 'time' => '4:00 PM', 'detail' => 'The Greenhouse, Botanical Gardens'],
                         ['title' => 'Cocktail hour', 'time' => '5:00 PM', 'detail' => 'Garden terrace'],
-                        ['title' => 'Reception', 'time' => '6:00 PM', 'detail' => 'The Atrium — dinner & dancing'],
+                        ['title' => 'Reception', 'time' => '6:00 PM', 'detail' => 'The Atrium: dinner & dancing'],
                     ],
                     'wi_couple_caption' => 'Smart casual · Modern elegance',
                 ],
@@ -265,7 +265,7 @@ class InvitationTemplate extends Model
                     'wi2_invite_formal' => 'Together with their families',
                     'wi2_invite_body' => "request the honour of your presence\nas they exchange vows and begin\ntheir life together in love",
                     'wi2_photo_quote' => '"Two souls with but a single thought, two hearts that beat as one."',
-                    'wi2_photo_quote_cite' => '— Friedrich Halm',
+                    'wi2_photo_quote_cite' => 'Friedrich Halm',
                     'wi2_footer_monogram' => 'P&B',
                     'wi2_footer_legal' => 'With Love & Gratitude',
                 ],
@@ -298,7 +298,7 @@ class InvitationTemplate extends Model
                     ],
                 ],
                 'content' => [
-                    'story' => "We first met at a friend's kitchen party in Kabulonga, arguing over the best nshima in town. Neither of us remembers who won.\n\nOur first date was a slow afternoon by the Kafue River — grilled bream, a long drive home, and a promise to do it again the next weekend.\n\nOn the evening we watched our first sunset together again, Mutale asked. Chilufya said yes before the question was finished.",
+                    'story' => "We first met at a friend's kitchen party in Kabulonga, arguing over the best nshima in town. Neither of us remembers who won.\n\nOur first date was a slow afternoon by the Kafue River: grilled bream, a long drive home, and a promise to do it again the next weekend.\n\nOn the evening we watched our first sunset together again, Mutale asked. Chilufya said yes before the question was finished.",
                     'schedule' => [
                         ['time' => '1:30 PM', 'title' => 'Guests arrive', 'detail' => 'Find your seat and enjoy live music.'],
                         ['time' => '2:00 PM', 'title' => 'Ceremony', 'detail' => 'Vows and rings at the chapel.'],
@@ -306,7 +306,7 @@ class InvitationTemplate extends Model
                         ['time' => '5:00 PM', 'title' => 'Dinner', 'detail' => 'Three-course meal and toasts.'],
                         ['time' => '8:00 PM', 'title' => 'First dance & party', 'detail' => 'Dancing until midnight.'],
                     ],
-                    'wi_couple_caption' => 'Formal — navy, gold and soft neutrals',
+                    'wi_couple_caption' => 'Formal: navy, gold and soft neutrals',
                 ],
             ];
         } elseif ($this->slug === 'wedding-dusty-blue') {
@@ -337,7 +337,7 @@ class InvitationTemplate extends Model
                     ],
                 ],
                 'content' => [
-                    'story' => "We met through friends at church in Livingstone and talked long after everyone else had gone home.\n\nOur first date was a sunset cruise on the Zambezi — hippos, a borrowed jacket, and a plan to do it again soon.\n\nAt Victoria Falls, with the spray in the air, Bwalya asked. Namukolo laughed, cried and said yes.",
+                    'story' => "We met through friends at church in Livingstone and talked long after everyone else had gone home.\n\nOur first date was a sunset cruise on the Zambezi: hippos, a borrowed jacket, and a plan to do it again soon.\n\nAt Victoria Falls, with the spray in the air, Bwalya asked. Namukolo laughed, cried and said yes.",
                     'schedule' => [
                         ['time' => '3:00 PM', 'title' => 'Guests arrive', 'detail' => 'Welcome drinks and live music.'],
                         ['time' => '4:00 PM', 'title' => 'Ceremony', 'detail' => 'Vows and rings by the river.'],
@@ -345,7 +345,7 @@ class InvitationTemplate extends Model
                         ['time' => '6:30 PM', 'title' => 'Dinner', 'detail' => 'Dinner and toasts.'],
                         ['time' => '8:30 PM', 'title' => 'First dance & party', 'detail' => 'Dancing into the night.'],
                     ],
-                    'wi_couple_caption' => 'Formal — soft blues and neutrals',
+                    'wi_couple_caption' => 'Formal: soft blues and neutrals',
                 ],
             ];
         } elseif ($this->slug === 'wedding-invitation') {
@@ -375,7 +375,7 @@ class InvitationTemplate extends Model
                     ],
                 ],
                 'content' => [
-                    'story' => 'It began with a glance across a crowded room — the kind that makes time pause. From that moment, they knew. Through seasons of laughter and quiet evenings, their love grew into something timeless. Now, surrounded by all the people they hold dear, they invite you to witness the beginning of forever.',
+                    'story' => 'It began with a glance across a crowded room, the kind that makes time pause. From that moment, they knew. Through seasons of laughter and quiet evenings, their love grew into something timeless. Now, surrounded by all the people they hold dear, they invite you to witness the beginning of forever.',
                     'schedule' => [
                         ['title' => 'Ceremony', 'detail' => "St. Mary's Chapel", 'time' => '3:00 PM · Doors open 2:30'],
                         ['title' => 'Reception', 'detail' => 'The Grand Pavilion', 'time' => '5:30 PM · Dinner & Dancing'],
@@ -398,7 +398,7 @@ class InvitationTemplate extends Model
             $event->invitation_customization = [
                 'schema_version' => InvitationCustomizationService::CURRENT_SCHEMA_VERSION,
                 'content' => [
-                    'story' => 'We met at a friend\'s kitchen party and talked until the lights went out. Six years, two cities and one proposal later, we are ready to say "I do" — and we would love you there.',
+                    'story' => 'We met at a friend\'s kitchen party and talked until the lights went out. Six years, two cities and one proposal later, we are ready to say "I do", and we would love you there.',
                     'schedule' => [
                         ['time' => '10:00 AM', 'title' => 'Wedding ceremony', 'detail' => 'Lusaka Cathedral of the Holy Cross'],
                         ['time' => '1:00 PM', 'title' => 'Photographs', 'detail' => 'Cathedral gardens'],
@@ -427,7 +427,7 @@ class InvitationTemplate extends Model
         } elseif ($this->slug === 'beauty-for-ashes') {
             $event->name = 'Beauty For Ashes';
             $event->event_type = 'church';
-            $event->description = "New Breed Christian Ministries International\n\nNew Breed of Women Conference — join us for worship, teaching, and fellowship.";
+            $event->description = "New Breed Christian Ministries International\n\nNew Breed of Women Conference. Join us for worship, teaching, and fellowship.";
             $event->venue = 'Off Lime Road, Downtown Area, Lusaka';
             $event->location_name = 'Lusaka, Zambia';
             $event->invitation_customization = [
@@ -453,7 +453,7 @@ class InvitationTemplate extends Model
                         ['role' => 'Minister', 'name' => 'Peter Banda'],
                         ['role' => 'Dr Prophetess', 'name' => 'Bwanga Chibaye'],
                     ],
-                    'venue_note' => '3rd gate after the curve — right next to CM Bakery.',
+                    'venue_note' => '3rd gate after the curve, right next to CM Bakery.',
                     'bfa_conference_theme' => 'All Shades of Purple',
                     'bfa_dress_code' => 'Elegant Attire',
                     'bfa_presenter_line' => 'New Breed Christian Ministries International',
@@ -466,7 +466,7 @@ class InvitationTemplate extends Model
         } elseif ($this->slug === 'graduation-template-2-botanical-blush') {
             $event->name = 'Kasuba Mulenga';
             $event->event_type = 'graduation';
-            $event->description = "Bachelor of Science, Class of {$starts->format('Y')}\n\nFour years of late nights and early mornings — please join us to celebrate the finish line.";
+            $event->description = "Bachelor of Science, Class of {$starts->format('Y')}\n\nFour years of late nights and early mornings. Please join us to celebrate the finish line.";
             $event->venue = 'University Great Hall';
             $event->location_name = 'Lusaka, Zambia';
             $event->event_date = now()->addMonths(2)->startOfDay();
@@ -489,7 +489,7 @@ class InvitationTemplate extends Model
                     ],
                 ],
                 'content' => [
-                    'story' => 'Four years, countless assignments, and a few too many all-nighters later — we made it. Thank you for every bit of support along the way.',
+                    'story' => 'Four years, countless assignments, and a few too many all-nighters later, we made it. Thank you for every bit of support along the way.',
                     'schedule' => [
                         ['title' => 'Ceremony', 'time' => '10:00 AM', 'detail' => 'University Great Hall'],
                         ['title' => 'Reception', 'time' => '1:00 PM', 'detail' => 'Family lunch & photos'],
@@ -508,7 +508,7 @@ class InvitationTemplate extends Model
                     ],
                 ],
                 'content' => [
-                    'story' => 'From a chance meeting to this celebration — we would love you to share the day with us.',
+                    'story' => 'From a chance meeting to this celebration, we would love you to share the day with us.',
                     'schedule' => [
                         ['time' => '4:00 PM', 'title' => 'Ceremony', 'detail' => 'Garden conservatory entrance'],
                         ['time' => '6:00 PM', 'title' => 'Reception', 'detail' => 'Dinner, dancing, and toasts'],

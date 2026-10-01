@@ -53,7 +53,7 @@ class RetryLencoTicketPayment implements ShouldQueue
             'ref' => $this->payment->payment_reference,
             'amount' => (float) $this->payment->amount,
             'currency' => $this->payment->currency,
-            'description' => 'Tickets — '.($order->event?->name ?? 'event'),
+            'description' => 'Tickets: '.($order->event?->name ?? 'event'),
             'reference' => $this->payment->payment_reference,
         ];
 

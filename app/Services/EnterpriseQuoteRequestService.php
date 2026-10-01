@@ -22,7 +22,7 @@ class EnterpriseQuoteRequestService
 
             if (EnterpriseQuoteRequest::pendingFor($user) !== null) {
                 throw new \InvalidArgumentException(
-                    'You already have a pending Enterprise request — our team will be in touch.'
+                    'You already have a pending Enterprise request. Our team will be in touch.'
                 );
             }
 

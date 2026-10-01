@@ -3,7 +3,7 @@
         <link rel="stylesheet" href="{{ asset('css/events-admin.css') }}">
     @endpush
 
-    <x-slot name="title">Revenue — {{ $adminEvent->name }}</x-slot>
+    <x-slot name="title">Revenue | {{ $adminEvent->name }}</x-slot>
 
     <x-slot name="pageHeader">
         <div class="dph-inner">
@@ -73,11 +73,11 @@
                         <tr>
                             <td>{{ $order->order_reference }}</td>
                             <td>{{ $order->buyer_name }}<br><span class="admin-muted">{{ $order->buyer_email }}</span></td>
-                            <td>{{ $order->paid_at?->format('j M Y H:i') ?? '—' }}</td>
+                            <td>{{ $order->paid_at?->format('j M Y H:i') ?? '-' }}</td>
                             <td>{{ \App\Support\TicketingSettings::formatZmw($order->face_value) }}</td>
                             <td>{{ \App\Support\TicketingSettings::formatZmw($order->commission_amount) }}</td>
                             <td>{{ \App\Support\TicketingSettings::formatZmw($order->host_amount) }}</td>
-                            <td>{{ $order->payment?->payment_method ?? '—' }} · {{ $order->payment?->status ?? '—' }}</td>
+                            <td>{{ $order->payment?->payment_method ?? '-' }} · {{ $order->payment?->status ?? '-' }}</td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -105,8 +105,8 @@
                         <tr>
                             <td>{{ $payout->paid_on->format('j M Y') }}</td>
                             <td>{{ \App\Support\TicketingSettings::formatZmw($payout->amount) }}</td>
-                            <td>{{ $payout->note ?? '—' }}</td>
-                            <td>{{ $payout->paidBy?->name ?? '—' }}</td>
+                            <td>{{ $payout->note ?? '-' }}</td>
+                            <td>{{ $payout->paidBy?->name ?? '-' }}</td>
                         </tr>
                     @endforeach
                 </tbody>

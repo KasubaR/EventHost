@@ -17,7 +17,7 @@
 <section class="wi-rsvp-section wi-reveal" data-wi-reveal>
     <p class="wi-section-tag">Kindly Reply</p>
     <h2 class="wi-section-title">Will you <em>join us?</em></h2>
-    <div class="wi-orn" aria-hidden="true">— ◆ —</div>
+    <div class="wi-orn" aria-hidden="true">· ◆ ·</div>
     @if ($rsvpNote !== '')
         <p class="wi-section-body">{{ $rsvpNote }}</p>
     @endif

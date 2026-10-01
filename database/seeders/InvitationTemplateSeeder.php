@@ -216,7 +216,7 @@ class InvitationTemplateSeeder extends Seeder
             [
                 'slug' => 'slate-minimal',
                 'name' => 'Classic',
-                'description' => 'Text-only standard invitation — no photos needed. Differentiate your page with colors, fonts, and sections under Design. Included on the base plan.',
+                'description' => 'Text-only standard invitation. No photos needed. Differentiate your page with colors, fonts, and sections under Design. Included on the base plan.',
                 'skin' => 'classic',
                 'sort_order' => 10,
                 'category_slugs' => ['wedding'],
@@ -268,7 +268,7 @@ class InvitationTemplateSeeder extends Seeder
             [
                 'slug' => 'graduation-template-2-botanical-blush',
                 'name' => 'Botanical Blush Graduation',
-                'description' => 'Botanical blush graduation layout — split hero, serif headlines, tile details (matches reference design). Pro minimum.',
+                'description' => 'Botanical blush graduation layout: split hero, serif headlines, tile details (matches reference design). Pro minimum.',
                 'skin' => 'classic',
                 'sort_order' => 65,
                 'min_subscription_tier' => SubscriptionTier::Pro->value,

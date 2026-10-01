@@ -18,9 +18,9 @@
     var stepHint = form.querySelector('.auth-step-hint');
 
     var hints = {
-        1: 'Step 1 of 3 — takes about 30 seconds',
-        2: 'Step 2 of 3 — pick a password you will remember',
-        3: 'Step 3 of 3 — optional details, then you are in',
+        1: 'Step 1 of 3. Takes about 30 seconds',
+        2: 'Step 2 of 3. Pick a password you will remember',
+        3: 'Step 3 of 3. Optional details, then you are in',
     };
 
     function showFieldError(input, message) {

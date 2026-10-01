@@ -13,7 +13,7 @@
         <p class="err-code" aria-hidden="true">403</p>
         <span class="err-eyebrow">Access denied</span>
         <h1 id="err-title">That link isn't valid anymore</h1>
-        <p class="err-lead">This usually happens when a link has expired or was already used — verification and some other links only stay valid for a short time.</p>
+        <p class="err-lead">This usually happens when a link has expired or was already used. Verification and some other links only stay valid for a short time.</p>
         <div class="err-ctas">
             @auth
                 <a href="{{ route('verification.notice') }}" class="btn-hero-primary">Request a new link</a>

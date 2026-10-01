@@ -59,7 +59,7 @@
     }
 
     function optionTitle(item) {
-        return item.hint ? item.label + ' — ' + item.hint : item.label;
+        return item.hint ? item.label + ': ' + item.hint : item.label;
     }
 
     // backgroundColor, not background: a colour value can never load a url().

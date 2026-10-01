@@ -73,7 +73,7 @@
             </p>
         @endif
         <img src="{{ route('rsvp.token.entry-pass', ['token' => $guest->invitation_token]) }}"
-             alt="Entry QR code for {{ $card->guestName }} — {{ $card->eventName }}"
+             alt="Entry QR code for {{ $card->guestName }}, {{ $card->eventName }}"
              class="gpass-qr @if ($qrDimmed) gpass-qr--dimmed @endif"
              width="200" height="200" loading="lazy">
         @if ($card->isValid())

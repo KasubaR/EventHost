@@ -16,7 +16,7 @@
         <span class="auth-hero-accent">{{ $eventStaff->event->name }}</span>
       </h1>
       <p class="auth-hero-sub">
-        {{ $eventStaff->inviter->name ?? 'The host' }} added you as <strong>{{ $eventStaff->role->label() }}</strong> — {{ $eventStaff->role->description() }}
+        {{ $eventStaff->inviter->name ?? 'The host' }} added you as <strong>{{ $eventStaff->role->label() }}</strong>: {{ $eventStaff->role->description() }}
         Set a password below to create your account and get straight to it.
       </p>
     </div>

@@ -128,7 +128,7 @@
         }
         if (this.maxBytes > 0 && file.size > this.maxBytes) {
             // Rejected before a single byte leaves the device.
-            this.addRejected(file, 'Too large — max ' + formatBytes(this.maxBytes));
+            this.addRejected(file, 'Too large (max ' + formatBytes(this.maxBytes) + ')');
             return;
         }
 
@@ -310,7 +310,7 @@
             if (xhr.status === 422 && payload.errors && payload.errors.file) {
                 message = payload.errors.file[0];
             } else if (xhr.status === 429) {
-                message = 'Too many uploads — wait a moment';
+                message = 'Too many uploads. Wait a moment';
             } else if (payload.message) {
                 message = payload.message;
             }

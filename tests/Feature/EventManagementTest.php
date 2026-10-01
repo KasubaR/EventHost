@@ -347,7 +347,7 @@ class EventManagementTest extends TestCase
         $response = $this->actingAs($user)->get(route('events.edit', $event));
 
         $response->assertOk();
-        $response->assertSee('Wedding invitation — wording', false);
+        $response->assertSee('Wedding invitation: wording', false);
         $response->assertSee('name="wi_hero_eyebrow"', false);
         $response->assertSee('name="wi_footer_quote"', false);
         $response->assertSee('Background music', false);
@@ -984,7 +984,7 @@ class EventManagementTest extends TestCase
         $this->actingAs($user)->get(route('events.edit', $event))
             ->assertSee('2 guests')
             ->assertSee('already have an invitation or RSVP for this event')
-            ->assertSee('notify them from the guest list');
+            ->assertSee('Notify them from the guest list');
     }
 
     /**

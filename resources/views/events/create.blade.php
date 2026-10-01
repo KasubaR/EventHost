@@ -25,11 +25,11 @@
                 @elseif ($audience === \App\Enums\EventAudience::Public && ! $productKind)
                     <p class="dph-sub">Next, how do people get in?</p>
                 @elseif ($productKind === \App\Enums\EventProductKind::Ticketed)
-                    <p class="dph-sub">Add details and save as a draft — drafts are free. Ticket sales go live after EventHost review, with no event credit.</p>
+                    <p class="dph-sub">Add details and save as a draft. Drafts are free. Ticket sales go live after EventHost review, with no event credit.</p>
                 @elseif ($audience === \App\Enums\EventAudience::Public)
-                    <p class="dph-sub">Add details and save as a draft — drafts are free. EventHost reviews and quotes a price before it goes live, with no event credit.</p>
+                    <p class="dph-sub">Add details and save as a draft. Drafts are free. EventHost reviews and quotes a price before it goes live, with no event credit.</p>
                 @else
-                    <p class="dph-sub">Add your event details, then choose to save as a draft or publish — publishing uses 1 event credit.</p>
+                    <p class="dph-sub">Add your event details, then choose to save as a draft or publish. Publishing uses 1 event credit.</p>
                 @endif
             </div>
             <a href="{{ route($audience === \App\Enums\EventAudience::Public ? 'public-events.index' : 'events.index') }}" class="evt-btn-outline"><i class="fa-solid fa-arrow-left"></i> Back to events</a>
@@ -43,12 +43,12 @@
             <a href="{{ route('events.create', array_filter(['audience' => 'private', 'template' => $templateSlug])) }}" class="evt-kind-card">
                 <span class="evt-kind-card-icon" aria-hidden="true"><i class="fa-solid fa-envelope-open-text"></i></span>
                 <strong>Private event</strong>
-                <span class="evt-kind-card-hint">Wedding, birthday, graduation, baby shower, church event, corporate — a specific invited group, invite-only.</span>
+                <span class="evt-kind-card-hint">Wedding, birthday, graduation, baby shower, church event, corporate. For a specific invited group, invite-only.</span>
             </a>
             <a href="{{ route('events.create', ['audience' => 'public']) }}" class="evt-kind-card">
                 <span class="evt-kind-card-icon" aria-hidden="true"><i class="fa-solid fa-earth-africa"></i></span>
                 <strong>Public event</strong>
-                <span class="evt-kind-card-hint">Concert, conference, festival, workshop, fundraiser — a broad audience who discover, register or buy tickets.</span>
+                <span class="evt-kind-card-hint">Concert, conference, festival, workshop, fundraiser. For a broad audience who discover, register or buy tickets.</span>
             </a>
         </div>
     @elseif ($audience === \App\Enums\EventAudience::Public && ! $productKind)
@@ -58,19 +58,19 @@
             <a href="{{ route('events.create', ['audience' => 'public', 'kind' => 'ticketed']) }}" class="evt-kind-card">
                 <span class="evt-kind-card-icon" aria-hidden="true"><x-ticket-icon /></span>
                 <strong>Ticketed event</strong>
-                <span class="evt-kind-card-hint">Sell tickets through EventHost checkout (Lenco). EventHost reviews sales before they go live — no event credit.</span>
+                <span class="evt-kind-card-hint">Sell tickets through EventHost checkout (Lenco). EventHost reviews sales before they go live. No event credit.</span>
             </a>
             @if (auth()->user()->canMakeEventsPublic())
                 <a href="{{ route('events.create', ['audience' => 'public', 'kind' => 'invitation']) }}" class="evt-kind-card">
                     <span class="evt-kind-card-icon" aria-hidden="true"><i class="fa-solid fa-user-plus"></i></span>
                     <strong>Free registration</strong>
-                    <span class="evt-kind-card-hint">Anyone can register — open RSVP, listed on Discover. EventHost reviews and quotes a price before it goes live — no event credit.</span>
+                    <span class="evt-kind-card-hint">Anyone can register. Open RSVP, listed on Discover. EventHost reviews and quotes a price before it goes live. No event credit.</span>
                 </a>
             @else
                 <div class="evt-kind-card evt-kind-card--locked">
                     <span class="evt-kind-card-icon" aria-hidden="true"><i class="fa-solid fa-user-plus"></i></span>
                     <strong>Free registration <span class="evt-credit-badge">Base</span></strong>
-                    <span class="evt-kind-card-hint">Open RSVP, listed on Discover, no payment. Requires the Base plan or higher — <a href="{{ \App\Support\BillingPlan::checkoutUrlForTier(\App\Enums\SubscriptionTier::Base) }}">upgrade to unlock it</a>.</span>
+                    <span class="evt-kind-card-hint">Open RSVP, listed on Discover, no payment. Requires the Base plan or higher. <a href="{{ \App\Support\BillingPlan::checkoutUrlForTier(\App\Enums\SubscriptionTier::Base) }}">Upgrade to unlock it</a>.</span>
                 </div>
             @endif
         </div>
@@ -105,12 +105,12 @@
                     <button type="submit" class="btn-primary">
                         Continue to tickets <i class="fa-solid fa-arrow-right"></i>
                     </button>
-                    <span class="evt-muted">Ticket sales go live after EventHost review — no event credit.</span>
+                    <span class="evt-muted">Ticket sales go live after EventHost review. No event credit.</span>
                 @elseif ($audience === \App\Enums\EventAudience::Public)
                     <button type="submit" class="btn-primary">
                         Next <i class="fa-solid fa-arrow-right"></i>
                     </button>
-                    <span class="evt-muted">EventHost reviews and quotes a price after save — no event credit.</span>
+                    <span class="evt-muted">EventHost reviews and quotes a price after save. No event credit.</span>
                 @else
                     <button type="submit" class="btn-primary">
                         Next <i class="fa-solid fa-arrow-right"></i>

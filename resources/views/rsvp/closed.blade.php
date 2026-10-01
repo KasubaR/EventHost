@@ -13,7 +13,7 @@
             <div class="evt-rsvp-banner evt-rsvp-banner--closed rsvp-closed-banner">
                 @if ($guestListFull ?? false)
                     <i class="fa-solid fa-users"></i>
-                    This event's guest list is full — the host isn't accepting new RSVPs from this link right now.
+                    This event's guest list is full. The host isn't accepting new RSVPs from this link right now.
                 @elseif ($event->isLocked())
                     <i class="fa-solid fa-champagne-glasses"></i>
                     @if ($guest)

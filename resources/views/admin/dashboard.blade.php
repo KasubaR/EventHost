@@ -159,7 +159,7 @@
                         <tr>
                             <td>{{ $log->channel }}</td>
                             <td>{{ $log->type }}</td>
-                            <td>{{ $log->event?->name ?? '—' }}</td>
+                            <td>{{ $log->event?->name ?? '-' }}</td>
                         </tr>
                     @empty
                         <tr><td colspan="3" class="admin-muted">No failures logged.</td></tr>
@@ -185,9 +185,9 @@
                     @forelse ($pendingTicketingRequests as $ev)
                         <tr>
                             <td>{{ $ev->name }}</td>
-                            <td>{{ $ev->user?->email ?? '—' }}</td>
+                            <td>{{ $ev->user?->email ?? '-' }}</td>
                             <td>{{ $ev->ticket_types_count }}</td>
-                            <td>{{ $ev->ticketing_submitted_at?->format('j M Y H:i') ?? '—' }}</td>
+                            <td>{{ $ev->ticketing_submitted_at?->format('j M Y H:i') ?? '-' }}</td>
                             <td><a href="{{ route('admin.ticketing.show', $ev) }}" class="evt-btn-outline evt-btn-tiny">Review</a></td>
                         </tr>
                     @empty

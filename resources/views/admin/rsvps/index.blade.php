@@ -20,7 +20,7 @@
                     <span>RSVPs</span>
                 </nav>
                 <h1 class="dph-title">{{ $ev->name }}</h1>
-                <p class="dph-sub">Owner: {{ $ev->user?->email ?? '—' }}</p>
+                <p class="dph-sub">Owner: {{ $ev->user?->email ?? '-' }}</p>
             </div>
             <div class="admin-actions">
                 <a href="{{ route('admin.events.show', $ev) }}" class="evt-btn-outline dash-header-cta">Back to event</a>
@@ -49,7 +49,7 @@
             <tbody>
             @forelse ($rsvps as $rsvp)
                 <tr>
-                    <td>{{ $rsvp->guest?->name ?? '—' }}</td>
+                    <td>{{ $rsvp->guest?->name ?? '-' }}</td>
                     <td>{{ $rsvp->status instanceof \BackedEnum ? $rsvp->status->value : $rsvp->status }}</td>
                     <td>{{ $rsvp->attendee_count }}</td>
                     <td>{{ $rsvp->updated_at->format('M j, Y') }}</td>

@@ -42,7 +42,7 @@
                     There are no advertising cookies and no analytics cookies.
                 </p>
                 <p>
-                    Because all of them are strictly necessary, we do not show a cookie consent banner —
+                    Because all of them are strictly necessary, we do not show a cookie consent banner, because
                     there is nothing optional to consent to. If we ever add analytics or marketing cookies,
                     we will ask first.
                 </p>
@@ -79,11 +79,11 @@
                     cookies of their own under their policies.
                 </p>
                 <ul>
-                    <li><strong>Google Fonts</strong> — the DM Sans and Outfit typefaces, on every page</li>
-                    <li><strong>Cloudflare (cdnjs)</strong> — the Font Awesome icon set, on every page</li>
-                    <li><strong>Unsplash</strong> — stock imagery used in some page designs</li>
-                    <li><strong>Lenco</strong> — the checkout flow, when you buy event credits</li>
-                    <li><strong>YouTube</strong> — video testimonials on the homepage. These are <strong>click-to-play</strong>: nothing loads from YouTube until you press play on a video, so no YouTube cookies are set if you never do</li>
+                    <li><strong>Google Fonts</strong>: the DM Sans and Outfit typefaces, on every page</li>
+                    <li><strong>Cloudflare (cdnjs)</strong>: the Font Awesome icon set, on every page</li>
+                    <li><strong>Unsplash</strong>: stock imagery used in some page designs</li>
+                    <li><strong>Lenco</strong>: the checkout flow, when you buy event credits</li>
+                    <li><strong>YouTube</strong>: video testimonials on the homepage. These are <strong>click-to-play</strong>: nothing loads from YouTube until you press play on a video, so no YouTube cookies are set if you never do</li>
                 </ul>
             </section>
 

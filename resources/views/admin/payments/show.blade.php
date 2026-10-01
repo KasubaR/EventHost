@@ -38,9 +38,9 @@
                         <span class="admin-muted">({{ $payment->user->email }})</span>
                     @elseif ($payment->payer_name || $payment->payer_email)
                         {{ $payment->payer_name }}
-                        <span class="admin-muted">({{ $payment->payer_email }}) — account deleted; details kept for accounting</span>
+                        <span class="admin-muted">({{ $payment->payer_email }}). Account deleted; details kept for accounting</span>
                     @else
-                        —
+                        -
                     @endif
                 </dd>
             </dl>
@@ -49,9 +49,9 @@
         <div class="profile-header-card">
             <h2 class="admin-detail-heading">Lenco</h2>
             <dl class="admin-dl">
-                <dt>Transaction ID</dt><dd><code>{{ $payment->lenco_transaction_id ?? '—' }}</code></dd>
-                <dt>Lenco reference</dt><dd><code>{{ $payment->lenco_reference ?? '—' }}</code></dd>
-                <dt>Lenco status</dt><dd>{{ $payment->lenco_status ?? '—' }}</dd>
+                <dt>Transaction ID</dt><dd><code>{{ $payment->lenco_transaction_id ?? '-' }}</code></dd>
+                <dt>Lenco reference</dt><dd><code>{{ $payment->lenco_reference ?? '-' }}</code></dd>
+                <dt>Lenco status</dt><dd>{{ $payment->lenco_status ?? '-' }}</dd>
                 <dt>Webhook received</dt><dd>{{ $payment->webhook_received ? 'Yes' : 'No' }}</dd>
                 @if ($payment->webhook_received_at)
                     <dt>Webhook at</dt><dd>{{ $payment->webhook_received_at->format('M j, Y H:i:s') }}</dd>
@@ -68,12 +68,12 @@
         <div class="profile-header-card">
             <h2 class="admin-detail-heading">Timeline</h2>
             <dl class="admin-dl">
-                <dt>Created</dt><dd>{{ $payment->created_at?->format('M j, Y H:i:s') ?? '—' }}</dd>
-                <dt>Completed</dt><dd>{{ $payment->completed_at?->format('M j, Y H:i:s') ?? '—' }}</dd>
-                <dt>Failed</dt><dd>{{ $payment->failed_at?->format('M j, Y H:i:s') ?? '—' }}</dd>
-                <dt>Cancelled</dt><dd>{{ $payment->cancelled_at?->format('M j, Y H:i:s') ?? '—' }}</dd>
-                <dt>Fulfilled (notified)</dt><dd>{{ $payment->notified_at?->format('M j, Y H:i:s') ?? '—' }}</dd>
-                <dt>Expires</dt><dd>{{ $payment->expires_at?->format('M j, Y H:i:s') ?? '—' }}</dd>
+                <dt>Created</dt><dd>{{ $payment->created_at?->format('M j, Y H:i:s') ?? '-' }}</dd>
+                <dt>Completed</dt><dd>{{ $payment->completed_at?->format('M j, Y H:i:s') ?? '-' }}</dd>
+                <dt>Failed</dt><dd>{{ $payment->failed_at?->format('M j, Y H:i:s') ?? '-' }}</dd>
+                <dt>Cancelled</dt><dd>{{ $payment->cancelled_at?->format('M j, Y H:i:s') ?? '-' }}</dd>
+                <dt>Fulfilled (notified)</dt><dd>{{ $payment->notified_at?->format('M j, Y H:i:s') ?? '-' }}</dd>
+                <dt>Expires</dt><dd>{{ $payment->expires_at?->format('M j, Y H:i:s') ?? '-' }}</dd>
             </dl>
         </div>
     </div>

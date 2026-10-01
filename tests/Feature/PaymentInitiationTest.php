@@ -362,7 +362,7 @@ class PaymentInitiationTest extends TestCase
         $this->actingAs($user)
             ->get(route('billing.show'))
             ->assertOk()
-            ->assertSee('upgrade — keep your unused credit', escape: false)
+            ->assertSee('upgrade and keep your unused credit', escape: false)
             ->assertSee('300', escape: false);
     }
 }

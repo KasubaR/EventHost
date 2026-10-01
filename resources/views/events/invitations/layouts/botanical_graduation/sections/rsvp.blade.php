@@ -23,7 +23,7 @@
                     @endforeach
                 </div>
                 <p class="evt-bg-rsvp-choice-note">Choose a response, then add your details. No account needed.</p>
-                <p class="rsvp-preview-note">Preview only — responses aren't sent.</p>
+                <p class="rsvp-preview-note">Preview only. Responses aren't sent.</p>
             </div>
         @elseif ($rsvpPublicAvailable && filled($event->slug ?? null))
             <div class="evt-bg-rsvp-choice">

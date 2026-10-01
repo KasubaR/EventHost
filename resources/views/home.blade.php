@@ -42,7 +42,7 @@
   <div class="section">
     <div class="section-header">
       <h2>Invitations for every occasion</h2>
-      <p>From intimate gatherings to grand celebrations — beautifully crafted for any event.</p>
+      <p>From intimate gatherings to grand celebrations, beautifully crafted for any event.</p>
     </div>
     <div class="event-types-grid">
       <a class="etc-card etc-card-ticketing" href="{{ auth()->check() ? route('events.create', ['kind' => 'ticketed']) : route('register') }}">
@@ -95,7 +95,7 @@
         <div class="tix-banner-header">
           <span class="tix-eyebrow">Now on Event Host</span>
           <h2>Selling tickets? We've got that covered too</h2>
-          <p>Turn any event into a ticketed one — set your prices, get paid securely, and deliver tickets instantly.</p>
+          <p>Turn any event into a ticketed one. Set your prices, get paid securely, and deliver tickets instantly.</p>
         </div>
         <div class="tix-banner-visual">
           <img src="{{ asset('images/ticket-sells-mockup.webp') }}" alt="A phone displaying an Event Host digital QR ticket" width="240" height="120" loading="lazy" decoding="async">
@@ -117,7 +117,7 @@
             <i class="fa-solid fa-credit-card" aria-hidden="true"></i>
           </div>
           <h3>Buyers Check Out Securely</h3>
-          <p>Guests pay by MTN Money, Airtel Money or card through EventHost Payments — no account required.</p>
+          <p>Guests pay by MTN Money, Airtel Money or card through EventHost Payments. No account required.</p>
         </div>
         <div class="tix-flow-arrow"><i class="fa-solid fa-arrow-right" aria-hidden="true"></i></div>
         <div class="tix-flow-step">
@@ -126,7 +126,7 @@
             <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
           </div>
           <h3>Instant QR Ticket Delivered</h3>
-          <p>Every paid order emails a QR ticket the moment payment clears — nothing to print or design.</p>
+          <p>Every paid order emails a QR ticket the moment payment clears. Nothing to print or design.</p>
         </div>
       </div>
       <div class="tix-banner-cta">
@@ -222,7 +222,7 @@
         <div class="step-num">2</div>
         <div class="step-icon"><img src="{{ asset('images/icon/track.svg') }}" alt="" width="52" height="52" loading="lazy" decoding="async"></div>
         <h3>Customize It</h3>
-        <p>Add your event details, photos, colors, and personal touches with our intuitive editor — in minutes.</p>
+        <p>Add your event details, photos, colors, and personal touches with our intuitive editor in minutes.</p>
       </div>
       <div class="step">
         <div class="step-photo">
@@ -243,7 +243,7 @@
   <div class="section">
     <div class="section-header">
       <h2>Loved by hosts everywhere</h2>
-      <p>Don't just take our word for it — hear from people who've used Event Host for their special moments.</p>
+      <p>Don't just take our word for it. Hear from people who've used Event Host for their special moments.</p>
     </div>
     <div class="testi-grid">
       @foreach ($featuredReviews as $review)

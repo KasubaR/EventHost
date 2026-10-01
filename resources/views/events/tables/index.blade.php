@@ -4,7 +4,7 @@
         <link rel="stylesheet" href="{{ asset('css/tables-admin.css') }}">
     @endpush
 
-    <x-slot name="title">Tables & Photo Wall — {{ $event->name }}</x-slot>
+    <x-slot name="title">Tables & Photo Wall | {{ $event->name }}</x-slot>
 
     <x-slot name="pageHeader">
         <div class="dph-inner">
@@ -37,7 +37,7 @@
         <div class="evt-section">
             <div class="evt-section-head">
                 <h2>Photo wall settings</h2>
-                <p>Guests scan a table's QR code with their own phone — no login — and their photo lands in the live event gallery.</p>
+                <p>Guests scan a table's QR code with their own phone, with no login, and their photo lands in the live event gallery.</p>
             </div>
             <div class="evt-section-body">
                 <form method="post" action="{{ route('events.update', $event) }}" class="tbl-settings-form">
@@ -73,7 +73,7 @@
         <div class="evt-section">
             <div class="evt-section-head">
                 <h2>Add a table</h2>
-                <p>Give it a name — "Table 5", "Bar", "Photo Booth" — then print its QR code for guests to scan.</p>
+                <p>Give it a name ("Table 5", "Bar", "Photo Booth"), then print its QR code for guests to scan.</p>
             </div>
             <div class="evt-section-body">
                 <form method="post" action="{{ route('events.tables.store', $event) }}" class="tbl-add-form">
@@ -91,7 +91,7 @@
         <div class="evt-section">
             <div class="evt-section-body">
                 @if ($tables->isEmpty())
-                    <p class="evt-muted">No tables yet — add one above to generate its QR code.</p>
+                    <p class="evt-muted">No tables yet. Add one above to generate its QR code.</p>
                 @else
                     <div class="tbl-grid">
                         @foreach ($tables as $table)

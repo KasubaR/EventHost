@@ -148,7 +148,7 @@ class TicketCheckoutService
             'ref' => $order->order_reference,
             'amount' => (float) $buyerTotal,
             'currency' => 'ZMW',
-            'description' => 'Tickets — '.$event->name,
+            'description' => 'Tickets: '.$event->name,
             'reference' => $order->order_reference,
         ];
 

@@ -6,7 +6,7 @@
         <script src="{{ asset('js/events-form.js') }}" defer></script>
     @endpush
 
-    <x-slot name="title">Ticketing settings — {{ $event->name }}</x-slot>
+    <x-slot name="title">Ticketing settings | {{ $event->name }}</x-slot>
 
     <x-slot name="pageHeader">
         <div class="dph-inner">
@@ -27,7 +27,7 @@
     @endif
 
     @if (session('status') === 'draft-saved')
-        <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Draft saved — add your ticket types below.</div>
+        <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Draft saved. Add your ticket types below.</div>
     @elseif (session('status') === 'ticket-type-created')
         <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Ticket type added.</div>
     @elseif (session('status') === 'ticket-type-updated')

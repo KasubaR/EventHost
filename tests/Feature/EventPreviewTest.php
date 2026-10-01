@@ -33,7 +33,7 @@ class EventPreviewTest extends TestCase
         $response = $this->actingAs($user)->get(route('events.preview', $event));
 
         $response->assertOk();
-        $response->assertSee('Preview — this is exactly how your invitation looks to guests.', escape: false);
+        $response->assertSee('Preview: this is exactly how your invitation looks to guests.', escape: false);
         $response->assertSee($event->name, escape: false);
     }
 
@@ -182,7 +182,7 @@ class EventPreviewTest extends TestCase
         $response->assertSee('--evt-primary: '.$palette['primary'], escape: false);
         $response->assertSee('--evt-accent: '.$palette['accent'], escape: false);
         $response->assertSee('--evt-background: '.$palette['background'], escape: false);
-        $response->assertSee('palette — not saved', escape: false);
+        $response->assertSee('palette (not saved)', escape: false);
         $response->assertSee('Show saved colours', escape: false);
         $response->assertDontSee('this is exactly how your invitation looks to guests', escape: false);
 
@@ -199,7 +199,7 @@ class EventPreviewTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('--evt-background: '.$palette['background'], escape: false);
-        $response->assertSee('palette — not saved', escape: false);
+        $response->assertSee('palette (not saved)', escape: false);
     }
 
     public function test_unknown_palette_key_falls_back_to_saved_colours(): void
@@ -212,7 +212,7 @@ class EventPreviewTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('--evt-background: '.$default['background'], escape: false);
-        $response->assertDontSee('palette — not saved', escape: false);
+        $response->assertDontSee('palette (not saved)', escape: false);
     }
 
     public function test_palette_of_the_other_mode_is_ignored(): void
@@ -226,7 +226,7 @@ class EventPreviewTest extends TestCase
         $response->assertOk();
         $response->assertSee('--evt-background: '.$default['background'], escape: false);
         $response->assertDontSee('--evt-background: '.InvitationPalettes::get('noir-gold')['background'], escape: false);
-        $response->assertDontSee('palette — not saved', escape: false);
+        $response->assertDontSee('palette (not saved)', escape: false);
     }
 
     public function test_beauty_for_ashes_ignores_the_palette_query(): void
@@ -240,7 +240,7 @@ class EventPreviewTest extends TestCase
         $response = $this->actingAs($user)->get(route('events.preview', ['event' => $event, 'palette' => $key]));
 
         $response->assertOk();
-        $response->assertDontSee('palette — not saved', escape: false);
+        $response->assertDontSee('palette (not saved)', escape: false);
     }
 
     public function test_template_default_palette_previews_the_templates_own_colours(): void
@@ -269,7 +269,7 @@ class EventPreviewTest extends TestCase
         $response->assertOk();
         $response->assertSee('--evt-background: '.strtolower($default['background']), escape: false);
         $response->assertSee('--evt-primary: '.strtolower($default['primary']), escape: false);
-        $response->assertSee('palette — not saved', escape: false);
+        $response->assertSee('palette (not saved)', escape: false);
         $response->assertSee(e($event->invitationTemplate->name), escape: false);
     }
 

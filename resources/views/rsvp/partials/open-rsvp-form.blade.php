@@ -50,6 +50,6 @@
         <i class="fa-solid fa-paper-plane" aria-hidden="true"></i> Send my response
     </button>
     @if ($previewOnly)
-        <p class="rsvp-preview-note">Preview only — responses aren't sent.</p>
+        <p class="rsvp-preview-note">Preview only. Responses aren't sent.</p>
     @endif
 </form>

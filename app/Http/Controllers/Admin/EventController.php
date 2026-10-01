@@ -63,7 +63,7 @@ class EventController extends Controller
     ): RedirectResponse {
         if ($event->isTicketed()) {
             return redirect()->back()->withErrors([
-                'is_published' => 'Ticketed events go live from the Ticketing queue — they do not use event credits.',
+                'is_published' => 'Ticketed events go live from the Ticketing queue. They do not use event credits.',
             ]);
         }
 

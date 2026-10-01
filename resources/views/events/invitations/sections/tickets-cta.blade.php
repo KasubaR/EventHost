@@ -9,13 +9,13 @@
     <h2 class="evt-inline-rsvp-heading">Tickets</h2>
 
     @if (! empty($isPreview))
-        <p class="evt-inline-rsvp-lead">Ticket sales preview — publishing and activation unlock the live buy flow.</p>
+        <p class="evt-inline-rsvp-lead">Ticket sales preview. Publishing and activation unlock the live buy flow.</p>
     @elseif ($event->ticketSalesAreApproved())
-        <p class="evt-inline-rsvp-lead">Secure your spot — tickets are sold directly through EventHost.</p>
+        <p class="evt-inline-rsvp-lead">Secure your spot. Tickets are sold directly through EventHost.</p>
         <a href="{{ route('events.public.tickets', $event->slug) }}" class="btn-primary">
             <x-ticket-icon /> Buy tickets
         </a>
     @else
-        <p class="evt-inline-rsvp-lead">Ticket sales for this event haven't opened yet — check back soon.</p>
+        <p class="evt-inline-rsvp-lead">Ticket sales for this event haven't opened yet. Check back soon.</p>
     @endif
 </div>

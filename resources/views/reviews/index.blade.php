@@ -24,7 +24,7 @@
     </x-slot>
 
     @if (session('status') === 'review-submitted')
-        <div class="evt-admin-flash">Thanks — your review has been sent for approval.</div>
+        <div class="evt-admin-flash">Thanks, your review has been sent for approval.</div>
     @elseif (session('status') === 'review-updated')
         <div class="evt-admin-flash">Review saved. It will be checked again before it goes back on the site.</div>
     @elseif (session('status') === 'review-deleted')

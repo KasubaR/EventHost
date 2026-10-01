@@ -24,7 +24,7 @@ enum PublicRegistrationStatus: string
             self::NotApplicable => 'Not a free-registration event',
             self::Draft => 'Not submitted',
             self::PendingReview => 'Awaiting EventHost review',
-            self::Approved => 'Approved — awaiting payment',
+            self::Approved => 'Approved, awaiting payment',
             self::Rejected => 'Declined',
         };
     }

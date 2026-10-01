@@ -133,7 +133,7 @@ class ContributionCheckoutService
             'ref' => $contributionPayment->payment_reference,
             'amount' => (float) $amount,
             'currency' => 'ZMW',
-            'description' => 'Contribution — '.$event->name,
+            'description' => 'Contribution: '.$event->name,
             'reference' => $contributionPayment->payment_reference,
         ];
 

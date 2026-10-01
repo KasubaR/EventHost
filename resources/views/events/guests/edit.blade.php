@@ -9,7 +9,7 @@
 
     @php $isRegistrations = $event->isFreeRegistration(); @endphp
 
-    <x-slot name="title">{{ $isRegistrations ? 'Edit registration' : 'Edit guest' }} — {{ $event->name }}</x-slot>
+    <x-slot name="title">{{ $isRegistrations ? 'Edit registration' : 'Edit guest' }} | {{ $event->name }}</x-slot>
 
     <x-slot name="pageHeader">
         <div class="dph-inner">
@@ -53,7 +53,7 @@
                     <div class="profile-field">
                         <label for="guest_group_id" class="profile-label">Group <span class="profile-optional">optional</span></label>
                         <select id="guest_group_id" name="guest_group_id" data-cs data-cs-icon="fa-solid fa-people-group" class="profile-input {{ $errors->has('guest_group_id') ? 'profile-input--error' : '' }}" aria-label="Guest group">
-                            <option value="">— None —</option>
+                            <option value="">None</option>
                             @foreach ($groups as $g)
                                 <option value="{{ $g->id }}" @selected(old('guest_group_id', $guest->guest_group_id) == $g->id)>{{ $g->name }}</option>
                             @endforeach
@@ -66,7 +66,7 @@
                     <div class="profile-field">
                         <label for="event_table_id" class="profile-label">Table <span class="profile-optional">optional</span></label>
                         <select id="event_table_id" name="event_table_id" data-cs data-cs-icon="fa-solid fa-chair" class="profile-input {{ $errors->has('event_table_id') ? 'profile-input--error' : '' }}" aria-label="Seating table">
-                            <option value="">— Unassigned —</option>
+                            <option value="">Unassigned</option>
                             @foreach ($tables as $t)
                                 <option value="{{ $t->id }}" @selected(old('event_table_id', $guest->event_table_id) == $t->id)>{{ $t->label }}</option>
                             @endforeach

@@ -52,7 +52,7 @@
         <h2>Add a question</h2>
         <p class="admin-muted">
             Questions appear in ascending order number, lowest first. Unpublished questions stay here but are hidden
-            from the public site. Answers are plain text — HTML is escaped, not rendered.
+            from the public site. Answers are plain text. HTML is escaped, not rendered.
         </p>
 
         <form method="post" action="{{ route('admin.faqs.store') }}" class="admin-faq-form admin-mt-sm">
@@ -159,7 +159,7 @@
                 </form>
             </article>
         @empty
-            <p class="admin-muted">No questions for the {{ Str::lower($placementLabel) }} yet — the section is hidden on the public page until you add one.</p>
+            <p class="admin-muted">No questions for the {{ Str::lower($placementLabel) }} yet. The section is hidden on the public page until you add one.</p>
         @endforelse
     @endforeach
 </x-admin-layout>

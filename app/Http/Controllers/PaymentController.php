@@ -146,8 +146,8 @@ class PaymentController extends Controller
         $method = $request->string('payment_method')->toString();
         $userRef = 'USR-'.$user->id;
         $description = in_array($planKey, ['remove_branding', 'public_registration_quote'], true)
-            ? "Event Host — {$planLabel}"
-            : "Event Host — {$planLabel} event credit";
+            ? "Event Host: {$planLabel}"
+            : "Event Host: {$planLabel} event credit";
 
         try {
             return DB::transaction(function () use ($request, $lenco, $user, $plan, $planKey, $quote, $brandingEvent, $registrationEvent, $amount, $creditsGranted, $method, $userRef, $planLabel, $description): JsonResponse {
@@ -191,8 +191,8 @@ class PaymentController extends Controller
                     $plan['amount'] = $amount;
                     $plan['credits'] = $creditsGranted;
                     $description = $isUpgrade
-                        ? "Event Host — {$planLabel} plan upgrade"
-                        : "Event Host — {$planLabel} event credit";
+                        ? "Event Host: {$planLabel} plan upgrade"
+                        : "Event Host: {$planLabel} event credit";
                 }
 
                 if ($amount <= 0) {

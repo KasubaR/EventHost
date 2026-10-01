@@ -39,7 +39,7 @@
 @if (! empty($isPreview))
     <div class="evt-session-banner evt-session-banner--info">
         <i class="fa-solid fa-eye" aria-hidden="true"></i>
-        Preview — this is exactly how your ticket page looks to buyers.
+        Preview: this is exactly how your ticket page looks to buyers.
     </div>
 @endif
 
@@ -174,15 +174,15 @@
                     @endif
 
                     @if (! empty($isPreview))
-                        <p class="tkc-muted">Ticket sales preview — publishing and activation unlock the live buy flow.</p>
+                        <p class="tkc-muted">Ticket sales preview. Publishing and activation unlock the live buy flow.</p>
                     @elseif ($event->ticketSalesAreApproved())
-                        <p class="tkc-muted">Secure your spot — tickets are sold directly through EventHost.</p>
+                        <p class="tkc-muted">Secure your spot. Tickets are sold directly through EventHost.</p>
                         <a href="{{ route('events.public.tickets', $event->slug) }}" class="btn-primary tev-buy-btn">
                             <x-ticket-icon /> Buy tickets
                         </a>
                         <p class="tev-secure-note">Secure payment through EventHost</p>
                     @else
-                        <p class="tkc-muted">Ticket sales for this event haven't opened yet — check back soon.</p>
+                        <p class="tkc-muted">Ticket sales for this event haven't opened yet. Check back soon.</p>
                     @endif
                 @endif
 

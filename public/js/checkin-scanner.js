@@ -275,7 +275,7 @@
                             sub += ' at ' + record.checked_in_by;
                         }
                         if (config.duplicateNote) {
-                            sub += ' — ' + config.duplicateNote;
+                            sub += '. ' + config.duplicateNote;
                         }
 
                         var extras = [];
@@ -300,7 +300,7 @@
                     }
                 })
                 .catch(function () {
-                    showResult('error', 'Network error — try again.');
+                    showResult('error', 'Network error. Try again.');
                 });
         }
 
@@ -403,7 +403,7 @@
 
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 if (hint) {
-                    hint.textContent = 'Camera access is not supported in this browser — use search below instead.';
+                    hint.textContent = 'Camera access is not supported in this browser. Use search below instead.';
                 }
                 return;
             }
@@ -416,7 +416,7 @@
                 })
                 .catch(function () {
                     if (hint) {
-                        hint.textContent = 'Camera access was blocked — use search below instead.';
+                        hint.textContent = 'Camera access was blocked. Use search below instead.';
                     }
                 });
         }

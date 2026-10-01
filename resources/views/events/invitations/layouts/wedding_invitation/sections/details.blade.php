@@ -14,7 +14,7 @@
     <div class="wi-details-inner">
         <p class="wi-section-tag">Event Details</p>
         <h2 class="wi-section-title">The <em>Celebration</em></h2>
-        <div class="wi-orn" aria-hidden="true">— ◆ —</div>
+        <div class="wi-orn" aria-hidden="true">· ◆ ·</div>
         <div class="wi-details-grid">
             <div class="wi-detail-card">
                 <div class="wi-detail-icon" aria-hidden="true"><i class="fa-regular fa-calendar"></i></div>

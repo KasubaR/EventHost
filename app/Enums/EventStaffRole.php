@@ -18,8 +18,8 @@ enum EventStaffRole: string
     public function description(): string
     {
         return match ($this) {
-            self::Manager => 'Full ticketing access — ticket types, orders, and check-in. Cannot activate sales, delete the event, or manage staff.',
-            self::CheckIn => 'Door access only — scan and confirm tickets at check-in.',
+            self::Manager => 'Full ticketing access to ticket types, orders, and check-in. Cannot activate sales, delete the event, or manage staff.',
+            self::CheckIn => 'Door access only. Scan and confirm tickets at check-in.',
         };
     }
 }

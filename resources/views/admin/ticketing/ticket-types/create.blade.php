@@ -14,7 +14,7 @@
         $ev = $adminEvent;
     @endphp
 
-    <x-slot name="title">Add ticket type — {{ $ev->name }}</x-slot>
+    <x-slot name="title">Add ticket type | {{ $ev->name }}</x-slot>
 
     <x-slot name="pageHeader">
         <div class="dph-inner">

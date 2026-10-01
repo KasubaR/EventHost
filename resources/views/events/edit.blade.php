@@ -40,7 +40,7 @@
     ])
 
     @if (session('status') === 'draft-saved')
-        <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Draft saved — continue editing or publish below.</div>
+        <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Draft saved. Continue editing or publish below.</div>
     @endif
 
     @if (session('status') === 'event-updated')
@@ -52,8 +52,8 @@
                 <i class="fa-solid fa-triangle-exclamation"></i>
                 You changed the venue or location. {{ $notifyCount }} {{ $notifyCount === 1 ? 'guest' : 'guests' }}
                 already {{ $notifyCount === 1 ? 'has' : 'have' }} an invitation or RSVP for this event and
-                will not be told automatically —
-                <a href="{{ route('events.guests.index', $event) }}">notify them from the guest list</a>.
+                will not be told automatically.
+                <a href="{{ route('events.guests.index', $event) }}">Notify them from the guest list</a>.
             </div>
         @endif
     @endif
@@ -63,11 +63,11 @@
     @endif
 
     @if (session('status') === 'template-chosen')
-        <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Invitation layout saved — customize below.</div>
+        <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Invitation layout saved. Customize below.</div>
     @endif
 
     @if (session('status') === 'public-registration-submitted')
-        <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Submitted for review — EventHost will approve and quote a price soon.</div>
+        <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Submitted for review. EventHost will approve and quote a price soon.</div>
     @endif
 
     @if ($errors->has('public_registration'))
@@ -78,7 +78,7 @@
         <div class="evt-flash evt-flash--warn">
             <i class="fa-solid fa-circle-info"></i>
             This event has already taken place. Changing its <strong>name, type or date</strong> makes it a
-            new event and uses 1 credit — you have {{ auth()->user()->event_credits }}. Everything else
+            new event and uses 1 credit. You have {{ auth()->user()->event_credits }}. Everything else
             (time, venue, description, cover image and settings) is still free to change.
         </div>
     @endif
@@ -165,7 +165,7 @@
                     <a href="{{ route('events.preview', $event) }}" target="_blank" rel="noopener" class="evt-btn-outline" id="evt-preview-link" data-preview-link>
                         <i class="fa-solid fa-eye"></i> Preview invitation
                     </a>
-                    <span class="evt-muted">Opens in a new tab — see exactly what guests will see before you publish.</span>
+                    <span class="evt-muted">Opens in a new tab. See exactly what guests will see before you publish.</span>
                 </div>
             </div>
         @endif
@@ -189,12 +189,12 @@
                     <button type="button" class="btn-primary" data-save-all>
                         <i class="fa-solid fa-floppy-disk"></i> {{ $event->is_published ? 'Update details' : 'Save Draft' }}
                     </button>
-                    <span class="evt-muted">Ticketed events go live after EventHost activates sales — they do not use event credits.</span>
+                    <span class="evt-muted">Ticketed events go live after EventHost activates sales. They do not use event credits.</span>
                 @elseif ($event->isFreeRegistration())
                     <button type="button" class="btn-primary" data-save-all>
                         <i class="fa-solid fa-floppy-disk"></i> {{ $event->is_published ? 'Update details' : 'Save Draft' }}
                     </button>
-                    <span class="evt-muted">Public events go live after EventHost approves them and you pay the quoted amount — they do not use event credits.</span>
+                    <span class="evt-muted">Public events go live after EventHost approves them and you pay the quoted amount. They do not use event credits.</span>
                 @elseif (! $event->is_published)
                     <button type="button" class="btn-primary" data-save-all data-publish data-requires-preview>
                         <i class="fa-solid fa-bullhorn"></i> Publish
@@ -206,7 +206,7 @@
                         <i class="fa-solid fa-eye"></i> Preview your invitation above first.
                     </span>
                     @if ($publishCostsCredit)
-                        <span class="evt-muted">Publishing uses 1 event credit — you have {{ auth()->user()->event_credits }}. Saving a draft is free and optional.</span>
+                        <span class="evt-muted">Publishing uses 1 event credit. You have {{ auth()->user()->event_credits }}. Saving a draft is free and optional.</span>
                     @else
                         <span class="evt-muted">Publishing saves everything first, then makes the invitation public. Saving a draft is free and optional.</span>
                     @endif
@@ -292,7 +292,7 @@
                         @endif
                         <p class="evt-muted">
                             Save your event details and design above, then submit it for review. EventHost will
-                            approve it and quote a price — the invitation goes live once you pay that quote.
+                            approve it and quote a price. The invitation goes live once you pay that quote.
                         </p>
                         <form method="post" action="{{ route('events.public-registration.submit', $event) }}" class="evt-card-actions">
                             @csrf
@@ -334,7 +334,7 @@
                 @else
                     <div class="evt-section-head">
                         <h2>Share</h2>
-                        <p>Private invitation link — not listed anywhere, only guests you send it to can find it.</p>
+                        <p>Private invitation link. Not listed anywhere, only guests you send it to can find it.</p>
                     </div>
                     <div class="evt-section-body">
                         <a href="{{ route('events.public', $event->slug) }}" class="evt-public-url" target="_blank" rel="noopener">{{ url('/e/'.$event->slug) }}</a>

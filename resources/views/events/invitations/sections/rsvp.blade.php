@@ -27,9 +27,9 @@
             <h2 class="evt-inline-rsvp-heading">RSVP</h2>
             <p class="evt-inline-rsvp-lead">
                 @if ($inlineIsPrivate)
-                    Let the host know if you can make it — we'll email you a personal link so you can view or change your response anytime.
+                    Let the host know if you can make it. We'll email you a personal link so you can view or change your response anytime.
                 @else
-                    Let the host know if you can make it — no account needed.
+                    Let the host know if you can make it. No account needed.
                 @endif
             </p>
             @include('rsvp.partials.open-rsvp-form', [

@@ -63,7 +63,7 @@
                             </div>
                         @endif
                     </td>
-                    <td>{{ $event->user?->email ?? '—' }}</td>
+                    <td>{{ $event->user?->email ?? '-' }}</td>
                     <td>{{ $event->audience->label() }}</td>
                     <td>{{ \App\Models\Event::TYPE_LABELS[$event->event_type] ?? $event->event_type }}</td>
                     <td>{{ $event->guests_count }}</td>

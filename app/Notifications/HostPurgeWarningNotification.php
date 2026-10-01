@@ -56,10 +56,10 @@ class HostPurgeWarningNotification extends Notification implements ShouldQueue
             ->line($count === 1
                 ? 'An event you deleted is about to be permanently removed.'
                 : 'Some events you deleted are about to be permanently removed.')
-            ->line('When that happens, the event is gone for good — together with its guest list, RSVPs and uploaded photos and media. It cannot be recovered afterwards. Until then you can restore it from **Recently deleted**.');
+            ->line('When that happens, the event is gone for good, together with its guest list, RSVPs and uploaded photos and media. It cannot be recovered afterwards. Until then you can restore it from **Recently deleted**.');
 
         foreach ($this->events as $event) {
-            $mail->line('**'.$event['name'].'** — deleted '.$event['deleted_on'].', removed on **'.$event['purge_on'].'**. [Restore it]('.$event['list_url'].')');
+            $mail->line('**'.$event['name'].'**: deleted '.$event['deleted_on'].', removed on **'.$event['purge_on'].'**. [Restore it]('.$event['list_url'].')');
         }
 
         return $mail

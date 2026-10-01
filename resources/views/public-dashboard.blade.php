@@ -14,7 +14,7 @@
         <div class="dph-inner">
             <div>
                 <h1 class="dph-title">Public portal</h1>
-                <p class="dph-sub">Ticketed and open-registration events — sales, check-ins and revenue.</p>
+                <p class="dph-sub">Ticketed and open-registration events: sales, check-ins and revenue.</p>
             </div>
             <a href="{{ route('events.create', ['audience' => 'public']) }}" class="btn-primary dash-header-cta">
                 <i class="fa-solid fa-plus" aria-hidden="true"></i> New Event
@@ -27,7 +27,7 @@
             <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
             <div>
                 <strong>{{ $migratedEvents->count() === 1 ? 'An event moved to this portal' : 'Some events moved to this portal' }}</strong>
-                <p>{{ $migratedEvents->count() === 1 ? "It's" : "They're" }} here now because {{ $migratedEvents->count() === 1 ? 'it is' : 'they are' }} open to the public — before the Public/Private split, every event lived on one shared "My Events" list.</p>
+                <p>{{ $migratedEvents->count() === 1 ? "It's" : "They're" }} here now because {{ $migratedEvents->count() === 1 ? 'it is' : 'they are' }} open to the public. Before the Public/Private split, every event lived on one shared "My Events" list.</p>
                 <ul class="dash-notice-events">
                     @foreach ($migratedEvents as $migratedEvent)
                         <li class="dash-notice-event">
@@ -53,7 +53,7 @@
                     <p>
                         Amount due: {{ $pendingCustomQuote->formattedAmount() }}
                         @if ($pendingCustomQuote->note)
-                            — {{ $pendingCustomQuote->note }}
+                            · {{ $pendingCustomQuote->note }}
                         @endif
                     </p>
                 </div>

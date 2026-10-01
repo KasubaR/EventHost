@@ -3,7 +3,7 @@
         <link rel="stylesheet" href="{{ asset('css/events-admin.css') }}">
     @endpush
 
-    <x-slot name="title">Revenue — {{ $adminEvent->name }}</x-slot>
+    <x-slot name="title">Revenue | {{ $adminEvent->name }}</x-slot>
 
     <x-slot name="pageHeader">
         <div class="dph-inner">
@@ -65,8 +65,8 @@
                 <tbody>
                     @foreach ($payments as $payment)
                         <tr>
-                            <td>{{ $payment->contribution?->contributor_name ?? '—' }}<br><span class="admin-muted">{{ $payment->contribution?->contributor_phone }}</span></td>
-                            <td>{{ $payment->completed_at?->format('j M Y H:i') ?? '—' }}</td>
+                            <td>{{ $payment->contribution?->contributor_name ?? '-' }}<br><span class="admin-muted">{{ $payment->contribution?->contributor_phone }}</span></td>
+                            <td>{{ $payment->completed_at?->format('j M Y H:i') ?? '-' }}</td>
                             <td>{{ \App\Support\TicketingSettings::formatZmw($payment->amount) }}</td>
                             <td>{{ $payment->payment_method }}</td>
                         </tr>
@@ -96,8 +96,8 @@
                         <tr>
                             <td>{{ $payout->paid_on->format('j M Y') }}</td>
                             <td>{{ \App\Support\TicketingSettings::formatZmw($payout->amount) }}</td>
-                            <td>{{ $payout->note ?? '—' }}</td>
-                            <td>{{ $payout->paidBy?->name ?? '—' }}</td>
+                            <td>{{ $payout->note ?? '-' }}</td>
+                            <td>{{ $payout->paidBy?->name ?? '-' }}</td>
                         </tr>
                     @endforeach
                 </tbody>

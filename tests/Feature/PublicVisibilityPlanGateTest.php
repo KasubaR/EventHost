@@ -157,7 +157,7 @@ class PublicVisibilityPlanGateTest extends TestCase
             ->assertSee('Ticketed event', false)
             ->assertSee('evt-kind-card--locked', false)
             ->assertSee('evt-credit-badge', false)
-            ->assertSee('upgrade to unlock it', false);
+            ->assertSee('Upgrade to unlock it', false);
     }
 
     public function test_audience_chooser_offers_free_registration_for_a_base_tier_host(): void
@@ -169,6 +169,6 @@ class PublicVisibilityPlanGateTest extends TestCase
         $response->assertOk()
             ->assertSee('Free registration', false)
             ->assertDontSee('evt-kind-card--locked', false)
-            ->assertDontSee('upgrade to unlock it', false);
+            ->assertDontSee('Upgrade to unlock it', false);
     }
 }

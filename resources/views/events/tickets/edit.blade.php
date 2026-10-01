@@ -10,7 +10,7 @@
         <script src="{{ asset('js/events-form.js') }}" defer></script>
     @endpush
 
-    <x-slot name="title">Edit ticket type — {{ $event->name }}</x-slot>
+    <x-slot name="title">Edit ticket type | {{ $event->name }}</x-slot>
 
     <x-slot name="pageHeader">
         <div class="dph-inner">

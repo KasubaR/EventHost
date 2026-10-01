@@ -34,7 +34,7 @@
             </div>
 
             @if ($photos->isEmpty())
-                <p class="egal-empty" id="egalEmptyState">No photos yet — be the first to add one from your table's QR code.</p>
+                <p class="egal-empty" id="egalEmptyState">No photos yet. Be the first to add one from your table's QR code.</p>
             @endif
         @endif
     </article>
