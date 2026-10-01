@@ -179,18 +179,47 @@
 
         var audio = new Audio(src);
         audio.loop = true;
-        audio.preload = 'none';
+        audio.preload = 'auto';
 
         var label = btn.querySelector('.evt-inv-audio-label');
+        var userPaused = false;
+
+        function sync() {
+            if (label) label.textContent = audio.paused ? 'Play music' : 'Pause music';
+        }
+
+        audio.addEventListener('play', sync);
+        audio.addEventListener('pause', sync);
 
         btn.addEventListener('click', function () {
             if (audio.paused) {
+                userPaused = false;
                 audio.play().catch(function () {});
-                if (label) label.textContent = 'Pause music';
             } else {
+                userPaused = true;
                 audio.pause();
-                if (label) label.textContent = 'Play music';
             }
+        });
+
+        // Browsers block sound before the visitor interacts with the page, so try
+        // straight away and, if refused, start on the first tap or key press instead.
+        // Only these count as a user gesture for audio; scroll and wheel do not.
+        var events = ['pointerup', 'touchend', 'click', 'keydown'];
+        function stopWaiting() {
+            events.forEach(function (name) {
+                window.removeEventListener(name, onFirstGesture, true);
+            });
+        }
+        function onFirstGesture(e) {
+            if (btn.contains(e.target)) { stopWaiting(); return; }
+            stopWaiting();
+            if (!userPaused && audio.paused) audio.play().catch(function () {});
+        }
+
+        audio.play().catch(function () {
+            events.forEach(function (name) {
+                window.addEventListener(name, onFirstGesture, { capture: true, passive: true });
+            });
         });
     }
 
