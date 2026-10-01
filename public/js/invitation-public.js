@@ -216,34 +216,10 @@
             if (!userPaused && audio.paused) audio.play().catch(function () {});
         }
 
-        // Autoplay was refused: cover the page with a "tap to open" gate. The tap is
-        // the gesture browsers require, so the song starts the moment guests open it.
-        function showGate() {
-            var gate = document.createElement('button');
-            gate.type = 'button';
-            gate.setAttribute('aria-label', 'Open invitation and play music');
-            gate.style.cssText = 'position:fixed;inset:0;z-index:99999;border:0;cursor:pointer;'
-                + 'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;'
-                + 'background:rgba(15,15,20,.92);color:#fff;font:600 18px/1.3 inherit;text-align:center;padding:24px;';
-            gate.innerHTML = '<span style="font-size:42px" aria-hidden="true">&#9835;</span>'
-                + '<span>Tap to open your invitation</span>'
-                + '<span style="font-weight:400;font-size:14px;opacity:.75">Plays music</span>';
-            gate.addEventListener('click', function () {
-                gate.remove();
-                audio.play().catch(function () {});
-            });
-            document.body.appendChild(gate);
-        }
-
         audio.play().catch(function () {
-            // Skip the gate in the host's own preview; they have the music button.
-            if (document.querySelector('.evt-preview-bar')) {
-                events.forEach(function (name) {
-                    window.addEventListener(name, onFirstGesture, { capture: true, passive: true });
-                });
-                return;
-            }
-            showGate();
+            events.forEach(function (name) {
+                window.addEventListener(name, onFirstGesture, { capture: true, passive: true });
+            });
         });
     }
 
