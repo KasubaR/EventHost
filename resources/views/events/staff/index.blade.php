@@ -1,6 +1,7 @@
 <x-app-layout>
     @push('styles')
         <link rel="stylesheet" href="{{ asset('css/events-admin.css') }}">
+        <link rel="stylesheet" href="{{ asset('css/custom-select.css') }}">
     @endpush
 
     <x-slot name="title">Staff | {{ $event->name }}</x-slot>
@@ -43,22 +44,22 @@
                     <h2>Invite staff</h2>
                     <p>Event Manager gets full ticketing access (ticket types, orders, and check-in), short of activating sales, deleting the event, or managing staff. Check-in Staff can only scan at the door.</p>
                 </div>
-                <div class="evt-section-body profile-card-like">
-                    <form method="post" action="{{ route('public-events.staff.store', $event) }}" class="profile-form-stack evt-staff-invite-form">
+                <div class="evt-section-body">
+                    <form method="post" action="{{ route('public-events.staff.store', $event) }}" class="profile-fields">
                         @csrf
                         <div class="evt-grid-2">
                             <div class="profile-field">
                                 <label for="staff_name" class="profile-label">Name</label>
                                 <input id="staff_name" type="text" name="name" class="profile-input {{ $errors->has('name') ? 'profile-input--error' : '' }}" value="{{ old('name') }}" required maxlength="255" autocomplete="off">
                                 @error('name')
-                                    <p class="profile-error">{{ $message }}</p>
+                                    <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                                 @enderror
                             </div>
                             <div class="profile-field">
                                 <label for="staff_email" class="profile-label">Email</label>
                                 <input id="staff_email" type="email" name="email" class="profile-input {{ $errors->has('email') ? 'profile-input--error' : '' }}" value="{{ old('email') }}" required maxlength="255" autocomplete="off">
                                 @error('email')
-                                    <p class="profile-error">{{ $message }}</p>
+                                    <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                                 @enderror
                             </div>
                         </div>
@@ -70,10 +71,10 @@
                                 @endforeach
                             </select>
                             @error('role')
-                                <p class="profile-error">{{ $message }}</p>
+                                <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                             @enderror
                         </div>
-                        <div class="profile-actions">
+                        <div class="profile-form-actions">
                             <button type="submit" class="btn-primary">Send invite</button>
                         </div>
                     </form>
@@ -151,6 +152,7 @@
     </div>
 
     @push('scripts')
+        <script src="{{ asset('js/custom-select.js') }}" defer></script>
         <script src="{{ asset('js/tables-admin.js') }}" defer></script>
     @endpush
 </x-app-layout>
