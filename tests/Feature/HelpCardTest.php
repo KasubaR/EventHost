@@ -88,13 +88,23 @@ class HelpCardTest extends TestCase
         $this->actingAs($user)->get(route('events.index'))->assertSee('Our team is working on your request');
     }
 
-    public function test_the_empty_state_markup_is_balanced(): void
+    public function test_the_empty_state_has_one_create_button_and_no_leftover_help_button(): void
     {
         config(['admin.acting_as.enabled' => true]);
         $user = User::factory()->create();
 
-        $html = $this->actingAs($user)->get(route('events.index'))->assertOk()->assertSee('No Events Yet')->getContent();
+        $response = $this->actingAs($user)->get(route('events.index'))->assertOk()->assertSee('No Events Yet');
+        $html = $response->getContent();
 
-        $this->assertSame(substr_count($html, '<div'), substr_count($html, '</div>'), 'unbalanced <div> in the My Events page');
+        // An earlier edit duplicated the old header button into the empty state and left a div open.
+        $this->assertSame(1, substr_count($html, 'Create your first invitation'));
+        $this->assertSame(0, substr_count($html, 'Ask our team to create it'));
+        $this->assertSame(1, substr_count($html, 'class="dash-empty"'));
+
+        // The empty-state block must close itself: opens and closes between its start and the
+        // end of its own container balance.
+        $block = substr($html, strpos($html, 'class="dash-empty"'));
+        $block = substr($block, 0, strpos($block, 'Create event') + strlen('Create event'));
+        $this->assertSame(1, substr_count($block, '<div'), 'only the dash-empty-icon div opens before the Create event link');
     }
 }
