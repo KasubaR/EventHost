@@ -7,12 +7,15 @@ use App\Exceptions\InsufficientCreditsException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateAdminEventPublishRequest;
 use App\Models\AdminActivityLog;
+use App\Models\AdminHelpRequest;
 use App\Models\Event;
 use App\Models\User;
+use App\Services\ActingAsService;
 use App\Services\EventCreditService;
 use App\Support\AdminActivity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
@@ -22,6 +25,7 @@ class EventController extends Controller
     {
         $search = trim((string) $request->query('q', ''));
         $audience = EventAudience::tryFrom((string) $request->query('audience', ''));
+        $createdByAdmin = $request->boolean('created_by_admin');
 
         $events = Event::withTrashed()
             ->with(['user:id,name,email'])
@@ -36,6 +40,7 @@ class EventController extends Controller
                 });
             })
             ->when($audience !== null, fn ($query) => $query->where('audience', $audience))
+            ->when($createdByAdmin, fn ($query) => $query->whereNotNull('created_by_admin_id'))
             ->orderByDesc('created_at')
             ->paginate(20)
             ->withQueryString();
@@ -44,16 +49,26 @@ class EventController extends Controller
             'events' => $events,
             'search' => $search,
             'audience' => $audience,
+            'createdByAdmin' => $createdByAdmin,
         ]);
     }
 
-    public function show(Event $event): View
+    public function show(Event $event, ActingAsService $acting): View
     {
         $event->load(['user:id,name,email,phone,status', 'createdByAdmin:id,name']);
         $event->loadCount(['guests', 'rsvps']);
 
         return view('admin.events.show', [
             'adminEvent' => $event,
+            'helpRequest' => AdminHelpRequest::query()
+                ->where('user_id', $event->user_id)
+                ->where(fn ($q) => $q->where('event_id', $event->id)->orWhereNull('event_id'))
+                ->latest()
+                ->first(),
+            'canEditAsClient' => ! $event->trashed()
+                && ! $acting->isActive()
+                && ($covering = $acting->grantingRequest(Auth::guard('admin')->user(), $event->user)) !== null
+                && $acting->covers($covering, $event),
             'actingLog' => AdminActivityLog::query()
                 ->where('event_id', $event->id)
                 ->with(['admin:id,name', 'event:id,name'])

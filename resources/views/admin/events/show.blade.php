@@ -304,6 +304,26 @@
             </div>
         @endif
 
+        @if ($helpRequest || $canEditAsClient)
+            <div class="admin-panel-card">
+                <h2>Help request</h2>
+                @if ($helpRequest)
+                    <p class="admin-muted admin-mt-sm">
+                        <a href="{{ route('admin.help-requests.show', $helpRequest) }}" class="admin-link">#{{ $helpRequest->id }}</a>
+                        &middot; {{ $helpRequest->kind->label() }} &middot; {{ $helpRequest->status->label() }}
+                        @if ($helpRequest->assignedAdmin) &middot; {{ $helpRequest->assignedAdmin->name }}@endif
+                    </p>
+                @endif
+                @if ($canEditAsClient)
+                    <form method="post" action="{{ route('admin.users.act-as', $ev->user) }}" class="admin-mt-md">
+                        @csrf
+                        <input type="hidden" name="event_id" value="{{ $ev->id }}">
+                        <button type="submit" class="btn-primary"><i class="fa-solid fa-user-shield"></i> Edit as client</button>
+                    </form>
+                @endif
+            </div>
+        @endif
+
         <div class="admin-panel-card">
             <h2>Owner account</h2>
             <p class="admin-muted admin-mt-sm">{{ $ev->user?->name ?? '-' }}</p>

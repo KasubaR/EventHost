@@ -22,6 +22,13 @@ class ActingAsController extends Controller
 
         $helpRequest = $acting->grantingRequest($admin, $user);
 
+        // "Edit as client" from an event page names the event to open. It must be the client's own.
+        $eventId = $request->integer('event_id') ?: null;
+
+        if ($eventId !== null && ! $user->events()->whereKey($eventId)->exists()) {
+            return back()->with('error', 'That event does not belong to this client.');
+        }
+
         $acting->start(
             $request,
             $admin,
@@ -31,8 +38,8 @@ class ActingAsController extends Controller
         );
 
         // Land on what the client asked for: their event, the new-event wizard, or the list.
-        if ($helpRequest?->event_id) {
-            return redirect()->route('events.edit', $helpRequest->event_id);
+        if ($helpRequest?->event_id || $eventId !== null) {
+            return redirect()->route('events.edit', $helpRequest?->event_id ?? $eventId);
         }
 
         return redirect()->route($helpRequest?->kind === HelpRequestKind::CreateEvent ? 'events.create' : 'events.index');

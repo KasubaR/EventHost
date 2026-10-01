@@ -277,6 +277,18 @@
             @endif
         </div>
 
+        <div class="admin-panel-card">
+            <h2>Help request</h2>
+            @if ($currentHelpRequest)
+                <p class="admin-muted admin-mt-sm">
+                    <a href="{{ route('admin.help-requests.show', $currentHelpRequest) }}" class="admin-link">#{{ $currentHelpRequest->id }}</a>
+                    &middot; {{ $currentHelpRequest->kind->label() }} &middot; {{ $currentHelpRequest->status->label() }}
+                </p>
+            @else
+                <p class="admin-muted admin-mt-sm">No open request. Our team can only act on this account after the client asks for help.</p>
+            @endif
+        </div>
+
         @include('admin.partials.acting-log', ['entries' => $actingLog])
 
         <div class="admin-panel-card">

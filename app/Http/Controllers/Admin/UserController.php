@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\UpdateAdminUserEmailRequest;
 use App\Http\Requests\Admin\UpdateAdminUserStatusRequest;
 use App\Models\Admin;
 use App\Models\AdminActivityLog;
+use App\Models\AdminHelpRequest;
 use App\Models\CreditTransaction;
 use App\Models\CustomQuote;
 use App\Models\EnterpriseQuoteRequest;
@@ -65,6 +66,7 @@ class UserController extends Controller
         return view('admin.users.show', [
             'adminUser' => $user,
             'creditHistory' => $creditHistory,
+            'currentHelpRequest' => AdminHelpRequest::query()->where('user_id', $user->id)->current()->latest()->first(),
             'actingLog' => AdminActivityLog::query()
                 ->where('user_id', $user->id)
                 ->with(['admin:id,name', 'event:id,name'])
