@@ -1,0 +1,72 @@
+/**
+ * Get help page (/help).
+ * Pairs with events-admin.css for the .evt-section shell and forms-app.css for
+ * the .profile-field / .profile-input controls — this file only adds the form
+ * layout and the spacing around it.
+ */
+
+/* ---------- Request form ---------- */
+
+.help-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 640px;
+}
+
+.help-hint {
+  margin: -2px 0 2px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--gray-mid);
+}
+
+.help-form textarea.profile-input {
+  min-height: 132px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.help-actions {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 4px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.help-actions .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.help-errors {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.help-errors li + li {
+  margin-top: 4px;
+}
+
+.help-errors-box {
+  margin-bottom: 18px;
+}
+
+/* ---------- Open request card ---------- */
+
+.help-request-meta p {
+  margin: 0 0 8px;
+}
+
+.help-request-meta form {
+  margin-top: 16px;
+}
+
+@media (max-width: 640px) {
+  .help-actions .btn-primary {
+    width: 100%;
+  }
+}

@@ -1,6 +1,7 @@
 <x-app-layout>
     @push('styles')
         <link rel="stylesheet" href="{{ asset('css/events-admin.css') }}">
+        <link rel="stylesheet" href="{{ asset('css/help.css') }}">
         <link rel="stylesheet" href="{{ asset('css/custom-select.css') }}">
     @endpush
     @push('scripts')
@@ -38,7 +39,7 @@
                     <h2>Your request</h2>
                     <p>{{ $current->kind->label() }}@if ($current->event) &middot; {{ $current->event->name }}@endif</p>
                 </div>
-                <div class="evt-section-body">
+                <div class="evt-section-body help-request-meta">
                     <p><strong>{{ $current->status->label() }}</strong>
                         @if ($current->assignedAdmin) &middot; handled by {{ $current->assignedAdmin->name }}@endif
                     </p>
@@ -70,12 +71,12 @@
                 </div>
                 <div class="evt-section-body">
                     @if ($errors->any())
-                        <div class="evt-flash evt-flash--warn" role="alert">
-                            <ul>@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
+                        <div class="evt-flash evt-flash--warn help-errors-box" role="alert">
+                            <ul class="help-errors">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
                         </div>
                     @endif
 
-                    <form method="post" action="{{ route('help-request.store') }}" class="profile-form-stack">
+                    <form method="post" action="{{ route('help-request.store') }}" class="help-form">
                         @csrf
 
                         <div class="profile-field">
@@ -88,8 +89,9 @@
                         </div>
 
                         <div class="profile-field">
-                            <label for="hr-event" class="profile-label">Which event? <span class="evt-muted">(only for "Help with an existing event")</span></label>
-                            <select id="hr-event" name="event_id" class="profile-input" data-cs data-cs-search="auto" data-cs-placeholder="Choose an event">
+                            <label for="hr-event" class="profile-label">Which event?</label>
+                            <p class="help-hint" id="hr-event-hint">Only needed for "Help with an existing event".</p>
+                            <select id="hr-event" name="event_id" class="profile-input" aria-describedby="hr-event-hint" data-cs data-cs-search="auto">
                                 <option value="">No specific event</option>
                                 @foreach ($events as $event)
                                     <option value="{{ $event->id }}" @selected((int) old('event_id', $selectedEventId) === $event->id)>{{ $event->name }}</option>
@@ -99,17 +101,18 @@
 
                         <div class="profile-field">
                             <label for="hr-message" class="profile-label">What should we do?</label>
+                            <p class="help-hint" id="hr-message-hint">At least 10 characters. Dates, guest numbers and colours help.</p>
                             <textarea id="hr-message" name="message" rows="5" minlength="10" maxlength="2000" required
-                                      class="profile-input" placeholder="For example: a wedding invitation for 12 June, 150 guests, gold and ivory.">{{ old('message') }}</textarea>
+                                      class="profile-input" aria-describedby="hr-message-hint" placeholder="For example: a wedding invitation for 12 June, 150 guests, gold and ivory.">{{ old('message') }}</textarea>
                         </div>
 
                         <div class="profile-field">
-                            <label for="hr-contact" class="profile-label">Best way to reach you <span class="evt-muted">(optional)</span></label>
+                            <label for="hr-contact" class="profile-label">Best way to reach you <span class="profile-optional">Optional</span></label>
                             <input id="hr-contact" name="contact_preference" type="text" maxlength="255" class="profile-input"
                                    value="{{ old('contact_preference') }}" placeholder="WhatsApp on 097…, weekday evenings">
                         </div>
 
-                        <div class="profile-actions">
+                        <div class="help-actions">
                             <button type="submit" class="btn-primary"><i class="fa-solid fa-paper-plane"></i> Send request</button>
                         </div>
                     </form>

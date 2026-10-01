@@ -107,7 +107,7 @@
                 </a>
                 @if (config('admin.acting_as.enabled'))
                     <a href="{{ route('help-request.show') }}" class="dash-nav-link {{ request()->routeIs('help-request.*') ? 'is-active' : '' }}">
-                        <i class="fa-solid fa-life-ring"></i> Get help
+                        <img src="{{ asset('images/logo/EventHost Logo_Icon.svg') }}" alt="" class="dash-nav-logo" width="16" height="16"> Get help
                     </a>
                 @endif
                 <a href="{{ route('reviews.index') }}" class="dash-nav-link {{ request()->routeIs('reviews.*') ? 'is-active' : '' }}">
