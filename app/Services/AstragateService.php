@@ -71,6 +71,9 @@ class AstragateService
      * Hosted checkout (card and/or mobile money). The customer pays on Astragate's page.
      *
      * @param  array{reference: string, amount: float, currency?: string, description?: string, name?: string}  $context
+     * `checkoutUrl` already has the session `token` appended — Astragate's checkout page
+     * does not load without it. `rawResponse` is the response minus that token, safe to store/show.
+     *
      * @return array{checkoutUrl: ?string, sessionId: ?string, rawResponse: array<string, mixed>}
      */
     public function createCheckoutSession(array $context, ?string $paymentMode = 'CARD'): array
@@ -93,8 +96,16 @@ class AstragateService
         $response = $this->request('POST', '/v1/payment/checkout-sessions', $payload);
         $data = is_array($response['data'] ?? null) ? $response['data'] : [];
 
+        $url = $data['checkoutUrl'] ?? null;
+        $token = $data['token'] ?? null;
+        if (is_string($url) && is_string($token) && $token !== '') {
+            $url .= (str_contains($url, '?') ? '&' : '?').http_build_query(['token' => $token]);
+        }
+
+        unset($response['data']['token']);
+
         return [
-            'checkoutUrl' => $data['checkoutUrl'] ?? null,
+            'checkoutUrl' => $url,
             'sessionId' => $data['sessionId'] ?? null,
             'rawResponse' => $response,
         ];

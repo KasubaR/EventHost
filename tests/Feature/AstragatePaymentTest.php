@@ -94,9 +94,12 @@ class AstragatePaymentTest extends TestCase
 
         $this->get($response->headers->get('Location'))
             ->assertOk()
-            ->assertSee('https://checkout.dev.astragate.africa/r/checkout?session=agt-cs_1', false)
-            ->assertSee('Open Astragate checkout')
-            ->assertDontSee('jwt');
+            // The token must ride on the checkout link (the page 404s a session without it)…
+            ->assertSee('https://checkout.dev.astragate.africa/r/checkout?session=agt-cs_1&amp;token=jwt', false)
+            ->assertSee('Open Astragate checkout');
+
+        // …but it is never printed in the response dump.
+        $this->get($response->headers->get('Location'))->assertSee('agt-cs_1')->assertDontSee('"token"', false);
         $this->assertSame(0, Payment::query()->count());
     }
 

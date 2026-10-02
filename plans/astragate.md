@@ -31,6 +31,19 @@ Auth, initiate, callback and status-check all worked end to end against `api.dev
 Docs were thin: the callback `amount` and the status response shape were not documented; both were inferred and then
 confirmed by this run.
 
+### Hosted checkout (card) — 2026-10-02
+
+- `POST /v1/payment/checkout-sessions` returns `data.{checkoutUrl, sessionId, token}`. **The `token` must be appended to
+  `checkoutUrl` as `?token=…`**, otherwise the checkout page says "Payment Request Error — The requested payment could not
+  be found". The session `token` is a JWT issued to the merchant client (decoded claims include payout/refund roles, 1 h
+  expiry), so it must not be logged, cached in plain view or echoed in a response dump — `AstragateService::createCheckoutSession()`
+  returns the URL with the token already appended and a `rawResponse` with the token removed.
+- After payment Astragate redirects the customer to the merchant's base URL **configured in the portal** (docs example:
+  `…/callback/checkout-success?correlatorId=SO004`), not to a URL passed in the request (no `successUrl`/`returnUrl` field).
+  Set it to the test page for sandbox testing.
+- No documented webhook for checkout sessions; use the status endpoint or the portal redirect.
+- Docs typo: `paymentMode` is `MOBILE_MONEY` in the API reference, `MOBILE_MOBILE` in the checkout guide.
+
 ## Not yet observed (verify before relying on it)
 
 - Failure paths: declined / cancelled / timed-out / insufficient balance. Status mapping (4011, 4230, 4777 failed;
