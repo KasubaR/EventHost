@@ -44,6 +44,7 @@ class ReviewCrudTest extends TestCase
 
         $response->assertCreated();
         $response->assertJsonPath('review.status.value', 'pending');
+        $response->assertJsonPath('review.is_featured', false);
 
         $review = Review::query()->firstOrFail();
         $this->assertSame($user->id, $review->user_id);

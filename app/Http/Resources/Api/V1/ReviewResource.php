@@ -38,7 +38,8 @@ class ReviewResource extends JsonResource
                 'value' => $this->status->value,
                 'label' => $this->status->label(),
             ],
-            'is_featured' => $this->is_featured,
+            // A freshly created row isn't re-read, so the column default never reaches the model.
+            'is_featured' => (bool) $this->is_featured,
             'moderation_note' => $this->moderation_note,
             'created_at' => $this->created_at?->toIso8601String(),
         ];
