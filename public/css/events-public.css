@@ -377,6 +377,15 @@
     background: #f1f5f9;
     color: #64748b;
 }
+/* The logo file is a square canvas with the artwork in a band across the middle, so cover-fitting it
+   into a short box crops the empty space above and below without touching the file. */
+.evt-status-logo {
+    display: block;
+    width: 200px;
+    height: 56px;
+    margin: 0 auto 22px;
+    object-fit: cover;
+}
 .evt-status-title {
     margin: 0 0 10px;
     font-size: 22px;

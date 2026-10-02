@@ -13,9 +13,16 @@
 
     <div class="evt-status-page">
         <article class="evt-status-card evt-status-card--{{ $status->value }}">
-            <div class="evt-status-icon" aria-hidden="true">
-                <i class="fa-solid {{ $status->icon() }}"></i>
-            </div>
+            {{-- The EventHost logo takes the place of the status icon. Once the owner has paid to remove
+                 branding it must not appear in the card either, so those events keep the status icon. --}}
+            @if ($event->branding_removed)
+                <div class="evt-status-icon" aria-hidden="true">
+                    <i class="fa-solid {{ $status->icon() }}"></i>
+                </div>
+            @else
+                <img src="{{ asset('images/logo/EventHost Logo_Blue.svg') }}" alt="{{ config('app.name') }}"
+                     class="evt-status-logo" width="200" height="56">
+            @endif
             <h1 class="evt-status-title">{{ $status->title() }}</h1>
             <p class="evt-status-message">{{ $status->message() }}</p>
             @if (! $event->trashed() && filled($event->name))

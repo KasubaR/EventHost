@@ -58,6 +58,31 @@ class PublicInvitationLifecycleTest extends TestCase
         $this->assertSame(0, $event->fresh()->invitation_views_count);
     }
 
+    public function test_status_page_shows_the_eventhost_logo_instead_of_a_status_icon(): void
+    {
+        $event = $this->liveEvent(['event_date' => now()->subMonth()->format('Y-m-d')]);
+
+        $this->get(route('events.public', $event->slug))
+            ->assertOk()
+            ->assertSee('evt-status-logo', escape: false)
+            ->assertSee('EventHost Logo_Blue.svg', escape: false)
+            ->assertDontSee('evt-status-icon', escape: false);
+    }
+
+    public function test_status_page_keeps_the_status_icon_and_no_logo_once_branding_is_removed(): void
+    {
+        $event = $this->liveEvent([
+            'event_date' => now()->subMonth()->format('Y-m-d'),
+            'branding_removed' => true,
+        ]);
+
+        $this->get(route('events.public', $event->slug))
+            ->assertOk()
+            ->assertSee('evt-status-icon', escape: false)
+            ->assertDontSee('evt-status-logo', escape: false)
+            ->assertDontSee('EventHost Logo_Blue.svg', escape: false);
+    }
+
     public function test_paused_invitation_shows_unavailable_and_resume_restores_it(): void
     {
         $user = User::factory()->create();
