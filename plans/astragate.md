@@ -41,7 +41,16 @@ confirmed by this run.
 - After payment Astragate redirects the customer to the merchant's base URL **configured in the portal** (docs example:
   `…/callback/checkout-success?correlatorId=SO004`), not to a URL passed in the request (no `successUrl`/`returnUrl` field).
   Set it to the test page for sandbox testing.
-- No documented webhook for checkout sessions; use the status endpoint or the portal redirect.
+- **Confirmed end to end (test card `4111…`, K1):** the checkout completed, the page went `completed`.
+  - A **callback does arrive** for checkout payments, same `callbackType: COLLECTION` shape as mobile money, and
+    `correlatorId` is the reference we sent. `systemTransactionId` is the *transaction* id, not the `sessionId`.
+  - The callback also carries `metadata.customerCardDetails` (masked number `XXXXXXXXXXXX1111`, BIN, expiry month/year,
+    card type). Treat as sensitive-adjacent: **do not persist or log it** in real billing; read only `statusCode`,
+    `correlatorId`, `amount`, `systemTransactionId`.
+  - The status endpoint works for checkout too: `paymentChannel: "CHECKOUT"` (vs `"API"` for mobile-money collections),
+    `accountNumber` came back as `+260…` (with the plus, unlike the API-collection one), `paymentProcessorResponseMessage`
+    "Request processed successfully.". Still no `currency` field.
+- Documented webhook for checkout: none — but the generic COLLECTION callback fires, so the one callback URL covers both.
 - Docs typo: `paymentMode` is `MOBILE_MONEY` in the API reference, `MOBILE_MOBILE` in the checkout guide.
 
 ## Not yet observed (verify before relying on it)
@@ -79,6 +88,9 @@ confirmed by this run.
    live test, new webhook secret and callback registered in the production portal (see the docs' go-live page).
 9. **Refunds / payouts / checkout.** Astragate also offers refunds, payouts, hosted checkout sessions and payment links
    (`docs.astragate.africa/reference/...`). Not used; hosted checkout may be a better fit than raw collections for cards.
+
+10. **Test page shows the whole callback**, card metadata included, to anyone with the secret URL. Fine for sandbox; strip
+    `metadata.customerCardDetails` before showing/caching if the page is ever kept around or used with real cards.
 
 ## Hygiene
 
