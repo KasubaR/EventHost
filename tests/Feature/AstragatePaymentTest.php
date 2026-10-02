@@ -95,7 +95,8 @@ class AstragatePaymentTest extends TestCase
         $this->get($response->headers->get('Location'))
             ->assertOk()
             ->assertSee('https://checkout.dev.astragate.africa/r/checkout?session=agt-cs_1', false)
-            ->assertSee('Open Astragate checkout');
+            ->assertSee('Open Astragate checkout')
+            ->assertDontSee('jwt');
         $this->assertSame(0, Payment::query()->count());
     }
 

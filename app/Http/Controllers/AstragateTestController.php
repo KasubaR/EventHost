@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\AstragateService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 use RuntimeException;
@@ -89,7 +90,8 @@ class AstragateTestController extends Controller
         Cache::put(self::CACHE_PREFIX.$reference, [
             'kind' => 'card',
             'amount' => (float) $data['amount'],
-            'initiated' => $result['rawResponse'],
+            // The session `token` is a bearer JWT for the merchant client; never store or show it.
+            'initiated' => Arr::except($result['rawResponse'], ['data.token']),
             'checkout_url' => $result['checkoutUrl'],
             'status' => 'pending',
             'callback' => null,
