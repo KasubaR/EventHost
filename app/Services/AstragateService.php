@@ -68,6 +68,39 @@ class AstragateService
     }
 
     /**
+     * Hosted checkout (card and/or mobile money). The customer pays on Astragate's page.
+     *
+     * @param  array{reference: string, amount: float, currency?: string, description?: string, name?: string}  $context
+     * @return array{checkoutUrl: ?string, sessionId: ?string, rawResponse: array<string, mixed>}
+     */
+    public function createCheckoutSession(array $context, ?string $paymentMode = 'CARD'): array
+    {
+        $payload = [
+            'lineItems' => [[
+                'itemId' => $context['reference'],
+                'name' => $context['name'] ?? 'Event Host sandbox test',
+                'quantity' => 1,
+                'unitPrice' => round((float) $context['amount'], 2),
+            ]],
+            'currency' => $context['currency'] ?? 'ZMW',
+            'correlatorId' => $context['reference'],
+            'description' => $context['description'] ?? 'Event Host sandbox test',
+        ];
+        if ($paymentMode !== null) {
+            $payload['paymentMode'] = $paymentMode;
+        }
+
+        $response = $this->request('POST', '/v1/payment/checkout-sessions', $payload);
+        $data = is_array($response['data'] ?? null) ? $response['data'] : [];
+
+        return [
+            'checkoutUrl' => $data['checkoutUrl'] ?? null,
+            'sessionId' => $data['sessionId'] ?? null,
+            'rawResponse' => $response,
+        ];
+    }
+
+    /**
      * @return array<string, mixed>  shaped like {@see LencoService::verifyByReference()}
      */
     public function verifyByReference(string $correlatorId): array

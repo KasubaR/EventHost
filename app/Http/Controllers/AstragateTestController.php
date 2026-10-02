@@ -64,6 +64,40 @@ class AstragateTestController extends Controller
         return redirect()->route('astragate.test', ['ref' => $reference]);
     }
 
+    /** Card payment through Astragate's hosted checkout page. */
+    public function checkout(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'amount' => ['required', 'numeric', 'min:1', 'max:'.self::MAX_AMOUNT],
+        ]);
+
+        $reference = 'TEST-'.now()->timestamp.'-'.bin2hex(random_bytes(3));
+
+        try {
+            $result = app(AstragateService::class)->createCheckoutSession([
+                'reference' => $reference,
+                'amount' => (float) $data['amount'],
+            ], 'CARD');
+        } catch (RuntimeException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
+
+        if (! is_string($result['checkoutUrl']) || ! str_starts_with($result['checkoutUrl'], 'https://')) {
+            return back()->withInput()->with('error', 'Astragate did not return a checkout URL.');
+        }
+
+        Cache::put(self::CACHE_PREFIX.$reference, [
+            'kind' => 'card',
+            'amount' => (float) $data['amount'],
+            'initiated' => $result['rawResponse'],
+            'checkout_url' => $result['checkoutUrl'],
+            'status' => 'pending',
+            'callback' => null,
+        ], now()->addDay());
+
+        return redirect()->route('astragate.test', ['ref' => $reference]);
+    }
+
     /** Asks Astragate for the live status instead of waiting on the callback. */
     public function check(string $reference): RedirectResponse
     {

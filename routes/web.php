@@ -78,6 +78,7 @@ if ($astragateTestPath !== '') {
     Route::middleware('throttle:20,1')->group(function () use ($astragateTestPath): void {
         Route::get('/'.$astragateTestPath, [AstragateTestController::class, 'show'])->name('astragate.test');
         Route::post('/'.$astragateTestPath, [AstragateTestController::class, 'initiate'])->name('astragate.test.initiate');
+        Route::post('/'.$astragateTestPath.'/checkout', [AstragateTestController::class, 'checkout'])->name('astragate.test.checkout');
         Route::post('/'.$astragateTestPath.'/check/{reference}', [AstragateTestController::class, 'check'])
             ->where('reference', 'TEST-[A-Za-z0-9-]+')
             ->name('astragate.test.check');

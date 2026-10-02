@@ -40,9 +40,21 @@
         <button type="submit">Send test collection</button>
     </form>
 
+    <h2>Card payment (hosted checkout)</h2>
+    <form method="POST" action="/{{ $path }}/checkout">
+        @csrf
+        <label for="card_amount">Amount (ZMW)</label>
+        <input id="card_amount" name="amount" type="number" step="0.01" min="1" max="{{ $maxAmount }}" value="{{ old('amount', 1) }}" required>
+        <button type="submit">Create card checkout</button>
+    </form>
+    <p>Sandbox test card: <code>4111 1111 1111 1111</code>, any other values.</p>
+
     @if ($record)
         <div class="box">
-            <p>Reference: <code>{{ $reference }}</code></p>
+            <p>Reference: <code>{{ $reference }}</code>@isset($record['kind']) ({{ $record['kind'] }})@endisset</p>
+            @isset($record['checkout_url'])
+                <p><a href="{{ $record['checkout_url'] }}" target="_blank" rel="noopener noreferrer">Open Astragate checkout</a>, pay, then come back and refresh.</p>
+            @endisset
             <p>Status: <span class="pill">{{ $record['status'] }}</span></p>
             <form method="POST" action="/{{ $path }}/check/{{ $reference }}">
                 @csrf

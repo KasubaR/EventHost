@@ -35,6 +35,12 @@ class AstragatePaymentTest extends TestCase
                 'success' => true,
                 'data' => ['astragateTransactionId' => 'tx-1', 'statusCode' => 4001, 'statusDescription' => 'Transaction received and processing'],
             ]),
+            'api.dev.astragate.africa/v1/payment/checkout-sessions' => Http::response([
+                'success' => 'true',
+                'message' => 'SUCCESS',
+                'statusCode' => 185,
+                'data' => ['checkoutUrl' => 'https://checkout.dev.astragate.africa/r/checkout?session=agt-cs_1', 'sessionId' => 'agt-cs_1', 'token' => 'jwt'],
+            ]),
             'api.dev.astragate.africa/v1/payment/status/*' => Http::response([
                 'success' => true,
                 'data' => ['statusCode' => $statusCode],
@@ -71,6 +77,34 @@ class AstragatePaymentTest extends TestCase
             && $r['currency'] === 'ZMW'
             && (float) $r['amount'] === 5.0);
         $this->assertSame(0, Payment::query()->count());
+    }
+
+    public function test_card_checkout_creates_a_session_and_links_to_it(): void
+    {
+        $this->fakeAstragate();
+
+        $response = $this->post(self::PATH.'/checkout', ['amount' => 5]);
+
+        $response->assertRedirect();
+        Http::assertSent(fn ($r) => str_ends_with($r->url(), '/v1/payment/checkout-sessions')
+            && $r['paymentMode'] === 'CARD'
+            && $r['currency'] === 'ZMW'
+            && str_starts_with($r['correlatorId'], 'TEST-')
+            && (float) $r['lineItems'][0]['unitPrice'] === 5.0);
+
+        $this->get($response->headers->get('Location'))
+            ->assertOk()
+            ->assertSee('https://checkout.dev.astragate.africa/r/checkout?session=agt-cs_1', false)
+            ->assertSee('Open Astragate checkout');
+        $this->assertSame(0, Payment::query()->count());
+    }
+
+    public function test_card_checkout_caps_the_amount(): void
+    {
+        $this->fakeAstragate();
+
+        $this->post(self::PATH.'/checkout', ['amount' => 500])->assertSessionHasErrors('amount');
+        Http::assertNothingSent();
     }
 
     public function test_test_page_caps_the_amount(): void
