@@ -118,6 +118,33 @@
   color: var(--pink);
 }
 
+/* ── PUBLIC DASHBOARD: free-registration section ── */
+.dash-section-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 8px 0 14px;
+}
+.dash-mini-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 140px;
+  padding-top: 8px;
+}
+.dash-mini-bar {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+.dash-mini-bar-fill {
+  display: block;
+  width: 100%;
+  min-height: 2px;
+  border-radius: 4px 4px 0 0;
+  background: var(--accent, #6d4aff);
+}
+
 /* ── DASHBOARD HOME ── */
 .dash-stats {
   display: grid;

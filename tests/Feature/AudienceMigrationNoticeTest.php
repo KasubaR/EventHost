@@ -51,9 +51,12 @@ class AudienceMigrationNoticeTest extends TestCase
         $response = $this->actingAs($user)->get(route('public-dashboard'));
 
         $response->assertOk()
-            ->assertSee('moved to this portal')
-            ->assertSee('Old Public Wedding')
-            ->assertDontSee('Freshly Created Concert');
+            ->assertSee('An event moved to this portal')
+            ->assertSee('Old Public Wedding');
+
+        // Both events are named elsewhere on the dashboard (registrations by event), so count
+        // the banner's own rows rather than asserting the fresh one's name never appears.
+        $this->assertSame(1, substr_count($response->getContent(), 'class="dash-notice-event"'));
     }
 
     public function test_public_dashboard_hides_the_banner_when_nothing_needs_it(): void

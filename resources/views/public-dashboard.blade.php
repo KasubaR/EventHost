@@ -119,6 +119,79 @@
             </div>
         </div>
 
+        @if ($t['open_registration_events'] > 0)
+            @php
+                $reg = $analytics['registrations'];
+                $regMax = max(1, collect($reg['daily'])->max('count'));
+            @endphp
+
+            <h2 class="dash-section-title">Free registration</h2>
+            <div class="dash-stats dash-stats--four">
+                <div class="dash-stat-card">
+                    <div class="dsc-icon dsc-icon--green"><i class="fa-solid fa-user-check" aria-hidden="true"></i></div>
+                    <div class="dsc-body">
+                        <div class="dsc-value">{{ number_format($reg['registered']) }}</div>
+                        <div class="dsc-label">Registrations</div>
+                    </div>
+                </div>
+                <div class="dash-stat-card">
+                    <div class="dsc-icon dsc-icon--accent"><i class="fa-solid fa-people-group" aria-hidden="true"></i></div>
+                    <div class="dsc-body">
+                        <div class="dsc-value">{{ number_format($reg['headcount']) }}</div>
+                        <div class="dsc-label">Expected headcount</div>
+                        <div class="dsc-hint">Includes plus-ones</div>
+                    </div>
+                </div>
+                <div class="dash-stat-card">
+                    <div class="dsc-icon dsc-icon--cyan"><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i></div>
+                    <div class="dsc-body">
+                        <div class="dsc-value">{{ number_format($reg['awaiting_approval']) }}</div>
+                        <div class="dsc-label">Awaiting your approval</div>
+                    </div>
+                </div>
+                <div class="dash-stat-card">
+                    <div class="dsc-icon dsc-icon--purple"><i class="fa-solid fa-qrcode" aria-hidden="true"></i></div>
+                    <div class="dsc-body">
+                        <div class="dsc-value">{{ number_format($reg['checked_in']) }}</div>
+                        <div class="dsc-label">Checked in</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dash-chart-grid">
+                <section class="dash-panel" aria-labelledby="dash-reg-daily-title">
+                    <div class="dash-panel-head">
+                        <h2 id="dash-reg-daily-title" class="dash-panel-title">Daily registrations</h2>
+                        <p class="dash-panel-sub">Last 14 days · free-registration events</p>
+                    </div>
+                    <div class="dash-mini-bars" role="img" aria-label="Registrations per day over the last 14 days">
+                        @foreach ($reg['daily'] as $day)
+                            <div class="dash-mini-bar" title="{{ \Illuminate\Support\Carbon::parse($day['date'])->format('d M') }}: {{ $day['count'] }}">
+                                <span class="dash-mini-bar-fill" style="height: {{ $day['count'] > 0 ? max(6, round($day['count'] / $regMax * 100)) : 2 }}%"></span>
+                            </div>
+                        @endforeach
+                    </div>
+                </section>
+
+                <section class="dash-panel" aria-labelledby="dash-reg-events-title">
+                    <div class="dash-panel-head">
+                        <h2 id="dash-reg-events-title" class="dash-panel-title">Registrations by event</h2>
+                        <p class="dash-panel-sub">Top 5</p>
+                    </div>
+                    <ul class="dash-top-guests">
+                        @foreach ($reg['events'] as $row)
+                            <li class="dash-top-guest">
+                                <a href="{{ route('events.guests.index', $row['event']) }}" class="dash-top-row">
+                                    <span class="dash-top-name">{{ $row['event']->name }}</span>
+                                    <span class="dash-top-seats">{{ $row['registered'] }} registered · {{ $row['headcount'] }} expected</span>
+                                </a>
+                            </li>
+                        @endforeach
+                    </ul>
+                </section>
+            </div>
+        @endif
+
         @if ($analytics['upcoming']->isNotEmpty())
             <section class="dash-panel" aria-labelledby="dash-public-upcoming-title">
                 <div class="dash-panel-head">

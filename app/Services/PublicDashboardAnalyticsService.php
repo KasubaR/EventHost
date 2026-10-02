@@ -4,12 +4,17 @@ namespace App\Services;
 
 use App\Enums\EventAudience;
 use App\Enums\EventProductKind;
+use App\Enums\RsvpApprovalStatus;
+use App\Enums\RsvpStatus;
 use App\Enums\TicketingStatus;
 use App\Enums\TicketStatus;
 use App\Models\Event;
+use App\Models\Guest;
+use App\Models\Rsvp;
 use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * The public portal's overview (/public-dashboard) — plans/public-private-portals.md
@@ -49,6 +54,7 @@ class PublicDashboardAnalyticsService
         if ($events->isEmpty()) {
             return [
                 'has_events' => false,
+                'registrations' => $this->registrationsFor(collect()),
                 'totals' => [
                     'events' => 0,
                     'ticketed_events' => 0,
@@ -77,8 +83,11 @@ class PublicDashboardAnalyticsService
 
         $revenue = $ledger->summaryForEventIds($ticketedIds);
 
+        $registrationEvents = $events->where('product_kind', '!=', EventProductKind::Ticketed)->values();
+
         return [
             'has_events' => true,
+            'registrations' => $this->registrationsFor($registrationEvents),
             'totals' => [
                 'events' => $events->count(),
                 'ticketed_events' => $ticketedIds->count(),
@@ -97,6 +106,89 @@ class PublicDashboardAnalyticsService
                 ->sortBy('event_date')
                 ->take(5)
                 ->values(),
+        ];
+    }
+
+    /**
+     * Registration numbers for the free-registration events (the ones with no
+     * ticket sales). Self-signups are ordinary `rsvps` rows, so this reads the
+     * same tables the private dashboard does. A registration counts once it is
+     * Accepted and not waiting on, or refused by, host approval.
+     *
+     * @param  Collection<int, Event>  $events
+     * @return array{
+     *     registered: int,
+     *     headcount: int,
+     *     awaiting_approval: int,
+     *     checked_in: int,
+     *     daily: list<array{date: string, count: int}>,
+     *     events: list<array{event: Event, registered: int, headcount: int}>,
+     * }
+     */
+    private function registrationsFor(Collection $events): array
+    {
+        $empty = [
+            'registered' => 0,
+            'headcount' => 0,
+            'awaiting_approval' => 0,
+            'checked_in' => 0,
+            'daily' => [],
+            'events' => [],
+        ];
+
+        if ($events->isEmpty()) {
+            return $empty;
+        }
+
+        $ids = $events->pluck('id');
+
+        $confirmed = fn () => Rsvp::query()
+            ->whereIn('event_id', $ids)
+            ->where('status', RsvpStatus::Accepted)
+            ->whereNotIn('host_approval_status', [RsvpApprovalStatus::Pending, RsvpApprovalStatus::Rejected]);
+
+        $perEvent = $confirmed()
+            ->selectRaw('event_id, COUNT(*) as registered, SUM(attendee_count) as headcount')
+            ->groupBy('event_id')
+            ->get()
+            ->keyBy('event_id');
+
+        $start = now()->subDays(13)->startOfDay();
+        $dayExpr = Schema::getConnection()->getDriverName() === 'sqlite'
+            ? "strftime('%Y-%m-%d', created_at)"
+            : 'DATE(created_at)';
+        $counts = $confirmed()
+            ->where('created_at', '>=', $start)
+            ->selectRaw("{$dayExpr} as day, COUNT(*) as cnt")
+            ->groupByRaw($dayExpr)
+            ->pluck('cnt', 'day');
+
+        $daily = [];
+        for ($i = 0; $i < 14; $i++) {
+            $date = $start->copy()->addDays($i)->format('Y-m-d');
+            $daily[] = ['date' => $date, 'count' => (int) ($counts[$date] ?? 0)];
+        }
+
+        return [
+            'registered' => (int) $perEvent->sum('registered'),
+            'headcount' => (int) $perEvent->sum('headcount'),
+            'awaiting_approval' => Rsvp::query()
+                ->whereIn('event_id', $ids)
+                ->where('status', RsvpStatus::Accepted)
+                ->where('host_approval_status', RsvpApprovalStatus::Pending)
+                ->count(),
+            'checked_in' => Guest::query()->whereIn('event_id', $ids)->whereNotNull('checked_in_at')->count(),
+            'daily' => $daily,
+            'events' => $events
+                ->sortByDesc(fn (Event $e) => (int) ($perEvent[$e->id]->registered ?? 0))
+                ->take(5)
+                ->map(fn (Event $e) => [
+                    'event' => $e,
+                    'registered' => (int) ($perEvent[$e->id]->registered ?? 0),
+                    'headcount' => (int) ($perEvent[$e->id]->headcount ?? 0),
+                ])
+                ->values()
+                ->all(),
         ];
     }
 }
