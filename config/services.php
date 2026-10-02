@@ -35,6 +35,19 @@ return [
         ],
     ],
 
+    // Astragate (mobile-money collections). Off by default; when on it handles
+    // mobile-money checkout for event-credit/add-on payments (`payments` table)
+    // while Lenco keeps bank transfer, tickets and contributions.
+    'astragate' => [
+        'enabled' => filter_var(env('ASTRAGATE_ENABLED', false), FILTER_VALIDATE_BOOL),
+        'base_url' => env('ASTRAGATE_API_BASE_URL', 'https://api.dev.astragate.africa'),
+        'auth_url' => env('ASTRAGATE_AUTH_URL', 'https://auth.dev.astragate.africa'),
+        'client_id' => env('ASTRAGATE_CLIENT_ID'),
+        'client_secret' => env('ASTRAGATE_CLIENT_SECRET'),
+        // Callbacks are unsigned, so this random string is the secret part of the callback URL.
+        'webhook_secret' => env('ASTRAGATE_WEBHOOK_SECRET'),
+    ],
+
     'lenco' => [
         'base_url' => env('LENCO_API_BASE_URL', 'https://api.lenco.co/access/v2'),
         'api_secret_key' => env('LENCO_API_SECRET_KEY'),

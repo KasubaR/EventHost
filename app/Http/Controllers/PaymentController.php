@@ -12,6 +12,7 @@ use App\Models\InvitationTemplate;
 use App\Models\Payment;
 use App\Models\TicketPayment;
 use App\Models\User;
+use App\Services\AstragateService;
 use App\Services\ContributionPaymentStatusService;
 use App\Services\LencoService;
 use App\Services\PaymentCompletionService;
@@ -245,8 +246,20 @@ class PaymentController extends Controller
                     $metadata['previous_tier'] = $previousTier->value;
                 }
 
+                $useAstragate = $method === 'mobile_money' && AstragateService::enabled();
+                if ($useAstragate) {
+                    $metadata['gateway'] = 'astragate';
+                }
+
                 try {
-                    $result = $method === 'mobile_money'
+                    if ($useAstragate) {
+                        // No queued retry: a failed initiation just surfaces to the buyer.
+                        $result = array_merge(
+                            app(AstragateService::class)->initiateCollection($context, (string) $request->input('phone')),
+                            ['provider' => $request->input('provider')],
+                        );
+                    } else {
+                        $result = $method === 'mobile_money'
                         ? $lenco->initiateMobileMoneyPayment(
                             $context,
                             (string) $request->input('phone'),
@@ -255,9 +268,10 @@ class PaymentController extends Controller
                         : $lenco->initiateBankTransfer($context, [
                             'bankName' => (string) $request->input('bank_name'),
                         ]);
+                    }
                 } catch (RuntimeException $e) {
                     $code = (int) $e->getCode();
-                    if ($code === 0 || $code >= 500) {
+                    if (! $useAstragate && ($code === 0 || $code >= 500)) {
                         $payment = $this->createPendingPayment($lockedUser, $request, $plan, $reference, $userRef, $amount, $method, array_merge($metadata, [
                             'queued_reason' => $e->getMessage(),
                         ]), $creditsGranted);
@@ -369,7 +383,9 @@ class PaymentController extends Controller
         }
 
         try {
-            $verification = $lenco->verifyPayment($transactionId);
+            $verification = $payment->isAstragate()
+                ? app(AstragateService::class)->verifyByReference((string) $payment->payment_reference)
+                : $lenco->verifyPayment($transactionId);
             $payment = $statusService->applyVerificationResult($payment, $verification);
             PaymentLog::forPayment($payment, 'verify.by_id', [
                 'transaction_id' => $transactionId,
@@ -405,7 +421,9 @@ class PaymentController extends Controller
         }
 
         try {
-            $verification = $lenco->verifyByReference($reference);
+            $verification = $payment->isAstragate()
+                ? app(AstragateService::class)->verifyByReference($reference)
+                : $lenco->verifyByReference($reference);
             $payment = $statusService->applyVerificationResult($payment, $verification);
             PaymentLog::forPayment($payment, 'verify.by_reference', [
                 'reference' => $reference,

@@ -36,6 +36,7 @@ use App\Http\Controllers\GuestImportController;
 use App\Http\Controllers\HelpRequestController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MapLinkController;
+use App\Http\Controllers\AstragateWebhookController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PublicCheckInController;
 use App\Http\Controllers\PublicEventController;
@@ -63,6 +64,11 @@ $lencoWebhookPath = trim((string) config('services.lenco.webhook_path'), '/') ?:
 Route::post($lencoWebhookPath, [PaymentController::class, 'webhook'])
     ->withoutMiddleware([VerifyCsrfToken::class])
     ->name('lenco.webhook');
+
+Route::post('/webhooks/astragate/{secret}', AstragateWebhookController::class)
+    ->withoutMiddleware([VerifyCsrfToken::class])
+    ->middleware('throttle:120,1')
+    ->name('webhooks.astragate');
 
 Route::post('/webhooks/twilio/whatsapp', TwilioWhatsAppWebhookController::class)
     ->withoutMiddleware([VerifyCsrfToken::class])

@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Payment;
+use App\Services\AstragateService;
 use App\Services\LencoService;
 use App\Services\PaymentStatusService;
 use App\Support\PaymentLog;
@@ -57,7 +58,9 @@ class PollPendingPayments extends Command
             }
 
             try {
-                $verification = $lenco->verifyPayment((string) $payment->lenco_transaction_id);
+                $verification = $payment->isAstragate()
+                    ? app(AstragateService::class)->verifyByReference((string) $payment->payment_reference)
+                    : $lenco->verifyPayment((string) $payment->lenco_transaction_id);
                 $statusService->applyVerificationResult($payment, $verification);
                 PaymentLog::forPayment($payment->fresh(), 'poll.verify_by_id', [
                     'mapped_status' => $verification['status'] ?? null,
@@ -92,7 +95,9 @@ class PollPendingPayments extends Command
                 }
 
                 try {
-                    $verification = $lenco->verifyByReference((string) $payment->payment_reference);
+                    $verification = $payment->isAstragate()
+                        ? app(AstragateService::class)->verifyByReference((string) $payment->payment_reference)
+                        : $lenco->verifyByReference((string) $payment->payment_reference);
                     $statusService->applyVerificationResult($payment, $verification);
                     PaymentLog::forPayment($payment->fresh(), 'poll.verify_by_reference', [
                         'mapped_status' => $verification['status'] ?? null,
