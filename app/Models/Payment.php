@@ -152,11 +152,6 @@ class Payment extends Model
         return null;
     }
 
-    public function isAstragate(): bool
-    {
-        return ($this->metadata['gateway'] ?? null) === 'astragate';
-    }
-
     public function isStuck(int $hours): bool
     {
         return ! $this->isTerminal()

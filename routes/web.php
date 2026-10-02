@@ -36,6 +36,7 @@ use App\Http\Controllers\GuestImportController;
 use App\Http\Controllers\HelpRequestController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MapLinkController;
+use App\Http\Controllers\AstragateTestController;
 use App\Http\Controllers\AstragateWebhookController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PublicCheckInController;
@@ -69,6 +70,19 @@ Route::post('/webhooks/astragate/{secret}', AstragateWebhookController::class)
     ->withoutMiddleware([VerifyCsrfToken::class])
     ->middleware('throttle:120,1')
     ->name('webhooks.astragate');
+
+// Sandbox test page for Astragate on a secret URL; absent unless ASTRAGATE_TEST_PATH is set.
+$astragateTestPath = trim((string) config('services.astragate.test_path'), '/');
+
+if ($astragateTestPath !== '') {
+    Route::middleware('throttle:20,1')->group(function () use ($astragateTestPath): void {
+        Route::get('/'.$astragateTestPath, [AstragateTestController::class, 'show'])->name('astragate.test');
+        Route::post('/'.$astragateTestPath, [AstragateTestController::class, 'initiate'])->name('astragate.test.initiate');
+        Route::post('/'.$astragateTestPath.'/check/{reference}', [AstragateTestController::class, 'check'])
+            ->where('reference', 'TEST-[A-Za-z0-9-]+')
+            ->name('astragate.test.check');
+    });
+}
 
 Route::post('/webhooks/twilio/whatsapp', TwilioWhatsAppWebhookController::class)
     ->withoutMiddleware([VerifyCsrfToken::class])

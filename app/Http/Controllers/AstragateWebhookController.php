@@ -2,21 +2,21 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Payment;
-use App\Services\AstragateService;
-use App\Services\PaymentStatusService;
-use App\Support\PaymentLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 /**
- * Receives Astragate collection callbacks at a secret URL
+ * Receives Astragate callbacks at a secret URL
  * (`POST /webhooks/astragate/{secret}`). Astragate does not sign callbacks, so a
  * wrong or unconfigured secret 404s — the route looks like it does not exist.
+ *
+ * Sandbox only for now: it records `TEST-` collections from the secret test page
+ * and acknowledges everything else. It never touches the `payments` table.
  */
 class AstragateWebhookController extends Controller
 {
-    public function __invoke(Request $request, string $secret, PaymentStatusService $statusService): JsonResponse
+    public function __invoke(Request $request, string $secret): JsonResponse
     {
         $expected = (string) config('services.astragate.webhook_secret');
 
@@ -25,40 +25,17 @@ class AstragateWebhookController extends Controller
         }
 
         $correlatorId = (string) $request->input('correlatorId', '');
-        $statusCode = $request->input('statusCode');
+        $key = AstragateTestController::CACHE_PREFIX.$correlatorId;
+        $record = str_starts_with($correlatorId, 'TEST-') ? Cache::get($key) : null;
 
-        $payment = $correlatorId !== ''
-            ? Payment::query()->where('payment_reference', $correlatorId)->first()
-            : null;
-
-        if ($payment === null || ($payment->metadata['gateway'] ?? null) !== 'astragate') {
-            PaymentLog::info('astragate.webhook_unmatched', ['correlator_id' => $correlatorId]);
-
-            return response()->json(['success' => true, 'message' => 'acknowledged']);
+        if (is_array($record)) {
+            $record['callback'] = $request->all();
+            $record['status'] = \App\Services\AstragateService::mapStatusCode(
+                is_scalar($request->input('statusCode')) ? $request->input('statusCode') : null
+            );
+            Cache::put($key, $record, now()->addDay());
         }
 
-        $payment->update([
-            'webhook_received' => true,
-            'webhook_payload' => $request->all(),
-            'webhook_received_at' => now(),
-        ]);
-
-        $status = AstragateService::mapStatusCode(is_scalar($statusCode) ? $statusCode : null);
-
-        // The callback carries no amount, so the recorded one stands in for the
-        // settlement check; the unguessable URL is what vouches for the callback.
-        $statusService->applyVerificationResult($payment->fresh(), [
-            'status' => $status,
-            'lencoStatus' => (string) $statusCode,
-            'transactionId' => $request->input('systemTransactionId'),
-            'reference' => $correlatorId,
-            'amount' => (float) $payment->amount,
-            'currency' => $payment->currency,
-            'rawResponse' => $request->all(),
-        ]);
-
-        PaymentLog::forPayment($payment->fresh(), 'astragate.webhook_processed', ['status' => $status]);
-
-        return response()->json(['success' => true, 'message' => 'processed']);
+        return response()->json(['success' => true, 'message' => 'acknowledged']);
     }
 }

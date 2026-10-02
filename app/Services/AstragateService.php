@@ -17,10 +17,9 @@ class AstragateService
 {
     private const TOKEN_CACHE_KEY = 'astragate.access_token';
 
-    public static function enabled(): bool
+    public static function configured(): bool
     {
-        return config('services.astragate.enabled') === true
-            && filled(config('services.astragate.client_id'))
+        return filled(config('services.astragate.client_id'))
             && filled(config('services.astragate.client_secret'));
     }
 

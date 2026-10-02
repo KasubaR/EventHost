@@ -14,15 +14,31 @@ class AstragatePaymentTest extends TestCase
 {
     use RefreshDatabase;
 
+    private const PATH = '/astragate-sandbox-test';
+
     protected function setUp(): void
     {
         parent::setUp();
         Cache::flush();
         config([
-            'services.astragate.enabled' => true,
             'services.astragate.client_id' => 'cid',
             'services.astragate.client_secret' => 'csecret',
             'services.astragate.webhook_secret' => 'hush-hush-secret',
+        ]);
+    }
+
+    private function fakeAstragate(int $statusCode = 4001): void
+    {
+        Http::fake([
+            'auth.dev.astragate.africa/*' => Http::response(['access_token' => 'tok', 'expires_in' => 3600]),
+            'api.dev.astragate.africa/v1/payment/collection' => Http::response([
+                'success' => true,
+                'data' => ['astragateTransactionId' => 'tx-1', 'statusCode' => 4001, 'statusDescription' => 'Transaction received and processing'],
+            ]),
+            'api.dev.astragate.africa/v1/payment/status/*' => Http::response([
+                'success' => true,
+                'data' => ['statusCode' => $statusCode],
+            ]),
         ]);
     }
 
@@ -35,28 +51,72 @@ class AstragatePaymentTest extends TestCase
         $this->assertSame('pending', AstragateService::mapStatusCode(null));
     }
 
-    public function test_collection_authenticates_then_posts_the_correlator(): void
+    public function test_test_page_loads_and_is_not_indexable(): void
     {
-        Http::fake([
-            'auth.dev.astragate.africa/*' => Http::response(['access_token' => 'tok', 'expires_in' => 3600]),
-            'api.dev.astragate.africa/v1/payment/collection' => Http::response([
-                'success' => true,
-                'data' => ['correlatorId' => 'EH-1', 'astragateTransactionId' => 'tx-1', 'statusCode' => 4001, 'statusDescription' => 'Transaction received and processing'],
-            ]),
-        ]);
+        $this->get(self::PATH)->assertOk()->assertSee('noindex', false);
+    }
 
-        $result = app(AstragateService::class)->initiateCollection(
-            ['reference' => 'EH-1', 'amount' => 450, 'description' => 'Test'],
-            '0971234567',
-        );
+    public function test_test_page_sends_a_collection_and_shows_the_reference(): void
+    {
+        $this->fakeAstragate();
 
-        $this->assertSame('tx-1', $result['transactionId']);
-        $this->assertSame('pending', $result['status']);
+        $response = $this->post(self::PATH, ['phone' => '0971234567', 'amount' => 5]);
+
+        $response->assertRedirect();
+        $this->assertStringContainsString('ref=TEST-', $response->headers->get('Location'));
         Http::assertSent(fn ($r) => str_ends_with($r->url(), '/v1/payment/collection')
             && $r->hasHeader('Authorization', 'Bearer tok')
-            && $r['correlatorId'] === 'EH-1'
+            && str_starts_with($r['correlatorId'], 'TEST-')
             && $r['accountNumber'] === '260971234567'
-            && $r['currency'] === 'ZMW');
+            && $r['currency'] === 'ZMW'
+            && (float) $r['amount'] === 5.0);
+        $this->assertSame(0, Payment::query()->count());
+    }
+
+    public function test_test_page_caps_the_amount(): void
+    {
+        $this->fakeAstragate();
+
+        $this->post(self::PATH, ['phone' => '0971234567', 'amount' => 500])->assertSessionHasErrors('amount');
+        Http::assertNothingSent();
+    }
+
+    public function test_callback_updates_the_test_record_and_never_touches_billing(): void
+    {
+        $this->fakeAstragate();
+        $location = $this->post(self::PATH, ['phone' => '0971234567', 'amount' => 5])->headers->get('Location');
+        parse_str((string) parse_url($location, PHP_URL_QUERY), $query);
+        $reference = $query['ref'];
+
+        $user = User::factory()->withoutCredits()->create();
+        $payment = Payment::factory()->for($user)->create(['status' => 'pending']);
+
+        $this->postJson('/webhooks/astragate/hush-hush-secret', [
+            'callbackType' => 'COLLECTION',
+            'statusCode' => '4200',
+            'correlatorId' => $reference,
+            'systemTransactionId' => 'sys-1',
+        ])->assertOk();
+        // A callback naming a real billing payment is ignored.
+        $this->postJson('/webhooks/astragate/hush-hush-secret', [
+            'statusCode' => '4200',
+            'correlatorId' => $payment->payment_reference,
+        ])->assertOk();
+
+        $this->get(self::PATH.'?ref='.$reference)->assertOk()->assertSee('completed')->assertSee('sys-1');
+        $this->assertSame('pending', $payment->fresh()->status);
+        $this->assertSame(0, $user->fresh()->event_credits);
+    }
+
+    public function test_check_asks_astragate_for_the_status(): void
+    {
+        $this->fakeAstragate(4200);
+        $location = $this->post(self::PATH, ['phone' => '0971234567', 'amount' => 5])->headers->get('Location');
+        parse_str((string) parse_url($location, PHP_URL_QUERY), $query);
+
+        $this->post(self::PATH.'/check/'.$query['ref'])->assertRedirect();
+
+        $this->get(self::PATH.'?ref='.$query['ref'])->assertSee('completed');
     }
 
     public function test_callback_with_wrong_secret_is_a_404(): void
@@ -69,40 +129,6 @@ class AstragatePaymentTest extends TestCase
     {
         config(['services.astragate.webhook_secret' => '']);
 
-        $this->postJson('/webhooks/astragate/', ['correlatorId' => 'x'])->assertNotFound();
-    }
-
-    public function test_successful_callback_completes_the_payment(): void
-    {
-        $user = User::factory()->withoutCredits()->create();
-        $payment = Payment::factory()->for($user)->create([
-            'amount' => 450.00,
-            'currency' => 'ZMW',
-            'plan_key' => 'base',
-            'status' => 'pending',
-            'metadata' => ['gateway' => 'astragate'],
-        ]);
-
-        $this->postJson('/webhooks/astragate/hush-hush-secret', [
-            'callbackType' => 'COLLECTION',
-            'statusCode' => '4200',
-            'correlatorId' => $payment->payment_reference,
-            'systemTransactionId' => 'a49be5-4a19-459f-a574-00fa82703392',
-            'statusDescription' => 'Successful',
-        ])->assertOk();
-
-        $this->assertSame('completed', $payment->fresh()->status);
-    }
-
-    public function test_callback_for_a_lenco_payment_is_ignored(): void
-    {
-        $payment = Payment::factory()->for(User::factory()->create())->create(['status' => 'pending']);
-
-        $this->postJson('/webhooks/astragate/hush-hush-secret', [
-            'statusCode' => '4200',
-            'correlatorId' => $payment->payment_reference,
-        ])->assertOk();
-
-        $this->assertSame('pending', $payment->fresh()->status);
+        $this->postJson('/webhooks/astragate/anything', ['correlatorId' => 'x'])->assertNotFound();
     }
 }

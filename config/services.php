@@ -35,11 +35,11 @@ return [
         ],
     ],
 
-    // Astragate (mobile-money collections). Off by default; when on it handles
-    // mobile-money checkout for event-credit/add-on payments (`payments` table)
-    // while Lenco keeps bank transfer, tickets and contributions.
+    // Astragate (mobile-money collections), sandbox only. It is NOT part of the
+    // normal billing flow — it is reachable solely from the secret test page at
+    // `test_path`, which is not registered while that is unset.
     'astragate' => [
-        'enabled' => filter_var(env('ASTRAGATE_ENABLED', false), FILTER_VALIDATE_BOOL),
+        'test_path' => env('ASTRAGATE_TEST_PATH'),
         'base_url' => env('ASTRAGATE_API_BASE_URL', 'https://api.dev.astragate.africa'),
         'auth_url' => env('ASTRAGATE_AUTH_URL', 'https://auth.dev.astragate.africa'),
         'client_id' => env('ASTRAGATE_CLIENT_ID'),
