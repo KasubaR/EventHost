@@ -1,5 +1,7 @@
 @php
     $t = $analytics['totals'];
+    $widgets = $analytics['profile']['widgets'];
+    $labels = $analytics['profile']['labels'];
 @endphp
 
 <x-app-layout>
@@ -88,38 +90,42 @@
                     <div class="dsc-label">Awaiting EventHost review</div>
                 </div>
             </div>
-            <div class="dash-stat-card">
-                <div class="dsc-icon dsc-icon--green"><i class="fa-solid fa-receipt" aria-hidden="true"></i></div>
-                <div class="dsc-body">
-                    <div class="dsc-value">{{ number_format($t['tickets_sold']) }}</div>
-                    <div class="dsc-label">Tickets sold</div>
+            @if (in_array('tickets', $widgets, true))
+                <div class="dash-stat-card">
+                    <div class="dsc-icon dsc-icon--green"><i class="fa-solid fa-receipt" aria-hidden="true"></i></div>
+                    <div class="dsc-body">
+                        <div class="dsc-value">{{ number_format($t['tickets_sold']) }}</div>
+                        <div class="dsc-label">Tickets sold</div>
+                    </div>
                 </div>
-            </div>
-            <div class="dash-stat-card">
-                <div class="dsc-icon dsc-icon--purple"><i class="fa-solid fa-qrcode" aria-hidden="true"></i></div>
-                <div class="dsc-body">
-                    <div class="dsc-value">{{ number_format($t['checked_in']) }}</div>
-                    <div class="dsc-label">Checked in</div>
+                <div class="dash-stat-card">
+                    <div class="dsc-icon dsc-icon--purple"><i class="fa-solid fa-qrcode" aria-hidden="true"></i></div>
+                    <div class="dsc-body">
+                        <div class="dsc-value">{{ number_format($t['checked_in']) }}</div>
+                        <div class="dsc-label">Checked in</div>
+                    </div>
                 </div>
-            </div>
-            <div class="dash-stat-card">
-                <div class="dsc-icon dsc-icon--orange"><i class="fa-solid fa-sack-dollar" aria-hidden="true"></i></div>
-                <div class="dsc-body">
-                    <div class="dsc-value">K{{ number_format($t['gross_amount'], 2) }}</div>
-                    <div class="dsc-label">Gross sales</div>
+            @endif
+            @if (in_array('revenue', $widgets, true))
+                <div class="dash-stat-card">
+                    <div class="dsc-icon dsc-icon--orange"><i class="fa-solid fa-sack-dollar" aria-hidden="true"></i></div>
+                    <div class="dsc-body">
+                        <div class="dsc-value">K{{ number_format($t['gross_amount'], 2) }}</div>
+                        <div class="dsc-label">Gross sales</div>
+                    </div>
                 </div>
-            </div>
-            <div class="dash-stat-card">
-                <div class="dsc-icon dsc-icon--teal"><i class="fa-solid fa-wallet" aria-hidden="true"></i></div>
-                <div class="dsc-body">
-                    <div class="dsc-value">K{{ number_format($t['host_amount'], 2) }}</div>
-                    <div class="dsc-label">Your revenue</div>
-                    <div class="dsc-hint">Recorded payouts are on each event's own Revenue tab</div>
+                <div class="dash-stat-card">
+                    <div class="dsc-icon dsc-icon--teal"><i class="fa-solid fa-wallet" aria-hidden="true"></i></div>
+                    <div class="dsc-body">
+                        <div class="dsc-value">K{{ number_format($t['host_amount'], 2) }}</div>
+                        <div class="dsc-label">Your revenue</div>
+                        <div class="dsc-hint">Recorded payouts are on each event's own Revenue tab</div>
+                    </div>
                 </div>
-            </div>
+            @endif
         </div>
 
-        @if ($t['open_registration_events'] > 0)
+        @if (in_array('registrations', $widgets, true))
             @php
                 $reg = $analytics['registrations'];
                 $regMax = max(1, collect($reg['daily'])->max('count'));
@@ -131,14 +137,14 @@
                     <div class="dsc-icon dsc-icon--green"><i class="fa-solid fa-user-check" aria-hidden="true"></i></div>
                     <div class="dsc-body">
                         <div class="dsc-value">{{ number_format($reg['registered']) }}</div>
-                        <div class="dsc-label">Registrations</div>
+                        <div class="dsc-label">{{ $labels['registered'] }}</div>
                     </div>
                 </div>
                 <div class="dash-stat-card">
                     <div class="dsc-icon dsc-icon--accent"><i class="fa-solid fa-people-group" aria-hidden="true"></i></div>
                     <div class="dsc-body">
                         <div class="dsc-value">{{ number_format($reg['headcount']) }}</div>
-                        <div class="dsc-label">Expected headcount</div>
+                        <div class="dsc-label">{{ $labels['headcount'] }}</div>
                         <div class="dsc-hint">Includes plus-ones</div>
                     </div>
                 </div>
@@ -161,7 +167,7 @@
             <div class="dash-chart-grid">
                 <section class="dash-panel" aria-labelledby="dash-reg-daily-title">
                     <div class="dash-panel-head">
-                        <h2 id="dash-reg-daily-title" class="dash-panel-title">Daily registrations</h2>
+                        <h2 id="dash-reg-daily-title" class="dash-panel-title">{{ $labels['daily'] }}</h2>
                         <p class="dash-panel-sub">Last 14 days · free-registration events</p>
                     </div>
                     <div class="dash-mini-bars" role="img" aria-label="Registrations per day over the last 14 days">
@@ -175,7 +181,7 @@
 
                 <section class="dash-panel" aria-labelledby="dash-reg-events-title">
                     <div class="dash-panel-head">
-                        <h2 id="dash-reg-events-title" class="dash-panel-title">Registrations by event</h2>
+                        <h2 id="dash-reg-events-title" class="dash-panel-title">{{ $labels['by_event'] }}</h2>
                         <p class="dash-panel-sub">Top 5</p>
                     </div>
                     <ul class="dash-top-guests">
@@ -183,7 +189,7 @@
                             <li class="dash-top-guest">
                                 <a href="{{ route('events.guests.index', $row['event']) }}" class="dash-top-row">
                                     <span class="dash-top-name">{{ $row['event']->name }}</span>
-                                    <span class="dash-top-seats">{{ $row['registered'] }} registered · {{ $row['headcount'] }} expected</span>
+                                    <span class="dash-top-seats">{{ $row['registered'] }} {{ $labels['row_registered'] }} · {{ $row['headcount'] }} {{ $labels['row_expected'] }}</span>
                                 </a>
                             </li>
                         @endforeach

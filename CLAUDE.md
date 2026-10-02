@@ -390,6 +390,15 @@ combination never reaches `Event::save()` at all.
 | My Events | `GET /events` (`events.index`) | `GET /public-events` (`public-events.index`) |
 | Both routes | Same `EventController::index()`, audience comes from a route default (`->defaults('audience', ...)`), not a query string |
 
+- `PublicDashboardAnalyticsService` also returns a `registrations` block for free-registration events (registered,
+  expected headcount incl. plus-ones, awaiting approval, checked in, 14-day daily series, top 5 events). Self-signups are
+  ordinary `rsvps`; a registration counts when Accepted and not `Pending`/`Rejected` host approval. `public-dashboard.blade.php`
+  shows it only when the host has at least one free-registration event
+- **What the public overview shows is decided by `App\Support\PublicDashboardProfile`**, from the host's own events:
+  `KIND_WIDGETS` maps a product kind to widget groups (`tickets`, `revenue`, `registrations`), so a free-only host no longer
+  sees empty ticket/revenue tiles; `TYPE_LABELS` rewords the registration widgets per event type (church and funeral say
+  "Attendees"/"Expected attendance"), used only when all the host's free events share one type, otherwise `DEFAULT_LABELS`.
+  Add a type's wording or a kind's widgets there, not in the view. The private dashboard is not driven by it yet
 - `DashboardAnalyticsService::forUser()`'s `$audience` parameter is optional and trailing — every call
   site except the web `DashboardController` omits it and keeps seeing every owned event, unfiltered. This
   is deliberate: the Android API's own host dashboard endpoint (`Api\V1\DashboardController`) must stay

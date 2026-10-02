@@ -13,6 +13,7 @@ use App\Models\Guest;
 use App\Models\Rsvp;
 use App\Models\Ticket;
 use App\Models\User;
+use App\Support\PublicDashboardProfile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 
@@ -54,6 +55,7 @@ class PublicDashboardAnalyticsService
         if ($events->isEmpty()) {
             return [
                 'has_events' => false,
+                'profile' => PublicDashboardProfile::forEvents(collect()),
                 'registrations' => $this->registrationsFor(collect()),
                 'totals' => [
                     'events' => 0,
@@ -87,6 +89,7 @@ class PublicDashboardAnalyticsService
 
         return [
             'has_events' => true,
+            'profile' => PublicDashboardProfile::forEvents($events),
             'registrations' => $this->registrationsFor($registrationEvents),
             'totals' => [
                 'events' => $events->count(),

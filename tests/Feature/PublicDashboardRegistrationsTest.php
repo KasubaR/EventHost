@@ -86,6 +86,63 @@ class PublicDashboardRegistrationsTest extends TestCase
             ->assertSee('1 registered · 3 expected');
     }
 
+    public function test_free_only_host_does_not_see_ticket_or_revenue_tiles(): void
+    {
+        $user = User::factory()->create();
+        $this->register($this->freeEvent($user), 1);
+
+        $this->actingAs($user)
+            ->get(route('public-dashboard'))
+            ->assertOk()
+            ->assertSee('Registrations')
+            ->assertDontSee('Tickets sold')
+            ->assertDontSee('Gross sales')
+            ->assertDontSee('Your revenue');
+    }
+
+    public function test_mixed_host_sees_both_ticket_and_registration_widgets(): void
+    {
+        $user = User::factory()->create();
+        $this->register($this->freeEvent($user), 1);
+        Event::factory()->for($user)->ticketed()->approved()->published()->create();
+
+        $this->actingAs($user)
+            ->get(route('public-dashboard'))
+            ->assertOk()
+            ->assertSee('Tickets sold')
+            ->assertSee('Gross sales')
+            ->assertSee('Daily registrations');
+    }
+
+    public function test_church_events_use_attendance_wording(): void
+    {
+        $user = User::factory()->create();
+        $event = Event::factory()->for($user)->publicAudience()->published()->create(['name' => 'Sunday Service', 'event_type' => 'church']);
+        $this->register($event, 2);
+
+        $this->actingAs($user)
+            ->get(route('public-dashboard'))
+            ->assertOk()
+            ->assertSee('Attendees')
+            ->assertSee('Expected attendance')
+            ->assertSee('Attendance by event')
+            ->assertSee('1 attending · 2 expected')
+            ->assertDontSee('Daily registrations');
+    }
+
+    public function test_mixed_types_fall_back_to_neutral_wording(): void
+    {
+        $user = User::factory()->create();
+        $this->register(Event::factory()->for($user)->publicAudience()->published()->create(['event_type' => 'church']), 1);
+        $this->register(Event::factory()->for($user)->publicAudience()->published()->create(['event_type' => 'corporate']), 1);
+
+        $this->actingAs($user)
+            ->get(route('public-dashboard'))
+            ->assertOk()
+            ->assertSee('Daily registrations')
+            ->assertDontSee('Attendees');
+    }
+
     public function test_section_is_hidden_when_the_host_has_only_ticketed_events(): void
     {
         $user = User::factory()->create();
