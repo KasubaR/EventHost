@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use App\Enums\SubscriptionTier;
 use App\Models\Event;
 use App\Rules\EventSlugAvailable;
-use AppRulesGuestLimitNotBelowConfirmed;
+use App\Rules\GuestLimitNotBelowConfirmed;
 use App\Support\BillingPlan;
 use Carbon\Carbon;
 use Illuminate\Contracts\Validation\Validator;
