@@ -133,6 +133,10 @@ class UpdateEventRequest extends FormRequest
         // Ticketed events ignore guest_limit on save; still validate against
         // the owner's invitation-plan capacity when the field is present.
         $event = $this->route('event');
+        if ($event instanceof Event && ! $event->isTicketed()) {
+            $rules[] = new GuestLimitNotBelowConfirmed($event->id);
+        }
+
         if ($event instanceof Event && $event->isTicketed()) {
             $rules[] = 'max:100000';
 

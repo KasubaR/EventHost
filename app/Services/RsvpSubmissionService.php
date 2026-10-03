@@ -8,6 +8,7 @@ use App\Models\Event;
 use App\Models\Guest;
 use App\Models\GuestGroup;
 use App\Models\Rsvp;
+use App\Support\EventAttendance;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -34,23 +35,29 @@ class RsvpSubmissionService
                 ->where('guest_id', $guest->id)
                 ->first();
 
-            $previousAcceptedCount = ($existing && $existing->status === RsvpStatus::Accepted)
+            // Seats this guest currently holds against the limit — a rejected RSVP holds none.
+            $previousHeldCount = ($existing
+                && $existing->status === RsvpStatus::Accepted
+                && $existing->host_approval_status !== RsvpApprovalStatus::Rejected)
                 ? $existing->attendee_count
                 : 0;
 
             $newAcceptedCount = $status === RsvpStatus::Accepted ? $attendeeCount : 0;
 
-            if ($locked->guest_limit !== null && $status === RsvpStatus::Accepted) {
-                $totalAccepted = (int) Rsvp::query()
-                    ->where('event_id', $locked->id)
-                    ->where('status', RsvpStatus::Accepted)
-                    ->sum('attendee_count');
+            // A change that takes no more seats than the guest already holds is always allowed,
+            // even when the host has since lowered the limit under current attendance.
+            if ($locked->guest_limit !== null && $status === RsvpStatus::Accepted
+                && $newAcceptedCount > $previousHeldCount) {
+                $heldByOthers = EventAttendance::heldSeats($locked->id, $guest->id);
+                $seatsLeft = max(0, $locked->guest_limit - $heldByOthers);
 
-                $effective = $totalAccepted - $previousAcceptedCount + $newAcceptedCount;
-
-                if ($effective > $locked->guest_limit) {
+                if ($newAcceptedCount > $seatsLeft) {
                     throw ValidationException::withMessages([
-                        'status' => ['This event has reached its guest limit for confirmed attendees.'],
+                        'status' => [
+                            $seatsLeft === 0
+                                ? 'This event has reached its guest limit for confirmed attendees.'
+                                : "Only {$seatsLeft} ".($seatsLeft === 1 ? 'seat is' : 'seats are').' left for confirmed attendees.',
+                        ],
                     ]);
                 }
             }
