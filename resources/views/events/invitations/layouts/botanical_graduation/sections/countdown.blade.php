@@ -1,5 +1,7 @@
 @php
-    $startsAt = \Carbon\Carbon::parse($event->event_date->format('Y-m-d').' '.substr((string) $event->event_time, 0, 8));
+    // Venue wall-clock, not UTC: the ticker's target is an instant, so UTC would run it two hours late.
+    $startsAt = $event->startsAt();
+    $cd = \App\Support\InvitationCountdown::parts($startsAt);
     $countdownLive = $invitation['effects']['countdown_enabled'] ?? true;
 @endphp
 
@@ -20,7 +22,7 @@
                                 <circle class="evt-bg-countdown-progress" data-inv-cd-ring="days" cx="50" cy="50" r="43" fill="none"></circle>
                             </g>
                         </svg>
-                        <span class="stat-num evt-bg-countdown-value" data-inv-cd-days>0</span>
+                        <span class="stat-num evt-bg-countdown-value" data-inv-cd-days>{{ $cd['days'] }}</span>
                     </div>
                     <span class="stat-label">Days</span>
                 </div>
@@ -31,7 +33,7 @@
                                 <circle class="evt-bg-countdown-progress" data-inv-cd-ring="hours" cx="50" cy="50" r="43" fill="none"></circle>
                             </g>
                         </svg>
-                        <span class="stat-num evt-bg-countdown-value" data-inv-cd-hours>0</span>
+                        <span class="stat-num evt-bg-countdown-value" data-inv-cd-hours>{{ $cd['hours'] }}</span>
                     </div>
                     <span class="stat-label">Hours</span>
                 </div>
@@ -42,7 +44,7 @@
                                 <circle class="evt-bg-countdown-progress" data-inv-cd-ring="minutes" cx="50" cy="50" r="43" fill="none"></circle>
                             </g>
                         </svg>
-                        <span class="stat-num evt-bg-countdown-value" data-inv-cd-minutes>0</span>
+                        <span class="stat-num evt-bg-countdown-value" data-inv-cd-minutes>{{ $cd['minutes'] }}</span>
                     </div>
                     <span class="stat-label">Minutes</span>
                 </div>
@@ -53,12 +55,13 @@
                                 <circle class="evt-bg-countdown-progress" data-inv-cd-ring="seconds" cx="50" cy="50" r="43" fill="none"></circle>
                             </g>
                         </svg>
-                        <span class="stat-num evt-bg-countdown-value" data-inv-cd-seconds>0</span>
+                        <span class="stat-num evt-bg-countdown-value" data-inv-cd-seconds>{{ $cd['seconds'] }}</span>
                     </div>
                     <span class="stat-label">Seconds</span>
                 </div>
             </div>
         </div>
+        <p class="evt-inv-countdown-nojs">Starts {{ \App\Support\InvitationCountdown::staticLine($startsAt) }}</p>
         <p class="evt-inv-countdown-done evt-inv-countdown-done--hidden evt-bg-countdown-done" data-inv-cd-done>This event has started.</p>
     </div>
 @else
@@ -66,7 +69,7 @@
         <div class="evt-bg-countdown-shell evt-bg-countdown-shell--static">
             <p class="evt-bg-countdown-eyebrow">Save the date</p>
             <p class="evt-bg-countdown-title">Event starts</p>
-            <p class="stat-num evt-inv-countdown-static">{{ $startsAt->timezone(config('app.timezone'))->format('l, F j, Y \a\t g:i A') }}</p>
+            <p class="stat-num evt-inv-countdown-static">{{ \App\Support\InvitationCountdown::staticLine($startsAt) }}</p>
         </div>
     </div>
 @endif

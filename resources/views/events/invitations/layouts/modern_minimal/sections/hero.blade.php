@@ -17,7 +17,7 @@
         <p class="mm-hero-location">{{ $location }}</p>
     @endif
     <figure class="mm-hero-photo">
-        <img src="{{ $event->cover_image_url }}" alt="" width="900" height="1125">
+        <img src="{{ $event->cover_image_url }}" alt="{{ $event->name }}" fetchpriority="high" width="900" height="1125">
     </figure>
     <a href="#countdown" class="mm-scroll-hint">Scroll</a>
 </section>

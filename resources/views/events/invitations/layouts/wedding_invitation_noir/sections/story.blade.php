@@ -21,7 +21,7 @@
 @endphp
 
 <div class="wi2-photo-bleed wi2-reveal @if ($story !== '') wi2-photo-bleed--story @endif" data-wi2-reveal>
-    <img src="{{ $photoSrc }}" alt="" loading="lazy" width="1600" height="900">
+    <img src="{{ $photoSrc }}" alt="{{ \App\Support\InvitationMediaUrl::photoAlt($event->name) }}" loading="lazy" width="1600" height="900">
     <div class="wi2-photo-bleed-text">
         @if ($story !== '')
             <div class="wi2-story">

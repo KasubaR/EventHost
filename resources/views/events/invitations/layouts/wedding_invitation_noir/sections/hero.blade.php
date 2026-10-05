@@ -14,7 +14,7 @@
 
 <section class="wi2-hero">
     <div class="wi2-hero-left">
-        <img src="{{ $event->cover_image_url }}" alt="" width="900" height="1200">
+        <img src="{{ $event->cover_image_url }}" alt="{{ $event->name }}" fetchpriority="high" width="900" height="1200">
     </div>
     <div class="wi2-hero-right">
         <div class="wi2-deco-corner wi2-deco-corner--tr" aria-hidden="true"></div>

@@ -58,9 +58,7 @@
     @error('attendee_count')
         <p class="rsvp-field-error">{{ $message }}</p>
     @enderror
-    @if ($maxAttendees > 1)
-        <p class="rsvp-field-hint">"Me + 1 guest" brings one person with you.</p>
-    @endif
+    <p class="rsvp-field-hint">@if ($maxAttendees > 1)"Me + 1 guest" brings one person with you. @endif Only counted when you are attending.</p>
 </div>
 
 @if ($_rfcVisible('message'))

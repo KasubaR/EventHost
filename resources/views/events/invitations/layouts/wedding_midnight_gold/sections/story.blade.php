@@ -9,7 +9,7 @@
             <div class="mg-story-row">
                 <p class="mg-story-text">{!! nl2br(e($chapter['text'])) !!}</p>
                 <figure class="mg-story-photo">
-                    <img src="{{ $chapter['photo'] }}" alt="" loading="lazy" width="480" height="480">
+                    <img src="{{ $chapter['photo'] }}" alt="{{ \App\Support\InvitationMediaUrl::photoAlt($event->name) }}" loading="lazy" width="480" height="480">
                 </figure>
             </div>
         @endforeach

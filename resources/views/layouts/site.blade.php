@@ -3,11 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {{-- "js" lets CSS hide things only when script will reveal them; "js-stalled" undoes that if invitation-public.js
+         has not run after 4s (slow link, blocked, errored), so content is never stuck invisible. --}}
+    <script>document.documentElement.classList.add('js');setTimeout(function(){if(!document.documentElement.hasAttribute('data-inv-ready')){document.documentElement.classList.add('js-stalled');}},4000);</script>
     {{-- @yield, not {{ }}: @section('title', $value) already escapes $value, so {{ }} here double-escapes "&" into a visible "&amp;". --}}
     <title>@yield('title', 'Event Host | Create Beautiful Digital Invitations')</title>
     <link rel="icon" type="image/svg+xml" href="{{ asset('images/logo/EventHost Logo_Icon.svg') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://images.unsplash.com" crossorigin>
+    @unless ($noUnsplashPreconnect ?? false)
+        <link rel="preconnect" href="https://images.unsplash.com" crossorigin>
+    @endunless
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
     <link rel="stylesheet" href="{{ asset('css/global.css') }}">

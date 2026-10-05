@@ -706,3 +706,112 @@
         margin-inline: 0;
     }
 }
+
+/* Without JavaScript the live ticker cannot run: show the start as a sentence instead (the numbers in the
+   markup are only the value at page load). With JS on the sentence stays hidden. */
+.evt-inv-countdown-nojs {
+    display: none;
+    margin: 0.35rem 0 0;
+    text-align: center;
+    font-weight: 600;
+}
+
+html:not(.js) .evt-inv-countdown-nojs {
+    display: block;
+}
+
+html:not(.js) [data-inv-countdown] .evt-inv-countdown-grid,
+html:not(.js) [data-inv-countdown] .evt-inv-countdown-heading {
+    display: none;
+}
+
+/* Shown only inside <noscript>, and only when the invitation has something that needs scripts. */
+.evt-inv-noscript {
+    margin: 0;
+    padding: 0.6rem 1rem;
+    text-align: center;
+    font-size: 0.85rem;
+    background: rgba(0, 0, 0, 0.06);
+}
+
+/* The gallery as a plain grid. Used when the slider cannot run: scripts off (html:not(.js)), or the slider library
+   failed to load (invitation-public.js adds .evt-inv-gallery--static). Swiper's own stylesheet makes the wrapper a
+   clipped single row and shows dead arrows, so both are undone here. */
+html:not(.js) .evt-inv-gallery-swiper,
+.evt-inv-gallery--static .evt-inv-gallery-swiper {
+    overflow: visible;
+    padding-bottom: 0;
+}
+
+html:not(.js) .evt-inv-gallery-swiper .swiper-wrapper,
+.evt-inv-gallery--static .evt-inv-gallery-swiper .swiper-wrapper {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+    transform: none;
+    height: auto;
+}
+
+html:not(.js) .evt-inv-gallery-swiper .swiper-slide,
+.evt-inv-gallery--static .evt-inv-gallery-swiper .swiper-slide {
+    width: auto;
+    height: auto;
+    margin: 0;
+}
+
+html:not(.js) .evt-inv-gallery .swiper-button-prev,
+html:not(.js) .evt-inv-gallery .swiper-button-next,
+html:not(.js) .evt-inv-gallery .swiper-pagination,
+.evt-inv-gallery--static .swiper-button-prev,
+.evt-inv-gallery--static .swiper-button-next,
+.evt-inv-gallery--static .swiper-pagination {
+    display: none;
+}
+
+/* Hero background video: the "play" and "watch" controls. The play button is added by invitation-public.js when the
+   video is not started automatically (slow or metered connection, reduced motion). The plain link is for guests with
+   no JavaScript; it is hidden whenever scripts are on, unless they stalled. */
+.evt-inv-video-play,
+.evt-inv-video-link {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    z-index: 4;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.9rem;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.62);
+    color: #fff;
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.evt-inv-video-play:hover,
+.evt-inv-video-link:hover {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+html.js .evt-inv-video-link {
+    display: none;
+}
+
+html.js.js-stalled .evt-inv-video-link {
+    display: inline-flex;
+}
+
+/* An image that failed to load (see initImageFallbacks in invitation-public.js). A failed gallery photo is removed
+   from its slide or cell; any other image becomes a quiet block in the invitation's own colours. */
+.evt-inv-img-gone {
+    display: none !important;
+}
+
+.evt-inv-img-failed {
+    background: color-mix(in srgb, var(--evt-primary, #5a4d52) 14%, var(--evt-background, #ffffff));
+    color: transparent;
+}

@@ -15,7 +15,7 @@
     <div class="mm-couple-grid">
         @foreach ($w->couplePhotos() as $src)
             <div class="mm-couple-item">
-                <img src="{{ $src }}" alt="" loading="lazy" width="600" height="800">
+                <img src="{{ $src }}" alt="{{ \App\Support\InvitationMediaUrl::photoAlt($event->name) }}" loading="lazy" width="600" height="800">
             </div>
         @endforeach
     </div>

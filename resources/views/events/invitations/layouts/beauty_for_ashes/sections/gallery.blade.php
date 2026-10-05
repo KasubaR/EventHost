@@ -55,7 +55,7 @@
                             <div class="bfa-host-badge">Host</div>
                         @endif
                         @if ($slot['src'])
-                            <img src="{{ $slot['src'] }}" alt="" width="400" height="533" loading="lazy">
+                            <img src="{{ $slot['src'] }}" alt="{{ $slot['name'] }}" width="400" height="533" loading="lazy">
                         @else
                             <img src="{{ asset('images/person-placeholder.jpg') }}" alt="" width="400" height="533" loading="lazy">
                         @endif

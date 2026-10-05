@@ -85,17 +85,17 @@
             <div class="evt-bg-couple-frames" role="presentation">
                 @foreach (array_slice($couplePaths, 0, 2) as $path)
                     <div class="photo-frame photo-frame--couple">
-                        <img src="{{ \App\Support\InvitationMediaUrl::resolve($path) }}" alt="" class="evt-bg-frame-photo" width="260" height="340">
+                        <img src="{{ \App\Support\InvitationMediaUrl::resolve($path) }}" alt="{{ \App\Support\InvitationMediaUrl::photoAlt($event->name) }}" class="evt-bg-frame-photo" width="260" height="340">
                     </div>
                 @endforeach
             </div>
         @elseif (count($couplePaths) === 1)
             <div class="photo-frame">
-                <img src="{{ \App\Support\InvitationMediaUrl::resolve($couplePaths[0]) }}" alt="" class="evt-bg-frame-photo" width="320" height="400">
+                <img src="{{ \App\Support\InvitationMediaUrl::resolve($couplePaths[0]) }}" alt="{{ \App\Support\InvitationMediaUrl::photoAlt($event->name) }}" class="evt-bg-frame-photo" width="320" height="400">
             </div>
         @else
             <div class="photo-frame">
-                <img src="{{ $singleFrameSrc }}" alt="" class="evt-bg-frame-photo" width="320" height="400">
+                <img src="{{ $singleFrameSrc }}" alt="{{ \App\Support\InvitationMediaUrl::photoAlt($event->name) }}" class="evt-bg-frame-photo" width="320" height="400">
             </div>
         @endif
     </div>

@@ -3,7 +3,7 @@
 @endphp
 
 <section class="mg-hero" id="top">
-    <img class="mg-hero-bg" src="{{ $event->cover_image_url }}" alt="" width="1600" height="1000">
+    <img class="mg-hero-bg" src="{{ $event->cover_image_url }}" alt="" fetchpriority="high" width="1600" height="1000">
     <div class="mg-hero-frame">
         <h1 class="mg-hero-names">
             @if ($nameAfter !== '')

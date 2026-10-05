@@ -3,6 +3,8 @@
 namespace App\Jobs;
 
 use App\Models\Event;
+use App\Support\InvitationMediaUrl;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -10,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManager;
+use Intervention\Image\Interfaces\ImageInterface;
 use Throwable;
 
 class ProcessInvitationDesignImageJob implements ShouldBeUnique, ShouldQueue
@@ -94,6 +97,10 @@ class ProcessInvitationDesignImageJob implements ShouldBeUnique, ShouldQueue
 
             $disk->put($newPath, $webp->toString());
 
+            if ($this->target === 'gallery' && $image->width() > InvitationMediaUrl::SMALL_WIDTH) {
+                $this->writeSmallCopy($disk, $image, $newPath);
+            }
+
             match ($this->target) {
                 'gallery' => $this->swapGalleryPath($media, $newPath),
                 'hero_portrait' => $media['hero_portrait'] = $newPath,
@@ -107,6 +114,25 @@ class ProcessInvitationDesignImageJob implements ShouldBeUnique, ShouldQueue
 
             $disk->delete($this->originalRelativePath);
         });
+    }
+
+    /**
+     * A phone showing a ~400px slide should not download the 1200px file. The small copy is a nicety: if it cannot be
+     * written the photo is still saved and shown at full size, so this never fails the job.
+     */
+    private function writeSmallCopy(Filesystem $disk, ImageInterface $image, string $largePath): void
+    {
+        $smallPath = InvitationMediaUrl::variantName($largePath);
+        if ($smallPath === null) {
+            return;
+        }
+
+        try {
+            $image->scaleDown(width: InvitationMediaUrl::SMALL_WIDTH);
+            $disk->put($smallPath, $image->toWebp(80)->toString());
+        } catch (Throwable $e) {
+            Log::warning('invitation_design.small_copy_failed', ['event_id' => $this->eventId, 'exception_class' => $e::class]);
+        }
     }
 
     /**

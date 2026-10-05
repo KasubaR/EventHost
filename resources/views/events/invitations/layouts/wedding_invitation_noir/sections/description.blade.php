@@ -58,7 +58,7 @@
     <div class="wi2-couple-grid">
         @foreach ($couplePhotos as $idx => $src)
             <div class="wi2-couple-frame wi2-couple-frame--{{ $idx + 1 }}">
-                <img src="{{ $src }}" alt="" loading="lazy" width="600" height="800">
+                <img src="{{ $src }}" alt="{{ \App\Support\InvitationMediaUrl::photoAlt($event->name) }}" loading="lazy" width="600" height="800">
             </div>
         @endforeach
     </div>

@@ -36,7 +36,7 @@
     <div class="wi-couple-grid">
         @foreach (['wi-couple-img-1', 'wi-couple-img-2', 'wi-couple-img-3'] as $idx => $class)
             <div class="wi-couple-img-wrap {{ $class }}">
-                <img src="{{ $couplePhotos[$idx] }}" alt="" loading="lazy" width="600" height="420">
+                <img src="{{ $couplePhotos[$idx] }}" alt="{{ \App\Support\InvitationMediaUrl::photoAlt($event->name) }}" loading="lazy" width="600" height="420">
             </div>
         @endforeach
     </div>

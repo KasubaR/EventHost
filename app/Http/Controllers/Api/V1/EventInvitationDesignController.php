@@ -13,6 +13,7 @@ use App\Support\InvitationCustomizationPersistenceValidator;
 use App\Support\InvitationFonts;
 use App\Support\InvitationLayoutVariant;
 use App\Support\InvitationMediaStager;
+use App\Support\InvitationMediaUrl;
 use App\Support\InvitationPalettes;
 use App\Support\InvitationVideoBackground;
 use Illuminate\Http\JsonResponse;
@@ -554,7 +555,7 @@ class EventInvitationDesignController extends Controller
             // Transaction committed — safe to delete old files now.
             // Done synchronously here rather than in DB::afterCommit so the cleanup
             // is not silently lost if the process dies before the after-commit hook runs.
-            foreach (array_unique(array_filter($pathsToDelete)) as $path) {
+            foreach (InvitationMediaUrl::withVariants(array_unique(array_filter($pathsToDelete))) as $path) {
                 if (! Storage::disk('public')->delete($path)) {
                     Log::warning('invitation.media_delete_failed', ['path' => $path]);
                 }

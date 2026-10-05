@@ -39,8 +39,9 @@
     border-radius: 0;
 }
 
-/* Scroll reveal */
-.evt-layout-wedding-invitation .wi-reveal {
+/* Scroll reveal. Hidden only when scripts are going to reveal it (html.js); with JS off, slow or failed the content
+   shows. :where() adds no specificity, so the visible and reduced-motion rules below still win. */
+:where(html.js) .evt-layout-wedding-invitation .wi-reveal {
     opacity: 0;
     transform: translateY(40px);
     transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1), transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
@@ -1038,4 +1039,11 @@
         grid-row: 4;
         height: 220px;
     }
+}
+
+/* Scripts did not run in time (see the stall guard in the site layout): show the content as it is. */
+html.js-stalled .evt-layout-wedding-invitation .wi-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
 }

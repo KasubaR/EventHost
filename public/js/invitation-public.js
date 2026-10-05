@@ -122,7 +122,13 @@
 
     function initGallery(root) {
         var wrap = root.querySelector('[data-inv-gallery]');
-        if (!wrap || typeof window.Swiper === 'undefined') {
+        if (!wrap) {
+            return;
+        }
+
+        // The slider library did not load (blocked, or the request failed): leave the photos as a plain grid.
+        if (typeof window.Swiper === 'undefined') {
+            wrap.classList.add('evt-inv-gallery--static');
             return;
         }
 
@@ -364,9 +370,143 @@
         }
     }
 
+    // A slow or metered connection should not pay for a background video nobody asked for. Unknown (no Network
+    // Information API, e.g. Safari and Firefox) counts as fine.
+    function connectionAllowsMedia() {
+        var c = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        if (!c) {
+            return true;
+        }
+        if (c.saveData) {
+            return false;
+        }
+
+        return c.effectiveType !== 'slow-2g' && c.effectiveType !== '2g';
+    }
+
+    // The hero background video (a file, or a YouTube embed) is not in the page until it is wanted: the markup only
+    // holds a placeholder. Start it on a normal connection; otherwise, or when the guest prefers reduced motion,
+    // show a "Play video" button over the cover and start it on tap.
+    function initHeroMedia(root) {
+        var embed = root.querySelector('[data-inv-video-embed]');
+        var video = root.querySelector('[data-inv-video]');
+        var media = embed || video;
+        if (!media) {
+            return;
+        }
+
+        function startEmbed() {
+            if (embed.querySelector('iframe')) {
+                return;
+            }
+            var frame = document.createElement('iframe');
+            frame.className = 'evt-inv-hero-video-iframe';
+            frame.src = embed.getAttribute('data-embed-src');
+            frame.title = 'Background video';
+            frame.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
+            frame.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+            embed.appendChild(frame);
+        }
+
+        function startVideo() {
+            var started = video.play();
+            if (started && typeof started.catch === 'function') {
+                started.catch(function () {});
+            }
+        }
+
+        var start = embed ? startEmbed : startVideo;
+        var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        if (connectionAllowsMedia() && !reduceMotion) {
+            start();
+            return;
+        }
+
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'evt-inv-video-play';
+        button.innerHTML = '<i class="fa-solid fa-play" aria-hidden="true"></i> Play video';
+        button.addEventListener('click', function () {
+            start();
+            button.remove();
+        });
+        media.parentNode.appendChild(button);
+    }
+
+    // An image that cannot load (network drop, a 404 from the web server, a corrupt file) must not leave a broken-image
+    // icon or a hole. A gallery photo is removed from its slide or grid cell; any other image (cover, portrait) gets a
+    // calm theme-coloured block of the same shape, so text over it stays readable and nothing jumps.
+    function initImageFallbacks(root) {
+        function failedGalleryUnit(img) {
+            var link = img.closest('a');
+            var unit = img.closest('.swiper-slide');
+            if (!unit && link && link.parentElement && link.parentElement !== root && link.parentElement.children.length === 1) {
+                unit = link.parentElement;
+            }
+
+            return unit || link || img;
+        }
+
+        function onFailed(img) {
+            // The small copy of a gallery photo is gone but the full-size file may be fine: try that once.
+            if (img.hasAttribute('srcset') && !img.hasAttribute('data-inv-retried')) {
+                img.setAttribute('data-inv-retried', '');
+                img.removeAttribute('srcset');
+                img.removeAttribute('sizes');
+                img.src = img.getAttribute('src');
+
+                return;
+            }
+
+            if (img.classList.contains('evt-inv-img-failed')) {
+                return;
+            }
+            img.classList.add('evt-inv-img-failed');
+
+            if (img.closest('a.glightbox, [data-inv-gallery], .glightbox')) {
+                failedGalleryUnit(img).classList.add('evt-inv-img-gone');
+                var slider = img.closest('.swiper');
+                if (slider && slider.swiper && typeof slider.swiper.update === 'function') {
+                    slider.swiper.update();
+                }
+
+                return;
+            }
+
+            // Keep the frame the image would have had, and drop the alt text so the browser does not print it.
+            var w = parseInt(img.getAttribute('width'), 10);
+            var h = parseInt(img.getAttribute('height'), 10);
+            if (w > 0 && h > 0) {
+                img.style.aspectRatio = w + ' / ' + h;
+            }
+            img.alt = '';
+        }
+
+        root.addEventListener('error', function (event) {
+            if (event.target && event.target.tagName === 'IMG') {
+                onFailed(event.target);
+            }
+        }, true);
+
+        // An image that failed before this script ran has already fired its error. Only eager images are checked:
+        // a lazy one that has not started loading also reports no size.
+        root.querySelectorAll('img').forEach(function (img) {
+            if (img.getAttribute('loading') !== 'lazy' && img.getAttribute('src') && img.complete && img.naturalWidth === 0) {
+                onFailed(img);
+            }
+        });
+    }
+
     function boot() {
+        // Tells the stall guard in the page head that scripts are running; undoes it if it already fired.
+        document.documentElement.setAttribute('data-inv-ready', '');
+        document.documentElement.classList.remove('js-stalled');
+
         document.querySelectorAll('.evt-invitation').forEach(function (root) {
             tickCountdown(root);
+            initHeroMedia(root);
+            initImageFallbacks(root);
             bindAudio(root);
             initGallery(root);
             initEventInviteLights(root);

@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\Guest;
 use App\Models\StagedMedia;
 use App\Services\GuestPassFileCache;
+use App\Support\InvitationMediaUrl;
 use App\Support\InvitationVideoBackground;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -69,6 +70,12 @@ class PruneOrphanedInvitationFilesCommand extends Command
 
             foreach ($disk->allFiles($baseDir) as $path) {
                 if (isset($referenced[$path])) {
+                    continue;
+                }
+
+                // A small copy (-600.webp) is never listed in a customization; it lives while its photo does.
+                $parent = InvitationMediaUrl::parentOfVariant($path);
+                if ($parent !== null && isset($referenced[$parent])) {
                     continue;
                 }
 

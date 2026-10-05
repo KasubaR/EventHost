@@ -971,6 +971,45 @@ What `/e/{slug}` shows in each situation, and which clock "ended" runs on. Plan 
   back to `default-event.png`; it is reported too. Nothing is logged per missing file (it would fire on every page view)
 - **Tests:** `InvitationPageEdgeCasesTest` (draft 404s, venue clock, missing template, missing media)
 
+#### Resilience: slow connections, failed images, no JavaScript
+
+How the guest-facing invitation behaves when the network is slow, an image fails, or scripts do not run. Plan and
+phases: `plans/invitation-page-resilience.md` — all built. Tests: `InvitationResilienceTest`, `InvitationImagesTest`.
+
+- **Content first, enhancement second.** The page must read and the RSVP form must work with JavaScript off, with
+  `invitation-public.js` slow or failing, and with every third-party host unreachable. Scripts add motion, the slider,
+  the lightbox, music and the live countdown on top
+- **`html.js` / `js-stalled`.** `layouts/site.blade.php` adds `js` to `<html>` before first paint and, after 4 s, adds
+  `js-stalled` unless `invitation-public.js` has set `data-inv-ready`. **Anything that starts hidden because a script
+  will reveal it must be scoped to `:where(html.js)`** (see the wedding-invitation and noir `.wi-reveal` / `.wi2-reveal`
+  rules; `:where()` adds no specificity) and have a `html.js-stalled` rule that shows it. A new reveal layout that hides
+  content unconditionally makes the page blank for guests without JS
+- **Countdown** renders real values on the server (`App\Support\InvitationCountdown`) and a sentence for no-JS
+  (`.evt-inv-countdown-nojs`, shown under `html:not(.js)`); the ticker takes over. Its target is `Event::startsAt()`
+  (venue wall-clock), **not** a `Carbon::parse()` in the app timezone, which ran it two hours late
+- **RSVP without JS.** `ValidatesRsvpPayload` ignores `attendee_count` for Declined and Maybe (a form with no JS posts the
+  default 1) and the service stores 0; Accepted still needs 1..max. The form hint says the count only counts when attending
+- **Libraries are ours.** Swiper 11.2.10 and GLightbox 3.3.1 live in `public/vendor/` (see its README), loaded by
+  `partials/gallery-assets.blade.php` **only when the invitation has gallery photos**, with `?v=` versions. Never add a
+  CDN `<script>` or `<link>` to a guest page. Without JS (or if the slider library fails) the gallery is a plain grid
+  (`html:not(.js)` / `.evt-inv-gallery--static`). Fonts are one combined Google Fonts request (`partials/google-fonts`)
+- **Heavy media waits for the guest.** The three heroes share `partials/hero-video.blade.php`: a video file has
+  `preload="none"` and **no `autoplay` attribute** (it would override preload); a YouTube background is an empty placeholder
+  that `invitation-public.js` turns into an iframe. Both start only when `connectionAllowsMedia()` is true (not Save-Data,
+  not 2g) and reduced motion is off; otherwise a "Play video" button appears. No JS: the cover (or poster) shows and
+  YouTube offers a plain link. Background **music** still tries to autoplay on load — not covered
+- **Images.** The hero cover has `fetchpriority="high"` and the event name as alt; gallery photos are lazy with
+  "Photo N of M from {event}"; other photos "Photo from {event}". Each gallery photo has a **600px copy** (`gal_x-600.webp`)
+  written by `ProcessInvitationDesignImageJob`, named by `InvitationMediaUrl::variantName()`, served through `srcset`
+  (`responsiveAttributes()`), and **never listed in the customization JSON**. Deleting or replacing a photo deletes its copy
+  (`InvitationMediaUrl::withVariants()` in both design controllers) and `invitation:prune-orphaned-files` treats a copy as
+  referenced while its photo is. `invitation:make-gallery-variants` backfills photos saved before copies existed
+- **A failed image** (network drop, 404, corrupt file) is handled in the browser by `initImageFallbacks()`: a gallery photo
+  is removed from its slide or cell, anything else becomes a quiet block in the invitation's colours with its shape kept,
+  and a missing small copy falls back to the full-size file once. This is separate from a file that is missing from disk,
+  which `InvitationMediaHealth` already hides when the page is built
+- **Caching headers are server config, not app code** — see `docs/deployment.md` §3d
+
 ### Featured Templates (homepage)
 
 The homepage "Invitation Templates" strip is curated from the admin panel, not hardcoded:
@@ -1059,6 +1098,9 @@ to them.
 ### Asset Bundling
 
 Vite bundles `resources/css/app.css` (Tailwind) and `resources/js/app.js`. These are loaded with `@vite()` in the layouts. The custom CSS files in `public/css/` are loaded directly with `<link>` tags — they are not processed by Vite.
+
+`public/vendor/` holds vendored front-end libraries (Swiper, GLightbox) served as-is, not built by Vite; its README lists
+versions and how to upgrade. Nothing on a guest page may depend on a third-party host.
 
 `public/js/media-uploader.js` must load **before** `event-edit-save.js` — saving waits on
 `window.MediaUploader.pending()` so a click mid-upload does not post ids for files still in transit.

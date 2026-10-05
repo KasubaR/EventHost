@@ -19,7 +19,7 @@
                     >
                         <img
                             src="{{ \App\Support\InvitationMediaUrl::resolve($path) }}"
-                            alt=""
+                            alt="{{ \App\Support\InvitationMediaUrl::galleryAlt($path, $invitation['media']['gallery'], $event->name) }}"{!! \App\Support\InvitationMediaUrl::responsiveAttributes($path) !!}
                             loading="lazy"
                             decoding="async"
                             width="600"

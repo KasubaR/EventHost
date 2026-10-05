@@ -50,7 +50,9 @@
         $venueLine = 'Details below';
     }
 
-    $startsAt = \Carbon\Carbon::parse($event->event_date->format('Y-m-d').($event->event_time ? ' '.substr((string) $event->event_time, 0, 8) : ' 00:00:00'));
+    // Venue wall-clock, not UTC: the ticker's target is an instant, so UTC would run it two hours late.
+    $startsAt = $event->startsAt();
+    $cd = \App\Support\InvitationCountdown::parts($startsAt);
     $countdownLive = $invitation['effects']['countdown_enabled'] ?? true;
 
     $videoRaw = $invitation['effects']['video_background'] ?? null;
@@ -61,31 +63,7 @@
 @endphp
 
 <section class="bfa-hero" id="home">
-    @if ($videoEmbedSrc)
-        <div class="evt-inv-hero-video-embed bfa-hero-video-embed" aria-hidden="true">
-            <iframe
-                class="evt-inv-hero-video-iframe"
-                src="{{ $videoEmbedSrc }}"
-                title="Background video"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                referrerpolicy="strict-origin-when-cross-origin"
-            ></iframe>
-        </div>
-        <div class="bfa-hero-video-scrim" aria-hidden="true"></div>
-    @elseif ($videoFilePath)
-        <video
-            class="bfa-hero-video"
-            muted
-            loop
-            playsinline
-            autoplay
-            poster="{{ $event->cover_image_url }}"
-            aria-hidden="true"
-        >
-            <source src="{{ asset('storage/'.$videoFilePath) }}" type="{{ str_ends_with(strtolower((string) $videoFilePath), '.webm') ? 'video/webm' : 'video/mp4' }}">
-        </video>
-        <div class="bfa-hero-video-scrim" aria-hidden="true"></div>
-    @endif
+    @include('events.invitations.partials.hero-video', ['event' => $event, 'videoRaw' => $videoRaw, 'videoEmbedSrc' => $videoEmbedSrc, 'videoFilePath' => $videoFilePath, 'embedClass' => 'bfa-hero-video-embed', 'videoClass' => 'bfa-hero-video', 'scrimClass' => 'bfa-hero-video-scrim'])
     <div class="bfa-hero-bg" aria-hidden="true"></div>
     <div class="bfa-hero-particles" aria-hidden="true">
         @for ($i = 0; $i < 8; $i++)
@@ -135,31 +113,32 @@
                 <p class="bfa-cd-eyebrow">Countdown</p>
                 <div class="bfa-cd-grid evt-inv-countdown-grid" aria-live="polite">
                     <div class="bfa-cd-unit">
-                        <span class="bfa-cd-value" data-inv-cd-days>0</span>
+                        <span class="bfa-cd-value" data-inv-cd-days>{{ $cd['days'] }}</span>
                         <span class="bfa-cd-label">Days</span>
                     </div>
                     <div class="bfa-cd-sep" aria-hidden="true"></div>
                     <div class="bfa-cd-unit">
-                        <span class="bfa-cd-value" data-inv-cd-hours>0</span>
+                        <span class="bfa-cd-value" data-inv-cd-hours>{{ $cd['hours'] }}</span>
                         <span class="bfa-cd-label">Hrs</span>
                     </div>
                     <div class="bfa-cd-sep" aria-hidden="true"></div>
                     <div class="bfa-cd-unit">
-                        <span class="bfa-cd-value" data-inv-cd-minutes>0</span>
+                        <span class="bfa-cd-value" data-inv-cd-minutes>{{ $cd['minutes'] }}</span>
                         <span class="bfa-cd-label">Min</span>
                     </div>
                     <div class="bfa-cd-sep" aria-hidden="true"></div>
                     <div class="bfa-cd-unit">
-                        <span class="bfa-cd-value" data-inv-cd-seconds>0</span>
+                        <span class="bfa-cd-value" data-inv-cd-seconds>{{ $cd['seconds'] }}</span>
                         <span class="bfa-cd-label">Sec</span>
                     </div>
                 </div>
+                <p class="evt-inv-countdown-nojs">Starts {{ \App\Support\InvitationCountdown::staticLine($startsAt) }}</p>
                 <p class="bfa-cd-done evt-inv-countdown-done evt-inv-countdown-done--hidden" data-inv-cd-done>This event has started.</p>
             </div>
         @else
             <div class="bfa-hero-countdown bfa-hero-countdown--static">
                 <p class="bfa-cd-eyebrow">Save the date</p>
-                <p class="bfa-cd-static">{{ $startsAt->timezone(config('app.timezone'))->format('l, F j, Y \a\t g:i A') }}</p>
+                <p class="bfa-cd-static">{{ \App\Support\InvitationCountdown::staticLine($startsAt) }}</p>
             </div>
         @endif
     </div>

@@ -1,20 +1,15 @@
 @extends('layouts.site')
-@php $hideSiteHeader = true; $hideSiteFooter = true; @endphp
+@php $hideSiteHeader = true; $hideSiteFooter = true; $noUnsplashPreconnect = true; @endphp
 
 @push('head')
     @include('events.partials.public-invitation-meta', ['event' => $event, 'invitation' => $invitation])
 @endpush
 
-@foreach ($invitation['theme']['google_font_families'] as $gf)
-    @push('head')
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family={{ $gf }}&display=swap">
-    @endpush
-@endforeach
+@include('events.invitations.partials.google-fonts', ['invitation' => $invitation])
+@include('events.invitations.partials.gallery-assets', ['invitation' => $invitation])
 
 @push('head')
     <link rel="stylesheet" href="{{ asset('css/rsvp-public.css') }}">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/glightbox/dist/css/glightbox.min.css">
     <link rel="stylesheet" href="{{ asset('css/events-public.css') }}">
     <link rel="stylesheet" href="{{ asset('css/events-invitation.css') }}">
     @if ($event->acceptsContributions())
@@ -27,8 +22,6 @@
 @endpush
 
 @push('scripts')
-    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/glightbox/dist/js/glightbox.min.js" defer></script>
     <script src="{{ asset('js/invitation-public.js') }}" defer></script>
 @endpush
 

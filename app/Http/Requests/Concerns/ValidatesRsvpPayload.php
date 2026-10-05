@@ -16,8 +16,12 @@ trait ValidatesRsvpPayload
     {
         return [
             'status' => ['required', Rule::enum(RsvpStatus::class)],
+            // Only an acceptance carries a seat count. A Declined or Maybe answer ignores whatever was sent
+            // (a form without JavaScript still posts the default 1, which used to be rejected); the service
+            // stores 0 for those. plans/invitation-page-resilience.md Phase 2.
             'attendee_count' => [
-                'required',
+                'required_if:status,'.RsvpStatus::Accepted->value,
+                'nullable',
                 'integer',
                 'min:0',
                 function (string $attribute, mixed $value, Closure $fail) use ($event, $plusOneAllowed, $heldSeats): void {
@@ -29,12 +33,8 @@ trait ValidatesRsvpPayload
                     // unchanged re-submit does not fail. RsvpSubmissionService applies the same floor.
                     $max = max(($event->allow_plus_one && $plusOneAllowed) ? 2 : 1, $heldSeats);
                     $intVal = (int) $value;
-                    if ($status === RsvpStatus::Accepted) {
-                        if ($intVal < 1 || $intVal > $max) {
-                            $fail('Choose between 1 and '.$max.' attendee(s) for your response.');
-                        }
-                    } elseif ($intVal !== 0) {
-                        $fail('Attendee count must be zero for this response.');
+                    if ($status === RsvpStatus::Accepted && ($intVal < 1 || $intVal > $max)) {
+                        $fail('Choose between 1 and '.$max.' attendee(s) for your response.');
                     }
                 },
             ],
@@ -50,9 +50,11 @@ trait ValidatesRsvpPayload
         /** @var array{status:string,attendee_count:int,message?:string|null} $data */
         $data = $this->validated();
 
+        $status = RsvpStatus::from($data['status']);
+
         return [
-            'status' => RsvpStatus::from($data['status']),
-            'attendee_count' => (int) $data['attendee_count'],
+            'status' => $status,
+            'attendee_count' => $status === RsvpStatus::Accepted ? (int) ($data['attendee_count'] ?? 0) : 0,
             'message' => $data['message'] ?? null,
         ];
     }

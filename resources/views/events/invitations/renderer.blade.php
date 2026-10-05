@@ -66,6 +66,13 @@
     class="evt-invitation evt-skin-{{ $skinKey }} {{ $layoutClass }}@if ($invitation['effects']['animation_subtle']) evt-invitation--subtle-motion @endif"
     style="--evt-primary: {{ $invitation['theme']['primary'] }}; --evt-accent: {{ $invitation['theme']['accent'] }}; --evt-background: {{ $invitation['theme']['background'] }}; --evt-font-heading: {{ $invitation['theme']['font_heading_stack'] }}; --evt-font-body: {{ $invitation['theme']['font_body_stack'] }};"
 >
+    {{-- Only when something here needs scripts; RSVP and the page itself work without them. --}}
+    @if (! empty($invitation['media']['gallery']) || ! empty($invitation['effects']['audio_track']) || ! empty($invitation['effects']['video_background']))
+        <noscript>
+            <p class="evt-inv-noscript">Some extras, like the photo slider and music, need JavaScript. Everything you need to RSVP works without it.</p>
+        </noscript>
+    @endif
+
     @if ($sectionNavItems !== [])
         @include('events.invitations.partials.section-nav', ['items' => $sectionNavItems])
     @endif

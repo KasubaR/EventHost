@@ -20,7 +20,7 @@
                        data-gallery="{{ $galleryId }}"
                        data-type="image"
                        aria-label="Open photo {{ $index + 1 }}">
-                        <img src="{{ \App\Support\InvitationMediaUrl::resolve($path) }}" alt="" loading="lazy" decoding="async" width="800" height="600">
+                        <img src="{{ \App\Support\InvitationMediaUrl::resolve($path) }}" alt="{{ \App\Support\InvitationMediaUrl::galleryAlt($path, $invitation['media']['gallery'], $event->name) }}"{!! \App\Support\InvitationMediaUrl::responsiveAttributes($path) !!} loading="lazy" decoding="async" width="800" height="600">
                     </a>
                 </figure>
             @endforeach

@@ -21,7 +21,7 @@
                 <div class="wi-section-body">{!! nl2br(e($story)) !!}</div>
             </div>
             <div class="wi-story-img-wrap">
-                <img src="{{ $storyImg }}" alt="" loading="lazy" width="700" height="440">
+                <img src="{{ $storyImg }}" alt="{{ \App\Support\InvitationMediaUrl::photoAlt($event->name) }}" loading="lazy" width="700" height="440">
             </div>
         </div>
     </section>

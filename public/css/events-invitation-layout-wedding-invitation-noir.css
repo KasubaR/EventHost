@@ -34,7 +34,8 @@
     color: var(--wi2-ivory);
 }
 
-.evt-layout-wedding-invitation-noir .wi2-reveal {
+/* Hidden only when scripts are going to reveal it (html.js); see the wedding-invitation layout for why :where(). */
+:where(html.js) .evt-layout-wedding-invitation-noir .wi2-reveal {
     opacity: 0;
     transform: translateY(50px);
     transition: opacity 1s cubic-bezier(0.22, 1, 0.36, 1), transform 1s cubic-bezier(0.22, 1, 0.36, 1);
@@ -937,4 +938,11 @@
         grid-auto-flow: row;
         grid-template-columns: 1fr;
     }
+}
+
+/* Scripts did not run in time (see the stall guard in the site layout): show the content as it is. */
+html.js-stalled .evt-layout-wedding-invitation-noir .wi2-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
 }

@@ -6,13 +6,13 @@
 @endphp
 
 <section class="db-hero" id="top">
-    <img class="db-hero-bg" src="{{ $event->cover_image_url }}" alt="" width="1600" height="1000">
+    <img class="db-hero-bg" src="{{ $event->cover_image_url }}" alt="" fetchpriority="high" width="1600" height="1000">
     <div class="db-wrap db-hero-inner">
         <div class="db-hero-top">
             <div class="db-strip">
                 @foreach ($w->couplePhotos() as $src)
                     <figure class="db-strip-photo">
-                        <img src="{{ $src }}" alt="" width="600" height="540">
+                        <img src="{{ $src }}" alt="{{ \App\Support\InvitationMediaUrl::photoAlt($event->name) }}" width="600" height="540">
                     </figure>
                 @endforeach
             </div>

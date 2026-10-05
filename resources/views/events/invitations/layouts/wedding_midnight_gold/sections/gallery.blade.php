@@ -17,7 +17,7 @@
                     data-gallery="{{ $galleryId }}"
                     data-type="image"
                 >
-                    <img src="{{ \App\Support\InvitationMediaUrl::resolve($path) }}" alt="" loading="lazy" width="800" height="800">
+                    <img src="{{ \App\Support\InvitationMediaUrl::resolve($path) }}" alt="{{ \App\Support\InvitationMediaUrl::galleryAlt($path, $invitation['media']['gallery'], $event->name) }}"{!! \App\Support\InvitationMediaUrl::responsiveAttributes($path) !!} loading="lazy" width="800" height="800">
                 </a>
             @endforeach
         </div>

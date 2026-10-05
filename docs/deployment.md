@@ -115,6 +115,56 @@ Check it afterwards in `notification_logs` (type `guest_event_reminder_email`). 
 `config:cache`; the Privacy wording reverts with it. The RSVP-deadline reminder email is separate and is already on for Pro+ hosts —
 it now carries the same stop link.
 
+## 3d. Invitation page: assets, small photo copies, caching, and a real-browser check
+
+Added with `plans/invitation-page-resilience.md`. Nothing here is a migration; none of it can break a deploy.
+
+**Upload `public/vendor/`.** It holds Swiper and GLightbox (served by us, no CDN). It is not built by Vite, so a
+`npm run build` does not create it. A missing file only costs the gallery slider (the photos still show as a grid).
+
+**Backfill the small gallery copies once**, after the first deploy of this change:
+
+```bash
+php artisan invitation:make-gallery-variants --dry-run   # what it would write
+php artisan invitation:make-gallery-variants             # writes the 600px copies
+```
+
+New photos get their small copy automatically (queue worker: `ProcessInvitationDesignImageJob`). The command is safe to
+re-run; it skips photos that already have one or are not wider than 600px. Until it runs, old photos simply load at full
+size. The nightly `invitation:prune-orphaned-files` keeps a small copy while its photo is in use.
+
+**Long cache lifetime on photos and libraries (server config, not app code).** Gallery, hero and couple photos get a new
+random file name on every upload, and the vendor libraries are requested with `?v=<version>`, so both can be cached for a
+year without ever being stale. On Apache / cPanel, add this to `public/.htaccess` **above** the Laravel rewrite block:
+
+```apache
+<IfModule mod_rewrite.c>
+    RewriteRule ^(storage/invitation-(gallery|hero|couple)/|vendor/) - [E=INV_LONG_CACHE:1]
+</IfModule>
+<IfModule mod_headers.c>
+    Header set Cache-Control "public, max-age=31536000, immutable" env=INV_LONG_CACHE
+</IfModule>
+```
+
+Do **not** extend it to the rest of `/storage` (profile photos and covers may reuse a name) or to `/css` and `/js` (their
+URLs carry no version). Confirm with `curl -I https://<host>/storage/invitation-gallery/<id>/<file>.webp` and look for the
+`Cache-Control` header.
+
+**Check it in a real browser, once per release that touches the invitation page.** The automated tests check markup and
+code, not how a browser behaves. Use a gallery-heavy wedding invitation and the standard one:
+
+- [ ] DevTools → Network → **Slow 4G / Slow 3G**, cache disabled: text and the cover show before the gallery; gallery
+      images are the `-600` files on a phone-width viewport
+- [ ] Network → **Offline** after load: no blank page, no broken-image icons, nothing stuck invisible
+- [ ] **Block `fonts.googleapis.com`**: the page still reads (fallback font)
+- [ ] **JavaScript disabled** (DevTools → Command menu → "Disable JavaScript"): every section visible on the Wedding
+      Invitation and Noir layouts; the countdown shows "Starts …" as a sentence; the gallery is a grid; a YouTube
+      background shows a "Watch the video" link; **Not attending** with the default count saves; the `<noscript>` note shows
+- [ ] Network → throttle to **2g** or tick **Save-Data**: the background video does not start by itself and a **Play video**
+      button appears; tapping it starts it
+- [ ] Rename one gallery photo on disk to simulate a failure: that photo disappears from the slider, nothing else moves
+- [ ] Repeat the gallery check on the layouts that use only GLightbox (wedding, modern minimal, botanical, dusty blue)
+
 ## 4. If something in this checklist was skipped and a page is now 500ing
 
 `Target class [...] does not exist` or `Class "..." not found` in `storage/logs/laravel.log` almost
