@@ -37,7 +37,17 @@ final class InvitationTemplateNotices
 
         $template = InvitationTemplate::query()->with('categories')->find($event->invitation_template_id);
         if ($template === null) {
-            return [];
+            // The id points at a layout that no longer exists. Guests get "Invitation unavailable" and
+            // publishing is refused until a new one is chosen (Event::invitationTemplatePublishBlocker()).
+            return [[
+                'tone' => 'warn',
+                'icon' => 'fa-triangle-exclamation',
+                'message' => $event->is_published
+                    ? 'The layout this invitation used was removed, so guests see “Invitation unavailable” and cannot RSVP from it.'
+                    : 'The layout this invitation used was removed. Choose another layout before publishing.',
+                'link' => $chooseUrl,
+                'link_label' => 'Choose a layout',
+            ]];
         }
 
         $notices = [];

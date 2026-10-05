@@ -57,9 +57,9 @@ class PublicEventController extends Controller
             })
             ->when(in_array($when, self::WHEN_OPTIONS, true), function ($query) use ($when): void {
                 $query->whereDate('event_date', '<=', match ($when) {
-                    'today' => today(),
-                    'week' => today()->addDays(7),
-                    'month' => today()->endOfMonth(),
+                    'today' => Event::venueToday(),
+                    'week' => Event::venueToday()->addDays(7),
+                    'month' => Event::venueToday()->endOfMonth(),
                 });
             })
             ->orderBy('event_date')
@@ -106,7 +106,7 @@ class PublicEventController extends Controller
         // is invitation-kind — private ones now get the same inline/open-RSVP form
         // as public ones, just never listed anywhere. See PublicInvitationResolver.
         $rsvpPublicAvailable = $rsvpOpen;
-        $invitation = $customizationService->merge($event);
+        $invitation = $customizationService->merge($event, hideMissingMedia: true);
 
         Event::query()->whereKey($event->getKey())->increment('invitation_views_count');
 

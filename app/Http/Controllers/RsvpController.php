@@ -79,7 +79,7 @@ class RsvpController extends Controller
         // (hero, description, gallery…), not a bare form. merge() already folds in
         // resolveRsvpFormConfig() as $invitation['rsvp_form'], so that no longer
         // needs to be resolved separately here.
-        $invitation = $customizationService->merge($event);
+        $invitation = $customizationService->merge($event, hideMissingMedia: true);
 
         return view('rsvp.token-show', [
             'guest' => $guest,

@@ -5,6 +5,7 @@ namespace Tests\Feature\Api\V1;
 use App\Models\Event;
 use App\Models\EventSlugRedirect;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class PublicEventShowTest extends TestCase
@@ -41,6 +42,10 @@ class PublicEventShowTest extends TestCase
 
     public function test_media_paths_are_resolved_to_full_urls(): void
     {
+        // The file must exist: one that is gone is skipped for guests (InvitationMediaHealth).
+        Storage::fake('public');
+        Storage::disk('public')->put('invitation-gallery/photo1.webp', 'x');
+
         $event = $this->publishedPublicEvent([
             'invitation_customization' => [
                 'media' => ['gallery' => ['invitation-gallery/photo1.webp'], 'hero_portrait' => null, 'couple_photos' => []],

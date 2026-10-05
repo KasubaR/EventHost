@@ -5,6 +5,7 @@ namespace App\Http\Resources\Api\V1;
 use App\Models\Event;
 use App\Support\EventAccess;
 use App\Support\EventRetentionNotice;
+use App\Support\InvitationMediaHealth;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -71,6 +72,10 @@ class EventResource extends JsonResource
             'allow_plus_one' => $this->allow_plus_one,
             'show_guest_list' => $this->show_guest_list,
             'invitation_template_id' => $this->invitation_template_id,
+            // Additive. Files the invitation points at that are gone from disk (guests do not see them); null when none.
+            'media_issues' => ($issues = InvitationMediaHealth::missing($this->resource)) !== []
+                ? ['count' => count($issues), 'items' => $issues]
+                : null,
             'accepts_contributions' => $this->acceptsContributions(),
             'contribution_enabled' => $this->contribution_enabled,
             'contribution_amount' => $this->contribution_amount,

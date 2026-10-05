@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\InvitationTemplate;
 use App\Services\InvitationCustomizationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class PublicInvitationPageTest extends TestCase
@@ -77,6 +78,10 @@ class PublicInvitationPageTest extends TestCase
 
     public function test_og_image_uses_first_hero_portrait_when_botanical_has_no_cover(): void
     {
+        // The photo must exist: a file that is gone is skipped for guests (InvitationMediaHealth).
+        Storage::fake('public');
+        Storage::disk('public')->put('invitation-couple/1/portrait.webp', 'x');
+
         $tpl = InvitationTemplate::query()
             ->where('slug', 'graduation-template-2-botanical-blush')
             ->firstOrFail();

@@ -42,6 +42,19 @@ final class InvitationDesignNotices
             ];
         }
 
+        $missingMedia = InvitationMediaHealth::missing($event);
+        if ($missingMedia !== []) {
+            $count = count($missingMedia);
+            $names = collect($missingMedia)->pluck('label')->unique()->map(fn (string $l) => mb_strtolower($l))->join(', ', ' and ');
+            $notices[] = [
+                'tone' => 'warn',
+                'icon' => 'fa-image',
+                'message' => "{$count} ".($count === 1 ? 'file' : 'files').' from your invitation ('.$names.') can no longer be found. Guests do not see '.($count === 1 ? 'it' : 'them').'; the rest of the invitation is unaffected. Upload '.($count === 1 ? 'it' : 'them').' again to bring '.($count === 1 ? 'it' : 'them').' back.',
+                'link' => $editUrl,
+                'link_label' => $editUrl !== null ? 'Open the design' : null,
+            ];
+        }
+
         $variant = InvitationLayoutVariant::normalize($merged['layout_variant'] ?? null);
         $detailsBlocked = in_array(InvitationSections::DETAILS, InvitationLayoutVariant::blockedSections($variant), true);
 

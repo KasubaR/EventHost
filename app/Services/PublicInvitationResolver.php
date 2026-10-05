@@ -6,6 +6,8 @@ use App\Enums\PublicInvitationStatus;
 use App\Models\Event;
 use App\Models\EventSlugRedirect;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class PublicInvitationResolver
@@ -126,13 +128,35 @@ class PublicInvitationResolver
     }
 
     /**
-     * An invitation with no template has nothing of the host's to show. Rendering would borrow the
-     * catalogue's first template (InvitationCustomizationService::resolvedTemplate()), so it reads as
-     * unavailable until the host picks one. Ticketed events render one fixed page and need none.
+     * An invitation whose template cannot be loaded has nothing of the host's to show: no template id, or an
+     * id whose row is gone. Rendering would borrow the catalogue's first template
+     * (InvitationCustomizationService::resolvedTemplate()), so it reads as unavailable until the host picks
+     * one. Ticketed events render one fixed page and need none. A retired (inactive) template still loads,
+     * so it keeps rendering. The relation is loaded here and reused by the render, so this costs no extra query.
      */
     public function lacksInvitationLayout(Event $event): bool
     {
-        return $event->isInvitation() && $event->invitation_template_id === null;
+        if (! $event->isInvitation()) {
+            return false;
+        }
+
+        if ($event->invitation_template_id !== null) {
+            $event->loadMissing('invitationTemplate');
+
+            if ($event->invitationTemplate !== null) {
+                return false;
+            }
+        }
+
+        // A live invitation with no loadable layout is something to know about, but not on every page view.
+        if (Cache::add('invitation-layout-missing:'.$event->getKey(), true, 3600)) {
+            Log::warning('Public invitation has no loadable template.', [
+                'event_id' => $event->getKey(),
+                'invitation_template_id' => $event->invitation_template_id,
+            ]);
+        }
+
+        return true;
     }
 
     /**
@@ -263,6 +287,11 @@ class PublicInvitationResolver
 
         if ($event->isLocked()) {
             return ['event' => $event, 'status' => PublicInvitationStatus::Ended];
+        }
+
+        // The invitation page says "unavailable" for a missing layout; the form on its own must agree.
+        if ($this->lacksInvitationLayout($event)) {
+            return ['event' => $event, 'status' => PublicInvitationStatus::Unavailable];
         }
 
         return ['event' => $event, 'status' => null];

@@ -32,7 +32,7 @@ class EventPreviewController extends Controller
         // is_ticketed already returned above, so this is always an invitation
         // event — kept in step with the web EventPreviewController's own comment.
         $rsvpPublicAvailable = $rsvpOpen;
-        $invitation = $customizationService->merge($event);
+        $invitation = $customizationService->merge($event, hideMissingMedia: true);
 
         // Deliberately does not touch invitation_views_count — that counter is
         // real guest traffic, and the host reviewing their own draft is not a view.

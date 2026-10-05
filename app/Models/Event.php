@@ -987,7 +987,18 @@ class Event extends Model
      */
     public function isLocked(): bool
     {
-        return $this->event_date !== null && $this->event_date->isBefore(today());
+        return $this->event_date !== null && $this->event_date->isBefore(static::venueToday());
+    }
+
+    /**
+     * Today's date on the venue's calendar, as midnight in the app timezone — the same shape as the
+     * `event_date` cast, so the two compare directly. `today()` is the app's UTC date, which is still
+     * yesterday for the first two hours of a Lusaka day. Anything that asks "has this event's date
+     * passed?" uses this, so the whole app agrees on one clock (plans/invitation-page-edge-cases.md Phase 2).
+     */
+    public static function venueToday(): Carbon
+    {
+        return Carbon::parse(Carbon::now(config('events.timezone', 'Africa/Lusaka'))->toDateString());
     }
 
     /**
@@ -1172,7 +1183,7 @@ class Event extends Model
     {
         return $this->is_published
             && $this->event_date !== null
-            && $this->event_date->isBefore(today())
+            && $this->event_date->isBefore(static::venueToday())
             && $this->review === null;
     }
 
@@ -1446,7 +1457,7 @@ class Event extends Model
      */
     public function scopeUpcoming(Builder $query): Builder
     {
-        return $query->whereDate('event_date', '>=', today());
+        return $query->whereDate('event_date', '>=', static::venueToday());
     }
 
     /**

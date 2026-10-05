@@ -78,7 +78,7 @@ class PublicEventController extends Controller
         // Ticketed events already returned above, so this is always an invitation
         // event — kept in step with the web PublicEventController's own comment.
         $rsvpPublicAvailable = $rsvpOpen;
-        $invitation = $customizationService->merge($event);
+        $invitation = $customizationService->merge($event, hideMissingMedia: true);
 
         Event::query()->whereKey($event->getKey())->increment('invitation_views_count');
 

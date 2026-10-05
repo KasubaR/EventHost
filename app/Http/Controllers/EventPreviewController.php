@@ -48,7 +48,7 @@ class EventPreviewController extends Controller
         // invitation event — private ones now get the same open-RSVP preview
         // as public ones. See PublicEventController::show()/PublicInvitationResolver.
         $rsvpPublicAvailable = $rsvpOpen;
-        $invitation = $customizationService->merge($event);
+        $invitation = $customizationService->merge($event, hideMissingMedia: true);
         $invitation = $this->overlayPendingUploads($event, $request, $invitation);
 
         // ?palette= recolours this render only — nothing is saved. Open to every
@@ -77,7 +77,7 @@ class EventPreviewController extends Controller
 
         $rsvpOpen = $event->isRsvpOpen();
         $rsvpPublicAvailable = $rsvpOpen;
-        $invitation = $customizationService->merge($event);
+        $invitation = $customizationService->merge($event, hideMissingMedia: true);
 
         return view('events.preview', [
             'event' => $event,

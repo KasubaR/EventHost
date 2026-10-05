@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\InvitationTemplate;
 use App\Support\InvitationFonts;
 use App\Support\InvitationLayoutVariant;
+use App\Support\InvitationMediaHealth;
 use App\Support\InvitationPalettes;
 use App\Support\InvitationSections;
 use Illuminate\Support\Facades\Log;
@@ -289,7 +290,7 @@ class InvitationCustomizationService
      *     rsvp_form: array<string, array{visible: bool, label: string}>,
      * }
      */
-    public function merge(Event $event): array
+    public function merge(Event $event, bool $hideMissingMedia = false): array
     {
         $template = $this->resolvedTemplate($event);
 
@@ -478,7 +479,7 @@ class InvitationCustomizationService
             ];
         }
 
-        return [
+        $merged = [
             'skin' => $template->skin,
             'layout_variant' => $layoutVariant,
             'theme' => [
@@ -507,6 +508,10 @@ class InvitationCustomizationService
             'schema_version' => self::CURRENT_SCHEMA_VERSION,
             'restored_from_previous' => (bool) $restoredFromPrevious,
         ];
+
+        // Guest-facing callers pass true: a file that is gone is skipped instead of drawn as a broken image.
+        // Host-facing ones keep the reference so the editor still shows it and the host can replace it.
+        return $hideMissingMedia ? InvitationMediaHealth::hide($merged) : $merged;
     }
 
     private static function stringOrNull(mixed $value): ?string

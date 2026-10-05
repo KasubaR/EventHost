@@ -675,7 +675,7 @@ When RSVP closes, who may still change an answer, and how the deadline reminders
   column is read, in `venueTimezone()`. Never compare the attribute to `now()`: that is what made an 18:00 deadline close at
   20:00. Guest-facing copy uses `rsvpDeadlineLabel()` ("Monday, October 5, 2026 at 6:00 PM CAT"), never the raw value
 - **Where RSVP closes:** `rsvpClosesAt()` is the deadline, or with none the **event start** (`rsvpImplicitCloseAt()`; the end of
-  the day for an event with no start time), not the end of the event day. `isLocked()` stays date based and drives edit locking,
+  the day for an event with no start time), not the end of the event day. `isLocked()` stays date based (the venue's calendar date, `Event::venueToday()`) and drives edit locking,
   redefine charges, pass visibility and the Ended page, so do not use it for RSVP decisions
 - **Three gates, pick the right one.** `isRsvpOpen($at = null)` is exact and is what pages show (true for an unpublished draft, so
   a host's preview still has the form). `acceptsRsvps()` adds `is_published`. `acceptsRsvpSubmissions()` is `acceptsRsvps()` with a
@@ -839,10 +839,10 @@ decisions: `plans/admin-create-events.md` — all steps are built. Switched **of
 the same `events.invitations.renderer` partial and `InvitationCustomizationService::merge()` output the
 public page uses — but gated on `EventPolicy::view` (owner-only) instead of `is_published`/`is_public`.
 
-- This is the only way a host can ever see a **private** (`is_public = false`) event's invitation, published
-  or not — `/e/{slug}` (`PublicEventController::show`, via `PublicInvitationResolver`) 403s on
-  `is_public = false` regardless of who is asking, by design. It's also the only way to see a **draft**
-  invitation before spending a credit to publish. Still keyed on `is_public`, not `audience` — see "Event
+- A **private** invitation event is *not* hidden at `/e/{slug}`: it renders for anyone who has the slug, it is
+  just never listed (see "Invitation page" below). So this route is not how a host "gets into" a private
+  event; it is how a host sees a **draft** invitation before spending a credit to publish, and sees what
+  guests will see with the host-only chrome. Still keyed on `is_public`, not `audience` — see "Event
   Audience" below for why those two are kept in agreement on every save and this doesn't need to change
 - Does not increment `invitation_views_count` — that column is real guest traffic
 - Redirects to `events.choose-template` if `invitation_template_id` is still null; there is nothing to
@@ -934,6 +934,42 @@ review: `.cursor/plans/customization_gaps_*.plan.md`. Tests: `InvitationCustomiz
 - **Leaving without saving:** `event-edit-save.js` tracks dirty state on both forms and prompts on `beforeunload` (also while
  uploads are pending). A preview click does not unlock "Save & publish" while there are unsaved edits, and the preview link says
  the preview shows the last saved version
+
+### Invitation page
+
+What `/e/{slug}` shows in each situation, and which clock "ended" runs on. Plan and phases:
+`plans/invitation-page-edge-cases.md` — all phases are built.
+
+- **Gate order in `PublicInvitationResolver` (page, API twin and open RSVP page):** unknown slug → 404 (an old slug
+  301s to the new one); **never published → 404 first**, whatever else is true (a deleted, cancelled or paused
+  *draft* must not confirm it exists or print its name); then deleted → "no longer available", cancelled →
+  "Event cancelled", paused → "Invitation unavailable"; then ticketed/public gate; then **ended**; then
+  **missing layout** → "Invitation unavailable". A published event that is later deleted, cancelled or paused keeps
+  `is_published`, so it still gets its status page. The API returns 200 with a `status` body for these, not 404
+- **Private events stay reachable by slug** (unlisted, never in Discover). Only ticketed and free-registration
+  events keep the `is_public` 403
+- **"Ended" runs on the venue clock.** `Event::venueToday()` is today's date in `config('events.timezone')`
+  (Lusaka), shaped like the `event_date` cast. `isLocked()`, `isReviewable()`, `scopeUpcoming()`, the reviews pages,
+  the dashboard's upcoming list, the discover presets and the new-event date rule all use it, so they flip at the same
+  instant: an event on the 20th is live through 23:59 Lusaka and ended from 00:00 on the 21st. `today()` is the UTC date
+  and is two hours behind; do not use it for "has this event's date passed?". There is **no end date**: an event is one
+  calendar day, so a party that runs past midnight reads as ended from 00:00. Tests fake the clock with
+  `Carbon::setTestNow(Carbon::parse($venueTime, config('events.timezone'))->utc())`
+- **A missing layout is unavailable, never a 500 and never a borrowed template.** `lacksInvitationLayout()` is true
+  for no template id *or* an id whose row is gone (the foreign key nulls the id when a template is deleted, so a
+  dangling id is rare), and it also covers the open RSVP page. The first active template is still the host-side editor's
+  fallback (`resolvedTemplate()`), never a guest page's. A **retired** (inactive) template keeps rendering on a live
+  event. A live invitation with no loadable layout logs one warning per event per hour. Host notice: "the layout was
+  removed" (`InvitationTemplateNotices`); publishing is refused (`invitationTemplatePublishBlocker()`)
+- **Missing media is skipped for guests and reported to the host.** `InvitationMediaHealth` is the one place that knows
+  whether a stored reference is on disk (absolute URLs and root-relative paths are never flagged, so template preview
+  samples work). `merge($event, hideMissingMedia: true)` is what **guest-facing** callers use (public page, personal RSVP
+  link, API public event, both host previews), so no layout needs its own check; the host editor keeps the full saved list so
+  the host can replace what is broken. A positional layout (Beauty for Ashes) keeps a blank slot so speaker photos don't
+  shift. The host sees `InvitationDesignNotices` ("N files … can no longer be found"), computed on view so a re-upload
+  clears it; the host API adds an additive `media_issues` (count + items, null when healthy). The cover already falls
+  back to `default-event.png`; it is reported too. Nothing is logged per missing file (it would fire on every page view)
+- **Tests:** `InvitationPageEdgeCasesTest` (draft 404s, venue clock, missing template, missing media)
 
 ### Featured Templates (homepage)
 

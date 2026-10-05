@@ -27,7 +27,7 @@ class ReviewController extends Controller
         $events = $request->user()
             ->events()
             ->with('review')
-            ->whereDate('event_date', '<', today())
+            ->whereDate('event_date', '<', Event::venueToday())
             ->orderByDesc('event_date')
             ->get();
 

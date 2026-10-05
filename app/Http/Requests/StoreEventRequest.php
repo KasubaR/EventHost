@@ -99,7 +99,7 @@ class StoreEventRequest extends FormRequest
             'event_type' => ['required', Rule::in(Event::eventTypesFor($productKind))],
             'product_kind' => ['required', Rule::enum(EventProductKind::class)],
             'description' => ['nullable', 'string', 'max:20000'],
-            'event_date' => ['required', 'date', 'after_or_equal:today'],
+            'event_date' => ['required', 'date', 'after_or_equal:'.Event::venueToday()->toDateString()],
             'event_time' => ['required', 'regex:/^([01]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/'],
             'venue' => ['nullable', 'string', 'max:255'],
             'location_name' => ['nullable', 'string', 'max:255'],

@@ -1,6 +1,6 @@
 # Invitation page edge cases
 
-Status: planned, nothing built. Origin: edge-case review of `/e/{slug}` (`PublicInvitationResolver`,
+Status: all phases built (see `CLAUDE.md` → Invitation page for what shipped). Origin: edge-case review of `/e/{slug}` (`PublicInvitationResolver`,
 `PublicEventController::show`, the invitation renderer). Related: `plans/rsvp-deadline-fixes.md`,
 `plans/plus-one-edge-cases.md`.
 
