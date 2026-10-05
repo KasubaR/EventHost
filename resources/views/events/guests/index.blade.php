@@ -48,6 +48,9 @@
         <div class="evt-admin-flash">{{ $isRegistrations ? 'Registration added.' : 'Guest added.' }}</div>
     @elseif (session('status') === 'guest-updated')
         <div class="evt-admin-flash">{{ $isRegistrations ? 'Registration updated.' : 'Guest updated.' }}</div>
+        @if (session('plus_one_kept'))
+            <div class="evt-admin-flash">{{ session('plus_one_kept') }} has already confirmed a plus-one, so it stays. Open their edit page to remove it.</div>
+        @endif
     @elseif (session('status') === 'guest-deleted')
         <div class="evt-admin-flash">{{ $isRegistrations ? 'Registration removed.' : 'Guest removed.' }}</div>
     @elseif (session('status') === 'guest-invitation-marked-sent')
@@ -85,6 +88,8 @@
         <div class="evt-admin-flash">Reminder emails queued for {{ session('bulk_count', 0) }} guest(s).</div>
     @elseif (session('status') === 'guests-bulk-update')
         <div class="evt-admin-flash">Update emails queued for {{ session('bulk_count', 0) }} guest(s).</div>
+    @elseif (session('status') === 'guests-bulk-plus-one')
+        <div class="evt-admin-flash">{{ session('bulk_count', 0) }} {{ Str::plural('guest', session('bulk_count', 0)) }} can now bring a plus-one.</div>
     @elseif (session('status') === 'guests-bulk-whatsapp')
         <div class="evt-admin-flash">Selected guests prepared for WhatsApp sharing.</div>
     @endif
@@ -218,6 +223,9 @@
                 <option value="assign_group">Assign group</option>
                 <option value="assign_table">Assign table</option>
                 <option value="mark_sent">Mark invitation sent</option>
+                @if ($event->allow_plus_one)
+                    <option value="allow_plus_one">Allow plus-one</option>
+                @endif
                 <option value="send_reminder_email">Send reminder email{{ $canSendReminders ? '' : ' (Pro+)' }}</option>
                 <option value="send_update_email">Send event update email</option>
                 <option value="prepare_whatsapp_share">Prepare WhatsApp share</option>

@@ -23,7 +23,34 @@
         </div>
     </x-slot>
 
+    @php $heldSeats = $guest->rsvp?->heldSeats() ?? 0; @endphp
+
     <div class="evt-stack">
+        @if (session('status') === 'guest-plus-one-removed')
+            <div class="evt-admin-flash">Plus-one removed. {{ $guest->name }} is now confirmed for one seat.</div>
+        @endif
+        @error('plus_one')
+            <div class="evt-admin-flash">{{ $message }}</div>
+        @enderror
+
+        @if ($heldSeats >= 2)
+            <div class="evt-section">
+                <div class="evt-section-body">
+                    <p>{{ $guest->name }} has confirmed with a plus-one ({{ $heldSeats }} seats).
+                        @unless ($event->allow_plus_one && $guest->plus_one_allowed)
+                            Plus-ones are switched off for them, but this confirmed seat stays until you remove it.
+                        @endunless
+                    </p>
+                    <form method="post" action="{{ route('events.guests.rsvp.remove-plus-one', ['event' => $event, 'guest' => $guest->id]) }}"
+                          onsubmit="return confirm('Remove the plus-one? {{ $guest->email ? 'They will be emailed.' : 'They have no email, so you will need to tell them.' }}');">
+                        @csrf
+                        @method('PATCH')
+                        <button type="submit" class="evt-btn-outline"><i class="fa-solid fa-user-minus"></i> Remove plus-one</button>
+                    </form>
+                </div>
+            </div>
+        @endif
+
         <div class="evt-section">
             <div class="evt-section-body">
                 <form method="post" action="{{ route('events.guests.update', ['event' => $event, 'guest' => $guest->id]) }}" class="profile-fields">

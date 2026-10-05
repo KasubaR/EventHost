@@ -59,6 +59,17 @@ class Rsvp extends Model
     }
 
     /**
+     * Seats this RSVP holds against the guest limit: an accepted response the host has not rejected.
+     */
+    public function heldSeats(): int
+    {
+        return ($this->status === RsvpStatus::Accepted
+            && $this->host_approval_status !== RsvpApprovalStatus::Rejected)
+            ? $this->attendee_count
+            : 0;
+    }
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array

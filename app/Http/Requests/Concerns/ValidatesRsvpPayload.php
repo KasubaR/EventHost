@@ -12,7 +12,7 @@ trait ValidatesRsvpPayload
     /**
      * @return array<string, mixed>
      */
-    protected function rsvpFieldRules(Event $event, bool $plusOneAllowed): array
+    protected function rsvpFieldRules(Event $event, bool $plusOneAllowed, int $heldSeats = 0): array
     {
         return [
             'status' => ['required', Rule::enum(RsvpStatus::class)],
@@ -20,12 +20,14 @@ trait ValidatesRsvpPayload
                 'required',
                 'integer',
                 'min:0',
-                function (string $attribute, mixed $value, Closure $fail) use ($event, $plusOneAllowed): void {
+                function (string $attribute, mixed $value, Closure $fail) use ($event, $plusOneAllowed, $heldSeats): void {
                     $status = RsvpStatus::tryFrom((string) $this->input('status'));
                     if ($status === null) {
                         return;
                     }
-                    $max = ($event->allow_plus_one && $plusOneAllowed) ? 2 : 1;
+                    // A seat already confirmed stays valid if plus-ones were switched off since, so an
+                    // unchanged re-submit does not fail. RsvpSubmissionService applies the same floor.
+                    $max = max(($event->allow_plus_one && $plusOneAllowed) ? 2 : 1, $heldSeats);
                     $intVal = (int) $value;
                     if ($status === RsvpStatus::Accepted) {
                         if ($intVal < 1 || $intVal > $max) {

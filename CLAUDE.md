@@ -609,6 +609,31 @@ events** (`StoreEventRequest` / `UpdateEventRequest`), optional for the Android 
 Call {host} on {number}" on every guest-facing RSVP page and **renders nothing** when there is no number — add it to any new
 RSVP page. Privacy §2 tells hosts the number is shown to guests
 
+### Plus-ones
+
+A plus-one is `rsvps.attendee_count = 2`; an invitation RSVP is only ever 1 or 2. Plan and phases:
+`plans/plus-one-edge-cases.md` — all phases are built.
+
+- **One rule for the maximum:** `Event::maxAttendeeSlotsForGuest()` (event `allow_plus_one` AND guest `plus_one_allowed` → 2, else 1),
+  floored at the seats the guest already holds (`Rsvp::heldSeats()`). Both `ValidatesRsvpPayload` and `RsvpSubmissionService::submit()`
+  apply that floor, so an unchanged re-submit never fails after plus-ones are switched off. **Every RSVP is written through `submit()`**
+  (a test fails if another path creates one) and it **refuses** an out-of-range count with a validation error on `attendee_count` — it
+  never clamps to a different number
+- **Switching plus-ones off grandfathers confirmed ones.** Nothing removes an existing seat: the host gets `plus_ones_kept` (count + guest
+  list link; API: additive `plus_ones_remaining`). A host removes one per guest with "Remove plus-one" on the guest edit page
+  (`GuestController::removePlusOne` → `RsvpSubmissionService::removePlusOne()`, emails `PlusOneRemovedNotification`). Web only. Turning
+  one guest's flag off while they hold 2 flashes `plus_one_kept` and changes nothing else
+- **Switching them on only helps guests whose own flag is on.** Imports and the API create guests with `plus_one_allowed = false`, so a
+  save that turns the event toggle on flashes `plus_ones_available` (API: `guests_without_plus_one`) with an "Allow for all guests" button
+  (`POST events/{event}/guests/allow-plus-one`). The guest list's bulk menu has "Allow plus-one" (`allow_plus_one`, web and API). The
+  import accepts an optional `plus_one` column (yes / y / true / 1). Seat-pool groups: each person may then take 2 of the pool
+- **A bare WhatsApp "yes" keeps the seats the guest already holds** instead of resetting to 1
+- **Over the guest limit:** `GuestLimitReachedException` is still a 422 on `status` (the shape clients already handle) but names what
+  fits ("You can RSVP for yourself only"), says when the guest's current RSVP is unchanged, adds `seats_left` to the API body, and the web
+  form comes back with the count preselected to what fits (rendered in `bootstrap/app.php`)
+- **Wording:** the form says "Not attending" / "Just me" / "Me + 1 guest"; the API's `attendee_count` includes the guest themselves
+- Not built: a waitlist for freed seats; "Remove plus-one" and a disallow bulk action on the API
+
 ### Guest Event Reminders
 
 Accepted guests are reminded 7 days before, 1 day before and on the day of a private (invitation-kind) event, by WhatsApp

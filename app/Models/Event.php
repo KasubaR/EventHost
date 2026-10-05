@@ -8,6 +8,7 @@ use App\Enums\EventProductKind;
 use App\Enums\EventStaffRole;
 use App\Enums\PublicInvitationStatus;
 use App\Enums\PublicRegistrationStatus;
+use App\Enums\RsvpApprovalStatus;
 use App\Enums\RsvpStatus;
 use App\Enums\SubscriptionTier;
 use App\Enums\TicketingStatus;
@@ -1213,6 +1214,28 @@ class Event extends Model
     {
         return $this->require_rsvp_approval
             || $this->guestGroups()->whereNotNull('rsvp_token')->exists();
+    }
+
+    /**
+     * Confirmed RSVPs that include a plus-one (a seat count of 2) and are not rejected. Switching
+     * `allow_plus_one` off never takes these away — plans/plus-one-edge-cases.md Phase 1.
+     */
+    public function plusOnesHeld(): int
+    {
+        return $this->rsvps()
+            ->where('status', RsvpStatus::Accepted)
+            ->where('host_approval_status', '!=', RsvpApprovalStatus::Rejected)
+            ->where('attendee_count', '>=', 2)
+            ->count();
+    }
+
+    /**
+     * Guests who cannot pick a plus-one yet. The event-wide toggle alone does nothing for them: each
+     * guest carries their own `plus_one_allowed` (imports and the API create guests with it off).
+     */
+    public function guestsWithoutPlusOne(): int
+    {
+        return $this->guests()->where('plus_one_allowed', false)->count();
     }
 
     /**

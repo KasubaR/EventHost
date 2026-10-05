@@ -11,6 +11,23 @@ use Illuminate\Support\Facades\DB;
 
 class GuestBulkActionController extends Controller
 {
+    /**
+     * The one-click follow-up to switching plus-ones on (plans/plus-one-edge-cases.md Phase 2): lets every
+     * guest on the list pick a plus-one, without posting thousands of ids. Confirmed seats are untouched.
+     */
+    public function allowPlusOneForAll(Event $event): RedirectResponse
+    {
+        $this->authorize('update', $event);
+        abort_unless($event->isInvitation(), 404);
+
+        $count = $event->guests()->where('plus_one_allowed', false)->update(['plus_one_allowed' => true]);
+
+        return redirect()
+            ->route('events.guests.index', $event)
+            ->with('bulk_count', $count)
+            ->with('status', 'guests-bulk-plus-one');
+    }
+
     public function store(
         GuestBulkActionRequest $request,
         Event $event,
@@ -71,6 +88,13 @@ class GuestBulkActionController extends Controller
                     'invitation_sent' => true,
                     'invitation_sent_at' => now(),
                 ]);
+
+                return;
+            }
+
+            // Does not touch anyone's confirmed seats: it only lets these guests pick a plus-one from now on.
+            if ($action === 'allow_plus_one') {
+                $bulkCount = $builder->update(['plus_one_allowed' => true]);
 
                 return;
             }
@@ -150,6 +174,7 @@ class GuestBulkActionController extends Controller
                 'send_reminder_email' => 'guests-bulk-reminder',
                 'send_update_email' => 'guests-bulk-update',
                 'prepare_whatsapp_share' => 'guests-bulk-whatsapp',
+                'allow_plus_one' => 'guests-bulk-plus-one',
                 default => 'guests-bulk-done',
             });
     }

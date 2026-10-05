@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\RsvpApprovalStatus;
 use App\Enums\RsvpStatus;
+use App\Exceptions\GuestLimitReachedException;
 use App\Exceptions\RsvpClosedException;
 use App\Models\Event;
 use App\Models\Guest;
@@ -16,6 +17,29 @@ use Illuminate\Validation\ValidationException;
 
 class RsvpSubmissionService
 {
+    /**
+     * Host action: take a confirmed guest back to one seat. This is the only way a plus-one already
+     * confirmed goes away after plus-ones are switched off — switching them off never does it.
+     * Returns null when there is no plus-one to remove (nothing changes).
+     */
+    public function removePlusOne(Event $event, Guest $guest): ?Rsvp
+    {
+        return DB::transaction(function () use ($event, $guest): ?Rsvp {
+            // Same lock every submit takes, so this cannot interleave with a guest's own change.
+            Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
+
+            $rsvp = Rsvp::query()->where('guest_id', $guest->id)->lockForUpdate()->first();
+
+            if ($rsvp === null || $rsvp->heldSeats() < 2) {
+                return null;
+            }
+
+            $rsvp->update(['attendee_count' => 1]);
+
+            return $rsvp;
+        });
+    }
+
     /**
      * @param  array{status:RsvpStatus,attendee_count:int,message?:string|null}  $payload
      */
@@ -38,22 +62,27 @@ class RsvpSubmissionService
             $locked = Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
 
             $status = $payload['status'];
-            $maxAttendees = $locked->maxAttendeeSlotsForGuest($guest);
-
-            $attendeeCount = $status->countsTowardGuestLimit()
-                ? min(max(1, $payload['attendee_count']), $maxAttendees)
-                : 0;
 
             $existing = Rsvp::query()
                 ->where('guest_id', $guest->id)
                 ->first();
 
             // Seats this guest currently holds against the limit — a rejected RSVP holds none.
-            $previousHeldCount = ($existing
-                && $existing->status === RsvpStatus::Accepted
-                && $existing->host_approval_status !== RsvpApprovalStatus::Rejected)
-                ? $existing->attendee_count
-                : 0;
+            $previousHeldCount = $existing?->heldSeats() ?? 0;
+
+            // A seat already confirmed stays valid even if plus-ones were switched off since.
+            $maxAttendees = max($locked->maxAttendeeSlotsForGuest($guest), $previousHeldCount);
+
+            // Never store a different number from the one asked for: the request layers already
+            // reject out-of-range counts, so a mismatch here is a channel that skipped them.
+            if ($status->countsTowardGuestLimit()
+                && ($payload['attendee_count'] < 1 || $payload['attendee_count'] > $maxAttendees)) {
+                throw ValidationException::withMessages([
+                    'attendee_count' => ['Choose between 1 and '.$maxAttendees.' attendee(s) for your response.'],
+                ]);
+            }
+
+            $attendeeCount = $status->countsTowardGuestLimit() ? $payload['attendee_count'] : 0;
 
             $newAcceptedCount = $status === RsvpStatus::Accepted ? $attendeeCount : 0;
 
@@ -78,13 +107,7 @@ class RsvpSubmissionService
                 $seatsLeft = max(0, $locked->guest_limit - $heldByOthers);
 
                 if ($newAcceptedCount > $seatsLeft) {
-                    throw ValidationException::withMessages([
-                        'status' => [
-                            $seatsLeft === 0
-                                ? 'This event has reached its guest limit for confirmed attendees.'
-                                : "Only {$seatsLeft} ".($seatsLeft === 1 ? 'seat is' : 'seats are').' left for confirmed attendees.',
-                        ],
-                    ]);
+                    throw GuestLimitReachedException::forSeats($seatsLeft, $previousHeldCount, $newAcceptedCount);
                 }
             }
 

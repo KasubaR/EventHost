@@ -58,6 +58,17 @@
         </div>
     @endif
 
+    @include('events.partials.plus-ones-available-flash')
+
+    @if (session('plus_ones_kept'))
+        <div class="evt-flash evt-flash--info" role="status">
+            <i class="fa-solid fa-user-plus"></i>
+            Plus-ones are off, but {{ session('plus_ones_kept')['count'] }} {{ \Illuminate\Support\Str::plural('guest', session('plus_ones_kept')['count']) }}
+            already confirmed with one, so those stay.
+            <a href="{{ session('plus_ones_kept')['url'] }}">Review them on the guest list</a>.
+        </div>
+    @endif
+
     @if (session('status') === 'event-updated')
         <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Event updated.</div>
 

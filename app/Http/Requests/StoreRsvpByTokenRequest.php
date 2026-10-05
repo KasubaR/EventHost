@@ -60,7 +60,7 @@ class StoreRsvpByTokenRequest extends FormRequest
             return [];
         }
 
-        return $this->rsvpFieldRules($event, $guest->plus_one_allowed);
+        return $this->rsvpFieldRules($event, $guest->plus_one_allowed, $guest->rsvp?->heldSeats() ?? 0);
     }
 
     private function guestFromToken(): ?Guest

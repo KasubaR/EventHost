@@ -341,6 +341,9 @@ Route::middleware(['auth', 'account.active', 'verified'])->group(function () {
         ->name('events.guests.import.store')
         ->middleware('throttle:10,1');
 
+    Route::post('/events/{event}/guests/allow-plus-one', [GuestBulkActionController::class, 'allowPlusOneForAll'])
+        ->name('events.guests.allow-plus-one');
+
     Route::post('/events/{event}/guests/bulk', [GuestBulkActionController::class, 'store'])
         ->middleware('throttle:guest-bulk-send')
         ->name('events.guests.bulk');
@@ -370,6 +373,9 @@ Route::middleware(['auth', 'account.active', 'verified'])->group(function () {
 
     Route::patch('/events/{event}/guests/{guest}/rsvp/reject', [GuestController::class, 'rejectRsvp'])
         ->name('events.guests.rsvp.reject');
+
+    Route::patch('/events/{event}/guests/{guest}/rsvp/remove-plus-one', [GuestController::class, 'removePlusOne'])
+        ->name('events.guests.rsvp.remove-plus-one');
 
     Route::post('/events/{event}/guests/{guest}/whatsapp-invite', [GuestController::class, 'sendWhatsAppInvitation'])
         ->middleware('throttle:guest-whatsapp-send')

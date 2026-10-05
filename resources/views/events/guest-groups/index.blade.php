@@ -110,6 +110,9 @@
                                                         &middot; <em>link closed</em>
                                                     @endif
                                                 </p>
+                                                @if ($event->allow_plus_one)
+                                                    <p class="evt-muted">Plus-ones are on, so each person can request up to 2 of these seats.</p>
+                                                @endif
                                                 <div class="evt-copy-row">
                                                     <input type="text" readonly class="profile-input" value="{{ $group->rsvpUrl() }}" aria-label="Group RSVP link" onclick="this.select()">
                                                     <button type="button" class="evt-btn-outline evt-btn-tiny" data-copy-text="{{ $group->rsvpUrl() }}">Copy link</button>
@@ -138,7 +141,7 @@
                                             <form method="post" action="{{ route('events.guest-groups.link.update', ['event' => $event, 'guest_group' => $group->id]) }}" class="evt-inline-form">
                                                 @csrf
                                                 @method('PUT')
-                                                <span class="evt-muted">Share one link for this group, with a limited number of seats. You approve each request.</span>
+                                                <span class="evt-muted">Share one link for this group, with a limited number of seats. You approve each request.@if ($event->allow_plus_one) Plus-ones are on, so each person can request up to 2 of your seats.@endif</span>
                                                 <label class="evt-sr-only" for="seat_limit_{{ $group->id }}">Seats</label>
                                                 <input id="seat_limit_{{ $group->id }}" type="number" name="seat_limit" min="1" max="10000" class="profile-input" style="width:90px" placeholder="Seats" required>
                                                 <button type="submit" class="evt-btn-outline evt-btn-tiny">Create group link</button>

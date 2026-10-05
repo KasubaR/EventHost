@@ -84,6 +84,13 @@ class GuestBulkActionController extends Controller
                 return;
             }
 
+            // Does not touch anyone's confirmed seats: it only lets these guests pick a plus-one from now on.
+            if ($action === 'allow_plus_one') {
+                $bulkCount = $builder->update(['plus_one_allowed' => true]);
+
+                return;
+            }
+
             if ($action === 'delete') {
                 $bulkCount = $builder->delete();
 

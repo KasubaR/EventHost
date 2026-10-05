@@ -13,6 +13,7 @@ use App\Models\Guest;
 use App\Services\CommunicationService;
 use App\Services\QrCodeService;
 use App\Services\RsvpApprovalService;
+use App\Services\RsvpSubmissionService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -249,7 +250,14 @@ class GuestController extends Controller
             $data['invitation_token'] = Str::random(48);
         }
 
+        $plusOneSwitchedOff = $guest->plus_one_allowed && ! $data['plus_one_allowed'];
+
         $guest->fill($data)->save();
+
+        // Their confirmed plus-one stays; say so, since the checkbox suggests otherwise.
+        if ($plusOneSwitchedOff && $guest->rsvp?->heldSeats() >= 2) {
+            session()->flash('plus_one_kept', $guest->name);
+        }
 
         return redirect()
             ->route('events.guests.index', $event)
@@ -292,6 +300,36 @@ class GuestController extends Controller
         }
 
         return back()->with('status', 'guest-rsvp-approved');
+    }
+
+    /**
+     * plans/plus-one-edge-cases.md Phase 1 — takes a confirmed guest back to one seat and tells them.
+     * Switching plus-ones off never does this on its own; the host chooses it per guest.
+     */
+    public function removePlusOne(
+        Event $event,
+        Guest $guest,
+        RsvpSubmissionService $submissions,
+        CommunicationService $communication,
+    ): RedirectResponse {
+        $guest->loadMissing('event');
+        $this->authorize('update', $guest);
+
+        abort_unless($guest->event_id === $event->id, 404);
+        abort_unless($event->isInvitation(), 404);
+
+        if ($submissions->removePlusOne($event, $guest) === null) {
+            return back()->withErrors(['plus_one' => 'This guest has no confirmed plus-one to remove.']);
+        }
+
+        try {
+            $communication->sendPlusOneRemoved($event, $guest);
+        } catch (\Throwable $e) {
+            // The seat change is already saved; a mail failure must not undo or hide it.
+            report($e);
+        }
+
+        return back()->with('status', 'guest-plus-one-removed');
     }
 
     /**

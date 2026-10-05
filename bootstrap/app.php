@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\GuestLimitReachedException;
 use App\Exceptions\RsvpClosedException;
 use App\Http\Middleware\AdminAuthenticate;
 use App\Http\Middleware\BlockWhileActingAs;
@@ -80,6 +81,27 @@ return Application::configure(basePath: dirname(__DIR__))
 
             return ($target !== null ? redirect($target) : redirect()->back(fallback: url('/')))
                 ->with('rsvp_closed', $e->getMessage());
+        });
+
+        // A plus-one that does not fit the guest limit stays a 422 on `status`; this adds what still fits.
+        // JSON gets `seats_left`; the web form comes back with the count preselected to the seats that fit.
+        $exceptions->render(function (GuestLimitReachedException $e, Request $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'message' => $e->getMessage(),
+                    'errors' => $e->errors(),
+                    'seats_left' => $e->seatsLeft,
+                ], 422);
+            }
+
+            $input = $request->input();
+            if ($e->seatsLeft > 0) {
+                $input['attendee_count'] = min($e->seatsLeft, $e->requestedSeats);
+            }
+
+            return redirect($e->redirectTo ?? url()->previous())
+                ->withInput($input)
+                ->withErrors($e->errors(), $e->errorBag);
         });
 
         // A stale CSRF token nearly always means the same form was sent twice: the

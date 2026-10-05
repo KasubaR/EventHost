@@ -82,7 +82,7 @@ class WhatsAppInboundRsvpService
         try {
             $rsvp = $this->rsvpSubmission->submit($event, $guest, [
                 'status' => $status,
-                'attendee_count' => $status === RsvpStatus::Accepted ? 1 : 0,
+                'attendee_count' => $status === RsvpStatus::Accepted ? $this->seatsForAccept($guest) : 0,
             ], allowReductions: true);
         } catch (RsvpClosedException) {
             // Past the deadline: only a cancel or a reduction gets through, anything else lands here.
@@ -118,6 +118,19 @@ class WhatsAppInboundRsvpService
         if ($fromE164 !== null) {
             $this->sendConfirmation($fromE164, $event, $guest, $rsvp, $status);
         }
+    }
+
+    /**
+     * A bare "yes" never changes how many seats a guest holds: someone already confirmed with a
+     * plus-one keeps it. Anyone else (new, declined, maybe) starts at one seat.
+     */
+    private function seatsForAccept(Guest $guest): int
+    {
+        $existing = Rsvp::query()->where('guest_id', $guest->id)->first();
+
+        return $existing && $existing->status === RsvpStatus::Accepted
+            ? max(1, $existing->attendee_count)
+            : 1;
     }
 
     private function sendConfirmation(

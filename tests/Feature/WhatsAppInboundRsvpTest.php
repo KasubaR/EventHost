@@ -63,6 +63,41 @@ class WhatsAppInboundRsvpTest extends TestCase
         ]);
     }
 
+    public function test_bare_yes_keeps_an_existing_plus_one(): void
+    {
+        $this->bindWhatsAppFake();
+        [$event, $guest] = $this->seedInvite('SM_OUT_PLUS');
+        $event->update(['allow_plus_one' => true]);
+        $guest->update(['plus_one_allowed' => true]);
+        Rsvp::factory()->forGuest($guest)->accepted(2)->create();
+
+        $this->postSignedWebhook([
+            'MessageSid' => 'SM_IN_PLUS',
+            'From' => 'whatsapp:+260971234567',
+            'ButtonPayload' => 'rsvp_accepted',
+            'OriginalRepliedMessageSid' => 'SM_OUT_PLUS',
+        ])->assertOk();
+
+        $this->assertSame(2, $guest->fresh()->rsvp->attendee_count);
+    }
+
+    public function test_bare_yes_keeps_a_plus_one_after_plus_ones_were_switched_off(): void
+    {
+        $this->bindWhatsAppFake();
+        [$event, $guest] = $this->seedInvite('SM_OUT_OFF');
+        Rsvp::factory()->forGuest($guest)->accepted(2)->create();
+        $event->update(['allow_plus_one' => false]);
+
+        $this->postSignedWebhook([
+            'MessageSid' => 'SM_IN_OFF',
+            'From' => 'whatsapp:+260971234567',
+            'ButtonPayload' => 'rsvp_accepted',
+            'OriginalRepliedMessageSid' => 'SM_OUT_OFF',
+        ])->assertOk();
+
+        $this->assertSame(2, $guest->fresh()->rsvp->attendee_count);
+    }
+
     public function test_accepted_without_premium_tools_sends_text_only(): void
     {
         $fake = $this->bindWhatsAppFake();

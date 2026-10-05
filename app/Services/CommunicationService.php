@@ -19,6 +19,7 @@ use App\Notifications\HostEventReminderNotification;
 use App\Notifications\HostPurgeWarningNotification;
 use App\Notifications\NewContributionReceivedNotification;
 use App\Notifications\NewRsvpReceivedNotification;
+use App\Notifications\PlusOneRemovedNotification;
 use App\Notifications\RsvpAwaitingApprovalNotification;
 use App\Notifications\RsvpConfirmationNotification;
 use App\Notifications\RsvpRejectedNotification;
@@ -160,6 +161,30 @@ class CommunicationService
         try {
             Notification::route('mail', $guest->email)
                 ->notify(new RsvpRejectedNotification($event, $guest, $rsvp, $note));
+            $this->markSent($log);
+        } catch (\Throwable $e) {
+            $this->markFailed($log, $e);
+            throw $e;
+        }
+    }
+
+    /**
+     * Guest-facing: the host removed a confirmed plus-one. Skipped silently when the guest gave no email.
+     */
+    public function sendPlusOneRemoved(Event $event, Guest $guest): void
+    {
+        if (! is_string($guest->email) || $guest->email === '') {
+            return;
+        }
+
+        $log = $this->startLog($event, $guest, 'email', 'plus_one_removed', null, null);
+        if ($log === null) {
+            return;
+        }
+
+        try {
+            Notification::route('mail', $guest->email)
+                ->notify(new PlusOneRemovedNotification($event, $guest));
             $this->markSent($log);
         } catch (\Throwable $e) {
             $this->markFailed($log, $e);

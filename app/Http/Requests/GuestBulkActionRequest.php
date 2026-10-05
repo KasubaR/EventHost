@@ -47,6 +47,7 @@ class GuestBulkActionRequest extends FormRequest
                 'send_reminder_email',
                 'send_update_email',
                 'prepare_whatsapp_share',
+                'allow_plus_one',
             ])],
             'guest_ids' => ['required', 'array', 'min:1'],
             'guest_ids.*' => [

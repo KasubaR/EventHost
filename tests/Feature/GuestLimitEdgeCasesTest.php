@@ -63,7 +63,7 @@ class GuestLimitEdgeCasesTest extends TestCase
         Rsvp::factory()->forGuest(Guest::where('invitation_token', 'tok_a')->first())->accepted(2)->create();
 
         $this->submit('tok_b', RsvpStatus::Accepted, 2)
-            ->assertSessionHasErrors(['status' => 'Only 1 seat is left for confirmed attendees.']);
+            ->assertSessionHasErrors(['status' => 'Only 1 seat is left for confirmed attendees. You can RSVP for yourself only.']);
 
         // Coming without the plus-one still fits.
         $this->submit('tok_b', RsvpStatus::Accepted, 1)->assertSessionHasNoErrors();

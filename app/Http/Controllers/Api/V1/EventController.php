@@ -199,6 +199,7 @@ class EventController extends Controller
         $needsPublishCredit = false;
         $chargeable = false;
         $notifyGuestsCount = 0;
+        $plusOnesWereAllowed = (bool) $event->allow_plus_one;
 
         try {
             if ($acceptHostCover && $stagedCover !== null) {
@@ -310,6 +311,17 @@ class EventController extends Controller
                 'count' => $notifyGuestsCount,
                 'url' => route('api.v1.host.events.show', $event),
             ] : null,
+            // Additive. Set only when this save switched plus-ones on while some guests still cannot use
+            // them; clients can offer the bulk `allow_plus_one` action.
+            'guests_without_plus_one' => (! $plusOnesWereAllowed && $event->allow_plus_one && $event->isInvitation()
+                && ($without = $event->guestsWithoutPlusOne()) > 0)
+                ? $without
+                : null,
+            // Additive. Set only when this save switched plus-ones off while confirmed ones remain
+            // (those are kept, not removed); null otherwise.
+            'plus_ones_remaining' => ($plusOnesWereAllowed && ! $event->allow_plus_one && ($held = $event->plusOnesHeld()) > 0)
+                ? $held
+                : null,
         ])->setStatusCode(200);
     }
 

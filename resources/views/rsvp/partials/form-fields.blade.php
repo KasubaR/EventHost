@@ -45,7 +45,13 @@
     <select id="rsvp_attendee_count" name="attendee_count" class="rsvp-select" required>
         @for ($n = 0; $n <= $maxAttendees; $n++)
             <option value="{{ $n }}" @selected((int) $countOld === $n)>
-                {{ $n === 0 ? '0 (not attending)' : $n.' '.($n === 1 ? 'guest' : 'guests') }}
+                {{-- A plus-one is the second seat, so say that instead of a bare count. --}}
+                {{ match (true) {
+                    $n === 0 => 'Not attending',
+                    $n === 1 => 'Just me',
+                    $n === 2 => 'Me + 1 guest',
+                    default => $n.' guests',
+                } }}
             </option>
         @endfor
     </select>
@@ -53,7 +59,7 @@
         <p class="rsvp-field-error">{{ $message }}</p>
     @enderror
     @if ($maxAttendees > 1)
-        <p class="rsvp-field-hint">Includes you plus any guests covered by your invitation.</p>
+        <p class="rsvp-field-hint">"Me + 1 guest" brings one person with you.</p>
     @endif
 </div>
 

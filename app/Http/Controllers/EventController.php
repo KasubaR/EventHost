@@ -300,6 +300,7 @@ class EventController extends Controller
         // Closed on the deadline (or the event start) before this save? Compared with the state after it to
         // tell the host the RSVP reopened. plans/rsvp-deadline-fixes.md D7.
         $rsvpWasClosed = $event->is_published && $event->isInvitation() && ! $event->isRsvpOpen();
+        $plusOnesWereAllowed = (bool) $event->allow_plus_one;
 
         try {
             if ($acceptHostCover && $stagedCover !== null) {
@@ -441,6 +442,25 @@ class EventController extends Controller
         // replied were never told RSVP closed, so they are not told it reopened either: the host decides.
         if ($rsvpWasClosed && $event->isRsvpOpen()) {
             session()->flash('rsvp_reopened', route('events.guests.index', $event));
+        }
+
+        // Switching plus-ones off never removes one a guest already confirmed. Say how many remain, so
+        // the host is not left believing the toggle cleared them. plans/plus-one-edge-cases.md Phase 1.
+        if ($plusOnesWereAllowed && ! $event->allow_plus_one && ($plusOnesHeld = $event->plusOnesHeld()) > 0) {
+            session()->flash('plus_ones_kept', [
+                'count' => $plusOnesHeld,
+                'url' => route('events.guests.index', $event),
+            ]);
+        }
+
+        // Switching plus-ones on does nothing for guests whose own flag is off (imports and the API create
+        // them that way). Offer the one-click fix instead of leaving the host to find out guest by guest.
+        if (! $plusOnesWereAllowed && $event->allow_plus_one && $event->isInvitation()
+            && ($withoutPlusOne = $event->guestsWithoutPlusOne()) > 0) {
+            session()->flash('plus_ones_available', [
+                'count' => $withoutPlusOne,
+                'url' => route('events.guests.allow-plus-one', $event),
+            ]);
         }
 
         if ($shouldPublish) {

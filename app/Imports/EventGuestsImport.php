@@ -113,7 +113,7 @@ class EventGuestsImport implements ToCollection, WithHeadingRow
                 'email' => $email,
                 'phone' => $phone,
                 'invitation_token' => Str::random(48),
-                'plus_one_allowed' => false,
+                'plus_one_allowed' => $this->wantsPlusOne($row['plus_one'] ?? null),
                 'invitation_sent' => false,
                 'invitation_sent_at' => null,
             ]);
@@ -121,5 +121,14 @@ class EventGuestsImport implements ToCollection, WithHeadingRow
             $this->createdCount++;
             $currentCount++;
         }
+    }
+
+    /**
+     * Optional `plus_one` column: yes / y / true / 1 allow it, anything else (or no column) does not.
+     * Stored even while the event toggle is off, so switching plus-ones on later needs no re-import.
+     */
+    private function wantsPlusOne(mixed $value): bool
+    {
+        return in_array(strtolower(trim((string) $value)), ['yes', 'y', 'true', '1'], true);
     }
 }
