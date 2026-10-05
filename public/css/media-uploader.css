@@ -113,6 +113,17 @@
   color: var(--pink, #e00e4f);
 }
 
+/* Advisory: the frame will crop this photo, or a GIF loses its animation. Never blocks saving. */
+.mup-note {
+  font-size: 11px;
+  line-height: 1.4;
+  color: #9a6400;
+}
+
+.mup-note[hidden] {
+  display: none;
+}
+
 .mup-actions {
   flex: 0 0 auto;
   display: flex;

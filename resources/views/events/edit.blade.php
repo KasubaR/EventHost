@@ -92,6 +92,19 @@
         <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Invitation layout saved. Customize below.</div>
     @endif
 
+    @if (session('template_switched_guests'))
+        @php $switchedCount = session('template_switched_guests')['count']; @endphp
+        <div class="evt-flash evt-flash--warn" role="status">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            You switched layouts. {{ $switchedCount }} {{ \Illuminate\Support\Str::plural('guest', $switchedCount) }}
+            already {{ $switchedCount === 1 ? 'has' : 'have' }} this invitation: their links show the new layout straight away,
+            while passes already emailed or sent on WhatsApp keep the old colours. Nobody is told automatically.
+            <a href="{{ session('template_switched_guests')['url'] }}">Notify them from the guest list</a>.
+        </div>
+    @endif
+
+    <x-invitation-template-notice :event="$event" :merged="$invitationMerged" :on-edit-page="true" />
+
     @if (session('status') === 'public-registration-submitted')
         <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Submitted for review. EventHost will approve and quote a price soon.</div>
     @endif
@@ -133,7 +146,7 @@
                         <a href="{{ route('events.choose-template', $event) }}" class="btn-primary">
                             <i class="fa-solid fa-layer-group"></i> Choose invitation layout
                         </a>
-                        <span class="evt-muted">Required before guests see your styled invitation.</span>
+                        <span class="evt-muted">Required before you can publish. Guests cannot open the invitation until it has a layout.</span>
                     </div>
                 </div>
             @else
@@ -180,7 +193,7 @@
                 <p class="evt-muted evt-template-switch-note">
                     <a href="{{ route('events.choose-template', $event) }}">Switch to a different layout</a>
                     <span aria-hidden="true"> · </span>
-                    Fine-tuning resets some layout-specific section defaults until you save design again.
+                    Save your changes first: switching layouts leaves this page. Photos a new layout has no room for are kept, and come back if you switch back.
                 </p>
             @endif
         @endunless
@@ -191,7 +204,11 @@
                     <a href="{{ route('events.preview', $event) }}" target="_blank" rel="noopener" class="evt-btn-outline" id="evt-preview-link" data-preview-link>
                         <i class="fa-solid fa-eye"></i> Preview invitation
                     </a>
-                    <span class="evt-muted">Opens in a new tab. See exactly what guests will see before you publish.</span>
+                    <span class="evt-muted" data-preview-fresh-hint>Opens in a new tab. See exactly what guests will see before you publish.</span>
+                    <span class="evt-muted evt-preview-stale-hint" data-preview-stale-hint hidden>
+                        <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                        You have unsaved changes. The preview shows your last saved version. Save a draft first to preview them.
+                    </span>
                 </div>
             </div>
         @endif

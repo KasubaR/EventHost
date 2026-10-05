@@ -70,6 +70,10 @@ class RsvpController extends Controller
             ]);
         }
 
+        if ($resolver->lacksInvitationLayout($event)) {
+            return $resolver->statusView($event, PublicInvitationStatus::Unavailable);
+        }
+
         // Same designed invitation a public visitor sees at events.public — a guest
         // opening their personal link needs to see what they're actually RSVPing to
         // (hero, description, gallery…), not a bare form. merge() already folds in

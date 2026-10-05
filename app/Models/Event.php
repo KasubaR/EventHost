@@ -480,6 +480,12 @@ class Event extends Model
             if (! $event->exists && $event->audience_migration_notice_seen_at === null) {
                 $event->audience_migration_notice_seen_at = now();
             }
+
+            // A design form opened before a layout switch must not save over it: its
+            // sections, slots and palette belong to the old layout.
+            if ($event->exists && $event->isDirty('invitation_template_id')) {
+                $event->invitation_customization_revision = (int) $event->getRawOriginal('invitation_customization_revision') + 1;
+            }
         });
 
         // Moving the date starts the reminder countdown again: a guest who was sent the 7-day WhatsApp
@@ -1239,6 +1245,44 @@ class Event extends Model
     }
 
     /**
+     * Guests who already have this invitation: it was marked sent, or they have answered. Nothing is pushed to
+     * them when the venue or the layout changes, so the host is told this count instead.
+     */
+    public function guestsHoldingInvitationCount(): int
+    {
+        return $this->guests()
+            ->where(function (Builder $query): void {
+                $query->where('invitation_sent', true)->orWhereHas('rsvp');
+            })
+            ->count();
+    }
+
+    /**
+     * Why this event cannot go live for want of a layout, or null when it can. An invitation needs a template
+     * that is still offered; a retired one keeps rendering on a live event but is not a layout to publish onto.
+     * Ticketed events render one fixed page and never need one. The host's plan is not re-checked: a template
+     * chosen while the plan allowed it stays theirs.
+     */
+    public function invitationTemplatePublishBlocker(): ?string
+    {
+        if ($this->isTicketed()) {
+            return null;
+        }
+
+        if ($this->invitation_template_id === null) {
+            return 'Choose an invitation layout before publishing.';
+        }
+
+        $active = InvitationTemplate::query()->whereKey($this->invitation_template_id)->value('is_active');
+
+        if (! $active) {
+            return 'The layout this event uses is no longer offered. Choose another layout before publishing.';
+        }
+
+        return null;
+    }
+
+    /**
      * Maximum attendee count this guest may submit when status is “accepted”.
      */
     public function maxAttendeeSlotsForGuest(Guest $guest): int
@@ -1295,7 +1339,19 @@ class Event extends Model
             'invitation_customization_previous' => 'array',
             'invitation_customization_previous_captured_at' => 'datetime',
             'invitation_customization_previous_captured_by_user_id' => 'integer',
+            'invitation_customization_revision' => 'integer',
         ];
+    }
+
+    /**
+     * The design form's optimistic-lock token: the revision as a string. Bumped by
+     * every design save and every layout switch, never by background work (WebP
+     * conversion, audio takedown), so a form left open is only refused when a person
+     * actually changed the design.
+     */
+    public function customizationToken(): string
+    {
+        return (string) (int) $this->invitation_customization_revision;
     }
 
     public function isCancelled(): bool

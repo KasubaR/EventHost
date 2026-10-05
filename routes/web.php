@@ -1,8 +1,10 @@
 <?php
 
 use App\Enums\EventAudience;
-use App\Http\Controllers\CheckInController;
+use App\Http\Controllers\AstragateTestController;
+use App\Http\Controllers\AstragateWebhookController;
 use App\Http\Controllers\AudioReportController;
+use App\Http\Controllers\CheckInController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EnterpriseQuoteRequestController;
@@ -36,8 +38,6 @@ use App\Http\Controllers\GuestImportController;
 use App\Http\Controllers\HelpRequestController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MapLinkController;
-use App\Http\Controllers\AstragateTestController;
-use App\Http\Controllers\AstragateWebhookController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PublicCheckInController;
 use App\Http\Controllers\PublicEventController;

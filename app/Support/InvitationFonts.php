@@ -87,11 +87,54 @@ final class InvitationFonts
     ];
 
     /**
+     * Keys still in MAP (so invitations using them keep rendering and saving) but no
+     * longer offered in the font pickers. Retire a font here first; delete it from
+     * MAP only once nothing stores it, and merge() then swaps in the template's font.
+     *
+     * @var list<string>
+     */
+    public const RETIRED = [];
+
+    /**
+     * Every key that renders and validates, retired ones included.
+     *
      * @return list<string>
      */
     public static function keys(): array
     {
         return array_keys(self::MAP);
+    }
+
+    /**
+     * Keys a host may pick. $current (the event's saved key) stays in the list when
+     * it is retired, so opening the form never silently changes the font.
+     *
+     * @return list<string>
+     */
+    public static function selectableKeys(?string $current = null): array
+    {
+        return array_values(array_filter(
+            self::keys(),
+            static fn (string $key): bool => ! in_array($key, self::RETIRED, true) || $key === $current
+        ));
+    }
+
+    public static function exists(mixed $key): bool
+    {
+        return is_string($key) && array_key_exists(trim($key), self::MAP);
+    }
+
+    /**
+     * $key when it is still in MAP, otherwise $fallback (the template's own font),
+     * otherwise `system_ui`.
+     */
+    public static function resolve(mixed $key, mixed $fallback = null): string
+    {
+        if (self::exists($key)) {
+            return trim($key);
+        }
+
+        return self::exists($fallback) ? trim($fallback) : 'system_ui';
     }
 
     /**

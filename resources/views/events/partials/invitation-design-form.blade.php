@@ -42,7 +42,16 @@
     }
     $scheduleRows = array_slice($scheduleRows, 0, 16);
 
-    $fontChoices = InvitationFonts::MAP;
+    $currentHeadingFont = $invitationMerged['theme']['font_heading_key'] ?? null;
+    $currentBodyFont = $invitationMerged['theme']['font_body_key'] ?? null;
+    $headingFontChoices = InvitationFonts::selectableKeys($currentHeadingFont);
+    $bodyFontChoices = InvitationFonts::selectableKeys($currentBodyFont);
+    $fontReplacements = $invitationMerged['theme']['font_replacements'] ?? [];
+    $fontLabel = static fn (string $key): string => ucwords(str_replace('_', ' ', $key));
+
+    $rsvpSectionRequired = $event->invitationTemplate !== null
+        && \App\Services\InvitationCustomizationService::rsvpSectionRequired($event, $event->invitationTemplate);
+    $unoptimisedMedia = $invitationMerged['media']['unoptimised'] ?? [];
 
     $layoutVariant = $invitationMerged['layout_variant'] ?? InvitationLayoutVariant::STANDARD;
     if ($layoutVariant === InvitationLayoutVariant::BEAUTY_FOR_ASHES) {
@@ -99,6 +108,9 @@
     $coupleSizeHint = InvitationImageSizes::hint($layoutVariant, 'couple');
     $speakerSizeHint = InvitationImageSizes::hint($layoutVariant, 'speaker');
     $gallerySizeHint = InvitationImageSizes::hint($layoutVariant, 'gallery');
+    $coupleShape = InvitationImageSizes::orientation($layoutVariant, 'couple');
+    $speakerShape = InvitationImageSizes::orientation($layoutVariant, 'speaker');
+    $galleryShape = InvitationImageSizes::orientation($layoutVariant, 'gallery');
 
     // Beauty for Ashes hardcodes its colours and never reads the theme variables,
     // so offering a palette there would silently do nothing.
@@ -121,8 +133,10 @@
 <form method="post" action="{{ route('events.invitation-design.update', $event) }}" enctype="multipart/form-data" class="profile-form evt-design-form" id="inv-section-sortable-root">
     @csrf
     @method('patch')
-    <input type="hidden" name="template_fingerprint" value="{{ $templateFingerprint }}">
-    <input type="hidden" name="customization_token" value="{{ $customizationToken }}">
+    {{-- old() first: a form redisplayed after a conflict must keep refusing, or its stale
+         values would save over the other tab's changes on the next submit. --}}
+    <input type="hidden" name="template_fingerprint" value="{{ old('template_fingerprint', $templateFingerprint) }}">
+    <input type="hidden" name="customization_token" value="{{ old('customization_token', $customizationToken) }}">
 
     <div class="evt-section">
         <div class="evt-section-head">
@@ -197,10 +211,16 @@
                     <div class="profile-field">
                         <label for="font_heading_key" class="profile-label">Heading font</label>
                         <select id="font_heading_key" name="font_heading_key" required class="profile-input {{ $errors->has('font_heading_key') ? 'profile-input--error' : '' }}">
-                            @foreach (array_keys($fontChoices) as $key)
-                                <option value="{{ $key }}" @selected(old('font_heading_key', $invitationMerged['theme']['font_heading_key']) === $key)>{{ ucwords(str_replace('_', ' ', $key)) }}</option>
+                            @foreach ($headingFontChoices as $key)
+                                <option value="{{ $key }}" @selected(old('font_heading_key', $currentHeadingFont) === $key)>{{ $fontLabel($key) }}</option>
                             @endforeach
                         </select>
+                        @isset($fontReplacements['heading'])
+                            <span class="evt-muted evt-design-font-note" role="status">
+                                <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                                {{ $fontLabel($fontReplacements['heading']) }} is no longer available, so the layout's own font is shown instead. Save to keep it, or pick another.
+                            </span>
+                        @endisset
                         @error('font_heading_key')
                             <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                         @enderror
@@ -208,10 +228,16 @@
                     <div class="profile-field">
                         <label for="font_body_key" class="profile-label">Body font</label>
                         <select id="font_body_key" name="font_body_key" required class="profile-input {{ $errors->has('font_body_key') ? 'profile-input--error' : '' }}">
-                            @foreach (array_keys($fontChoices) as $key)
-                                <option value="{{ $key }}" @selected(old('font_body_key', $invitationMerged['theme']['font_body_key']) === $key)>{{ ucwords(str_replace('_', ' ', $key)) }}</option>
+                            @foreach ($bodyFontChoices as $key)
+                                <option value="{{ $key }}" @selected(old('font_body_key', $currentBodyFont) === $key)>{{ $fontLabel($key) }}</option>
                             @endforeach
                         </select>
+                        @isset($fontReplacements['body'])
+                            <span class="evt-muted evt-design-font-note" role="status">
+                                <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                                {{ $fontLabel($fontReplacements['body']) }} is no longer available, so the layout's own font is shown instead. Save to keep it, or pick another.
+                            </span>
+                        @endisset
                         @error('font_body_key')
                             <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                         @enderror
@@ -243,6 +269,13 @@
                 @error('section_order')
                     <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                 @enderror
+                @error('section_visible')
+                    <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
+                @enderror
+                @php
+                    $detailsRowShown = false;
+                    $detailsChecked = true;
+                @endphp
                 <ul class="evt-design-section-list" data-inv-sortable-list>
                     @foreach ($invitationMerged['sections'] as $section)
                         @php
@@ -250,6 +283,11 @@
                             $label = $sectionLabels[$type] ?? $type;
                             $visOld = old('section_visible.'.$type);
                             $checked = $visOld !== null ? $visOld === '1' || $visOld === true || $visOld === 1 : (bool) $section['visible'];
+                            $alwaysShown = $type === 'rsvp' && $rsvpSectionRequired;
+                            if ($type === 'details') {
+                                $detailsRowShown = true;
+                                $detailsChecked = $checked;
+                            }
                         @endphp
                         <li class="evt-design-section-row" data-section-type="{{ $type }}">
                             <input type="hidden" name="section_order[]" value="{{ $type }}">
@@ -257,19 +295,35 @@
                                 <i class="fa-solid fa-arrows-up-down" aria-hidden="true"></i>
                             </button>
                             <span class="evt-design-section-label">{{ $label }}</span>
-                            <input type="hidden" name="section_visible[{{ $type }}]" value="0">
-                            <label class="evt-design-vis-label">
-                                <input type="checkbox" name="section_visible[{{ $type }}]" value="1" class="evt-check-input" @checked($checked)>
-                                Visible
-                            </label>
+                            @if ($alwaysShown)
+                                {{-- Guests answer from this section, on the public page and on their personal link. --}}
+                                <input type="hidden" name="section_visible[{{ $type }}]" value="1">
+                                <label class="evt-design-vis-label evt-design-vis-label--locked" title="Guests reply from this section, so it is always shown.">
+                                    <input type="checkbox" class="evt-check-input" checked disabled>
+                                    Always shown
+                                </label>
+                            @else
+                                <input type="hidden" name="section_visible[{{ $type }}]" value="0">
+                                <label class="evt-design-vis-label">
+                                    <input type="checkbox" name="section_visible[{{ $type }}]" value="1" class="evt-check-input" @checked($checked)
+                                           @if ($type === 'details') data-details-visibility @endif>
+                                    Visible
+                                </label>
+                            @endif
                         </li>
                     @endforeach
                 </ul>
+                @if (isset($sectionLabels['details']) && $detailsRowShown)
+                    <p class="evt-design-details-warning" data-details-hidden-warning @if ($detailsChecked) hidden @endif role="status">
+                        <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                        With details hidden, guests may not see the venue, time or map links. Preview the invitation to check where and when still show.
+                    </p>
+                @endif
             </fieldset>
 
             <fieldset class="evt-design-fieldset">
                 <legend class="profile-label">Response form</legend>
-                <p class="evt-muted evt-design-hint">Pick which RSVP questions appear for guests (the RSVP banner must stay visible under <strong>Sections</strong>), and tailor how each prompt is worded.</p>
+                <p class="evt-muted evt-design-hint">Pick which RSVP questions appear for guests, and tailor how each prompt is worded. The RSVP banner itself is always shown, because guests reply from it.</p>
                 @php
                     use App\Services\InvitationCustomizationService;
                     $rsvpFormStored = $invitationMerged['rsvp_form'] ?? [];
@@ -688,6 +742,7 @@
                                                 <div class="evt-bfa-speaker-current-photo">
                                                     <img src="{{ asset('storage/'.$spkCurrentPhoto) }}" alt="" width="96" height="120" loading="lazy">
                                                 </div>
+                                                @include('events.partials.unoptimised-badge', ['path' => $spkCurrentPhoto, 'unoptimised' => $unoptimisedMedia])
                                                 <label class="evt-design-remove-label evt-bfa-speaker-remove">
                                                     <input type="checkbox" name="speaker_photo_clear[{{ $idx }}]" value="1"
                                                            @checked(old("speaker_photo_clear.$idx") === '1')> Remove photo
@@ -721,7 +776,8 @@
                                                    class="profile-input evt-bfa-speaker-file"
                                                    data-upload-slot="speaker:{{ $idx }}"
                                                    data-upload-url="{{ $stageUrl }}"
-                                                   data-upload-max-bytes="{{ InvitationMediaRules::IMAGE_MAX_KB * 1024 }}">
+                                                   data-upload-max-bytes="{{ InvitationMediaRules::IMAGE_MAX_KB * 1024 }}"
+                                                   @if ($speakerShape) data-upload-shape="{{ $speakerShape }}" @endif>
                                             @if ($speakerSizeHint)
                                                 <p class="evt-muted evt-design-hint">{{ $speakerSizeHint }}</p>
                                             @endif
@@ -796,6 +852,7 @@
                                         <div class="evt-design-gallery-current evt-design-hero-preview">
                                             <img src="{{ asset('storage/'.$currentHeroPortrait) }}" alt="" width="120" height="150" loading="lazy">
                                         </div>
+                                        @include('events.partials.unoptimised-badge', ['path' => $currentHeroPortrait, 'unoptimised' => $unoptimisedMedia])
                                         <input type="hidden" name="clear_hero_portrait" value="0">
                                         <label class="profile-label evt-check-label evt-design-media-remove-toggle">
                                             <input type="checkbox" name="clear_hero_portrait" value="1" class="evt-check-input" @checked(old('clear_hero_portrait') === '1')>
@@ -834,6 +891,7 @@
                                             @foreach ($currentCouple as $path)
                                                 <li>
                                                     <img src="{{ asset('storage/'.$path) }}" alt="" width="96" height="120" loading="lazy">
+                                                    @include('events.partials.unoptimised-badge', ['path' => $path, 'unoptimised' => $unoptimisedMedia])
                                                     <label class="evt-design-remove-label">
                                                         <input type="checkbox" name="couple_remove[]" value="{{ $path }}"> Remove
                                                     </label>
@@ -862,6 +920,7 @@
                                                data-upload-slot="couple"
                                                data-upload-url="{{ $stageUrl }}"
                                                data-upload-max-bytes="{{ InvitationMediaRules::IMAGE_MAX_KB * 1024 }}"
+                                               @if ($coupleShape) data-upload-shape="{{ $coupleShape }}" @endif
                                                @if ($coupleSlotsRemaining === 0) disabled @endif>
                                         <p class="evt-muted evt-design-hint">
                                             @if ($isWeddingLayout)
@@ -923,6 +982,7 @@
                                     @foreach ($invitationMerged['media']['gallery'] as $path)
                                         <li>
                                             <img src="{{ asset('storage/'.$path) }}" alt="" width="96" height="72" loading="lazy">
+                                            @include('events.partials.unoptimised-badge', ['path' => $path, 'unoptimised' => $unoptimisedMedia])
                                             <label class="evt-design-remove-label">
                                                 <input type="checkbox" name="gallery_remove[]" value="{{ $path }}"> Remove
                                             </label>
@@ -942,7 +1002,8 @@
                                 <input id="gallery_images" name="gallery_images[]" type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="profile-input evt-design-media-file" multiple
                                        data-upload-slot="gallery"
                                        data-upload-url="{{ $stageUrl }}"
-                                       data-upload-max-bytes="{{ InvitationMediaRules::IMAGE_MAX_KB * 1024 }}">
+                                       data-upload-max-bytes="{{ InvitationMediaRules::IMAGE_MAX_KB * 1024 }}"
+                                       @if ($galleryShape) data-upload-shape="{{ $galleryShape }}" @endif>
                                 @if ($gallerySizeHint)
                                     <p class="evt-muted evt-design-hint">{{ $gallerySizeHint }}</p>
                                 @endif
@@ -1056,6 +1117,11 @@
 
             <div class="evt-design-actions evt-actions-bar evt-per-form-actions">
                 @error('customization_token')
+                    <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}
+                        <a href="{{ route('events.edit', $event) }}" target="_blank" rel="noopener">Open the latest version in a new tab</a>.
+                    </span>
+                @enderror
+                @error('staged_media')
                     <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                 @enderror
                 <button type="submit" class="btn-primary">

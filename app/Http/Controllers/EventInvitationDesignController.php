@@ -38,26 +38,14 @@ class EventInvitationDesignController extends Controller
                 // Lock the row before reading so concurrent requests cannot clobber each other's gallery writes.
                 $fresh = Event::lockForUpdate()->findOrFail($event->id);
 
-                // Optimistic lock: if another session saved the customization while this form was open,
-                // reject the submit so the user does not silently overwrite the newer state.
+                // Optimistic lock: if another session saved the design or switched the layout while
+                // this form was open, reject the submit so it does not silently overwrite the newer
+                // state. The request checked this already; this is the check that holds under the lock.
                 $submittedToken = $request->input('customization_token', '');
-                if ($submittedToken !== '') {
-                    try {
-                        $currentToken = md5(json_encode($fresh->invitation_customization, JSON_THROW_ON_ERROR));
-                    } catch (\JsonException) {
-                        // Customization contains un-encodable data; the token cannot be
-                        // verified reliably, so fail closed rather than silently skipping
-                        // the concurrency guard (the old ?: '' fallback made every token
-                        // md5('') and effectively disabled the check).
-                        throw ValidationException::withMessages([
-                            'customization_token' => 'Could not verify the invitation design state. Please reload the page and try again.',
-                        ]);
-                    }
-                    if ($submittedToken !== $currentToken) {
-                        throw ValidationException::withMessages([
-                            'customization_token' => 'Your invitation design was updated by another session. Reload the page to see the latest version before saving again.',
-                        ]);
-                    }
+                if (is_string($submittedToken) && $submittedToken !== '' && $submittedToken !== $fresh->customizationToken()) {
+                    throw ValidationException::withMessages([
+                        'customization_token' => UpdateInvitationDesignRequest::STALE_FORM_MESSAGE,
+                    ]);
                 }
 
                 $template = $customizationService->resolvedTemplate($fresh);
@@ -74,6 +62,14 @@ class EventInvitationDesignController extends Controller
                         ->lockForUpdate()
                         ->get())
                     ->groupBy('slot');
+
+                // A single-value slot re-staged in another tab deletes this tab's row.
+                // Saving without it would drop a photo the host can see on screen.
+                if ($stagedBySlot->sum(fn ($rows) => $rows->count()) < count(array_filter($stagedIds))) {
+                    throw ValidationException::withMessages([
+                        'staged_media' => UpdateInvitationDesignRequest::STAGED_GONE_MESSAGE,
+                    ]);
+                }
 
                 $consumedStagedIds = [];
 
@@ -105,10 +101,18 @@ class EventInvitationDesignController extends Controller
 
                 $sections = $customizationService->mergeSectionsForPersistence($template, $candidateSections);
 
-                $priorCustomization = is_array($fresh->invitation_customization) ? $fresh->invitation_customization : [];
-                $prevEffects = $priorCustomization['effects'] ?? [];
+                // Falls back to the previous copy when the stored value is unreadable, so a save
+                // after corruption keeps the photos it still references instead of dropping them.
+                $priorCustomization = $customizationService->storedCustomization($fresh);
+                $priorMedia = InvitationCustomizationService::storedMedia($priorCustomization);
+                $prevEffects = is_array($priorCustomization['effects'] ?? null) ? $priorCustomization['effects'] : [];
+                foreach (['video_background', 'audio_track'] as $effectKey) {
+                    $prevEffects[$effectKey] = is_string($prevEffects[$effectKey] ?? null) && $prevEffects[$effectKey] !== ''
+                        ? $prevEffects[$effectKey]
+                        : null;
+                }
 
-                $galleryExisting = $priorCustomization['media']['gallery'] ?? [];
+                $galleryExisting = $priorMedia['gallery'];
                 $removeSet = $validated['gallery_remove'] ?? [];
                 // Intersect against the event's own gallery before touching the filesystem.
                 // Without this, a malicious user could submit paths from another event
@@ -171,14 +175,8 @@ class EventInvitationDesignController extends Controller
                 $maxPortrait = InvitationLayoutVariant::maxInvitationHeroPortraitSlots($layoutVariant);
                 $maxCouple = InvitationLayoutVariant::maxCouplePhotoSlots($layoutVariant);
 
-                $priorHero = isset($priorCustomization['media']['hero_portrait'])
-                    && is_string($priorCustomization['media']['hero_portrait'])
-                    && $priorCustomization['media']['hero_portrait'] !== ''
-                    ? $priorCustomization['media']['hero_portrait']
-                    : null;
-                $priorCoupleRaw = isset($priorCustomization['media']['couple_photos']) && is_array($priorCustomization['media']['couple_photos'])
-                    ? $priorCustomization['media']['couple_photos']
-                    : [];
+                $priorHero = $priorMedia['hero_portrait'];
+                $priorCoupleRaw = $priorMedia['couple_photos'];
 
                 // BFA uses a fixed positional 4-slot array; others use a compact array.
                 if ($layoutVariant === InvitationLayoutVariant::BEAUTY_FOR_ASHES) {
@@ -189,18 +187,7 @@ class EventInvitationDesignController extends Controller
                             : '';
                     }
                 } else {
-                    $priorCouple = array_values(array_filter(array_map('strval', $priorCoupleRaw)));
-                }
-
-                if ($maxPortrait === 0 && $priorHero !== null) {
-                    $pathsToDelete[] = $priorHero;
-                }
-                if ($maxCouple === 0 && $priorCouple !== []) {
-                    foreach ($priorCouple as $p) {
-                        if ($p !== '') {
-                            $pathsToDelete[] = $p;
-                        }
-                    }
+                    $priorCouple = array_values(array_filter($priorCoupleRaw, static fn (string $p) => $p !== ''));
                 }
 
                 $heroPortraitKeep = null;
@@ -389,8 +376,9 @@ class EventInvitationDesignController extends Controller
 
                 // Colours come from the curated catalogue rather than free-form hex, so an
                 // unreadable combination cannot reach a public invitation. Layouts that
-                // ignore the theme variables submit no palette and keep what they have.
-                $storedTheme = $fresh->invitation_customization['theme'] ?? [];
+                // ignore the theme variables submit no palette and keep what they have,
+                // unless what they have is not valid hex.
+                $storedTheme = is_array($priorCustomization['theme'] ?? null) ? $priorCustomization['theme'] : [];
                 $palette = InvitationPalettes::resolve((string) ($validated['theme_palette'] ?? ''), $template->default_theme);
                 $themeColours = $palette !== null
                     ? [
@@ -399,12 +387,13 @@ class EventInvitationDesignController extends Controller
                         'accent' => $palette['accent'],
                         'background' => $palette['background'],
                     ]
-                    : [
-                        'palette_key' => $storedTheme['palette_key'] ?? null,
-                        'primary' => $storedTheme['primary'] ?? ($template->default_theme['primary'] ?? '#1a2a4a'),
-                        'accent' => $storedTheme['accent'] ?? ($template->default_theme['accent'] ?? '#1e47bb'),
-                        'background' => $storedTheme['background'] ?? ($template->default_theme['background'] ?? '#fafafa'),
-                    ];
+                    : InvitationCustomizationService::themeColoursToKeep($storedTheme, $template);
+
+                $finalGallery = array_values(array_merge($galleryKeep, $newGallery));
+                // A layout without a hero or couple slot keeps the saved files untouched,
+                // so switching back to a layout that has the slot restores them.
+                $finalHero = $maxPortrait > 0 ? $heroPortraitKeep : $priorHero;
+                $finalCouple = $maxCouple > 0 ? array_values($coupleKeep) : $priorCouple;
 
                 $newCustomization = [
                     'schema_version' => InvitationCustomizationService::CURRENT_SCHEMA_VERSION,
@@ -442,9 +431,13 @@ class EventInvitationDesignController extends Controller
                         'wi2_footer_legal' => (string) ($validated['wi2_footer_legal'] ?? ''),
                     ],
                     'media' => [
-                        'gallery' => array_values(array_merge($galleryKeep, $newGallery)),
-                        'hero_portrait' => $maxPortrait > 0 ? $heroPortraitKeep : null,
-                        'couple_photos' => $maxCouple > 0 ? array_values($coupleKeep) : [],
+                        'gallery' => $finalGallery,
+                        'hero_portrait' => $finalHero,
+                        'couple_photos' => $finalCouple,
+                        'unoptimised' => array_values(array_intersect(
+                            $priorMedia['unoptimised'],
+                            [...$finalGallery, ...array_filter([$finalHero]), ...$finalCouple]
+                        )),
                     ],
                     'effects' => [
                         'animation_subtle' => $validated['animation_subtle'],
@@ -466,6 +459,7 @@ class EventInvitationDesignController extends Controller
                 }
 
                 $fresh->invitation_customization = $newCustomization;
+                $fresh->invitation_customization_revision = (int) $fresh->invitation_customization_revision + 1;
 
                 $fresh->save();
 

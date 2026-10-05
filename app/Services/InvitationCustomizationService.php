@@ -86,6 +86,7 @@ class InvitationCustomizationService
     public function templateFingerprint(InvitationTemplate $template): string
     {
         $types = collect($template->default_sections ?? [])
+            ->filter(fn ($row) => is_array($row) && is_string($row['type'] ?? null))
             ->pluck('type')
             ->sort()
             ->values()
@@ -93,23 +94,142 @@ class InvitationCustomizationService
 
         $variant = InvitationLayoutVariant::normalize($template->layout_variant ?? null);
 
-        return md5($variant.'|'.$types);
+        // The id is part of it: two layouts can share a variant and section set, and
+        // a form opened on one must still be refused once the event moved to the other.
+        return md5($template->getKey().'|'.$variant.'|'.$types);
+    }
+
+    /**
+     * The event's stored customization as an array, shape not guaranteed.
+     *
+     * When the current value cannot be read (corrupt JSON reads back as null through the
+     * array cast) but the one-level previous copy can, the previous copy is used and
+     * $restored is set, so the host is told rather than silently shown the defaults.
+     *
+     * @return array<string, mixed>
+     */
+    public function storedCustomization(Event $event, ?bool &$restored = null): array
+    {
+        $restored = false;
+
+        $current = $this->normalizeStoredCustomizationInput($event, $event->invitation_customization);
+        if ($current !== []) {
+            return $current;
+        }
+
+        $previous = $this->normalizeStoredCustomizationInput($event, $event->invitation_customization_previous);
+        if ($previous === []) {
+            return [];
+        }
+
+        $restored = true;
+        Log::warning('invitation_customization.restored_from_previous', [
+            'event_id' => $event->exists ? $event->getKey() : null,
+        ]);
+
+        return $previous;
+    }
+
+    /**
+     * Stored media lists, tolerant of any shape: non-strings are dropped, a list
+     * stored as a scalar reads as empty.
+     *
+     * @param  array<string, mixed>  $stored  from storedCustomization()
+     * @return array{gallery: list<string>, hero_portrait: ?string, couple_photos: list<string>, unoptimised: list<string>}
+     */
+    public static function storedMedia(array $stored): array
+    {
+        $media = is_array($stored['media'] ?? null) ? $stored['media'] : [];
+
+        $strings = static fn (mixed $list, bool $keepBlank = false): array => is_array($list)
+            ? array_values(array_filter($list, static fn ($v) => is_string($v) && ($keepBlank || $v !== '')))
+            : [];
+
+        $hero = $media['hero_portrait'] ?? null;
+
+        return [
+            'gallery' => $strings($media['gallery'] ?? null),
+            'hero_portrait' => is_string($hero) && $hero !== '' ? $hero : null,
+            'couple_photos' => $strings($media['couple_photos'] ?? null, true),
+            'unoptimised' => $strings($media['unoptimised'] ?? null),
+        ];
+    }
+
+    /**
+     * Colours to write when a save carries no palette (no Pro+, or a layout without the
+     * picker). Stored colours are kept only when all three are valid #rrggbb; anything
+     * else is replaced by the template's own trio, never copied forward.
+     *
+     * @param  array<string, mixed>  $storedTheme
+     * @return array{palette_key: ?string, primary: string, accent: string, background: string}
+     */
+    public static function themeColoursToKeep(array $storedTheme, InvitationTemplate $template): array
+    {
+        if (InvitationPalettes::isUsableTrio($storedTheme)) {
+            $key = $storedTheme['palette_key'] ?? null;
+
+            return [
+                'palette_key' => is_string($key) && in_array($key, InvitationPalettes::storableKeys(), true) ? $key : null,
+                'primary' => trim((string) $storedTheme['primary']),
+                'accent' => trim((string) $storedTheme['accent']),
+                'background' => trim((string) $storedTheme['background']),
+            ];
+        }
+
+        $default = InvitationPalettes::templateDefault($template->default_theme);
+
+        return [
+            'palette_key' => InvitationPalettes::TEMPLATE_DEFAULT_KEY,
+            'primary' => $default['primary'],
+            'accent' => $default['accent'],
+            'background' => $default['background'],
+        ];
+    }
+
+    /**
+     * Whether the layout must show its RSVP section: every invitation (non-ticketed)
+     * event whose layout has one and does not block it. Hiding it would leave guests
+     * on their personal link with no way to answer.
+     */
+    public static function rsvpSectionRequired(Event $event, InvitationTemplate $template): bool
+    {
+        if ($event->isTicketed()) {
+            return false;
+        }
+
+        $variant = InvitationLayoutVariant::normalize($template->layout_variant ?? null);
+        if (in_array(InvitationSections::RSVP, InvitationLayoutVariant::blockedSections($variant), true)) {
+            return false;
+        }
+
+        foreach ($template->default_sections ?? [] as $row) {
+            if (is_array($row) && ($row['type'] ?? null) === InvitationSections::RSVP) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
      * Resolve template for event (fallback to first active).
      *
-     * Uses one query: prefer the event's template when it is active; otherwise the first active row by sort order.
+     * Uses one query. The event's own template wins even once it is retired (is_active = false):
+     * a live invitation keeps the layout its host chose, and only new selections are refused.
+     * The first active row by sort order is used only when the event has no template at all;
+     * guest-facing pages refuse that case before reaching here (PublicInvitationResolver).
      */
     public function resolvedTemplate(Event $event): InvitationTemplate
     {
         $preferredId = $event->invitation_template_id;
 
-        $query = InvitationTemplate::query()
-            ->where('is_active', true);
+        $query = InvitationTemplate::query();
 
         if ($preferredId !== null) {
-            $query->orderByRaw('CASE WHEN id = ? THEN 0 ELSE 1 END', [$preferredId]);
+            $query->where(fn ($q) => $q->whereKey($preferredId)->orWhere('is_active', true))
+                ->orderByRaw('CASE WHEN id = ? THEN 0 ELSE 1 END', [$preferredId]);
+        } else {
+            $query->where('is_active', true);
         }
 
         $tpl = $query->orderBy('sort_order')
@@ -174,67 +294,79 @@ class InvitationCustomizationService
         $template = $this->resolvedTemplate($event);
 
         $defaults = $this->defaultCustomizationShape($template);
-        $stored = $this->normalizeStoredCustomizationInput($event, $event->invitation_customization);
+        $stored = $this->storedCustomization($event, $restoredFromPrevious);
         $stored = $this->migrateStoredForMerge($stored);
 
         // Extract only known keys from stored data to prevent unexpected fields leaking through.
+        // Every read below tolerates any JSON shape: a hand edit or a partial write must
+        // never take the invitation, the edit page or a save down with it.
         $storedTheme = is_array($stored['theme'] ?? null) ? $stored['theme'] : [];
-        $theme = [
-            'palette_key' => $storedTheme['palette_key'] ?? $defaults['theme']['palette_key'] ?? null,
+        $candidateTrio = [
             'primary' => $storedTheme['primary'] ?? $defaults['theme']['primary'],
             'accent' => $storedTheme['accent'] ?? $defaults['theme']['accent'],
             'background' => $storedTheme['background'] ?? $defaults['theme']['background'],
-            'font_heading_key' => $storedTheme['font_heading_key'] ?? $defaults['theme']['font_heading_key'],
-            'font_body_key' => $storedTheme['font_body_key'] ?? $defaults['theme']['font_body_key'],
         ];
+        // The colours land in an inline style on every page. One bad value replaces all
+        // three with the template's own: mixing kept and default colours could be unreadable.
+        $trio = InvitationPalettes::isUsableTrio($candidateTrio)
+            ? array_map(static fn ($v) => trim((string) $v), $candidateTrio)
+            : [
+                'primary' => $defaults['theme']['primary'],
+                'accent' => $defaults['theme']['accent'],
+                'background' => $defaults['theme']['background'],
+            ];
 
         $storedEffects = is_array($stored['effects'] ?? null) ? $stored['effects'] : [];
         $effects = [
             'animation_subtle' => $storedEffects['animation_subtle'] ?? $defaults['effects']['animation_subtle'],
             'countdown_enabled' => $storedEffects['countdown_enabled'] ?? $defaults['effects']['countdown_enabled'],
-            'video_background' => $storedEffects['video_background'] ?? $defaults['effects']['video_background'],
-            'audio_track' => $storedEffects['audio_track'] ?? $defaults['effects']['audio_track'],
-            'audio_title' => $storedEffects['audio_title'] ?? null,
-            'audio_artist' => $storedEffects['audio_artist'] ?? null,
+            'video_background' => self::stringOrNull($storedEffects['video_background'] ?? null),
+            'audio_track' => self::stringOrNull($storedEffects['audio_track'] ?? null),
+            'audio_title' => self::stringOrNull($storedEffects['audio_title'] ?? null),
+            'audio_artist' => self::stringOrNull($storedEffects['audio_artist'] ?? null),
         ];
 
         $sections = $this->mergeSections(
             $template->default_sections ?? [],
-            $stored['sections'] ?? null,
+            is_array($stored['sections'] ?? null) ? $stored['sections'] : null,
             $template
         );
 
+        if (self::rsvpSectionRequired($event, $template)) {
+            foreach ($sections as $i => $row) {
+                if ($row['type'] === InvitationSections::RSVP) {
+                    $sections[$i]['visible'] = true;
+                }
+            }
+        }
+
         $layoutVariant = InvitationLayoutVariant::normalize($template->layout_variant ?? null);
 
-        $storedMedia = is_array($stored['media'] ?? null) ? $stored['media'] : [];
-        $heroRaw = $storedMedia['hero_portrait'] ?? null;
-        $heroPortrait = is_string($heroRaw) && $heroRaw !== '' ? $heroRaw : null;
-        $coupleRaw = is_array($storedMedia['couple_photos'] ?? null) ? $storedMedia['couple_photos'] : [];
+        $storedMedia = self::storedMedia($stored);
+        $coupleRaw = $storedMedia['couple_photos'];
 
         // For BFA: keep a fixed 4-slot positional array so each photo stays bound to its speaker slot.
         // For other templates: compact (non-empty paths only).
         if ($layoutVariant === InvitationLayoutVariant::BEAUTY_FOR_ASHES) {
             $couplePhotos = [];
             for ($i = 0; $i < 4; $i++) {
-                $raw = $coupleRaw[$i] ?? null;
-                $couplePhotos[] = (is_string($raw) && $raw !== '') ? $raw : '';
+                $couplePhotos[] = $coupleRaw[$i] ?? '';
             }
         } else {
-            $couplePhotos = array_values(array_filter(array_map('strval', $coupleRaw)));
+            $couplePhotos = array_values(array_filter($coupleRaw, static fn (string $p) => $p !== ''));
         }
 
         $media = [
-            'gallery' => array_values(array_filter(
-                array_map('strval', $storedMedia['gallery'] ?? [])
-            )),
-            'hero_portrait' => $heroPortrait,
+            'gallery' => $storedMedia['gallery'],
+            'hero_portrait' => $storedMedia['hero_portrait'],
             'couple_photos' => $couplePhotos,
+            'unoptimised' => $storedMedia['unoptimised'],
         ];
 
         $storedContent = is_array($stored['content'] ?? null) ? $stored['content'] : [];
         $content = [
-            'story' => isset($storedContent['story']) ? (string) $storedContent['story'] : '',
-            'schedule' => self::normalizeScheduleItems($storedContent['schedule'] ?? []),
+            'story' => self::text($storedContent['story'] ?? null),
+            'schedule' => self::normalizeScheduleItems(is_array($storedContent['schedule'] ?? null) ? $storedContent['schedule'] : []),
             'speaker_cards' => self::normalizeSpeakerCards($storedContent['speaker_cards'] ?? []),
             'venue_note' => self::normalizeOptionalLine($storedContent['venue_note'] ?? null, 500),
             'bfa_conference_theme' => self::normalizeOptionalLine($storedContent['bfa_conference_theme'] ?? null, 160),
@@ -262,8 +394,20 @@ class InvitationCustomizationService
         ];
 
         $storedRsvpForm = is_array($stored['rsvp_form'] ?? null) ? $stored['rsvp_form'] : [];
-        $headingFont = InvitationFonts::normalizeKey((string) ($theme['font_heading_key'] ?? 'system_ui'));
-        $bodyFont = InvitationFonts::normalizeKey((string) ($theme['font_body_key'] ?? 'system_ui'));
+
+        // A key dropped from InvitationFonts::MAP falls back to the template's own font
+        // (not system_ui), and the original key is reported so the form can say so.
+        $fontReplacements = [];
+        $fonts = [];
+        foreach (['heading' => 'font_heading_key', 'body' => 'font_body_key'] as $role => $field) {
+            $storedKey = $storedTheme[$field] ?? null;
+            $fonts[$role] = InvitationFonts::resolve($storedKey, $defaults['theme'][$field]);
+            if (is_string($storedKey) && trim($storedKey) !== '' && ! InvitationFonts::exists($storedKey)) {
+                $fontReplacements[$role] = trim($storedKey);
+            }
+        }
+        $headingFont = $fonts['heading'];
+        $bodyFont = $fonts['body'];
 
         $googleFonts = InvitationFonts::googleFamiliesNeeded($headingFont, $bodyFont);
         if ($layoutVariant === InvitationLayoutVariant::BEAUTY_FOR_ASHES) {
@@ -338,13 +482,14 @@ class InvitationCustomizationService
             'skin' => $template->skin,
             'layout_variant' => $layoutVariant,
             'theme' => [
-                'primary' => (string) ($theme['primary'] ?? '#1a2a4a'),
-                'accent' => (string) ($theme['accent'] ?? '#1e47bb'),
-                'background' => (string) ($theme['background'] ?? '#fafafa'),
+                'primary' => $trio['primary'],
+                'accent' => $trio['accent'],
+                'background' => $trio['background'],
                 'font_heading_stack' => InvitationFonts::stack($headingFont),
                 'font_body_stack' => InvitationFonts::stack($bodyFont),
                 'font_heading_key' => $headingFont,
                 'font_body_key' => $bodyFont,
+                'font_replacements' => $fontReplacements,
                 'google_font_families' => $googleFonts,
             ],
             'sections' => $sections,
@@ -353,22 +498,26 @@ class InvitationCustomizationService
             'effects' => [
                 'animation_subtle' => (bool) ($effects['animation_subtle'] ?? false),
                 'countdown_enabled' => (bool) ($effects['countdown_enabled'] ?? true),
-                'video_background' => isset($effects['video_background']) && $effects['video_background'] !== ''
-                    ? (string) $effects['video_background']
-                    : null,
-                'audio_track' => isset($effects['audio_track']) && $effects['audio_track'] !== ''
-                    ? (string) $effects['audio_track']
-                    : null,
-                'audio_title' => isset($effects['audio_title']) && $effects['audio_title'] !== ''
-                    ? (string) $effects['audio_title']
-                    : null,
-                'audio_artist' => isset($effects['audio_artist']) && $effects['audio_artist'] !== ''
-                    ? (string) $effects['audio_artist']
-                    : null,
+                'video_background' => $effects['video_background'],
+                'audio_track' => $effects['audio_track'],
+                'audio_title' => $effects['audio_title'],
+                'audio_artist' => $effects['audio_artist'],
             ],
             'rsvp_form' => $rsvpForm,
             'schema_version' => self::CURRENT_SCHEMA_VERSION,
+            'restored_from_previous' => (bool) $restoredFromPrevious,
         ];
+    }
+
+    private static function stringOrNull(mixed $value): ?string
+    {
+        return is_string($value) && $value !== '' ? $value : null;
+    }
+
+    /** A stored scalar as a string; arrays and objects read as empty. */
+    private static function text(mixed $value): string
+    {
+        return is_scalar($value) ? (string) $value : '';
     }
 
     /**
@@ -408,12 +557,12 @@ class InvitationCustomizationService
             if (! is_array($row)) {
                 continue;
             }
-            $title = trim((string) ($row['title'] ?? ''));
+            $title = trim(self::text($row['title'] ?? ''));
             if ($title === '') {
                 continue;
             }
-            $timeRaw = trim((string) ($row['time'] ?? ''));
-            $detailRaw = trim((string) ($row['detail'] ?? ''));
+            $timeRaw = trim(self::text($row['time'] ?? ''));
+            $detailRaw = trim(self::text($row['detail'] ?? ''));
             $out[] = [
                 'time' => $timeRaw !== '' ? $timeRaw : null,
                 'title' => $title,
@@ -500,11 +649,15 @@ class InvitationCustomizationService
      */
     public function defaultCustomizationShape(InvitationTemplate $template): array
     {
-        $dt = $template->default_theme ?? [];
+        $dt = is_array($template->default_theme) ? $template->default_theme : [];
 
-        $primary = (string) ($dt['primary'] ?? '#1a2a4a');
-        $accent = (string) ($dt['accent'] ?? '#1e47bb');
-        $background = (string) ($dt['background'] ?? '#fafafa');
+        $hex = static fn (string $key): string => InvitationPalettes::isHex($dt[$key] ?? null)
+            ? trim((string) $dt[$key])
+            : InvitationPalettes::FALLBACK[$key];
+
+        $primary = $hex('primary');
+        $accent = $hex('accent');
+        $background = $hex('background');
 
         return [
             'schema_version' => self::CURRENT_SCHEMA_VERSION,
@@ -514,8 +667,8 @@ class InvitationCustomizationService
                 'primary' => $primary,
                 'accent' => $accent,
                 'background' => $background,
-                'font_heading_key' => InvitationFonts::normalizeKey((string) ($dt['font_heading_key'] ?? 'system_ui')),
-                'font_body_key' => InvitationFonts::normalizeKey((string) ($dt['font_body_key'] ?? 'system_ui')),
+                'font_heading_key' => InvitationFonts::resolve($dt['font_heading_key'] ?? null),
+                'font_body_key' => InvitationFonts::resolve($dt['font_body_key'] ?? null),
             ],
             'effects' => [
                 'animation_subtle' => (bool) ($dt['animation_subtle'] ?? false),
@@ -655,8 +808,8 @@ class InvitationCustomizationService
             if (! is_array($row)) {
                 continue;
             }
-            $role = Str::limit(trim((string) ($row['role'] ?? '')), 80, '');
-            $name = Str::limit(trim((string) ($row['name'] ?? '')), 120, '');
+            $role = Str::limit(trim(self::text($row['role'] ?? '')), 80, '');
+            $name = Str::limit(trim(self::text($row['name'] ?? '')), 120, '');
             if ($role === '' && $name === '') {
                 continue;
             }
@@ -668,7 +821,7 @@ class InvitationCustomizationService
 
     public static function normalizeOptionalLine(mixed $raw, int $max): string
     {
-        $s = trim((string) $raw);
+        $s = trim(self::text($raw));
 
         return $s === '' ? '' : Str::limit($s, $max, '');
     }

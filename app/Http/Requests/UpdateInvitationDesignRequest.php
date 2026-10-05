@@ -53,7 +53,7 @@ class UpdateInvitationDesignRequest extends FormRequest
         } else {
             $prev = null;
             if ($routeEvent instanceof Event) {
-                $storedEffects = $routeEvent->invitation_customization['effects'] ?? null;
+                $storedEffects = app(InvitationCustomizationService::class)->storedCustomization($routeEvent)['effects'] ?? null;
                 $prev = is_array($storedEffects) ? ($storedEffects['countdown_enabled'] ?? null) : null;
             }
             $countdownEnabled = $prev !== null ? (bool) $prev : true;
@@ -176,14 +176,14 @@ class UpdateInvitationDesignRequest extends FormRequest
             'countdown_enabled' => ['boolean'],
 
             'gallery_images' => ['nullable', 'array', 'max:'.$galleryMax],
-            'gallery_images.*' => ['file', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:5120'],
+            'gallery_images.*' => InvitationMediaRules::imageRules(),
             'gallery_remove' => ['nullable', 'array'],
             'gallery_remove.*' => ['string', 'regex:/^invitation-gallery\/[0-9]+\/[a-zA-Z0-9_\-]+\.(webp|jpe?g|png|gif)$/i'],
 
-            'invitation_hero_portrait' => ['nullable', 'file', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:5120'],
+            'invitation_hero_portrait' => ['nullable', ...InvitationMediaRules::imageRules()],
             'clear_hero_portrait' => ['boolean'],
             'couple_photos' => ['nullable', 'array', 'max:4'],
-            'couple_photos.*' => ['file', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:5120'],
+            'couple_photos.*' => InvitationMediaRules::imageRules(),
             'couple_remove' => ['nullable', 'array'],
             'couple_remove.*' => ['string', 'regex:/^invitation-couple\/[0-9]+\/[a-zA-Z0-9_\-]+\.(webp|jpe?g|png|gif)$/i'],
 
@@ -245,14 +245,14 @@ class UpdateInvitationDesignRequest extends FormRequest
             'rsvp_form.*.label' => ['required', 'string', 'max:100'],
 
             'speaker_photo' => ['nullable', 'array', 'max:4'],
-            'speaker_photo.*' => ['nullable', 'file', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:5120'],
+            'speaker_photo.*' => ['nullable', ...InvitationMediaRules::imageRules()],
             'speaker_photo_clear' => ['nullable', 'array', 'max:4'],
             'speaker_photo_clear.*' => ['boolean'],
 
-            // Ids from EventInvitationMediaController. The rows themselves are
-            // re-checked against event and user when they are consumed; anything
-            // that does not resolve is silently ignored rather than fatal, because
-            // a stale id usually means a save already claimed it.
+            // Ids from EventInvitationMediaController, re-checked against event and
+            // user. An id that does not resolve is refused (STAGED_GONE_MESSAGE): it
+            // was replaced in another tab or expired, and dropping it silently would
+            // save a gallery missing a photo the host can still see on screen.
             'staged_media' => ['nullable', 'array', 'max:24'],
             'staged_media.*' => ['integer', 'min:1'],
         ];
@@ -343,8 +343,84 @@ class UpdateInvitationDesignRequest extends FormRequest
         }
     }
 
+    public const LAYOUT_CHANGED_MESSAGE = 'The layout changed since you opened this form. Reload the page to edit the new layout.';
+
+    public const RSVP_REQUIRED_MESSAGE = 'The RSVP section is always shown, so guests can reply from their invitation.';
+
+    public const NO_SECTIONS_MESSAGE = 'Keep at least one section visible.';
+
+    /**
+     * RSVP cannot be hidden on an invitation event: the personal link renders this same
+     * layout, so a hidden section leaves guests with no way to answer. That rule alone
+     * makes an empty invitation impossible on every current layout; the second check
+     * covers a layout without an RSVP section. Details may be hidden (some heroes carry
+     * the date and venue), and the form warns instead.
+     */
+    protected function validateSectionVisibility(Validator $validator, Event $event, InvitationTemplate $template): void
+    {
+        $order = $this->input('section_order', []);
+        if (! is_array($order)) {
+            return;
+        }
+
+        $visibility = $this->input('section_visible', []);
+        $visibility = is_array($visibility) ? $visibility : [];
+        $isVisible = static fn (string $type): bool => (bool) ($visibility[$type] ?? false);
+
+        if (InvitationCustomizationService::rsvpSectionRequired($event, $template)
+            && in_array(InvitationSections::RSVP, $order, true)
+            && ! $isVisible(InvitationSections::RSVP)) {
+            $validator->errors()->add('section_visible', self::RSVP_REQUIRED_MESSAGE);
+
+            return;
+        }
+
+        $blocked = InvitationLayoutVariant::blockedSections(
+            InvitationLayoutVariant::normalize($template->layout_variant ?? null)
+        );
+        foreach ($order as $type) {
+            if (is_string($type) && ! in_array($type, $blocked, true) && $isVisible($type)) {
+                return;
+            }
+        }
+
+        $validator->errors()->add('section_visible', self::NO_SECTIONS_MESSAGE);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'font_heading_key.in' => self::FONT_GONE_MESSAGE,
+            'font_body_key.in' => self::FONT_GONE_MESSAGE,
+        ];
+    }
+
+    private const FONT_GONE_MESSAGE = 'That font is no longer offered. Pick another font.';
+
+    public const STALE_FORM_MESSAGE = 'This invitation was changed in another tab or session since you opened this page. Your changes are still on this page: open the latest version to compare, then make them again there.';
+
+    public const STAGED_GONE_MESSAGE = 'A photo you added was replaced in another tab or has expired. Remove it and upload it again.';
+
     public function withValidator(Validator $validator): void
     {
+        /** @var Event|null $routeEvent */
+        $routeEvent = $this->route('event');
+
+        // Before any field rule: a stale tab should hear "changed elsewhere", not a
+        // field error caused by the newer state (say, a gallery path it no longer has).
+        // The controller repeats this under the row lock, which is the real guard.
+        $submittedToken = $this->input('customization_token');
+        if ($routeEvent instanceof Event && is_string($submittedToken) && $submittedToken !== ''
+            && $submittedToken !== $routeEvent->customizationToken()) {
+            $validator->setRules([]);
+            $validator->after(fn (Validator $v) => $v->errors()->add('customization_token', self::STALE_FORM_MESSAGE));
+
+            return;
+        }
+
         $validator->after(function (Validator $validator): void {
             /** @var Event|null $event */
             $event = $this->route('event');
@@ -352,16 +428,16 @@ class UpdateInvitationDesignRequest extends FormRequest
                 return;
             }
 
-            $template = InvitationTemplate::query()
-                ->where('id', $event->invitation_template_id)
-                ->where('is_active', true)
-                ->first();
-
-            if ($template === null) {
-                $template = InvitationTemplate::query()->where('is_active', true)->orderBy('sort_order')->orderBy('id')->first();
+            $requestedStaged = array_unique(array_filter(array_map('intval', (array) $this->input('staged_media', []))));
+            if (count($requestedStaged) > $this->stagedRows()->count()) {
+                $validator->errors()->add('staged_media', self::STAGED_GONE_MESSAGE);
             }
 
-            if ($template === null) {
+            // Same resolution the page was rendered from, so a retired template keeps validating
+            // against its own sections instead of the catalogue's first active one.
+            try {
+                $template = app(InvitationCustomizationService::class)->resolvedTemplate($event);
+            } catch (\RuntimeException) {
                 $validator->errors()->add('section_order', 'No active invitation templates are available.');
 
                 return;
@@ -383,13 +459,23 @@ class UpdateInvitationDesignRequest extends FormRequest
                 $submittedFingerprint = $this->input('template_fingerprint', '');
 
                 $message = ($submittedFingerprint !== '' && $submittedFingerprint !== $currentFingerprint)
-                    ? 'The invitation template changed since you opened this form. Reload the page and try again.'
+                    ? self::LAYOUT_CHANGED_MESSAGE
                     : 'The selected sections do not match the required layout for this invitation.';
 
                 $validator->errors()->add('section_order', $message);
+            } elseif (($submittedFingerprint = $this->input('template_fingerprint', '')) !== ''
+                && $submittedFingerprint !== app(InvitationCustomizationService::class)->templateFingerprint($template)) {
+                // Same section set, different layout: the fingerprint carries the template id.
+                $validator->errors()->add('section_order', self::LAYOUT_CHANGED_MESSAGE);
             }
 
-            $existingGallery = $event->invitation_customization['media']['gallery'] ?? [];
+            $this->validateSectionVisibility($validator, $event, $template);
+
+            $storedMedia = InvitationCustomizationService::storedMedia(
+                app(InvitationCustomizationService::class)->storedCustomization($event)
+            );
+
+            $existingGallery = $storedMedia['gallery'];
             $removeSet = array_values(array_unique($this->input('gallery_remove', []) ?: []));
             foreach ($removeSet as $path) {
                 if (! in_array($path, $existingGallery, true)) {
@@ -476,8 +562,7 @@ class UpdateInvitationDesignRequest extends FormRequest
                     $validator->errors()->add('couple_remove', 'Invalid couple photo reference.');
                 }
             } else {
-                $existingCouple = $event->invitation_customization['media']['couple_photos'] ?? [];
-                $existingCouple = is_array($existingCouple) ? array_values(array_unique(array_map('strval', $existingCouple))) : [];
+                $existingCouple = array_values(array_unique($storedMedia['couple_photos']));
                 $removeCouple = array_values(array_unique($this->input('couple_remove', []) ?: []));
                 foreach ($removeCouple as $path) {
                     if (! in_array($path, $existingCouple, true)) {

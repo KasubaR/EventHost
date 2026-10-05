@@ -147,7 +147,7 @@ class UpdateTest extends TestCase
             $ids[] = $this->withHeader('Authorization', 'Bearer '.$this->tokenFor($user))
                 ->postJson("/api/v1/host/events/{$event->id}/media", [
                     'slot' => StagedMedia::SLOT_GALLERY,
-                    'file' => UploadedFile::fake()->image($name.'.jpg', 80, 80),
+                    'file' => UploadedFile::fake()->image($name.'.jpg', 300, 300),
                 ])->assertCreated()->json('id');
         }
 
@@ -170,7 +170,7 @@ class UpdateTest extends TestCase
         $staged = $this->withHeader('Authorization', 'Bearer '.$this->tokenFor($user))
             ->postJson("/api/v1/host/events/{$event->id}/media", [
                 'slot' => StagedMedia::speakerSlot(2),
-                'file' => UploadedFile::fake()->image('speaker2.jpg', 200, 300),
+                'file' => UploadedFile::fake()->image('speaker2.jpg', 300, 400),
             ])->assertCreated()->json();
 
         $this->withHeader('Authorization', 'Bearer '.$this->tokenFor($user))

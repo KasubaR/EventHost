@@ -30,6 +30,23 @@
         </div>
     @endif
 
+    @if ($guestsHoldingInvitation > 0)
+        <div class="evt-flash evt-flash--warn" role="status">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            {{ $guestsHoldingInvitation }} {{ \Illuminate\Support\Str::plural('guest', $guestsHoldingInvitation) }}
+            already {{ $guestsHoldingInvitation === 1 ? 'has' : 'have' }} this invitation. Switching changes what their
+            links show straight away, and nobody is told automatically.
+        </div>
+    @endif
+
+    @if ($categoryFromEventType)
+        <div class="evt-flash evt-flash--info" role="status">
+            <i class="fa-solid fa-filter"></i>
+            Showing {{ $categories->firstWhere('slug', $categorySlug)?->name }} layouts to match your event type. Every layout works for any type.
+            <a href="{{ route('events.choose-template', ['event' => $event, 'category' => ''] + ($preferredIdInt !== null ? ['preferred' => $preferredIdInt] : [])) }}">Show all layouts</a>
+        </div>
+    @endif
+
     <form method="get" action="{{ route('events.choose-template', $event) }}" class="tpl-filters">
         @if ($preferredIdInt !== null)
             <input type="hidden" name="preferred" value="{{ $preferredIdInt }}">
@@ -52,7 +69,7 @@
 
         <button type="submit" class="btn-primary">Search</button>
         @if ($q !== '' || $categorySlug)
-            <a href="{{ route('events.choose-template', ['event' => $event] + ($preferredIdInt !== null ? ['preferred' => $preferredIdInt] : [])) }}" class="btn-outline">Clear</a>
+            <a href="{{ route('events.choose-template', ['event' => $event, 'category' => ''] + ($preferredIdInt !== null ? ['preferred' => $preferredIdInt] : [])) }}" class="btn-outline">Clear</a>
         @endif
     </form>
 
@@ -64,7 +81,9 @@
                     <h2 class="tpl-card-title-row">
                         {{ $tpl->name }}
                     </h2>
-                    @if ($preferredIdInt !== null && (int) $tpl->id === $preferredIdInt)
+                    @if ((int) $tpl->id === $event->invitation_template_id)
+                        <p class="evt-tpl-suggested-note"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Current layout</p>
+                    @elseif ($preferredIdInt !== null && (int) $tpl->id === $preferredIdInt)
                         <p class="evt-tpl-suggested-note"><i class="fa-solid fa-lightbulb" aria-hidden="true"></i> Suggested from the template library</p>
                     @endif
                     @if ($tpl->description)

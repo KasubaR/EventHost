@@ -23,7 +23,9 @@ class PublicDashboardRegistrationsTest extends TestCase
 
     private function freeEvent(User $user, string $name = 'Open Service'): Event
     {
-        return Event::factory()->for($user)->publicAudience()->published()->create(['name' => $name]);
+        // Pinned: the factory picks a random type, and church / funeral reword the dashboard
+        // ("Daily sign-ups"), which made the default-wording assertions fail one run in a few.
+        return Event::factory()->for($user)->publicAudience()->published()->create(['name' => $name, 'event_type' => 'birthday']);
     }
 
     private function register(Event $event, int $seats = 1, RsvpApprovalStatus $approval = RsvpApprovalStatus::NotRequired, RsvpStatus $status = RsvpStatus::Accepted): Rsvp

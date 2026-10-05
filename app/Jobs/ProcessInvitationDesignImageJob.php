@@ -7,6 +7,7 @@ use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManager;
 use Throwable;
@@ -136,8 +137,42 @@ class ProcessInvitationDesignImageJob implements ShouldBeUnique, ShouldQueue
         $media['couple_photos'] = array_values($updated);
     }
 
+    /**
+     * The original stays in place, so guests still see the photo, just full size.
+     * The path is marked so the design form can say it was not optimised instead
+     * of showing it like any other saved photo. Does not bump the design revision:
+     * this is background work, not a host edit.
+     */
     public function failed(?Throwable $exception): void
     {
-        // Original file remains so guests still see the uploaded image until retry succeeds.
+        Log::warning('invitation_design.image_optimise_failed', [
+            'event_id' => $this->eventId,
+            'target' => $this->target,
+            'exception_class' => $exception !== null ? $exception::class : null,
+        ]);
+
+        try {
+            DB::transaction(function (): void {
+                $event = Event::lockForUpdate()->find($this->eventId);
+                if ($event === null || ! is_array($event->invitation_customization)) {
+                    return;
+                }
+
+                $customization = $event->invitation_customization;
+                $media = is_array($customization['media'] ?? null) ? $customization['media'] : [];
+                $unoptimised = is_array($media['unoptimised'] ?? null) ? $media['unoptimised'] : [];
+
+                if (in_array($this->originalRelativePath, $unoptimised, true)) {
+                    return;
+                }
+
+                $media['unoptimised'] = array_values([...$unoptimised, $this->originalRelativePath]);
+                $customization['media'] = $media;
+                $event->invitation_customization = $customization;
+                $event->save();
+            });
+        } catch (Throwable $e) {
+            report($e);
+        }
     }
 }

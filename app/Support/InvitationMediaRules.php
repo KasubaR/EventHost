@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\StagedMedia;
+use Illuminate\Http\UploadedFile;
 
 /**
  * One home for the upload rules, because they are now enforced twice: once when a
@@ -43,11 +44,47 @@ final class InvitationMediaRules
     public const GALLERY_MAX = 6;
 
     /**
-     * @return list<string>
+     * Invitation rasters (gallery, hero portrait, couple and speaker photos). The
+     * smallest frame any layout draws is a ~300 px portrait, so a shorter side is
+     * visibly stretched. The ceiling has the cover's reason: a small file that
+     * decodes to a huge bitmap must not reach Intervention in the WebP job.
+     */
+    public const RASTER_MIN_SHORT_SIDE = 300;
+
+    public const RASTER_MAX_PIXELS_PER_SIDE = 10000;
+
+    public const RASTER_DIMENSIONS_MESSAGE = 'That photo must be at least 300 pixels on its shorter side and no more than 10000 pixels on either side.';
+
+    /**
+     * @return list<string|\Closure>
      */
     public static function imageRules(): array
     {
-        return ['file', 'image', 'mimes:'.self::IMAGE_MIMES, 'max:'.self::IMAGE_MAX_KB];
+        return ['file', 'image', 'mimes:'.self::IMAGE_MIMES, 'max:'.self::IMAGE_MAX_KB, self::rasterDimensionsRule()];
+    }
+
+    /**
+     * Short-side rather than width/height minimums, so portrait and landscape photos
+     * are judged alike. A file getimagesize() cannot read is left to the `image` rule.
+     */
+    public static function rasterDimensionsRule(): \Closure
+    {
+        return static function (string $attribute, mixed $value, \Closure $fail): void {
+            if (! $value instanceof UploadedFile || ! $value->isValid()) {
+                return;
+            }
+
+            $size = @getimagesize($value->getRealPath());
+            if ($size === false) {
+                return;
+            }
+
+            [$width, $height] = $size;
+            if (min($width, $height) < self::RASTER_MIN_SHORT_SIDE
+                || max($width, $height) > self::RASTER_MAX_PIXELS_PER_SIDE) {
+                $fail(self::RASTER_DIMENSIONS_MESSAGE);
+            }
+        };
     }
 
     /**
@@ -76,7 +113,7 @@ final class InvitationMediaRules
     }
 
     /**
-     * @return list<string>
+     * @return list<string|\Closure>
      */
     public static function rulesForSlot(string $slot): array
     {

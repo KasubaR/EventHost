@@ -32,7 +32,7 @@ class InvitationGalleryProcessingTest extends TestCase
             $visibility[$type] = '1';
         }
 
-        $file = UploadedFile::fake()->image('upload.jpg', 120, 120);
+        $file = UploadedFile::fake()->image('upload.jpg', 300, 300);
 
         $this->actingAs($user)->patch(route('events.invitation-design.update', $event), [
             'font_heading_key' => 'inter',
@@ -138,7 +138,7 @@ class InvitationGalleryProcessingTest extends TestCase
             $visibility[$type] = '1';
         }
 
-        $file = UploadedFile::fake()->image('hero.jpg', 80, 80);
+        $file = UploadedFile::fake()->image('hero.jpg', 300, 300);
 
         $this->actingAs($user)->patch(route('events.invitation-design.update', $event), [
             'font_heading_key' => 'inter',
@@ -174,8 +174,8 @@ class InvitationGalleryProcessingTest extends TestCase
             $visibility[$type] = '1';
         }
 
-        $one = UploadedFile::fake()->image('a.jpg', 200, 260);
-        $two = UploadedFile::fake()->image('b.jpg', 200, 260);
+        $one = UploadedFile::fake()->image('a.jpg', 300, 390);
+        $two = UploadedFile::fake()->image('b.jpg', 300, 390);
 
         $this->actingAs($user)->patch(route('events.invitation-design.update', $event), [
             'font_heading_key' => 'inter',

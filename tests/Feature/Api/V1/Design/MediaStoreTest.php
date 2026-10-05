@@ -62,13 +62,13 @@ class MediaStoreTest extends TestCase
         $first = $this->withHeader('Authorization', $token)
             ->postJson("/api/v1/host/events/{$event->id}/media", [
                 'slot' => StagedMedia::SLOT_HERO_PORTRAIT,
-                'file' => UploadedFile::fake()->image('one.jpg', 200, 300),
+                'file' => UploadedFile::fake()->image('one.jpg', 300, 400),
             ])->assertCreated()->json();
 
         $this->withHeader('Authorization', $token)
             ->postJson("/api/v1/host/events/{$event->id}/media", [
                 'slot' => StagedMedia::SLOT_HERO_PORTRAIT,
-                'file' => UploadedFile::fake()->image('two.jpg', 200, 300),
+                'file' => UploadedFile::fake()->image('two.jpg', 300, 400),
             ])->assertCreated();
 
         $this->assertSame(1, StagedMedia::query()->where('slot', StagedMedia::SLOT_HERO_PORTRAIT)->count());
@@ -87,14 +87,14 @@ class MediaStoreTest extends TestCase
             $this->withHeader('Authorization', $token)
                 ->postJson("/api/v1/host/events/{$event->id}/media", [
                     'slot' => StagedMedia::SLOT_GALLERY,
-                    'file' => UploadedFile::fake()->image("g{$i}.jpg", 80, 80),
+                    'file' => UploadedFile::fake()->image("g{$i}.jpg", 300, 300),
                 ])->assertCreated();
         }
 
         $this->withHeader('Authorization', $token)
             ->postJson("/api/v1/host/events/{$event->id}/media", [
                 'slot' => StagedMedia::SLOT_GALLERY,
-                'file' => UploadedFile::fake()->image('seventh.jpg', 80, 80),
+                'file' => UploadedFile::fake()->image('seventh.jpg', 300, 300),
             ])->assertStatus(422)->assertJsonValidationErrors('file');
     }
 
@@ -109,7 +109,7 @@ class MediaStoreTest extends TestCase
         $this->withHeader('Authorization', 'Bearer '.$this->tokenFor($stranger))
             ->postJson("/api/v1/host/events/{$event->id}/media", [
                 'slot' => StagedMedia::SLOT_GALLERY,
-                'file' => UploadedFile::fake()->image('sneaky.jpg', 80, 80),
+                'file' => UploadedFile::fake()->image('sneaky.jpg', 300, 300),
             ])->assertForbidden();
     }
 
@@ -138,7 +138,7 @@ class MediaStoreTest extends TestCase
         $this->withHeader('Authorization', 'Bearer '.$this->tokenFor($user))
             ->postJson("/api/v1/host/events/{$event->id}/media", [
                 'slot' => StagedMedia::SLOT_HERO_PORTRAIT,
-                'file' => UploadedFile::fake()->image('hero.jpg', 200, 300),
+                'file' => UploadedFile::fake()->image('hero.jpg', 300, 400),
             ])->assertStatus(422)->assertJsonValidationErrors('file');
     }
 }

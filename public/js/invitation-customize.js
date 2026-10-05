@@ -71,10 +71,28 @@
         sync();
     }
 
+    /**
+     * Hiding the details section is allowed (some heroes carry the date and venue),
+     * so the form warns rather than blocks.
+     */
+    function initDetailsWarning() {
+        var toggle = document.querySelector('[data-details-visibility]');
+        var warning = document.querySelector('[data-details-hidden-warning]');
+        if (!toggle || !warning) return;
+
+        function sync() {
+            warning.hidden = toggle.checked;
+        }
+
+        toggle.addEventListener('change', sync);
+        sync();
+    }
+
     function init() {
         boot();
         initScheduleRows();
         initPalettePreview();
+        initDetailsWarning();
     }
 
     if (document.readyState === 'loading') {

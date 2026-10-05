@@ -38,7 +38,18 @@
     const previewLink = document.getElementById('evt-preview-link');
     const publishButtons = Array.from(bar.querySelectorAll('[data-requires-preview]'));
     const previewHint = bar.querySelector('[data-preview-required-hint]');
+    const previewStaleHint = document.querySelector('[data-preview-stale-hint]');
+    const previewFreshHint = document.querySelector('[data-preview-fresh-hint]');
     let previewed = false;
+
+    /**
+     * Unsaved edits on either form. The preview renders the last *saved* version,
+     * so a preview opened while this is true shows the host something other than
+     * what Publish would save — it must not unlock publishing.
+     */
+    let dirty = false;
+    // Set just before this script navigates away on purpose (after a save).
+    let leaving = false;
 
     function updatePublishGate() {
         publishButtons.forEach((b) => {
@@ -48,29 +59,60 @@
         if (previewHint) previewHint.hidden = previewed;
     }
 
-    if (previewLink && publishButtons.length > 0) {
-        updatePublishGate();
+    function updatePreviewHints() {
+        if (previewStaleHint) previewStaleHint.hidden = !dirty;
+        if (previewFreshHint) previewFreshHint.hidden = dirty;
+    }
 
+    function markDirty(e) {
+        // data-preview-only controls (the locked palette dropdown) never save,
+        // so picking one changes nothing a save would write.
+        if (e.target.closest('[data-preview-only]')) return;
+
+        dirty = true;
+        updatePreviewHints();
+
+        if (previewed) {
+            previewed = false;
+            updatePublishGate();
+        }
+    }
+
+    forms.forEach((form) => {
+        form.addEventListener('change', markDirty);
+        form.addEventListener('input', markDirty);
+    });
+
+    if (previewLink) {
         previewLink.addEventListener('click', () => {
+            if (dirty) return;
             previewed = true;
             updatePublishGate();
         });
-
-        forms.forEach((form) => {
-            // data-preview-only controls (the locked palette dropdown) never save,
-            // so picking one leaves the previewed invitation current.
-            form.addEventListener('change', (e) => {
-                if (!previewed || e.target.closest('[data-preview-only]')) return;
-                previewed = false;
-                updatePublishGate();
-            });
-            form.addEventListener('input', (e) => {
-                if (!previewed || e.target.closest('[data-preview-only]')) return;
-                previewed = false;
-                updatePublishGate();
-            });
-        });
     }
+
+    if (publishButtons.length > 0) {
+        updatePublishGate();
+    }
+
+    window.addEventListener('beforeunload', (e) => {
+        if (leaving) return;
+
+        const uploading = window.MediaUploader && window.MediaUploader.pending() > 0;
+        if (!dirty && !uploading) return;
+
+        e.preventDefault();
+        // Older browsers only show the prompt when returnValue is set.
+        e.returnValue = '';
+    });
+
+    // A native submit of either form (the no-JS fallback buttons, or Enter in a
+    // field) is the host saving on purpose, not walking away from their edits.
+    forms.forEach((form) => {
+        form.addEventListener('submit', () => {
+            leaving = true;
+        });
+    });
 
     function clearErrors() {
         const existing = document.getElementById('evt-save-all-errors');
@@ -98,6 +140,19 @@
 
         box.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> ' +
             messages.map((m) => String(m).replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]))).join('<br>');
+
+        // Another tab saved first. Reloading here would throw this tab's edits
+        // away, so the newer version opens beside it instead.
+        if (errors.customization_token) {
+            const link = document.createElement('a');
+            link.href = window.location.href.split('#')[0];
+            link.target = '_blank';
+            link.rel = 'noopener';
+            link.className = 'evt-save-all-latest-link';
+            link.textContent = 'Open the latest version in a new tab';
+            box.appendChild(document.createElement('br'));
+            box.appendChild(link);
+        }
 
         const stack = document.querySelector('.evt-stack') || document.body;
         stack.insertBefore(box, stack.firstChild);
@@ -263,6 +318,10 @@
                     notifyGuests = result.notifyGuests;
                 }
             }
+
+            // Everything on the page is saved; every path below navigates away.
+            dirty = false;
+            leaving = true;
 
             if (publish) {
                 // Native submit so the browser follows the redirect to the public page.

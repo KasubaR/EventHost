@@ -27,6 +27,13 @@ class PublicInvitationResolver
 
         $event = $lookup;
 
+        // First, before any status page: an event that was never published has nothing to tell the public,
+        // and "no longer available" / "cancelled" with its name would confirm a draft exists. A published
+        // event that is later deleted, cancelled or paused keeps is_published, so it still gets its page.
+        if (! $event->is_published) {
+            abort(404);
+        }
+
         if ($event->trashed()) {
             return $this->statusView($event, PublicInvitationStatus::Gone);
         }
@@ -37,10 +44,6 @@ class PublicInvitationResolver
 
         if ($event->isInvitationPaused()) {
             return $this->statusView($event, PublicInvitationStatus::Unavailable);
-        }
-
-        if (! $event->is_published) {
-            abort(404);
         }
 
         // A private invitation event still renders here — it's just never listed
@@ -56,6 +59,10 @@ class PublicInvitationResolver
 
         if ($event->isLocked()) {
             return $this->statusView($event, PublicInvitationStatus::Ended);
+        }
+
+        if ($this->lacksInvitationLayout($event)) {
+            return $this->statusView($event, PublicInvitationStatus::Unavailable);
         }
 
         return $event;
@@ -84,6 +91,11 @@ class PublicInvitationResolver
 
         $event = $lookup;
 
+        // Same order as resolveInvitationPage(): a never-published event is a 404 before any status.
+        if (! $event->is_published) {
+            abort(404);
+        }
+
         if ($event->trashed()) {
             return PublicInvitationStatus::Gone;
         }
@@ -96,10 +108,6 @@ class PublicInvitationResolver
             return PublicInvitationStatus::Unavailable;
         }
 
-        if (! $event->is_published) {
-            abort(404);
-        }
-
         // Kept byte-for-byte in step with resolveInvitationPage() above — see its
         // comment on this same line for why a private invitation event now passes.
         if (! $event->isInvitation() && ! $event->is_public) {
@@ -110,7 +118,21 @@ class PublicInvitationResolver
             return PublicInvitationStatus::Ended;
         }
 
+        if ($this->lacksInvitationLayout($event)) {
+            return PublicInvitationStatus::Unavailable;
+        }
+
         return $event;
+    }
+
+    /**
+     * An invitation with no template has nothing of the host's to show. Rendering would borrow the
+     * catalogue's first template (InvitationCustomizationService::resolvedTemplate()), so it reads as
+     * unavailable until the host picks one. Ticketed events render one fixed page and need none.
+     */
+    public function lacksInvitationLayout(Event $event): bool
+    {
+        return $event->isInvitation() && $event->invitation_template_id === null;
     }
 
     /**
@@ -212,6 +234,11 @@ class PublicInvitationResolver
         }
 
         $event = $lookup;
+
+        // Same order as resolveInvitationPage(): a never-published event is a 404 before any status.
+        if (! $event->is_published) {
+            abort(404);
+        }
 
         if ($event->trashed()) {
             return ['event' => $event, 'status' => PublicInvitationStatus::Gone];

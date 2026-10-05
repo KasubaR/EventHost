@@ -34,6 +34,11 @@ class PublicRegistrationService
             throw new PublicRegistrationException('This event is already in review or approved.');
         }
 
+        // Paying the quote publishes the event with no further step, so the layout is checked here.
+        if (($templateBlocker = $event->invitationTemplatePublishBlocker()) !== null) {
+            throw new PublicRegistrationException($templateBlocker);
+        }
+
         $event->forceFill([
             'public_registration_status' => PublicRegistrationStatus::PendingReview,
             'public_registration_submitted_at' => now(),

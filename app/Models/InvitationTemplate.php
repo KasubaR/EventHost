@@ -131,6 +131,33 @@ class InvitationTemplate extends Model
     }
 
     /**
+     * Event types this template's categories were designed for, via Event::CATEGORY_SLUG_TO_TYPE.
+     * Empty when it carries no mapped category, which means "any type".
+     *
+     * @return list<string>
+     */
+    public function designedForEventTypes(): array
+    {
+        return $this->categories
+            ->map(fn (InvitationTemplateCategory $category) => Event::CATEGORY_SLUG_TO_TYPE[$category->slug] ?? null)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Advisory only: any template may be used for any type, since most types have no template of
+     * their own. The edit page uses this to point out wording that may not fit.
+     */
+    public function isDesignedFor(?string $eventType): bool
+    {
+        $types = $this->designedForEventTypes();
+
+        return $types === [] || in_array($eventType, $types, true);
+    }
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array

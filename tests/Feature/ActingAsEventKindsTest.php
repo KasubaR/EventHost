@@ -10,6 +10,7 @@ use App\Enums\TicketingStatus;
 use App\Models\Admin;
 use App\Models\AdminHelpRequest;
 use App\Models\Event;
+use App\Models\InvitationTemplate;
 use App\Models\TicketType;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
@@ -77,6 +78,15 @@ class ActingAsEventKindsTest extends TestCase
         ], $overrides);
     }
 
+    /** The wizard's layout step, which publishing and submit-for-review both require. */
+    private function chooseLayout(Event $event): void
+    {
+        $template = InvitationTemplate::query()->where('slug', 'slate-minimal')->firstOrFail();
+
+        $this->patch(route('events.choose-template.update', $event), ['invitation_template_id' => (string) $template->id])
+            ->assertSessionHasNoErrors();
+    }
+
     // ── Private invitation ────────────────────────────────────────────────────
 
     public function test_private_invitation_is_created_and_published_with_the_clients_credit(): void
@@ -89,6 +99,7 @@ class ActingAsEventKindsTest extends TestCase
 
         $this->assertSame($this->admin->id, $event->created_by_admin_id);
 
+        $this->chooseLayout($event);
         $this->patch(route('events.publish', $event))->assertRedirect(route('events.index'));
 
         $this->assertTrue((bool) $event->fresh()->is_published);
@@ -188,6 +199,7 @@ class ActingAsEventKindsTest extends TestCase
         $event = Event::query()->where('user_id', $client->id)->firstOrFail();
         $this->assertSame(PublicRegistrationStatus::Draft, $event->public_registration_status);
 
+        $this->chooseLayout($event);
         $this->post(route('events.public-registration.submit', $event))
             ->assertSessionHas('status', 'public-registration-submitted');
         $this->assertSame(PublicRegistrationStatus::PendingReview, $event->fresh()->public_registration_status);

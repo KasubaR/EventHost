@@ -249,7 +249,7 @@ class EventController extends Controller
 
             $resolvedTemplate = $event->getRelation('invitationTemplate');
             $templateFingerprint = $customizationService->templateFingerprint($resolvedTemplate);
-            $customizationToken = md5(json_encode($event->invitation_customization) ?: '');
+            $customizationToken = $event->customizationToken();
         }
 
         // Only ticketed events render the activation panel (step 4's closing
@@ -361,6 +361,11 @@ class EventController extends Controller
                     ]);
                 }
 
+                if ($shouldPublish && ! $event->is_published
+                    && ($templateBlocker = $event->invitationTemplatePublishBlocker()) !== null) {
+                    throw ValidationException::withMessages(['publish' => $templateBlocker]);
+                }
+
                 if ($shouldPublish) {
                     $credits->chargeFirstPublish($request->user(), $event);
                     $data['is_published'] = true;
@@ -385,11 +390,7 @@ class EventController extends Controller
                 // save has no guests relying on a version of the page they
                 // have already seen.
                 if ($wasPublished && $event->isDirty(['venue', 'location_name', 'latitude', 'longitude'])) {
-                    $notifyGuestsCount = $event->guests()
-                        ->where(function ($query): void {
-                            $query->where('invitation_sent', true)->orWhereHas('rsvp');
-                        })
-                        ->count();
+                    $notifyGuestsCount = $event->guestsHoldingInvitationCount();
                 }
 
                 app(EventSlugService::class)->apply(is_string($customSlug) ? $customSlug : null, $event);
@@ -646,6 +647,13 @@ class EventController extends Controller
                 ->withErrors([
                     'publish' => 'Public events go live after EventHost approves them and you pay the quoted amount. They do not use event credits.',
                 ]);
+        }
+
+        // Sent to the picker, which shows the reason above the layouts to choose from.
+        if (! $event->is_published && ($templateBlocker = $event->invitationTemplatePublishBlocker()) !== null) {
+            return redirect()
+                ->route('events.choose-template', $event)
+                ->withErrors(['invitation_template_id' => $templateBlocker]);
         }
 
         $needsPublishCredit = ! $event->is_published && ! $event->hasConsumedPublishCredit();

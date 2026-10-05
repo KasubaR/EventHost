@@ -86,6 +86,10 @@ final class InvitationCustomizationPersistenceValidator
                 }
             }],
 
+            // Paths the WebP job gave up on; always a subset of the media paths above.
+            'media.unoptimised' => ['nullable', 'array', 'max:16'],
+            'media.unoptimised.*' => ['string', 'regex:#^invitation-(gallery|hero|couple)/[0-9]+/[a-zA-Z0-9_\-]+\.(webp|jpe?g|png|gif)$#i'],
+
             'effects' => ['required', 'array'],
             'effects.animation_subtle' => ['required', 'boolean'],
             'effects.countdown_enabled' => ['required', 'boolean'],

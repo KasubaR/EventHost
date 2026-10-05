@@ -79,6 +79,27 @@ final class InvitationImageSizes
     }
 
     /**
+     * The frame's orientation, for the uploader's client-side "this will be cropped" warning.
+     *
+     * @param  'cover'|'couple'|'speaker'|'gallery'  $slot
+     * @return 'portrait'|'landscape'|'square'|null
+     */
+    public static function orientation(?string $variant, string $slot): ?string
+    {
+        $size = self::for($variant, $slot);
+
+        if ($size === null) {
+            return null;
+        }
+
+        return match ($size[0] <=> $size[1]) {
+            -1 => 'portrait',
+            1 => 'landscape',
+            default => 'square',
+        };
+    }
+
+    /**
      * @param  'cover'|'couple'|'speaker'|'gallery'  $slot
      */
     public static function hint(?string $variant, string $slot): ?string

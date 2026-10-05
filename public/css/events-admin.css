@@ -974,6 +974,75 @@
     transform: translateX(16px);
 }
 
+/* RSVP on an invitation event: shown on, but not a control the host can change. */
+.evt-design-vis-label--locked {
+    cursor: default;
+    color: var(--gray-mid, #8e8ea8);
+}
+
+.evt-design-vis-label--locked input[type="checkbox"],
+.evt-design-vis-label--locked input[type="checkbox"]:checked {
+    cursor: default;
+    opacity: 0.6;
+}
+
+.evt-design-details-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 10px 0 0;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm, 6px);
+    background: #fff8e6;
+    color: #7a5200;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.evt-design-details-warning[hidden] {
+    display: none;
+}
+
+.evt-design-details-warning i {
+    margin-top: 2px;
+}
+
+.evt-design-font-note {
+    display: block;
+    margin-top: 6px;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+/* A saved photo ProcessInvitationDesignImageJob could not convert to WebP. */
+.evt-design-media-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 4px;
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: #fff8e6;
+    color: #7a5200;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: help;
+}
+
+.evt-preview-stale-hint {
+    color: #7a5200;
+}
+
+.evt-preview-stale-hint[hidden],
+[data-preview-fresh-hint][hidden] {
+    display: none;
+}
+
+.evt-save-all-latest-link {
+    font-weight: 600;
+    text-decoration: underline;
+}
+
 .evt-design-schedule {
     margin-top: 8px;
 }

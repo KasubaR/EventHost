@@ -150,15 +150,48 @@ final class InvitationPalettes
      */
     public static function templateDefault(?array $defaultTheme): array
     {
-        $background = strtolower(trim((string) ($defaultTheme['background'] ?? '#fafafa')));
+        $background = self::hexOr($defaultTheme['background'] ?? null, self::FALLBACK['background']);
 
         return [
             'label' => 'Template default',
             'mode' => self::modeForBackground($background),
-            'primary' => strtolower(trim((string) ($defaultTheme['primary'] ?? '#1a2a4a'))),
-            'accent' => strtolower(trim((string) ($defaultTheme['accent'] ?? '#1e47bb'))),
+            'primary' => self::hexOr($defaultTheme['primary'] ?? null, self::FALLBACK['primary']),
+            'accent' => self::hexOr($defaultTheme['accent'] ?? null, self::FALLBACK['accent']),
             'background' => $background,
         ];
+    }
+
+    /** Platform colours used when a template's own default is missing or not #rrggbb. */
+    public const FALLBACK = [
+        'primary' => '#1a2a4a',
+        'accent' => '#1e47bb',
+        'background' => '#fafafa',
+    ];
+
+    /**
+     * Whether a value is a #rrggbb colour. Theme colours land in an inline style
+     * attribute on every invitation page, so nothing else may reach it.
+     */
+    public static function isHex(mixed $value): bool
+    {
+        return is_string($value) && preg_match('/^#[0-9a-fA-F]{6}$/', trim($value)) === 1;
+    }
+
+    /**
+     * Whether all three colours of a stored theme are usable as they are.
+     *
+     * @param  array<string, mixed>  $theme
+     */
+    public static function isUsableTrio(array $theme): bool
+    {
+        return self::isHex($theme['primary'] ?? null)
+            && self::isHex($theme['accent'] ?? null)
+            && self::isHex($theme['background'] ?? null);
+    }
+
+    private static function hexOr(mixed $value, string $fallback): string
+    {
+        return self::isHex($value) ? strtolower(trim((string) $value)) : $fallback;
     }
 
     /**

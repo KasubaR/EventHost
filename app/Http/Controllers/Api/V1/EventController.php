@@ -251,6 +251,11 @@ class EventController extends Controller
                     ]);
                 }
 
+                if ($shouldPublish && ! $event->is_published
+                    && ($templateBlocker = $event->invitationTemplatePublishBlocker()) !== null) {
+                    throw ValidationException::withMessages(['publish' => $templateBlocker]);
+                }
+
                 if ($shouldPublish) {
                     $credits->chargeFirstPublish($request->user(), $event);
                     $data['is_published'] = true;
@@ -267,11 +272,7 @@ class EventController extends Controller
                 $event->fill($data);
 
                 if ($wasPublished && $event->isDirty(['venue', 'location_name', 'latitude', 'longitude'])) {
-                    $notifyGuestsCount = $event->guests()
-                        ->where(function ($query): void {
-                            $query->where('invitation_sent', true)->orWhereHas('rsvp');
-                        })
-                        ->count();
+                    $notifyGuestsCount = $event->guestsHoldingInvitationCount();
                 }
 
                 app(EventSlugService::class)->apply(is_string($customSlug) ? $customSlug : null, $event);
@@ -311,14 +312,14 @@ class EventController extends Controller
                 'count' => $notifyGuestsCount,
                 'url' => route('api.v1.host.events.show', $event),
             ] : null,
+            // Additive. Set only when this save switched plus-ones off while confirmed ones remain
+            // (those are kept, not removed); null otherwise.
             // Additive. Set only when this save switched plus-ones on while some guests still cannot use
             // them; clients can offer the bulk `allow_plus_one` action.
             'guests_without_plus_one' => (! $plusOnesWereAllowed && $event->allow_plus_one && $event->isInvitation()
                 && ($without = $event->guestsWithoutPlusOne()) > 0)
                 ? $without
                 : null,
-            // Additive. Set only when this save switched plus-ones off while confirmed ones remain
-            // (those are kept, not removed); null otherwise.
             'plus_ones_remaining' => ($plusOnesWereAllowed && ! $event->allow_plus_one && ($held = $event->plusOnesHeld()) > 0)
                 ? $held
                 : null,
@@ -414,6 +415,13 @@ class EventController extends Controller
             return response()->json([
                 'error' => 'ticketed_events_use_admin_approval',
                 'message' => 'Ticketed events go live after EventHost activates ticket sales — they do not use event credits.',
+            ], 422);
+        }
+
+        if (! $event->is_published && ($templateBlocker = $event->invitationTemplatePublishBlocker()) !== null) {
+            return response()->json([
+                'error' => 'needs_template',
+                'message' => $templateBlocker,
             ], 422);
         }
 

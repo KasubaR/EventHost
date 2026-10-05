@@ -7,6 +7,7 @@ use App\Enums\EventAudience;
 use App\Enums\EventProductKind;
 use App\Enums\TicketingStatus;
 use App\Models\Event;
+use App\Models\InvitationTemplate;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -24,6 +25,16 @@ class EventFactory extends Factory
 
         return [
             'user_id' => User::factory(),
+            // Guest pages refuse an invitation with no layout, so a factory invitation gets the
+            // catalogue's first template. A test about the missing-layout case passes null.
+            'invitation_template_id' => function (array $attributes): ?int {
+                $kind = $attributes['product_kind'] ?? null;
+                $kind = $kind instanceof EventProductKind ? $kind : EventProductKind::tryFrom((string) $kind);
+
+                return $kind === EventProductKind::Ticketed
+                    ? null
+                    : InvitationTemplate::query()->where('is_active', true)->orderBy('sort_order')->orderBy('id')->value('id');
+            },
             'name' => fake()->words(3, true).' '.fake()->randomElement(['Celebration', 'Gathering', 'Party']),
             'event_type' => fake()->randomElement(Event::EVENT_TYPES),
             'product_kind' => EventProductKind::Invitation,

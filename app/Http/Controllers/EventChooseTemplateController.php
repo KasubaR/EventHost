@@ -29,6 +29,14 @@ class EventChooseTemplateController extends Controller
         $q = trim((string) $request->query('q', ''));
         $categorySlug = $request->query('category');
 
+        // First visit opens on the event's own type when it has layouts. Any submitted value,
+        // including the empty "All categories", is the host's choice and wins.
+        $categoryFromEventType = false;
+        if (! $request->has('category')) {
+            $categorySlug = $this->categoryForEventType($event);
+            $categoryFromEventType = $categorySlug !== null;
+        }
+
         $categories = Cache::remember('tpl_categories', 300, function (): Collection {
             return InvitationTemplateCategory::query()
                 ->orderBy('sort_order')
@@ -58,7 +66,20 @@ class EventChooseTemplateController extends Controller
         $preferredId = $request->query('preferred');
         $preferredIdInt = is_numeric($preferredId) ? (int) $preferredId : null;
 
-        return view('events.choose-template', compact('event', 'templates', 'categories', 'q', 'categorySlug', 'preferredIdInt'));
+        $guestsHoldingInvitation = $event->is_published && $event->invitation_template_id !== null
+            ? $event->guestsHoldingInvitationCount()
+            : 0;
+
+        return view('events.choose-template', compact(
+            'event',
+            'templates',
+            'categories',
+            'q',
+            'categorySlug',
+            'categoryFromEventType',
+            'preferredIdInt',
+            'guestsHoldingInvitation',
+        ));
     }
 
     public function update(ChooseEventTemplateRequest $request, Event $event, InvitationCustomizationService $customizationService): RedirectResponse
@@ -68,6 +89,7 @@ class EventChooseTemplateController extends Controller
         }
 
         $templateId = (int) $request->validated('invitation_template_id');
+        $switched = $event->invitation_template_id !== null && $event->invitation_template_id !== $templateId;
 
         if ($event->invitation_template_id !== $templateId) {
             $customizationService->resetThemeColoursForTemplate($event, InvitationTemplate::query()->findOrFail($templateId));
@@ -76,6 +98,36 @@ class EventChooseTemplateController extends Controller
         $event->invitation_template_id = $templateId;
         $event->save();
 
-        return redirect()->route('events.edit', $event)->with('status', 'template-chosen');
+        $redirect = redirect()->route('events.edit', $event)->with('status', 'template-chosen');
+
+        // Guest links show the new layout at once and nobody is told. Say how many already have it,
+        // the same prompt a venue change gets, and leave the decision to notify with the host.
+        if ($switched && $event->is_published && ($holding = $event->guestsHoldingInvitationCount()) > 0) {
+            $redirect->with('template_switched_guests', [
+                'count' => $holding,
+                'url' => route('events.guests.index', $event),
+            ]);
+        }
+
+        return $redirect;
+    }
+
+    /**
+     * The template category matching the event's type, when at least one active template carries it.
+     */
+    private function categoryForEventType(Event $event): ?string
+    {
+        $slug = array_search($event->event_type, Event::CATEGORY_SLUG_TO_TYPE, true);
+
+        if ($slug === false) {
+            return null;
+        }
+
+        $hasTemplates = InvitationTemplateCategory::query()
+            ->where('slug', $slug)
+            ->whereHas('invitationTemplates', fn ($query) => $query->where('is_active', true))
+            ->exists();
+
+        return $hasTemplates ? $slug : null;
     }
 }

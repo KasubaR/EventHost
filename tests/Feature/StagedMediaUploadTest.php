@@ -124,13 +124,13 @@ class StagedMediaUploadTest extends TestCase
         for ($i = 0; $i < 6; $i++) {
             $this->actingAs($user)->postJson(route('events.media.stage', $event), [
                 'slot' => StagedMedia::SLOT_GALLERY,
-                'file' => UploadedFile::fake()->image("g{$i}.jpg", 80, 80),
+                'file' => UploadedFile::fake()->image("g{$i}.jpg", 300, 300),
             ])->assertCreated();
         }
 
         $this->actingAs($user)->postJson(route('events.media.stage', $event), [
             'slot' => StagedMedia::SLOT_GALLERY,
-            'file' => UploadedFile::fake()->image('seventh.jpg', 80, 80),
+            'file' => UploadedFile::fake()->image('seventh.jpg', 300, 300),
         ])->assertStatus(422)->assertJsonValidationErrors('file');
 
         $this->assertSame(6, StagedMedia::query()->count());
@@ -146,7 +146,7 @@ class StagedMediaUploadTest extends TestCase
 
         $this->actingAs($user)->postJson(route('events.media.stage', $event), [
             'slot' => StagedMedia::SLOT_HERO_PORTRAIT,
-            'file' => UploadedFile::fake()->image('hero.jpg', 200, 300),
+            'file' => UploadedFile::fake()->image('hero.jpg', 300, 400),
         ])->assertStatus(422)->assertJsonValidationErrors('file');
     }
 
@@ -159,12 +159,12 @@ class StagedMediaUploadTest extends TestCase
 
         $first = $this->actingAs($user)->postJson(route('events.media.stage', $event), [
             'slot' => StagedMedia::SLOT_HERO_PORTRAIT,
-            'file' => UploadedFile::fake()->image('one.jpg', 200, 300),
+            'file' => UploadedFile::fake()->image('one.jpg', 300, 400),
         ])->assertCreated()->json();
 
         $this->actingAs($user)->postJson(route('events.media.stage', $event), [
             'slot' => StagedMedia::SLOT_HERO_PORTRAIT,
-            'file' => UploadedFile::fake()->image('two.jpg', 200, 300),
+            'file' => UploadedFile::fake()->image('two.jpg', 300, 400),
         ])->assertCreated();
 
         $this->assertSame(1, StagedMedia::query()->where('slot', StagedMedia::SLOT_HERO_PORTRAIT)->count());
@@ -181,7 +181,7 @@ class StagedMediaUploadTest extends TestCase
 
         $this->actingAs($stranger)->postJson(route('events.media.stage', $event), [
             'slot' => StagedMedia::SLOT_GALLERY,
-            'file' => UploadedFile::fake()->image('sneaky.jpg', 80, 80),
+            'file' => UploadedFile::fake()->image('sneaky.jpg', 300, 300),
         ])->assertForbidden();
     }
 
@@ -215,7 +215,7 @@ class StagedMediaUploadTest extends TestCase
         $this->assertNull(StagedMedia::query()->find($staged['id']));
     }
 
-    public function test_a_staged_id_from_another_users_session_is_ignored(): void
+    public function test_a_staged_id_from_another_users_session_is_refused_and_left_alone(): void
     {
         Storage::fake('public');
 
@@ -238,7 +238,8 @@ class StagedMediaUploadTest extends TestCase
                 route('events.invitation-design.update', $event),
                 $this->designPayload($event, ['staged_media' => [$foreign->id]])
             )
-            ->assertSessionHas('status', 'invitation-design-saved');
+            // Indistinguishable from a row replaced in another tab: refused, never resolved.
+            ->assertSessionHasErrors('staged_media');
 
         $event->refresh();
         $this->assertSame([], $event->invitation_customization['media']['gallery'] ?? []);
@@ -318,7 +319,7 @@ class StagedMediaUploadTest extends TestCase
         foreach (['a', 'b'] as $name) {
             $ids[] = $this->actingAs($user)->postJson(route('events.media.stage', $event), [
                 'slot' => StagedMedia::SLOT_GALLERY,
-                'file' => UploadedFile::fake()->image($name.'.jpg', 80, 80),
+                'file' => UploadedFile::fake()->image($name.'.jpg', 300, 300),
             ])->assertCreated()->json('id');
         }
 
@@ -351,7 +352,7 @@ class StagedMediaUploadTest extends TestCase
         // it has not submitted yet.
         $id = $this->actingAs($user)->postJson(route('events.media.stage', $event), [
             'slot' => StagedMedia::SLOT_GALLERY,
-            'file' => UploadedFile::fake()->image('replacement.jpg', 80, 80),
+            'file' => UploadedFile::fake()->image('replacement.jpg', 300, 300),
         ])->assertCreated()->json('id');
 
         $this->actingAs($user)

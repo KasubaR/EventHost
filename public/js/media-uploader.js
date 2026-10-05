@@ -58,9 +58,30 @@
         });
     }
 
+    /**
+     * Advisory only: the server never rejects a photo for its shape. The frame
+     * crops it, so the host is told before saving rather than after publishing.
+     */
+    function shapeNote(shape, width, height) {
+        if (!shape || !width || !height) return '';
+        var ratio = width / height;
+
+        if (shape === 'portrait' && ratio > 1.05) {
+            return 'Landscape photo in a portrait frame: the sides will be cropped.';
+        }
+        if (shape === 'landscape' && ratio < 0.95) {
+            return 'Portrait photo in a landscape frame: the top and bottom will be cropped.';
+        }
+        if (shape === 'square' && (ratio > 1.3 || ratio < 1 / 1.3)) {
+            return 'This photo will be cropped to a square.';
+        }
+        return '';
+    }
+
     function Uploader(input) {
         this.input = input;
         this.slot = input.dataset.uploadSlot;
+        this.shape = input.dataset.uploadShape || '';
         this.url = input.dataset.uploadUrl;
         this.maxBytes = parseInt(input.dataset.uploadMaxBytes || '0', 10);
         this.single = isSingle(this.slot);
@@ -151,16 +172,32 @@
         var li = document.createElement('li');
         li.className = 'mup-tile';
 
+        var note = document.createElement('span');
+        note.className = 'mup-note';
+        note.hidden = true;
+        var notes = [];
+        function addNote(text) {
+            if (!text) return;
+            notes.push(text);
+            note.textContent = notes.join(' ');
+            note.hidden = false;
+        }
+
         var thumb = document.createElement('div');
         thumb.className = 'mup-thumb';
+        var shape = this.shape;
         if (/^image\//.test(file.type)) {
             var img = document.createElement('img');
             img.src = URL.createObjectURL(file);
             img.alt = '';
             img.addEventListener('load', function () {
+                addNote(shapeNote(shape, img.naturalWidth, img.naturalHeight));
                 URL.revokeObjectURL(img.src);
             });
             thumb.appendChild(img);
+            if (file.type === 'image/gif') {
+                addNote('Animated GIFs become a still image.');
+            }
         } else {
             thumb.innerHTML = '<i class="fa-solid fa-music" aria-hidden="true"></i>';
         }
@@ -186,6 +223,7 @@
         status.className = 'mup-status';
         status.textContent = 'Waiting…';
         body.appendChild(status);
+        body.appendChild(note);
 
         li.appendChild(body);
 

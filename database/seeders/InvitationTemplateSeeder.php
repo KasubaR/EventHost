@@ -331,6 +331,9 @@ class InvitationTemplateSeeder extends Seeder
             $row = array_merge([
                 'min_subscription_tier' => SubscriptionTier::Base->value,
                 'layout_variant' => InvitationLayoutVariant::STANDARD,
+                // Being in this list is what makes a template offered, so a slug retired
+                // below and later restored here comes back.
+                'is_active' => true,
             ], $row);
 
             $tpl = InvitationTemplate::query()->updateOrCreate(
@@ -352,14 +355,22 @@ class InvitationTemplateSeeder extends Seeder
             ->pluck('id');
 
         if ($orphanIds->isNotEmpty()) {
-            $base = InvitationTemplate::query()->where('slug', 'slate-minimal')->first();
-            if ($base !== null) {
-                Event::query()
-                    ->whereIn('invitation_template_id', $orphanIds)
-                    ->update(['invitation_template_id' => $base->id]);
-            }
+            // A template an event still uses is retired, never deleted or swapped: deleting nulls the
+            // event's layout (nullOnDelete), and moving it to another template would restyle a live
+            // invitation during a deploy, under customization saved for a different layout. Retired
+            // rows keep rendering for those events and drop out of every picker.
+            $inUseIds = Event::withTrashed()
+                ->whereIn('invitation_template_id', $orphanIds)
+                ->distinct()
+                ->pluck('invitation_template_id');
 
-            InvitationTemplate::query()->whereIn('id', $orphanIds)->delete();
+            InvitationTemplate::query()
+                ->whereIn('id', $inUseIds)
+                ->update(['is_active' => false, 'is_featured' => false]);
+
+            InvitationTemplate::query()
+                ->whereIn('id', $orphanIds->diff($inUseIds))
+                ->delete();
         }
 
         InvitationTemplateCategory::query()

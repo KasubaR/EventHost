@@ -861,6 +861,80 @@ public page uses — but gated on `EventPolicy::view` (owner-only) instead of `i
   This is a client-side nudge only, same trust level as the credit-spend `confirm()` dialogs already on that
   page — there is no server-side check that a preview actually happened before `EventController::publish()`
 
+### Invitation Template Selection
+
+What happens to an event's layout (`events.invitation_template_id`) when it is missing, retired, switched, mismatched or
+no longer on the host's plan. Gap review: `.cursor/plans/template_selection_gaps_*.plan.md`.
+
+- **A template is checked only when it is chosen.** `ChooseEventTemplateRequest` (web and API) requires an active template
+ the host's tier covers. Rendering never re-checks either: the layout a host chose stays theirs (grandfathered)
+- **No template means guests see nothing of the host's.** `PublicInvitationResolver::lacksInvitationLayout()` makes `/e/{slug}`,
+ the API public event and the personal RSVP page read as Unavailable for an invitation with a null template. Without this,
+ `InvitationCustomizationService::resolvedTemplate()` would style the page with the catalogue's first template
+- **Publishing needs a layout.** `Event::invitationTemplatePublishBlocker()` (null template, or a retired one) is checked by
+ web `publish()` (redirects to the picker with the reason), Save & publish in `update()` (422 `publish`), the API publish
+ (422 `needs_template`) and free-registration submit-for-review (the quote payment publishes with no further step). The tier
+ is deliberately not re-checked there
+- **Retired templates keep rendering.** `resolvedTemplate()` prefers the event's own template even when `is_active = false`,
+ and `UpdateInvitationDesignRequest` validates against that same template. The first active template is a fallback only
+ for a null id. Retired rows drop out of every picker, so a host who switches away cannot come back
+- **`InvitationTemplateSeeder` retires, never reassigns.** A slug removed from its list is set inactive (and unfeatured) when
+ any event, including a trashed one, still uses it; only unused rows are deleted. Every seeded row is written `is_active = true`,
+ so restoring a slug re-offers it. There is still no admin toggle for `is_active`
+- **Switching a live layout** flashes `template_switched_guests` (count of `Event::guestsHoldingInvitationCount()`, the same
+ count the venue-change prompt uses) and the picker warns before the switch. Nothing is sent to guests. Only colours reset on
+ a switch (`resetThemeColoursForTemplate()`); content, sections and media carry over
+- **The picker opens on the event type's category** when that category has an active template (via the inverse of
+ `Event::CATEGORY_SLUG_TO_TYPE`). Any submitted `category`, including the empty "All categories", wins. Types are never
+ constrained by template: `InvitationTemplate::isDesignedFor()` is advisory only
+- **Host notices** come from `App\Support\InvitationTemplateNotices`, rendered by `<x-invitation-template-notice>` on the edit and
+ event pages: no layout on a live event, a retired layout, a plan that no longer covers the layout (owner's plan, active
+ accounts only), and a layout whose categories do not include the event's type. Add a case there, not in a view
+- `EventFactory` gives invitation events the first active template; pass `invitation_template_id => null` to test the
+ missing-layout case. Tests: `TemplateSelectionEdgeCasesTest`
+
+### Invitation Customization edge cases
+
+What the design form (`events.invitation-design.update`, web and API) and `InvitationCustomizationService::merge()` do with
+bad colours, removed fonts, hidden sections, unusable images, unreadable JSON, a template switch and two open tabs. Gap
+review: `.cursor/plans/customization_gaps_*.plan.md`. Tests: `InvitationCustomizationEdgeCasesTest`.
+
+- **Two tabs: an optimistic lock on `events.invitation_customization_revision`.** `Event::customizationToken()` is the revision as
+ a string; the form carries it as `customization_token` and the API returns it (plus `customization_revision`). It is bumped
+ **only** by a design save (both controllers, under the row lock) and by a template switch (`Event::booted()` saving hook) —
+ never by `ProcessInvitationDesignImageJob` or the audio takedown, so background work does not invalidate an open form.
+ `UpdateInvitationDesignRequest::withValidator()` checks it **before** field rules (`setRules([])`), so a stale tab hears
+ "changed elsewhere" rather than a field error caused by the newer state; the controllers repeat it under the lock. The error
+ links to the latest version in a new tab — the stale tab's edits stay on screen. The **details form** (`events.update`) is
+ still last-write-wins; only the design form is locked
+- **Template switch while editing:** the revision bump catches it; `templateFingerprint()` now includes the template id and
+ variant too, so even a form with no token is refused (`LAYOUT_CHANGED_MESSAGE`) when the event moved to a layout with the same
+ section set. A save on a layout without a hero or couple slot **keeps** those files in `media` instead of deleting them, so
+ switching back restores them
+- **merge() tolerates any stored shape.** Every read type-checks: a scalar where a list belongs reads as empty, non-strings drop
+ out of media lists, text fields accept scalars only. Colours: all three must be `#rrggbb` (`InvitationPalettes::isUsableTrio()`)
+ or the **whole trio** falls back to the template's — they land in an inline style. A save without a palette keeps stored colours
+ only when usable (`themeColoursToKeep()`), so a below-Pro+ host with legacy bad colours can still save
+- **Unreadable JSON** reads as null through the array cast; `storedCustomization()` then falls back to
+ `invitation_customization_previous` and `merge()` sets `restored_from_previous`, which `InvitationDesignNotices` turns into a
+ host warning. Read stored customization through `storedCustomization()` / `storedMedia()`, never the raw attribute
+- **Removed fonts:** retire a key in `InvitationFonts::RETIRED` first (it keeps rendering and validating, drops out of pickers
+ except for an event already using it, via `selectableKeys()`). Only delete it from `MAP` once nothing stores it — `merge()` then
+ swaps in the **template's** font (not `system_ui`) and reports the old key in `theme.font_replacements`, which the form explains
+- **Sections:** RSVP is **always visible** on invitation events (`rsvpSectionRequired()`): the form renders a locked "Always shown"
+ row, the request refuses hiding it, and `merge()` forces it visible over stored data. With RSVP forced, an all-hidden invitation is
+ impossible, but the request still refuses "no visible section" for a layout without RSVP. Hiding **details** is allowed; the
+ form warns inline and `InvitationDesignNotices` shows a notice on the edit and event pages
+- **Images:** `InvitationMediaRules::imageRules()` adds a raster dimension rule — short side at least 300 px, neither side over
+ 10000 px (decompression-bomb guard) — on staging and on every direct upload field. The uploader (`data-upload-shape`) warns,
+ never blocks, about orientation mismatches and animated GIFs. When the WebP job gives up, `failed()` appends the original path to
+ `media.unoptimised` (no revision bump) and the form shows a "Not optimised" badge; a save drops entries no longer referenced
+- **Staged ids that no longer resolve are refused** (`STAGED_GONE_MESSAGE`), not ignored: one replaced in another tab or expired
+ would otherwise save a gallery missing a photo the host can still see
+- **Leaving without saving:** `event-edit-save.js` tracks dirty state on both forms and prompts on `beforeunload` (also while
+ uploads are pending). A preview click does not unlock "Save & publish" while there are unsaved edits, and the preview link says
+ the preview shows the last saved version
+
 ### Featured Templates (homepage)
 
 The homepage "Invitation Templates" strip is curated from the admin panel, not hardcoded:
