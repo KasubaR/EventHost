@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\RsvpClosedException;
 use App\Http\Middleware\AdminAuthenticate;
 use App\Http\Middleware\BlockWhileActingAs;
 use App\Http\Middleware\EnforceActingAsSession;
@@ -57,6 +58,30 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // A late RSVP is a refusal with an explanation, never a bare 403 (plans/rsvp-deadline-fixes.md G4).
+        // JSON clients get 403 with a stable `code`; web pages go back to the page that explains it.
+        $exceptions->render(function (RsvpClosedException $e, Request $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'message' => $e->getMessage(),
+                    'code' => 'rsvp_closed',
+                    'can_reduce' => $e->mayReduce,
+                ], 403);
+            }
+
+            $route = $request->route();
+            $name = (string) $route?->getName();
+            $target = match (true) {
+                str_starts_with($name, 'rsvp.token') && $route?->parameter('token') !== null => route('rsvp.token.show', ['token' => $route->parameter('token')]),
+                str_starts_with($name, 'group-rsvp') && $route?->parameter('token') !== null => route('group-rsvp.show', ['token' => $route->parameter('token')]),
+                $route?->parameter('slug') !== null => route('rsvp.open.show', ['slug' => $route->parameter('slug')]),
+                default => null,
+            };
+
+            return ($target !== null ? redirect($target) : redirect()->back(fallback: url('/')))
+                ->with('rsvp_closed', $e->getMessage());
+        });
+
         // A stale CSRF token nearly always means the same form was sent twice: the
         // first send succeeded and regenerated the session token (logging in does
         // exactly that), so the duplicate arrives carrying a token that no longer

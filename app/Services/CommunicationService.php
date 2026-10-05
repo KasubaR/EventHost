@@ -455,6 +455,17 @@ class CommunicationService
             return 'disabled';
         }
 
+        // The personal link would only show "Invitation unavailable" until the event is published.
+        if (! $event->is_published) {
+            return 'unpublished';
+        }
+
+        // The card's Yes / No / Maybe buttons and the link would all land on a closed form
+        // (plans/rsvp-deadline-fixes.md G10). Nothing is sent, so nothing is billed.
+        if (! $event->isRsvpOpen()) {
+            return 'closed';
+        }
+
         $toE164 = ZambianPhone::toE164($guest->phone);
         if ($toE164 === null || $guest->invitation_token === null) {
             return 'invalid_phone';

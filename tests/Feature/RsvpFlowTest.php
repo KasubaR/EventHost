@@ -69,8 +69,12 @@ class RsvpFlowTest extends TestCase
             'invitation_token' => 'tok_closed_deadline',
         ]);
 
+        // Not a bare 403 any more: back to the closed page, with the reason (plans/rsvp-deadline-fixes.md G4).
         $this->post(route('rsvp.token.store', ['token' => 'tok_closed_deadline']), $this->rsvpPayload(RsvpStatus::Accepted))
-            ->assertForbidden();
+            ->assertRedirect(route('rsvp.token.show', ['token' => 'tok_closed_deadline']))
+            ->assertSessionHas('rsvp_closed');
+
+        $this->assertNull($guest->fresh()->rsvp);
     }
 
     public function test_guest_limit_blocks_additional_acceptance(): void

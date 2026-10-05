@@ -6,8 +6,8 @@
 <section class="mg-section" id="rsvp">
     <div class="mg-wrap mg-wrap--form">
         <h2 class="mg-title">RSVP</h2>
-        @if ($event->rsvp_deadline)
-            <p class="mg-rsvp-lead">Kindly respond by {{ $event->rsvp_deadline->format('F jS') }}</p>
+        @if ($event->rsvpDeadlineAt())
+            <p class="mg-rsvp-lead">Kindly respond by {{ $event->rsvpDeadlineAt()->format('F jS') }}</p>
         @endif
         <div class="mg-rsvp-panel">
             @include('events.invitations.sections.rsvp')

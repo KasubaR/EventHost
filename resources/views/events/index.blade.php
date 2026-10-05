@@ -34,6 +34,14 @@
 
     <x-help-card />
 
+    @if (session('rsvp_reopened'))
+        <div class="evt-flash evt-flash--info" role="status">
+            <i class="fa-solid fa-envelope-open-text"></i>
+            RSVP is open again. Guests who had not replied were never told it had closed, and are not told it reopened.
+            <a href="{{ session('rsvp_reopened') }}">Remind them from the guest list</a>.
+        </div>
+    @endif
+
     {{-- Guests & RSVPs are managed per event — there's no single list across events, so the
          sidebar link lands here with a hint to pick one. Only shown when there's actually a
          choice to make; the empty-state branch below covers the zero-events case instead. --}}

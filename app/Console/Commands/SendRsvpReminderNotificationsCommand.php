@@ -16,7 +16,9 @@ class SendRsvpReminderNotificationsCommand extends Command
 
     public function handle(): int
     {
-        $today = now()->startOfDay();
+        // Days are counted on the venue calendar (config events.timezone), not UTC: the 09:00 Lusaka run
+        // and the host's deadline are both venue wall-clock times. See Event::rsvpDeadlineAt().
+        $today = now(config('events.timezone', 'Africa/Lusaka'))->startOfDay();
         $hourBucket = now()->format('YmdH');
         $hourlyCap = max(1, (int) config('communications.reminder_hourly_cap_per_event', 500));
 
@@ -37,18 +39,21 @@ class SendRsvpReminderNotificationsCommand extends Command
                         continue;
                     }
 
-                    $deadlineDay = $event->rsvp_deadline->copy()->startOfDay();
+                    $deadlineDay = $event->rsvpDeadlineAt()->startOfDay();
                     $daysUntil = (int) $today->diffInDays($deadlineDay, false);
 
-                    if (! in_array($daysUntil, [7, 3, 1], true)) {
+                    // Catch-up rule (plans/rsvp-deadline-fixes.md D6): a reminder goes out when the deadline
+                    // is inside a window (7, 3 or 1 days) that this guest has not used yet, rather than only
+                    // on the exact day. A deadline set 5 days out, or a scheduler day that never ran, is
+                    // reminded on the next run. More than 7 days away: nothing to do yet.
+                    $eligible = RsvpReminderBuckets::eligibleFor($daysUntil);
+                    $bucket = RsvpReminderBuckets::windowFor($daysUntil);
+
+                    if ($bucket === null) {
                         continue;
                     }
 
-                    $bucket = match ($daysUntil) {
-                        7 => RsvpReminderBuckets::BUCKET_7,
-                        3 => RsvpReminderBuckets::BUCKET_3,
-                        1 => RsvpReminderBuckets::BUCKET_1,
-                    };
+                    $deadlineStamp = $event->rsvpDeadlineKeyStamp();
 
                     $guests = $event->guests()
                         ->whereNotNull('email')
@@ -66,7 +71,8 @@ class SendRsvpReminderNotificationsCommand extends Command
 
                         /** @var list<string> $sent */
                         $sent = $guest->rsvp_reminders_sent;
-                        if (in_array($bucket, $sent, true)) {
+                        // Every window the deadline has reached is already used: nothing new to say.
+                        if (array_diff($eligible, $sent) === []) {
                             continue;
                         }
 
@@ -83,7 +89,7 @@ class SendRsvpReminderNotificationsCommand extends Command
                             continue;
                         }
 
-                        $idempotencyKey = sprintf('rsvp-reminder:%d:%d:%s', $event->id, $guest->id, $bucket);
+                        $idempotencyKey = sprintf('rsvp-reminder:%d:%d:%s:%s', $event->id, $guest->id, $bucket, $deadlineStamp);
                         try {
                             $communication->sendRsvpReminder($event, $guest, $daysUntil, $idempotencyKey);
                         } catch (\Throwable $e) {
@@ -94,7 +100,7 @@ class SendRsvpReminderNotificationsCommand extends Command
                         $sentThisEvent++;
 
                         $guest->forceFill([
-                            'rsvp_reminders_sent' => RsvpReminderBuckets::withBucketAppended($sent, $bucket),
+                            'rsvp_reminders_sent' => RsvpReminderBuckets::withBucketsAppended($sent, $eligible),
                         ])->saveQuietly();
                     }
                 }

@@ -4,8 +4,8 @@
 
     $footerQuote = trim((string) ($invitation['content']['wi_footer_quote'] ?? ''));
 
-    $rsvpNote = $event->rsvp_deadline
-        ? 'Kindly respond by '.$event->rsvp_deadline->format('jS F Y').'.'
+    $rsvpNote = $event->rsvpDeadlineAt()
+        ? 'Kindly respond by '.$event->rsvpDeadlineAt()->format('jS F Y').'.'
         : '';
 @endphp
 

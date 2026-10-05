@@ -37,6 +37,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | RSVP deadline grace
+    |--------------------------------------------------------------------------
+    |
+    | Seconds a *submit* is still accepted after the closing instant, so a guest whose form was
+    | open when the deadline passed (or whose request was slow) is not turned away. Pages and
+    | Event::isRsvpOpen() stay exact. Plan: plans/rsvp-deadline-fixes.md (D4).
+    |
+    */
+
+    'rsvp' => [
+        'deadline_grace_seconds' => (int) env('RSVP_DEADLINE_GRACE_SECONDS', 60),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Deleted-event retention
     |--------------------------------------------------------------------------
     |

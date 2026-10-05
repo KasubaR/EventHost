@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Exceptions\RsvpClosedException;
 use App\Http\Requests\Concerns\ValidatesRsvpPayload;
 use App\Models\Event;
 use App\Models\Guest;
@@ -20,8 +21,12 @@ class StoreOpenRsvpRequest extends FormRequest
             abort(404);
         }
 
-        if (! $event->isRsvpOpen()) {
+        if (! $event->is_published) {
             abort(403);
+        }
+
+        if (! $event->acceptsRsvpSubmissions()) {
+            throw new RsvpClosedException;
         }
 
         // The plan's guest-list cap only matters for a private event here — a

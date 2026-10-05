@@ -12,8 +12,8 @@
     <div class="mg-wrap mg-wrap--text">
         <h2 class="mg-title">You're Invited</h2>
         <p class="mg-invite-text">{!! nl2br(e($wording)) !!}</p>
-        @if ($event->rsvp_deadline)
-            <p class="mg-invite-note">Please reply by {{ $event->rsvp_deadline->format('F jS') }}.</p>
+        @if ($event->rsvpDeadlineAt())
+            <p class="mg-invite-note">Please reply by {{ $event->rsvpDeadlineAt()->format('F jS') }}.</p>
         @endif
         <p class="mg-signature">{{ $signature }}</p>
     </div>

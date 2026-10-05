@@ -42,6 +42,8 @@
         </div>
     </x-slot>
 
+    <x-rsvp-closed-banner :event="$event" />
+
     @if (session('status') === 'guest-created')
         <div class="evt-admin-flash">{{ $isRegistrations ? 'Registration added.' : 'Guest added.' }}</div>
     @elseif (session('status') === 'guest-updated')
@@ -58,6 +60,10 @@
         <div class="evt-admin-flash">This event has hit its hourly WhatsApp sending limit. Try again shortly.</div>
     @elseif (session('status') === 'guest-whatsapp-disabled')
         <div class="evt-admin-flash">WhatsApp sending isn't set up for this account yet.</div>
+    @elseif (session('status') === 'guest-whatsapp-unpublished')
+        <div class="evt-admin-flash">Publish this event before sending invitations. Until then, guest links show "Invitation unavailable".</div>
+    @elseif (session('status') === 'guest-whatsapp-closed')
+        <div class="evt-admin-flash">RSVP is closed, so no invitation was sent. Extend the RSVP deadline first.</div>
     @elseif (session('status') === 'guest-whatsapp-failed')
         <div class="evt-admin-flash">Couldn't send the WhatsApp invitation. Try again in a moment.</div>
     @elseif (session('status') === 'guests-imported')

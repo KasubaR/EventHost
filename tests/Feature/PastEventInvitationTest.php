@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -22,19 +23,38 @@ class PastEventInvitationTest extends TestCase
         ]);
     }
 
-    public function test_the_event_date_closes_rsvps_without_an_explicit_deadline(): void
+    public function test_without_an_explicit_deadline_rsvps_close_when_the_event_starts(): void
     {
-        $past = Event::factory()->make([
-            'event_date' => now()->subDay()->format('Y-m-d'),
+        // plans/rsvp-deadline-fixes.md D2: the implicit deadline is the event start, not the end of
+        // the event day, so nobody can accept something that is already under way. Venue clock.
+        $venue = config('events.timezone');
+        $event = Event::factory()->make([
+            'event_date' => '2026-11-20',
+            'event_time' => '15:00:00',
             'rsvp_deadline' => null,
         ]);
-        $today = Event::factory()->make([
-            'event_date' => now()->format('Y-m-d'),
+
+        Carbon::setTestNow(Carbon::parse('2026-11-19 23:30:00', $venue)->utc());
+        $this->assertTrue($event->isRsvpOpen(), 'open the evening before');
+
+        Carbon::setTestNow(Carbon::parse('2026-11-20 14:59:00', $venue)->utc());
+        $this->assertTrue($event->isRsvpOpen(), 'open until the start');
+
+        Carbon::setTestNow(Carbon::parse('2026-11-20 15:00:01', $venue)->utc());
+        $this->assertFalse($event->isRsvpOpen(), 'closed once the event has started');
+
+        Carbon::setTestNow(Carbon::parse('2026-11-21 01:30:00', $venue)->utc());
+        $this->assertFalse($event->isRsvpOpen(), 'still closed after midnight');
+    }
+
+    public function test_a_past_event_is_closed(): void
+    {
+        $past = Event::factory()->make([
+            'event_date' => now()->subDays(2)->format('Y-m-d'),
             'rsvp_deadline' => null,
         ]);
 
         $this->assertFalse($past->isRsvpOpen());
-        $this->assertTrue($today->isRsvpOpen(), 'RSVPs stay open on the day of the event.');
     }
 
     public function test_the_invitation_page_shows_ended_status_after_the_event(): void

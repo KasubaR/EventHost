@@ -520,3 +520,21 @@
     color: inherit;
     white-space: nowrap;
 }
+
+/* ── After the deadline: cancel or reduce (resources/views/rsvp/closed.blade.php) ── */
+.rsvp-closed-notice {
+    margin-bottom: 12px;
+}
+
+.rsvp-reduce {
+    margin: 16px 0;
+}
+
+.rsvp-reduce-title {
+    margin: 0 0 6px;
+    font-size: 17px;
+}
+
+.rsvp-reduce-form {
+    margin-top: 10px;
+}

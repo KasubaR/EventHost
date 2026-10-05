@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\RsvpStatus;
+use App\Exceptions\RsvpClosedException;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Models\NotificationLog;
@@ -66,7 +67,7 @@ class WhatsAppInboundRsvpService
 
         $fromE164 = $this->fromE164($payload);
 
-        if (! $event->isRsvpOpen()) {
+        if (! $event->is_published) {
             $this->recordInboundLog($event->id, $guest->id, $messageSid, 'ignored_closed', $status);
             if ($fromE164 !== null) {
                 $this->whatsApp->sendText(
@@ -82,7 +83,18 @@ class WhatsAppInboundRsvpService
             $rsvp = $this->rsvpSubmission->submit($event, $guest, [
                 'status' => $status,
                 'attendee_count' => $status === RsvpStatus::Accepted ? 1 : 0,
-            ]);
+            ], allowReductions: true);
+        } catch (RsvpClosedException) {
+            // Past the deadline: only a cancel or a reduction gets through, anything else lands here.
+            $this->recordInboundLog($event->id, $guest->id, $messageSid, 'ignored_closed', $status);
+            if ($fromE164 !== null) {
+                $this->whatsApp->sendText(
+                    $fromE164,
+                    'RSVP is closed for '.$event->name.'. If you need help, contact the host.'
+                );
+            }
+
+            return;
         } catch (ValidationException $e) {
             $this->recordInboundLog($event->id, $guest->id, $messageSid, 'ignored_validation', $status, [
                 'errors' => $e->errors(),

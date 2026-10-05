@@ -49,13 +49,17 @@ class GroupRsvpResolver
         ];
     }
 
-    public function stateFor(GuestGroup $group, Event $event, int $remaining): string
+    /**
+     * `$submitting` is the write-side check: it uses the submit grace (Event::acceptsRsvpSubmissions())
+     * so a guest whose form was open at the deadline is not turned away. The page stays exact.
+     */
+    public function stateFor(GuestGroup $group, Event $event, int $remaining, bool $submitting = false): string
     {
         if ($event->trashed() || $event->isCancelled() || $event->isInvitationPaused() || ! $event->is_published) {
             return self::UNAVAILABLE;
         }
 
-        if (! $group->isLinkOpen() || ! $event->isRsvpOpen()) {
+        if (! $group->isLinkOpen() || ! ($submitting ? $event->acceptsRsvpSubmissions() : $event->isRsvpOpen())) {
             return self::CLOSED;
         }
 

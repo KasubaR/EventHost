@@ -9,8 +9,8 @@
     }
 
     $rsvpNote = '';
-    if ($event->rsvp_deadline) {
-        $rsvpNote = 'Please respond by '.$event->rsvp_deadline->format('jS F Y').' so we can make every detail perfect for your presence.';
+    if ($event->rsvpDeadlineAt()) {
+        $rsvpNote = 'Please respond by '.$event->rsvpDeadlineAt()->format('jS F Y').' so we can make every detail perfect for your presence.';
     }
 @endphp
 

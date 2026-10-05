@@ -337,6 +337,8 @@ class GuestController extends Controller
             'invalid_phone' => 'guest-whatsapp-invalid-phone',
             'rate_limited' => 'guest-whatsapp-rate-limited',
             'disabled' => 'guest-whatsapp-disabled',
+            'unpublished' => 'guest-whatsapp-unpublished',
+            'closed' => 'guest-whatsapp-closed',
             default => 'guest-whatsapp-failed',
         });
     }

@@ -28,7 +28,7 @@ class RsvpReminderPlanGateTest extends TestCase
     {
         return Event::factory()->for($owner)->published()->create(array_merge([
             'is_public' => true,
-            'rsvp_deadline' => now()->addDays(3),
+            'rsvp_deadline' => now(config('events.timezone'))->addDays(3),
         ], $overrides));
     }
 

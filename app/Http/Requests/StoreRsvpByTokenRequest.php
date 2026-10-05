@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Exceptions\RsvpClosedException;
 use App\Http\Requests\Concerns\ValidatesRsvpPayload;
 use App\Models\Guest;
 use Illuminate\Foundation\Http\FormRequest;
@@ -22,8 +23,14 @@ class StoreRsvpByTokenRequest extends FormRequest
         // Guest::event() excludes soft-deleted events by default, so a guest
         // whose event was deleted resolves to a null relation here rather than
         // isRsvpOpen() ever seeing it. Treat that the same as "not open".
-        if ($event === null || ! $event->isRsvpOpen()) {
+        if ($event === null || ! $event->is_published) {
             abort(403);
+        }
+
+        // Closed is not a bare 403: the guest is sent to the closed page with a message (and, if they
+        // already answered, the chance to cancel or reduce). The service re-checks under the lock.
+        if (! $event->acceptsRsvpSubmissions() && ! $event->canReduceRsvp($guest->rsvp)) {
+            throw new RsvpClosedException;
         }
 
         return true;

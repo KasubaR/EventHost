@@ -62,7 +62,10 @@ class EventResource extends JsonResource
             'is_invitation_paused' => $this->isInvitationPaused(),
             'invitation_paused_at' => $this->invitation_paused_at?->toIso8601String(),
             'cancelled_at' => $this->cancelled_at?->toIso8601String(),
-            'rsvp_deadline' => $this->rsvp_deadline?->toIso8601String(),
+            // Same field, now a real instant (the venue offset, +02:00) instead of the typed wall-clock
+            // value labelled +00:00. rsvp_closes_at is additive: the deadline, or the start when there is none.
+            'rsvp_deadline' => $this->rsvpDeadlineAt()?->toIso8601String(),
+            'rsvp_closes_at' => $this->rsvpClosesAt()?->toIso8601String(),
             'guest_limit' => $this->guest_limit,
             'host_contact_phone' => $this->host_contact_phone,
             'allow_plus_one' => $this->allow_plus_one,

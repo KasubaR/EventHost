@@ -93,6 +93,8 @@
     </x-slot>
 
     <div class="evt-stack">
+        <x-rsvp-closed-banner :event="$event" />
+
         @if (session('status') === 'invitation-paused')
             <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Invitation paused. Guests see “Invitation unavailable”.</div>
         @elseif (session('status') === 'invitation-resumed')

@@ -37,8 +37,9 @@ class RsvpReminderNotification extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
-        $when = match ($this->daysUntilDeadline) {
-            1 => 'tomorrow',
+        $when = match (true) {
+            $this->daysUntilDeadline <= 0 => 'today',
+            $this->daysUntilDeadline === 1 => 'tomorrow',
             default => 'in '.$this->daysUntilDeadline.' days',
         };
 
@@ -47,6 +48,11 @@ class RsvpReminderNotification extends Notification implements ShouldQueue
             ->greeting('Hello, '.$this->guest->name.'!')
             ->line('The RSVP deadline for '.$this->event->name.' is '.$when.'.')
             ->line('Please take a moment to respond so the host can plan ahead.');
+
+        // The exact closing time, with its zone: "in 3 days" alone left guests guessing the hour.
+        if ($label = $this->event->rsvpDeadlineLabel()) {
+            $mail->line('You can respond until '.$label.'.');
+        }
 
         if ($this->guest->invitation_token) {
             $mail->action(

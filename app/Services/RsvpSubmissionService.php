@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\RsvpApprovalStatus;
 use App\Enums\RsvpStatus;
+use App\Exceptions\RsvpClosedException;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Models\GuestGroup;
@@ -18,9 +19,21 @@ class RsvpSubmissionService
     /**
      * @param  array{status:RsvpStatus,attendee_count:int,message?:string|null}  $payload
      */
-    public function submit(Event $event, Guest $guest, array $payload): Rsvp
+    /**
+     * `$enforceDeadline` is the deadline check, made under the event lock so a submit that passed a
+     * request-level check just before the cut-off still cannot slip through (G5). Every caller is a
+     * guest-facing path today; a host-initiated one would pass false.
+     *
+     * `$allowReductions` is for callers that identify the guest by a secret they hold (the personal
+     * RSVP link, a verified WhatsApp number): after the deadline they may still decline or take
+     * fewer seats, never more. The open RSVP form identifies a guest by email alone, so it never
+     * gets this: anyone could otherwise cancel someone else's RSVP by typing their address.
+     *
+     * @throws RsvpClosedException
+     */
+    public function submit(Event $event, Guest $guest, array $payload, bool $enforceDeadline = true, bool $allowReductions = false): Rsvp
     {
-        return DB::transaction(function () use ($event, $guest, $payload): Rsvp {
+        return DB::transaction(function () use ($event, $guest, $payload, $enforceDeadline, $allowReductions): Rsvp {
             /** @var Event $locked */
             $locked = Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
 
@@ -43,6 +56,19 @@ class RsvpSubmissionService
                 : 0;
 
             $newAcceptedCount = $status === RsvpStatus::Accepted ? $attendeeCount : 0;
+
+            if ($enforceDeadline && ! $locked->acceptsRsvpSubmissions()) {
+                $mayReduce = $allowReductions && $locked->canReduceRsvp($existing);
+
+                $isReduction = $mayReduce && (
+                    $status === RsvpStatus::Declined
+                    || ($existing->status !== RsvpStatus::Declined && $newAcceptedCount <= $previousHeldCount)
+                );
+
+                if (! $isReduction) {
+                    throw new RsvpClosedException($mayReduce);
+                }
+            }
 
             // A change that takes no more seats than the guest already holds is always allowed,
             // even when the host has since lowered the limit under current attendance.

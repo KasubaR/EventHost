@@ -7,6 +7,7 @@ use App\Models\Event;
 use App\Rules\EventSlugAvailable;
 use App\Rules\GuestLimitNotBelowConfirmed;
 use App\Support\BillingPlan;
+use App\Support\InvitationMediaRules;
 use Carbon\Carbon;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -83,7 +84,10 @@ class UpdateEventRequest extends FormRequest
             'longitude' => ['nullable', 'numeric', 'between:-180,180', 'required_with:latitude'],
             'google_place_id' => ['nullable', 'string', 'max:255'],
             'formatted_address' => ['nullable', 'string', 'max:500'],
-            'cover_image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:4096'],
+            'cover_image' => array_merge(['nullable'], InvitationMediaRules::coverRules()),
+            // Clears a saved cover. Ignored for ticketed events and when a new cover
+            // arrives in the same save — see EventController::update().
+            'remove_cover' => ['sometimes', 'boolean'],
 
             // Receipt for a cover already uploaded from the edit page — see
             // EventInvitationMediaController. Stripped before fill(); it is not a column.
@@ -102,6 +106,16 @@ class UpdateEventRequest extends FormRequest
             'show_guest_list' => ['boolean'],
             'photo_wall_enabled' => ['boolean'],
             'photo_wall_requires_approval' => ['boolean'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'cover_image.dimensions' => InvitationMediaRules::COVER_DIMENSIONS_MESSAGE,
         ];
     }
 
@@ -161,6 +175,7 @@ class UpdateEventRequest extends FormRequest
     {
         $validator->after(function (Validator $validator): void {
             $this->guardRsvpDeadline($validator);
+            $this->guardRsvpDeadlineNotInPast($validator);
             $this->guardEventNotPushedIntoPast($validator);
             $this->guardCustomSlugChoice($validator);
         });
@@ -223,6 +238,41 @@ class UpdateEventRequest extends FormRequest
             return Carbon::parse($date.' '.$time);
         } catch (\Throwable) {
             return null;
+        }
+    }
+
+    /**
+     * Only a deadline the host is setting now must be in the future. An event whose deadline has already
+     * passed can still be saved for other edits, and an event that has already taken place, or a
+     * ticketed one (which ignores the deadline), is not checked. plans/rsvp-deadline-fixes.md D5.
+     */
+    private function guardRsvpDeadlineNotInPast(Validator $validator): void
+    {
+        $event = $this->route('event');
+
+        if (! $event instanceof Event || $event->isTicketed() || $event->isLocked() || ! $this->has('rsvp_deadline')) {
+            return;
+        }
+
+        $raw = $this->input('rsvp_deadline');
+
+        if (! is_string($raw) || $raw === '') {
+            return;
+        }
+
+        try {
+            $deadline = Carbon::parse($raw, config('events.timezone', 'Africa/Lusaka'));
+        } catch (\Throwable) {
+            return;
+        }
+
+        // Unchanged (to the minute) means the host did not touch it: leave it alone.
+        if ($event->rsvp_deadline !== null && $event->rsvp_deadline->format('Y-m-d H:i') === $deadline->format('Y-m-d H:i')) {
+            return;
+        }
+
+        if ($deadline->lessThan(now()->subMinutes(5))) {
+            $validator->errors()->add('rsvp_deadline', 'The RSVP deadline has already passed. Choose a time in the future, or leave it blank for no deadline.');
         }
     }
 

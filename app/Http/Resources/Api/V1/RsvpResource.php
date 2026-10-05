@@ -57,6 +57,9 @@ class RsvpResource extends JsonResource
                 'message' => $this->rsvp->message,
             ],
             'max_attendees' => $this->maxAttendees,
+            // After the deadline a guest who already answered can still cancel or reduce (until the event
+            // starts). Additive: absent meaning is simply false, as before.
+            'can_reduce' => $this->event->canReduceRsvp($this->rsvp),
             'entry_pass' => $this->entryPass(),
             'links' => [
                 'view_invitation_url' => $tokenOrPublicShowUrl,

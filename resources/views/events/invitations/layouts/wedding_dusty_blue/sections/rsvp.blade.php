@@ -7,8 +7,8 @@
     <div class="db-wrap db-wrap--form">
         <h2 class="db-title">RSVP</h2>
         @include('events.invitations.layouts.wedding_dusty_blue.partials.divider')
-        @if ($event->rsvp_deadline)
-            <p class="db-rsvp-lead">Kindly respond by {{ $event->rsvp_deadline->format('F jS') }}</p>
+        @if ($event->rsvpDeadlineAt())
+            <p class="db-rsvp-lead">Kindly respond by {{ $event->rsvpDeadlineAt()->format('F jS') }}</p>
         @endif
         <div class="db-panel db-rsvp-panel">
             @include('events.invitations.sections.rsvp')

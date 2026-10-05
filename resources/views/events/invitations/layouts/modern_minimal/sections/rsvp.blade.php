@@ -4,8 +4,8 @@
     $footerLine = $footerNames.' · '.$event->event_date->format('Y');
 
     $rsvpNote = '';
-    if ($event->rsvp_deadline) {
-        $rsvpNote = 'Kindly respond by '.$event->rsvp_deadline->format('F j');
+    if ($event->rsvpDeadlineAt()) {
+        $rsvpNote = 'Kindly respond by '.$event->rsvpDeadlineAt()->format('F j');
     }
 @endphp
 

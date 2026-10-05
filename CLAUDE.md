@@ -436,10 +436,12 @@ combination never reaches `Event::save()` at all.
   `events.tickets.partials.*`, `events.staff.index`, …) are unaffected — only route names moved, the view
   files are still at their old location
 
-- Until Phase 4 removes the "Public invitation" checkbox, `is_public` is still an input, so `Event::booted()`
-  **derives** `audience` from `product_kind` + `is_public` on every save. Assign `audience` explicitly and it
-  wins and drives `is_public` instead. Never write one without going through a model save — a query-builder
-  `update()` skips the hook and lets them disagree
+- On a **new** row `Event::booted()` derives `audience` from `product_kind` + `is_public` (the API still sends
+ only `is_public`); an explicitly assigned `audience` wins and drives `is_public` instead. **Once a row exists its
+ audience is locked**: any save that would move it — via `audience`, `is_public`, or flipping a private event to
+ ticketed — throws `LogicException`, and every other save re-pins `is_public` to the stored audience. The update
+ forms and API simply ignore a submitted `audience`/`is_public`. Never write either without a model save — a
+ query-builder `update()` skips the hook and lets them disagree
 - **A ticketed event is always public, on every save.** The hook checks this first and forces
   `is_public = true` / `audience = public` whatever was touched — a new row, `product_kind` flipped on an
   existing one, or `is_public` cleared. Assigning `audience = private` to a ticketed event throws
@@ -532,8 +534,12 @@ delivery, API fields).
 - `App\Support\GuestPassCard` is the single source of what the card says (event name as title, date/time, venue,
   guest, plus one, table, state, theme). Web, and later PDF and PNG, all render from it. `fingerprint()` is the
   future cache key — anything printed on the card must be in it
-- Eligibility is unchanged and **not** decided by the card: `Guest::hasEntryPassFor()`. The QR still encodes
-  `Guest::checkInQrUrl()`
+- Eligibility is unchanged and **not** decided by the card: `Guest::hasEntryPassFor()`, plus the event being
+ published. The QR still encodes `Guest::checkInQrUrl()`
+- **Personal links (`/rsvp/{token}`) respect publishing.** They ignore `is_public` (it's the host's own invite) but an
+ unpublished event reads as "Invitation unavailable" (`PublicInvitationResolver::statusForLoadedEvent()`), RSVP
+ submits 403, the pass routes refuse, WhatsApp replies are treated as closed, and `sendWhatsAppInvitation()` returns
+ `unpublished` — so a link copied off a draft's guest list can't show or accept anything before the credit is spent
 - `rsvp/partials/pass-card.blade.php` is the card; `rsvp/partials/entry-pass.blade.php` (the panel included by
   `token-show`, `closed`, `thank-you` and the invitation `rsvp` section) wraps it. `GET /rsvp/{token}/pass`
   (`RsvpController::pass()`) is the standalone page; an ineligible guest is redirected to `rsvp.token.show`,
@@ -633,6 +639,56 @@ is switched on by that flag alone (go-live order: `docs/deployment.md` §3c).
   are deliberately not covered
 - `startLog()` reuses a *failed* row for an existing idempotency key (back to pending) instead of inserting — the key is unique,
   so a second insert used to throw. A pending or sent row still blocks
+
+### RSVP Deadline
+
+When RSVP closes, who may still change an answer, and how the deadline reminders follow it. Plan and phases:
+`plans/rsvp-deadline-fixes.md` — all five phases are built.
+
+- **The deadline is venue time.** `events.rsvp_deadline` is stored exactly as the host typed it (naive Lusaka wall-clock, like
+  `event_date` / `event_time`), while `config('app.timezone')` is UTC. `Event::rsvpDeadlineAt()` is the **only** place the raw
+  column is read, in `venueTimezone()`. Never compare the attribute to `now()`: that is what made an 18:00 deadline close at
+  20:00. Guest-facing copy uses `rsvpDeadlineLabel()` ("Monday, October 5, 2026 at 6:00 PM CAT"), never the raw value
+- **Where RSVP closes:** `rsvpClosesAt()` is the deadline, or with none the **event start** (`rsvpImplicitCloseAt()`; the end of
+  the day for an event with no start time), not the end of the event day. `isLocked()` stays date based and drives edit locking,
+  redefine charges, pass visibility and the Ended page, so do not use it for RSVP decisions
+- **Three gates, pick the right one.** `isRsvpOpen($at = null)` is exact and is what pages show (true for an unpublished draft, so
+  a host's preview still has the form). `acceptsRsvps()` adds `is_published`. `acceptsRsvpSubmissions()` is `acceptsRsvps()` with a
+  grace (`events.rsvp.deadline_grace_seconds`, env `RSVP_DEADLINE_GRACE_SECONDS`, default 60) so a form that was open at the
+  deadline is not lost. **Every submit path asks `acceptsRsvpSubmissions()`**; do not add a per-caller `is_published` check
+- **Enforced under the lock.** `RsvpSubmissionService::submit()` re-checks inside its event row lock and throws
+  `RsvpClosedException`; `enforceDeadline: false` exists for a host-initiated path (none today). The form requests throw it early
+  for a friendlier refusal. It is rendered once, in `bootstrap/app.php`: web goes back to the closed page with an `rsvp_closed`
+  flash, JSON gets 403 `{message, code: "rsvp_closed", can_reduce}` (the status is unchanged, so the API stays additive)
+- **After the deadline a guest may cancel or reduce, never add.** `submit(..., allowReductions: true)` is passed **only** by callers
+  that identify the guest by a secret: the personal RSVP link (web and API) and a verified inbound WhatsApp reply. Until the event
+  starts (`acceptsRsvpReductions()` / `canReduceRsvp()`) they may decline, switch accepted to maybe, or take fewer seats. Never
+  more seats, never declined to anything, never maybe to accepted. The **open RSVP form never gets this**: an email address is not
+  a secret, and it would let anyone cancel someone else's RSVP. A cancelled, paused, deleted or unpublished event refuses every
+  change. The closed page shows "Cancel my RSVP" / "Only me" to eligible guests; `RsvpResource` adds `can_reduce`
+- **Reminders** (`rsvp:send-reminders`, 09:00 Lusaka, Pro+, non-responders with an email who have not opted out) count days on the
+  venue calendar. The **catch-up rule**: a reminder goes out when the deadline is inside a 7 / 3 / 1 day window the guest has not
+  used (`RsvpReminderBuckets::eligibleFor()` / `windowFor()`), so a deadline set 5 days out, or a missed scheduler day, is still
+  reminded. One email per guest per run marks every window already crossed. There is no separate day-of bucket. Idempotency keys
+  carry the deadline's day (`rsvp-reminder:{event}:{guest}:{window}:{Ymd}`, and `bulk-reminder:...:{Ymd}` for the host's manual
+  send) from `Event::rsvpDeadlineKeyStamp()`. `rsvp_reminders_sent` is cleared when the deadline's **day** changes, is added or is
+  removed (`Event::booted()` updated hook); a time-of-day edit keeps it, so fixing an hour does not email everyone twice
+- **Validation.** `guardRsvpDeadline()` keeps the deadline at or before the event start. `guardRsvpDeadlineNotInPast()` rejects a
+  deadline already behind us on create, and on update only when the host is changing it (5 minute slack, judged on the venue
+  clock); ended and ticketed events are skipped. **Ticketed events ignore the deadline entirely** (`EventController::update()`
+  drops it)
+- **Host side.** `<x-rsvp-closed-banner>` (guest list and event page, published invitation events only) says why, from
+  `Event::rsvpClosedReason()`, with an "Extend the deadline" link when there is a deadline to extend. Invitations and reminders are
+  not sent into a closed form: `CommunicationService::sendWhatsAppInvitation()` returns `closed`, and the bulk
+  `send_reminder_email` / `prepare_whatsapp_share` actions are refused (web error, API 422 `rsvp_closed`). Marking sent and update
+  emails are unaffected. A save that reopens a closed RSVP flashes `rsvp_reopened` (a "remind them from the guest list" prompt,
+  deliberately **no automatic broadcast**, web only). The free per-guest wa.me share link is client-side and cannot be blocked
+- **API.** `EventResource::rsvp_deadline` is now a real ISO instant with the venue offset (`+02:00`, it used to carry the typed
+  value labelled `+00:00`), and `rsvp_closes_at` is new. Both are additive; no Android client is shipped
+- **Tests:** `RsvpDeadlineTest`, `RsvpClosedHandlingTest`, `RsvpReminderCadenceTest`, `RsvpDeadlineHostSideTest`. Fake the clock with a
+  **UTC** instance, `Carbon::setTestNow(Carbon::parse($venueTime, config('events.timezone'))->utc())`: a Lusaka-zone fake clock
+  makes Carbon parse dates in Lusaka too and shifts `event_date`. Build deadline fixtures on the venue calendar
+  (`now(config('events.timezone'))`), not UTC, or they fail between 22:00 and 24:00 UTC when the two calendars differ
 
 ### Deleted-Event Retention
 

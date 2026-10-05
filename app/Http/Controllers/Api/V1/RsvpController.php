@@ -89,7 +89,7 @@ class RsvpController extends Controller
 
         $payload = $request->validatedRsvpPayload();
 
-        $rsvp = $rsvpSubmissionService->submit($event, $guest, $payload);
+        $rsvp = $rsvpSubmissionService->submit($event, $guest, $payload, allowReductions: true);
 
         $this->dispatchRsvpNotifications($event, $guest, $rsvp);
 

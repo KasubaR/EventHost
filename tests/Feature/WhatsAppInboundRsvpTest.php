@@ -68,7 +68,7 @@ class WhatsAppInboundRsvpTest extends TestCase
         $fake = $this->bindWhatsAppFake();
         // Base tier — hasEntryPassFor is false even when Accepted.
         $owner = User::factory()->create();
-        $event = Event::factory()->for($owner)->create();
+        $event = Event::factory()->for($owner)->published()->create();
         $guest = Guest::factory()->for($event)->create([
             'phone' => '+260971234567',
             'invitation_token' => str_repeat('b', 48),
@@ -184,11 +184,55 @@ class WhatsAppInboundRsvpTest extends TestCase
         $this->assertGreaterThanOrEqual(1, $fake->textCalls);
     }
 
+    public function test_a_decline_still_goes_through_after_the_deadline(): void
+    {
+        $fake = $this->bindWhatsAppFake();
+        [$event, $guest] = $this->seedInvite('SM_OUT_LATE_NO', rsvpDeadline: now()->subDay());
+        Rsvp::query()->create([
+            'event_id' => $event->id,
+            'guest_id' => $guest->id,
+            'status' => RsvpStatus::Accepted,
+            'attendee_count' => 1,
+        ]);
+
+        $this->postSignedWebhook([
+            'MessageSid' => 'SM_IN_LATE_NO',
+            'From' => 'whatsapp:+260971234567',
+            'ButtonPayload' => 'rsvp_declined',
+            'OriginalRepliedMessageSid' => 'SM_OUT_LATE_NO',
+        ])->assertOk();
+
+        $this->assertSame(RsvpStatus::Declined, $guest->fresh()->rsvp->status);
+    }
+
+    public function test_a_guest_who_declined_cannot_accept_again_after_the_deadline(): void
+    {
+        $fake = $this->bindWhatsAppFake();
+        [$event, $guest] = $this->seedInvite('SM_OUT_LATE_YES', rsvpDeadline: now()->subDay());
+        Rsvp::query()->create([
+            'event_id' => $event->id,
+            'guest_id' => $guest->id,
+            'status' => RsvpStatus::Declined,
+            'attendee_count' => 0,
+        ]);
+
+        $this->postSignedWebhook([
+            'MessageSid' => 'SM_IN_LATE_YES',
+            'From' => 'whatsapp:+260971234567',
+            'ButtonPayload' => 'rsvp_accepted',
+            'OriginalRepliedMessageSid' => 'SM_OUT_LATE_YES',
+        ])->assertOk();
+
+        $this->assertSame(RsvpStatus::Declined, $guest->fresh()->rsvp->status);
+        $this->assertGreaterThanOrEqual(1, $fake->textCalls);
+        $this->assertDatabaseHas('notification_logs', ['provider_message_id' => 'SM_IN_LATE_YES']);
+    }
+
     public function test_guest_limit_full_does_not_write_accepted(): void
     {
         $fake = $this->bindWhatsAppFake();
         $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->create(['guest_limit' => 1]);
+        $event = Event::factory()->for($owner)->published()->create(['guest_limit' => 1]);
         $filler = Guest::factory()->for($event)->create();
         Rsvp::query()->create([
             'event_id' => $event->id,
@@ -228,8 +272,8 @@ class WhatsAppInboundRsvpTest extends TestCase
         $phone = '+260971234567';
         $ownerA = User::factory()->pro()->create();
         $ownerB = User::factory()->pro()->create();
-        $eventA = Event::factory()->for($ownerA)->create();
-        $eventB = Event::factory()->for($ownerB)->create();
+        $eventA = Event::factory()->for($ownerA)->published()->create();
+        $eventB = Event::factory()->for($ownerB)->published()->create();
         $guestA = Guest::factory()->for($eventA)->create(['phone' => $phone]);
         $guestB = Guest::factory()->for($eventB)->create(['phone' => $phone]);
 
@@ -304,8 +348,8 @@ class WhatsAppInboundRsvpTest extends TestCase
         Storage::disk('public')->put('events/cover-test.png', 'fake-png-bytes');
 
         $owner = User::factory()->pro()->create();
-        $withCover = Event::factory()->for($owner)->create(['cover_image' => 'events/cover-test.png']);
-        $without = Event::factory()->for($owner)->create(['cover_image' => null]);
+        $withCover = Event::factory()->for($owner)->published()->create(['cover_image' => 'events/cover-test.png']);
+        $without = Event::factory()->for($owner)->published()->create(['cover_image' => null]);
 
         $this->assertSame('storage/events/cover-test.png', $withCover->whatsAppInviteHeaderMediaPath());
         $this->assertSame('images/default-event-wa.jpg', $without->whatsAppInviteHeaderMediaPath());
@@ -363,7 +407,7 @@ class WhatsAppInboundRsvpTest extends TestCase
     private function seedInvite(string $outboundSid, string $phone = '+260971234567', $rsvpDeadline = null): array
     {
         $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->create([
+        $event = Event::factory()->for($owner)->published()->create([
             'rsvp_deadline' => $rsvpDeadline,
         ]);
         $guest = Guest::factory()->for($event)->create([

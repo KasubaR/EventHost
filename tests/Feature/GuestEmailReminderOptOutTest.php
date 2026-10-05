@@ -49,7 +49,7 @@ class GuestEmailReminderOptOutTest extends TestCase
             'event_time' => '14:00:00',
             'name' => "Mary's wedding",
             'is_public' => true,
-            'rsvp_deadline' => now()->addDays(3),
+            'rsvp_deadline' => now(config('events.timezone'))->addDays(3),
         ]);
         $factory = Guest::factory()->for($event);
         $guest = ($withToken ? $factory : $factory->withoutToken())->create(['email' => $email]);

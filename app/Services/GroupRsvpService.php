@@ -34,7 +34,7 @@ class GroupRsvpService
 
             $group->refresh();
 
-            if (app(GroupRsvpResolver::class)->stateFor($group, $event, $group->seatsRemaining()) !== GroupRsvpResolver::OPEN) {
+            if (app(GroupRsvpResolver::class)->stateFor($group, $event, $group->seatsRemaining(), submitting: true) !== GroupRsvpResolver::OPEN) {
                 throw ValidationException::withMessages([
                     'status' => ['This group is no longer taking requests. Please call the host for more information.'],
                 ]);

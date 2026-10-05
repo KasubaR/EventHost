@@ -40,6 +40,15 @@ class GuestBulkActionController extends Controller
             ], 422);
         }
 
+        // Reminders and WhatsApp shares point guests at the RSVP form; while it is closed they would land on a dead
+        // end (plans/rsvp-deadline-fixes.md G10).
+        if (in_array($action, ['send_reminder_email', 'prepare_whatsapp_share'], true) && ($reason = $event->rsvpClosedReason()) !== null) {
+            return response()->json([
+                'error' => 'rsvp_closed',
+                'message' => $reason.' Extend the RSVP deadline first, then try again.',
+            ], 422);
+        }
+
         DB::transaction(function () use ($event, $ids, $action, $validated, $communicationService, &$bulkCount): void {
             $builder = Guest::query()
                 ->where('event_id', $event->id)
@@ -109,7 +118,7 @@ class GuestBulkActionController extends Controller
                         continue;
                     }
 
-                    $idempotencyKey = sprintf('bulk-reminder:%d:%d:%d', $event->id, $guest->id, $daysUntil);
+                    $idempotencyKey = sprintf('bulk-reminder:%d:%d:%d:%s', $event->id, $guest->id, $daysUntil, $event->rsvpDeadlineKeyStamp());
                     $communicationService->sendRsvpReminder($event, $guest, $daysUntil, $idempotencyKey);
 
                     $sentBuckets[] = $bucket;

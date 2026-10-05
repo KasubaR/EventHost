@@ -65,6 +65,8 @@ class RsvpController extends Controller
                 // time they would actually reach for it. Once the event is over
                 // (isLocked()), there is nothing left to show it for.
                 'showEntryPass' => $showEntryPass && ! $event->isLocked(),
+                // After the deadline, a guest who already answered may still cancel or reduce.
+                'canReduce' => $event->canReduceRsvp($guest->rsvp),
             ]);
         }
 
@@ -258,7 +260,7 @@ class RsvpController extends Controller
     {
         $rsvp = $guest->rsvp;
 
-        return $rsvp !== null && $guest->hasEntryPassFor($rsvp, $event);
+        return $event->is_published && $rsvp !== null && $guest->hasEntryPassFor($rsvp, $event);
     }
 
     public function storeByToken(
@@ -279,7 +281,9 @@ class RsvpController extends Controller
 
         $payload = $request->validatedRsvpPayload();
 
-        $rsvp = $rsvpSubmissionService->submit($event, $guest, $payload);
+        // The personal link is a secret only this guest holds, so after the deadline it may still
+        // cancel or reduce (RsvpSubmissionService decides what counts as a reduction).
+        $rsvp = $rsvpSubmissionService->submit($event, $guest, $payload, allowReductions: true);
 
         $this->dispatchRsvpNotifications($event, $guest, $rsvp);
 

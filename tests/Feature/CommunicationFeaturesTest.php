@@ -27,7 +27,7 @@ class CommunicationFeaturesTest extends TestCase
         $owner = User::factory()->proPlus()->create();
         $event = Event::factory()->for($owner)->published()->create([
             'is_public' => true,
-            'rsvp_deadline' => now()->addDays(3),
+            'rsvp_deadline' => now(config('events.timezone'))->addDays(3),
         ]);
 
         $guest = Guest::factory()->for($event)->create([
@@ -46,14 +46,14 @@ class CommunicationFeaturesTest extends TestCase
             'channel' => 'email',
             'type' => 'rsvp_reminder',
             'status' => NotificationLog::STATUS_SENT,
-            'idempotency_key' => sprintf('rsvp-reminder:%d:%d:%s', $event->id, $guest->id, '3'),
+            'idempotency_key' => sprintf('rsvp-reminder:%d:%d:%s:%s', $event->id, $guest->id, '3', $event->rsvpDeadlineKeyStamp()),
         ]);
 
         $this->artisan('rsvp:send-reminders')
             ->assertSuccessful();
 
         $this->assertSame(1, NotificationLog::query()
-            ->where('idempotency_key', sprintf('rsvp-reminder:%d:%d:%s', $event->id, $guest->id, '3'))
+            ->where('idempotency_key', sprintf('rsvp-reminder:%d:%d:%s:%s', $event->id, $guest->id, '3', $event->rsvpDeadlineKeyStamp()))
             ->count());
     }
 
@@ -156,7 +156,7 @@ class CommunicationFeaturesTest extends TestCase
 
         // Gated same as check-in/table assignment/photo wall — see Event::ownerHasPremiumEventTools().
         $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->create([
+        $event = Event::factory()->for($owner)->published()->create([
             'name' => 'Mary & David Wedding',
             'event_date' => '2026-12-12',
             'event_time' => '14:00:00',
@@ -239,7 +239,7 @@ class CommunicationFeaturesTest extends TestCase
         $this->app->instance(WhatsAppService::class, $fake);
 
         $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->create();
+        $event = Event::factory()->for($owner)->published()->create();
         $guest = Guest::factory()->for($event)->create(['phone' => null]);
 
         $this->actingAs($owner)
@@ -280,7 +280,7 @@ class CommunicationFeaturesTest extends TestCase
         $this->app->instance(WhatsAppService::class, $fake);
 
         $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->create();
+        $event = Event::factory()->for($owner)->published()->create();
         $alreadySent = Guest::factory()->for($event)->create(['phone' => '+260971234567']);
         NotificationLog::query()->create([
             'event_id' => $event->id,

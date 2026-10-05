@@ -392,12 +392,15 @@ class Event extends Model
      * false, which scopePubliclyListed() would then silently drop from
      * discover and the homepage.
      *
-     * For everything else, while is_public is still an input (the "Public
-     * invitation" checkbox writes it), the flags decide the audience. An
-     * explicitly assigned audience wins the other way round and drives
-     * is_public. Phase 4 of plans/public-private-portals.md removes the
-     * checkbox, after which audience is the only writer and this collapses to
-     * the second branch.
+     * For a new non-ticketed row, an explicitly assigned audience drives
+     * is_public; otherwise audience is derived from is_public (the Android API
+     * still sends only is_public).
+     *
+     * Once a row exists its audience is fixed: guests were invited (or tickets
+     * sold) on the strength of it, so private never becomes public and public
+     * never becomes private. Any save that would move it — through audience,
+     * is_public, or a product_kind change that forces ticketed-public — throws,
+     * and is_public is re-pinned to the stored audience on every other save.
      */
     protected static function booted(): void
     {
@@ -421,7 +424,25 @@ class Event extends Model
         });
 
         static::saving(function (self $event): void {
-            if ($event->isTicketed()) {
+            $storedAudience = $event->exists
+                ? EventAudience::tryFrom((string) $event->getRawOriginal('audience'))
+                : null;
+
+            if ($storedAudience !== null) {
+                $requested = match (true) {
+                    $event->isDirty('audience') && $event->audience !== null => $event->audience,
+                    $event->isTicketed() => EventAudience::Public,
+                    $event->isDirty('is_public') => $event->is_public ? EventAudience::Public : EventAudience::Private,
+                    default => $storedAudience,
+                };
+
+                if ($requested !== $storedAudience) {
+                    throw new \LogicException('An event cannot change between private and public after it is created.');
+                }
+
+                $event->audience = $storedAudience;
+                $event->is_public = $storedAudience === EventAudience::Public;
+            } elseif ($event->isTicketed()) {
                 if ($event->isDirty('audience') && $event->audience === EventAudience::Private) {
                     throw new \LogicException('A ticketed event cannot be private.');
                 }
@@ -470,6 +491,22 @@ class Event extends Model
                     ->where('event_id', $event->id)
                     ->whereNotNull('whatsapp_event_reminders_sent')
                     ->update(['whatsapp_event_reminders_sent' => null]);
+            }
+
+            // The RSVP-deadline reminders count down to the deadline's day, so the markers only mean
+            // something for the day they were sent against. Moving the deadline to another day, adding
+            // it or removing it starts the cadence again; editing only its time of day does not
+            // (plans/rsvp-deadline-fixes.md G6). Compared as stored day strings, so no hydration.
+            if ($event->wasChanged('rsvp_deadline')) {
+                $before = substr((string) $event->getRawOriginal('rsvp_deadline'), 0, 10);
+                $after = substr((string) $event->getAttributes()['rsvp_deadline'], 0, 10);
+
+                if ($before !== $after) {
+                    Guest::query()
+                        ->where('event_id', $event->id)
+                        ->whereNotNull('rsvp_reminders_sent')
+                        ->update(['rsvp_reminders_sent' => null]);
+                }
             }
         });
     }
@@ -1370,15 +1407,34 @@ class Event extends Model
         return self::TYPE_LABELS[$this->event_type] ?? $this->event_type;
     }
 
-    public function getCoverImageUrlAttribute(): string
+    /**
+     * True only when cover_image is a storage path whose file is actually on disk.
+     * Branch on this, not on the raw column: a path whose file is gone (deleted by
+     * hand, lost in a restore) would otherwise render as a broken <img>. The column
+     * is left as-is; removing the cover from the edit page clears it.
+     */
+    public function hasCoverImage(): bool
     {
         $path = $this->cover_image;
 
         // Guard: cover_image is a storage-relative path, never a full URL.
         // If it somehow contains a scheme (e.g. "javascript:" or "https://"),
-        // something has bypassed request validation — fall back to the default.
-        if ($path && ! str_contains($path, '://')) {
-            return asset('storage/'.$path);
+        // something has bypassed request validation.
+        if (! is_string($path) || $path === '' || str_contains($path, '://')) {
+            return false;
+        }
+
+        return Storage::disk('public')->exists($path);
+    }
+
+    public function getCoverImageUrlAttribute(): string
+    {
+        if ($this->hasCoverImage()) {
+            return asset('storage/'.$this->cover_image);
+        }
+
+        if (filled($this->cover_image)) {
+            return asset('images/default-event.png');
         }
 
         // Template preview sample events (InvitationTemplate::previewSampleEvent())
@@ -1441,17 +1497,120 @@ class Event extends Model
     }
 
     /**
-     * Whether the RSVP window is currently open.
+     * The RSVP deadline as a real instant. The only place the raw `rsvp_deadline` attribute is
+     * interpreted: like event_date and event_time it is stored exactly as the host typed it, which
+     * is venue wall-clock time, so it is read in venueTimezone() and never as UTC. Comparing it to
+     * now() directly made a Lusaka host's 18:00 deadline close at 20:00 (plans/rsvp-deadline-fixes.md G1).
+     */
+    public function rsvpDeadlineAt(): ?Carbon
+    {
+        if ($this->rsvp_deadline === null) {
+            return null;
+        }
+
+        return Carbon::parse($this->rsvp_deadline->format('Y-m-d H:i:s'), $this->venueTimezone());
+    }
+
+    /**
+     * When RSVP stops being accepted: the host's deadline, or with none the moment the event starts.
+     * Not the end of the event day: guests must not be able to accept something already under way
+     * (G2). An event with no start time closes at the end of its day. Null only without a date.
+     *
+     * Deliberately separate from isLocked(), which is date based and also drives edit locking,
+     * redefine charges, pass visibility and the Ended page — none of which should move.
+     */
+    public function rsvpClosesAt(): ?Carbon
+    {
+        $deadline = $this->rsvpDeadlineAt();
+
+        if ($deadline !== null) {
+            return $deadline;
+        }
+
+        return $this->rsvpImplicitCloseAt();
+    }
+
+    /**
+     * The event start, or the end of its day when it has no start time. Where RSVP closes with no
+     * deadline, and the last moment a guest who already answered may still cancel or reduce.
+     */
+    public function rsvpImplicitCloseAt(): ?Carbon
+    {
+        if ($this->event_date === null) {
+            return null;
+        }
+
+        if ($this->hasStartTime()) {
+            return $this->startsAt();
+        }
+
+        return Carbon::parse($this->event_date->format('Y-m-d').' 23:59:59', $this->venueTimezone());
+    }
+
+    /**
+     * Whether a guest who has already answered may still cancel or reduce their RSVP after the
+     * deadline: published, live (not cancelled, paused or deleted) and before the event starts.
+     * This is not a way to RSVP late. RsvpSubmissionService only lets a change through that takes
+     * no more seats than the guest already holds, so the deadline still protects the host's numbers
+     * (plans/rsvp-deadline-fixes.md D3).
+     */
+    public function acceptsRsvpReductions(): bool
+    {
+        if (! $this->is_published || $this->trashed() || $this->isCancelled() || $this->isInvitationPaused() || $this->isLocked()) {
+            return false;
+        }
+
+        $until = $this->rsvpImplicitCloseAt();
+
+        return $until === null || now()->lte($until);
+    }
+
+    /**
+     * Whether this guest, holding this RSVP, may still cancel or reduce it. A guest who declined
+     * (or never answered) has nothing to reduce.
+     */
+    public function canReduceRsvp(?Rsvp $rsvp): bool
+    {
+        return $rsvp !== null
+            && $rsvp->status !== RsvpStatus::Declined
+            && $this->acceptsRsvpReductions();
+    }
+
+    /**
+     * The deadline's calendar day (venue), or "none". Part of the reminder idempotency keys so that
+     * moving the deadline to another day makes the same guest eligible again; a time-only edit does
+     * not (the reminder windows count days, so nothing about them has changed).
+     */
+    public function rsvpDeadlineKeyStamp(): string
+    {
+        return $this->rsvpDeadlineAt()?->format('Ymd') ?? 'none';
+    }
+
+    /**
+     * "Monday, October 5, 2026 at 6:00 PM CAT" for guest-facing copy, or null with no deadline.
+     * The zone is spelled out because the page used to show the raw stored value with no zone.
+     */
+    public function rsvpDeadlineLabel(): ?string
+    {
+        return $this->rsvpDeadlineAt()?->format('l, F j, Y \a\t g:i A T');
+    }
+
+    /**
+     * Whether the RSVP window is open, as a page should show it. Exact: the form is never shown
+     * once the closing instant has passed. Submit paths use acceptsRsvpSubmissions() instead.
      *
      * The event date is an implicit deadline: an invitation link stays viewable
      * forever as a keepsake, but nobody can pledge to attend something that has
      * already happened. Most hosts never set an explicit rsvp_deadline, so
      * without this a year-old link would still take fresh RSVPs.
      *
+     * `$at` is the instant to test (default now); it only moves the time comparison, never the
+     * trashed / cancelled / paused checks.
+     *
      * Pure attribute check — no DB queries. Safe to call on unsaved model instances
      * (e.g. preview events). Do not add relationship lookups here.
      */
-    public function isRsvpOpen(): bool
+    public function isRsvpOpen(?CarbonInterface $at = null): bool
     {
         if ($this->trashed() || $this->isCancelled() || $this->isInvitationPaused()) {
             return false;
@@ -1461,11 +1620,68 @@ class Event extends Model
             return false;
         }
 
-        if ($this->rsvp_deadline === null) {
+        $closesAt = $this->rsvpClosesAt();
+
+        if ($closesAt === null) {
             return true;
         }
 
-        return now()->lte($this->rsvp_deadline);
+        return ($at ?? now())->lte($closesAt);
+    }
+
+    /**
+     * Why RSVP is not open, as a sentence a host can read, or null while it is open. Used by the
+     * "RSVP is closed" banner and the refusals to send invitations and reminders into a closed form
+     * (plans/rsvp-deadline-fixes.md G10, D8). Pure attribute check like isRsvpOpen().
+     */
+    public function rsvpClosedReason(): ?string
+    {
+        if ($this->trashed()) {
+            return 'This event has been deleted.';
+        }
+
+        if ($this->isCancelled()) {
+            return 'This event is cancelled.';
+        }
+
+        if ($this->isInvitationPaused()) {
+            return 'The invitation is paused.';
+        }
+
+        if ($this->isLocked()) {
+            return 'This event has already taken place.';
+        }
+
+        if ($this->isRsvpOpen()) {
+            return null;
+        }
+
+        return $this->rsvp_deadline !== null
+            ? 'The RSVP deadline passed on '.$this->rsvpDeadlineLabel().'.'
+            : 'RSVP closed when the event started.';
+    }
+
+    /**
+     * Whether a guest-facing page or submit may use this event's RSVP: published, and open. Drafts
+     * and previews still use isRsvpOpen() because a host previewing a draft must see the form.
+     * Every submit path asks acceptsRsvpSubmissions() so the published rule lives in one place
+     * instead of being re-added caller by caller.
+     */
+    public function acceptsRsvps(?CarbonInterface $at = null): bool
+    {
+        return $this->is_published && $this->isRsvpOpen($at);
+    }
+
+    /**
+     * The submit-time check: acceptsRsvps() with a short grace (events.rsvp.deadline_grace_seconds),
+     * so a guest who opened the form before the deadline and submits just after is not turned away.
+     * Display paths stay exact, so the page never offers a form it would refuse for long.
+     */
+    public function acceptsRsvpSubmissions(): bool
+    {
+        $grace = max(0, (int) config('events.rsvp.deadline_grace_seconds', 60));
+
+        return $this->acceptsRsvps(now()->subSeconds($grace));
     }
 
     /**

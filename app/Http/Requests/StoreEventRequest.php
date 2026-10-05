@@ -10,6 +10,7 @@ use App\Rules\EventSlugAvailable;
 use App\Rules\UserCanUseInvitationTemplate;
 use App\Services\ActingAsService;
 use App\Support\BillingPlan;
+use App\Support\InvitationMediaRules;
 use Carbon\Carbon;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -106,7 +107,7 @@ class StoreEventRequest extends FormRequest
             'longitude' => ['nullable', 'numeric', 'between:-180,180', 'required_with:latitude'],
             'google_place_id' => ['nullable', 'string', 'max:255'],
             'formatted_address' => ['nullable', 'string', 'max:500'],
-            'cover_image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:4096'],
+            'cover_image' => array_merge(['nullable'], InvitationMediaRules::coverRules()),
             'slug' => ['nullable', 'string', new EventSlugAvailable],
             // Chosen on the create wizard's first step (plans/public-private-portals.md
             // Phase 4), not a checkbox in this form — audience is immutable after
@@ -123,6 +124,16 @@ class StoreEventRequest extends FormRequest
             'allow_plus_one' => ['boolean'],
             'require_rsvp_approval' => ['boolean'],
             'show_guest_list' => ['boolean'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'cover_image.dimensions' => InvitationMediaRules::COVER_DIMENSIONS_MESSAGE,
         ];
     }
 
@@ -172,6 +183,7 @@ class StoreEventRequest extends FormRequest
     {
         $validator->after(function (Validator $validator): void {
             $this->guardRsvpDeadline($validator);
+            $this->guardRsvpDeadlineNotInPast($validator);
             $this->guardEventTimeNotAlreadyPassedToday($validator);
             $this->guardAudienceChoice($validator);
             $this->guardCustomSlugChoice($validator);
@@ -256,6 +268,31 @@ class StoreEventRequest extends FormRequest
             return Carbon::parse($date.' '.$time);
         } catch (\Throwable) {
             return null;
+        }
+    }
+
+    /**
+     * A new event whose deadline is already behind it would be created closed, with no sign why. The same
+     * 5 minute slack as guardEventNotPushedIntoPast() so a deadline set to "now" is not a trap. The value
+     * is the host's venue wall-clock time (Event::rsvpDeadlineAt()). A ticketed event ignores the
+     * deadline entirely, so it is not checked. plans/rsvp-deadline-fixes.md D5.
+     */
+    private function guardRsvpDeadlineNotInPast(Validator $validator): void
+    {
+        $raw = $this->input('rsvp_deadline');
+
+        if (! is_string($raw) || $raw === '' || $this->input('product_kind') === EventProductKind::Ticketed->value) {
+            return;
+        }
+
+        try {
+            $deadline = Carbon::parse($raw, config('events.timezone', 'Africa/Lusaka'));
+        } catch (\Throwable) {
+            return;
+        }
+
+        if ($deadline->lessThan(now()->subMinutes(5))) {
+            $validator->errors()->add('rsvp_deadline', 'The RSVP deadline has already passed. Choose a time in the future, or leave it blank for no deadline.');
         }
     }
 

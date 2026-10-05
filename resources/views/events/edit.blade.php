@@ -49,6 +49,15 @@
         <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Draft saved. Continue editing or publish below.</div>
     @endif
 
+
+    @if (session('rsvp_reopened'))
+        <div class="evt-flash evt-flash--info" role="status">
+            <i class="fa-solid fa-envelope-open-text"></i>
+            RSVP is open again. Guests who had not replied were never told it had closed, and are not told it reopened.
+            <a href="{{ session('rsvp_reopened') }}">Remind them from the guest list</a>.
+        </div>
+    @endif
+
     @if (session('status') === 'event-updated')
         <div class="profile-success evt-flash"><i class="fa-solid fa-circle-check"></i> Event updated.</div>
 
