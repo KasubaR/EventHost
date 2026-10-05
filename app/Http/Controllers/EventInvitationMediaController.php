@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\UnreadableCoverImageException;
 use App\Http\Requests\StoreStagedMediaRequest;
 use App\Models\Event;
 use App\Models\StagedMedia;
@@ -26,7 +27,11 @@ class EventInvitationMediaController extends Controller
         $file = $request->file('file');
         $userId = $request->user()->id;
 
-        $path = InvitationMediaStager::store($file, $slot, $event->id);
+        try {
+            $path = InvitationMediaStager::store($file, $slot, $event->id);
+        } catch (UnreadableCoverImageException $e) {
+            throw $e->toValidationException('file');
+        }
 
         try {
             $staged = DB::transaction(function () use ($event, $userId, $slot, $path, $file): StagedMedia {

@@ -44,6 +44,7 @@ class StoreStagedMediaRequest extends FormRequest
             'file.max' => 'That file is too large.',
             'file.mimes' => 'That file type is not supported.',
             'file.image' => 'That file is not an image.',
+            'file.dimensions' => InvitationMediaRules::COVER_DIMENSIONS_MESSAGE,
         ];
     }
 

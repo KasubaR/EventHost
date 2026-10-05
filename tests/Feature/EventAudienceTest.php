@@ -57,16 +57,15 @@ class EventAudienceTest extends TestCase
         $this->assertTrue($event->fresh()->is_public);
     }
 
-    public function test_toggling_is_public_through_the_legacy_checkbox_moves_the_audience(): void
+    public function test_setting_is_public_on_an_existing_private_event_is_refused(): void
     {
         $event = Event::factory()->create(['is_public' => false]);
         $this->assertSame(EventAudience::Private, $event->fresh()->audience);
 
-        $event->update(['is_public' => true]);
-        $this->assertSame(EventAudience::Public, $event->fresh()->audience);
+        $this->assertThrows(fn () => $event->update(['is_public' => true]), \LogicException::class);
 
-        $event->update(['is_public' => false]);
         $this->assertSame(EventAudience::Private, $event->fresh()->audience);
+        $this->assertFalse($event->fresh()->is_public);
     }
 
     public function test_explicit_private_audience_forces_is_public_false(): void
@@ -85,14 +84,14 @@ class EventAudienceTest extends TestCase
         $this->assertTrue($event->fresh()->is_public);
     }
 
-    public function test_assigning_audience_on_an_existing_event_drives_is_public(): void
+    public function test_assigning_a_different_audience_on_an_existing_event_is_refused(): void
     {
         $event = Event::factory()->create(['is_public' => true]);
 
-        $event->update(['audience' => EventAudience::Private]);
+        $this->assertThrows(fn () => $event->update(['audience' => EventAudience::Private]), \LogicException::class);
 
-        $this->assertFalse($event->fresh()->is_public);
-        $this->assertSame(EventAudience::Private, $event->fresh()->audience);
+        $this->assertTrue($event->fresh()->is_public);
+        $this->assertSame(EventAudience::Public, $event->fresh()->audience);
     }
 
     public function test_a_ticketed_event_cannot_be_private(): void
@@ -115,16 +114,43 @@ class EventAudienceTest extends TestCase
         $this->assertTrue(Event::query()->publiclyListed()->whereKey($event->id)->exists());
     }
 
-    public function test_flipping_an_existing_row_to_ticketed_forces_it_public(): void
+    public function test_flipping_an_existing_private_row_to_ticketed_is_refused(): void
     {
+        // Ticketed forces public, which would make a private event public.
         $event = Event::factory()->published()->privateAudience()->create();
-        $this->assertFalse($event->fresh()->is_public);
+
+        $this->assertThrows(fn () => $event->update(['product_kind' => EventProductKind::Ticketed]), \LogicException::class);
+
+        $fresh = $event->fresh();
+        $this->assertSame(EventProductKind::Invitation, $fresh->product_kind);
+        $this->assertSame(EventAudience::Private, $fresh->audience);
+        $this->assertFalse($fresh->is_public);
+    }
+
+    public function test_flipping_an_existing_public_row_to_ticketed_keeps_it_public(): void
+    {
+        $event = Event::factory()->published()->publicAudience()->create();
 
         $event->update(['product_kind' => EventProductKind::Ticketed]);
 
         $fresh = $event->fresh();
         $this->assertSame(EventAudience::Public, $fresh->audience);
         $this->assertTrue($fresh->is_public);
+    }
+
+    public function test_saving_an_existing_row_repins_is_public_to_its_audience(): void
+    {
+        // A raw write that left the two flags disagreeing must not make an unrelated
+        // save throw, nor let the stray is_public win.
+        $event = Event::factory()->privateAudience()->create();
+        DB::table('events')->where('id', $event->id)->update(['is_public' => true]);
+
+        $event->fresh()->update(['name' => 'Renamed']);
+
+        $fresh = $event->fresh();
+        $this->assertSame('Renamed', $fresh->name);
+        $this->assertSame(EventAudience::Private, $fresh->audience);
+        $this->assertFalse($fresh->is_public);
     }
 
     public function test_a_ticketed_event_cannot_be_flipped_to_private_later(): void

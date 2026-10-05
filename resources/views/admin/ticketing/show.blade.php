@@ -87,7 +87,7 @@
                                data-upload-commit="1">
                     </label>
                 </div>
-                <p class="admin-muted">JPEG, PNG or WebP up to 4 MB.</p>
+                <p class="admin-muted">JPEG, PNG or WebP up to 4 MB, at least 640×360 pixels.</p>
                 @error('hero_image')
                     <p class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
                 @enderror

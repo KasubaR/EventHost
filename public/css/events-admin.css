@@ -1091,6 +1091,13 @@
     cursor: pointer;
 }
 
+.evt-cover-remove {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+}
+
 .evt-design-current-media {
     font-size: 13px;
     margin: 0 0 10px;

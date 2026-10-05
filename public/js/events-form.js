@@ -73,14 +73,34 @@ document.addEventListener('DOMContentLoaded', () => {
     // Cover image preview
     const input = document.getElementById('cover_image');
     const preview = document.getElementById('evt-cover-preview');
+    const removeCover = document.getElementById('evt-cover-remove');
     if (input && preview) {
+        const savedSrc = preview.src;
+
         input.addEventListener('change', () => {
             const file = input.files && input.files[0];
             if (!file || !file.type.startsWith('image/')) {
                 return;
             }
             preview.src = URL.createObjectURL(file);
+            if (removeCover) {
+                removeCover.checked = false;
+            }
         });
+
+        if (removeCover) {
+            const syncRemove = () => {
+                if (removeCover.checked) {
+                    preview.src = preview.dataset.defaultSrc || savedSrc;
+                } else {
+                    preview.src = savedSrc;
+                }
+            };
+            removeCover.addEventListener('change', syncRemove);
+            if (removeCover.checked) {
+                syncRemove();
+            }
+        }
     }
 
     // Ticketing wizard step 3 — commission picker saves itself the moment a

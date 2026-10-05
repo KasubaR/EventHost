@@ -21,9 +21,24 @@ final class InvitationMediaRules
     public const AUDIO_MAX_KB = 5120;
 
     /** The event cover is capped lower than invitation rasters — see UpdateEventRequest. */
-    public const COVER_MIMES = 'jpeg,jpg,png,webp,gif';
+    public const COVER_MIMES = 'jpeg,jpg,png,webp';
 
     public const COVER_MAX_KB = 4096;
+
+    /**
+     * storeCover() always crops to 1200×630, so anything smaller than half that is
+     * upscaled into mush. The ceiling keeps a decompression bomb (a small file that
+     * decodes to a huge bitmap) away from Intervention.
+     */
+    public const COVER_MIN_WIDTH = 640;
+
+    public const COVER_MIN_HEIGHT = 360;
+
+    public const COVER_MAX_PIXELS_PER_SIDE = 10000;
+
+    public const COVER_DIMENSIONS_MESSAGE = 'That image must be at least 640×360 pixels and no more than 10000 pixels on either side.';
+
+    public const COVER_UNREADABLE_MESSAGE = 'That image could not be read. Try saving it again as a JPG or PNG.';
 
     public const GALLERY_MAX = 6;
 
@@ -48,7 +63,16 @@ final class InvitationMediaRules
      */
     public static function coverRules(): array
     {
-        return ['file', 'image', 'mimes:'.self::COVER_MIMES, 'max:'.self::COVER_MAX_KB];
+        return [
+            'file',
+            'image',
+            'mimes:'.self::COVER_MIMES,
+            'max:'.self::COVER_MAX_KB,
+            'dimensions:min_width='.self::COVER_MIN_WIDTH
+                .',min_height='.self::COVER_MIN_HEIGHT
+                .',max_width='.self::COVER_MAX_PIXELS_PER_SIDE
+                .',max_height='.self::COVER_MAX_PIXELS_PER_SIDE,
+        ];
     }
 
     /**

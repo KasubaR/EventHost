@@ -23,7 +23,7 @@ class GuestPassCardTest extends TestCase
 
     private function attendingGuest(?User $owner = null, array $eventOverrides = [], array $rsvpOverrides = [], string $token = 'pass-card-token'): Guest
     {
-        $event = Event::factory()->for($owner ?? User::factory()->pro()->create())->create(array_merge([
+        $event = Event::factory()->for($owner ?? User::factory()->pro()->create())->published()->create(array_merge([
             'name' => 'Amy and Joe Wedding',
             'venue' => 'Sunset Gardens',
             'event_date' => now()->addDays(20)->startOfDay(),

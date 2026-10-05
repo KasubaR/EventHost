@@ -44,8 +44,8 @@
 @endif
 
 <div class="tev-page">
-    <div class="tev-hero @if (! $event->cover_image) tev-hero--fallback @endif">
-        @if ($event->cover_image)
+    <div class="tev-hero @if (! $event->hasCoverImage()) tev-hero--fallback @endif">
+        @if ($event->hasCoverImage())
             <img src="{{ $event->cover_image_url }}" alt="" class="tev-hero-img">
         @endif
         <div class="tev-hero-scrim" aria-hidden="true"></div>

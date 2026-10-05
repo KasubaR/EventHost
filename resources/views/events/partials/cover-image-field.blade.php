@@ -12,7 +12,8 @@
     </div>
     <div class="evt-section-body">
         <div class="profile-photo-row">
-            <img src="{{ isset($event) ? $event->cover_image_url : asset('images/default-event.png') }}" alt="" width="120" height="68" class="profile-photo-preview evt-cover-preview" id="evt-cover-preview">
+            <img src="{{ isset($event) ? $event->cover_image_url : asset('images/default-event.png') }}" alt="" width="120" height="68" class="profile-photo-preview evt-cover-preview" id="evt-cover-preview"
+                 data-default-src="{{ asset('images/default-event.png') }}">
             <div>
                 <label for="cover_image" class="profile-photo-btn">
                     <i class="fa-solid fa-image"></i> Upload cover
@@ -27,9 +28,19 @@
                            data-upload-url="{{ route('events.media.stage', $event) }}"
                            data-upload-max-bytes="{{ \App\Support\InvitationMediaRules::COVER_MAX_KB * 1024 }}"
                        @endisset>
-                <p class="profile-photo-hint">JPG, PNG or WEBP · Max 4MB</p>
+                <p class="profile-photo-hint">JPG, PNG or WEBP · Max 4MB · At least 640×360 pixels</p>
                 @if ($sizeHint)
                     <p class="profile-photo-hint">{{ $sizeHint }}</p>
+                @endif
+                @if (isset($event) && $event->cover_image && ! $event->isTicketed())
+                    {{-- A new pick in the same save replaces the cover instead,
+                         and events-form.js unticks this when one is chosen. --}}
+                    <label class="evt-design-remove-label evt-cover-remove">
+                        <input type="hidden" name="remove_cover" value="0" @if ($associateForm) form="event-update-form" @endif>
+                        <input type="checkbox" name="remove_cover" value="1" id="evt-cover-remove"
+                               @if ($associateForm) form="event-update-form" @endif
+                               @checked(old('remove_cover') === '1')> Remove cover image
+                    </label>
                 @endif
                 @error('cover_image')
                     <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>

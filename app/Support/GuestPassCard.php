@@ -84,7 +84,7 @@ final class GuestPassCard
             checkedInLine: $guest->isCheckedIn()
                 ? 'Checked in '.$guest->checked_in_at->timezone($event->venueTimezone())->format('j M, g:i A')
                 : null,
-            coverUrl: filled($event->cover_image) ? $event->cover_image_url : null,
+            coverUrl: $event->hasCoverImage() ? $event->cover_image_url : null,
             theme: self::resolveTheme($event, $theme),
         );
     }

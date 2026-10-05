@@ -24,7 +24,7 @@ class GuestPassImageTest extends TestCase
 
     private function attendingGuest(array $eventOverrides = [], array $rsvpOverrides = [], string $token = 'pass-img-token', ?User $owner = null): Guest
     {
-        $event = Event::factory()->for($owner ?? User::factory()->pro()->create())->create(array_merge([
+        $event = Event::factory()->for($owner ?? User::factory()->pro()->create())->published()->create(array_merge([
             'name' => 'Amy and Joe Wedding',
             'venue' => 'Sunset Gardens',
             'event_date' => now()->addDays(20)->startOfDay(),

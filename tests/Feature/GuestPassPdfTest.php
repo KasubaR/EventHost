@@ -23,7 +23,7 @@ class GuestPassPdfTest extends TestCase
 
     private function attendingGuest(?User $owner = null, array $rsvpOverrides = [], string $token = 'pass-pdf-token'): Guest
     {
-        $event = Event::factory()->for($owner ?? User::factory()->pro()->create())->create([
+        $event = Event::factory()->for($owner ?? User::factory()->pro()->create())->published()->create([
             'name' => 'Amy and Joe Wedding',
             'event_date' => now()->addDays(20)->startOfDay(),
         ]);

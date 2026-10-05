@@ -8,6 +8,7 @@ use App\Enums\EventProductKind;
 use App\Enums\RsvpStatus;
 use App\Enums\TicketingStatus;
 use App\Exceptions\InsufficientCreditsException;
+use App\Exceptions\UnreadableCoverImageException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreEventRequest;
 use App\Http\Requests\UpdateEventRequest;
@@ -181,6 +182,7 @@ class EventController extends Controller
         $newCoverPath = null;
         $previousCover = null;
         $coverIsRollbackable = false;
+        $removeCover = false;
 
         $acceptHostCover = ! $event->isTicketed();
 
@@ -206,14 +208,17 @@ class EventController extends Controller
                 $previousCover = $event->cover_image;
                 $newCoverPath = $this->storeCoverImage($request->file('cover_image'));
                 $coverIsRollbackable = true;
+            } elseif ($acceptHostCover && $request->boolean('remove_cover') && $event->cover_image) {
+                $previousCover = $event->cover_image;
+                $removeCover = true;
             }
 
-            DB::transaction(function () use ($request, &$event, $newCoverPath, $stagedCover, $shouldPublish, $credits, &$previousCover, &$needsPublishCredit, &$chargeable, &$notifyGuestsCount): void {
+            DB::transaction(function () use ($request, &$event, $newCoverPath, $removeCover, $stagedCover, $shouldPublish, $credits, &$previousCover, &$needsPublishCredit, &$chargeable, &$notifyGuestsCount): void {
                 $event = Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
                 $wasPublished = $event->is_published;
                 $data = $request->validated();
 
-                unset($data['staged_media'], $data['cover_image']);
+                unset($data['staged_media'], $data['cover_image'], $data['remove_cover']);
 
                 $customSlug = array_key_exists('slug', $data) ? $data['slug'] : null;
                 unset($data['slug']);
@@ -230,6 +235,8 @@ class EventController extends Controller
 
                 if ($newCoverPath !== null) {
                     $data['cover_image'] = $newCoverPath;
+                } elseif ($removeCover) {
+                    $data['cover_image'] = null;
                 }
 
                 $needsPublishCredit = $shouldPublish && ! $event->is_published && ! $event->hasConsumedPublishCredit();
@@ -448,6 +455,10 @@ class EventController extends Controller
 
     private function storeCoverImage(UploadedFile $file): string
     {
-        return InvitationMediaStager::storeCover($file);
+        try {
+            return InvitationMediaStager::storeCover($file);
+        } catch (UnreadableCoverImageException $e) {
+            throw $e->toValidationException('cover_image');
+        }
     }
 }

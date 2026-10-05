@@ -2,12 +2,14 @@
 
 namespace App\Support;
 
+use App\Exceptions\UnreadableCoverImageException;
 use App\Http\Controllers\EventInvitationDesignController;
 use App\Jobs\ProcessInvitationDesignImageJob;
 use App\Models\StagedMedia;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
+use Intervention\Image\Exceptions\DecoderException;
 use Intervention\Image\ImageManager;
 
 /**
@@ -76,6 +78,8 @@ final class InvitationMediaStager
     /**
      * Crop to the 1200×630 sharing ratio and write WebP, the shape every consumer
      * of Event::cover_image already expects.
+     *
+     * @throws UnreadableCoverImageException
      */
     public static function storeCover(UploadedFile $file): string
     {
@@ -83,7 +87,12 @@ final class InvitationMediaStager
             ? ImageManager::imagick()
             : ImageManager::gd();
 
-        $image = $manager->read($file->getRealPath());
+        try {
+            $image = $manager->read($file->getRealPath());
+        } catch (DecoderException $e) {
+            throw new UnreadableCoverImageException($e);
+        }
+
         $image->cover(1200, 630);
         $webp = $image->toWebp(85);
 

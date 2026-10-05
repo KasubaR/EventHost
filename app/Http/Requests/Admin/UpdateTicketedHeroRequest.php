@@ -26,4 +26,15 @@ class UpdateTicketedHeroRequest extends FormRequest
             $field => array_merge(['required'], InvitationMediaRules::coverRules()),
         ];
     }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'file.dimensions' => InvitationMediaRules::COVER_DIMENSIONS_MESSAGE,
+            'hero_image.dimensions' => InvitationMediaRules::COVER_DIMENSIONS_MESSAGE,
+        ];
+    }
 }

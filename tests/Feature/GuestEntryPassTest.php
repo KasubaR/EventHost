@@ -32,7 +32,7 @@ class GuestEntryPassTest extends TestCase
     public function test_rsvp_page_shows_the_pass_for_an_attending_guest_on_a_premium_event(): void
     {
         $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->create();
+        $event = Event::factory()->for($owner)->published()->create();
         $guest = $this->attendingGuest($owner, $event);
 
         $response = $this->get(route('rsvp.token.show', $guest->invitation_token));
@@ -45,7 +45,7 @@ class GuestEntryPassTest extends TestCase
     public function test_rsvp_page_hides_the_pass_when_the_host_is_not_premium(): void
     {
         $owner = User::factory()->create();
-        $event = Event::factory()->for($owner)->create();
+        $event = Event::factory()->for($owner)->published()->create();
         $guest = $this->attendingGuest($owner, $event);
 
         $response = $this->get(route('rsvp.token.show', $guest->invitation_token));
@@ -57,7 +57,7 @@ class GuestEntryPassTest extends TestCase
     public function test_rsvp_page_hides_the_pass_for_a_declined_guest(): void
     {
         $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->create();
+        $event = Event::factory()->for($owner)->published()->create();
         $guest = Guest::factory()->for($event)->create(['invitation_token' => 'declined-token']);
         Rsvp::factory()->for($guest)->create(['status' => RsvpStatus::Declined]);
 
@@ -70,7 +70,7 @@ class GuestEntryPassTest extends TestCase
     public function test_rsvp_page_hides_the_pass_for_a_guest_who_has_not_responded(): void
     {
         $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->create();
+        $event = Event::factory()->for($owner)->published()->create();
         $guest = Guest::factory()->for($event)->create(['invitation_token' => 'no-response-token']);
 
         $response = $this->get(route('rsvp.token.show', $guest->invitation_token));
@@ -82,7 +82,7 @@ class GuestEntryPassTest extends TestCase
     public function test_entry_pass_svg_renders_for_an_eligible_guest(): void
     {
         $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->create();
+        $event = Event::factory()->for($owner)->published()->create();
         $guest = $this->attendingGuest($owner, $event);
 
         $response = $this->get(route('rsvp.token.entry-pass', $guest->invitation_token));
@@ -95,7 +95,7 @@ class GuestEntryPassTest extends TestCase
     public function test_entry_pass_svg_can_be_downloaded(): void
     {
         $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->create();
+        $event = Event::factory()->for($owner)->published()->create();
         $guest = $this->attendingGuest($owner, $event);
         $guest->forceFill(['name' => 'Kasuba Mulenga'])->save();
 
@@ -117,7 +117,7 @@ class GuestEntryPassTest extends TestCase
     public function test_entry_pass_svg_404s_for_a_declined_guest(): void
     {
         $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->create();
+        $event = Event::factory()->for($owner)->published()->create();
         $guest = Guest::factory()->for($event)->create(['invitation_token' => 'declined-svg-token']);
         Rsvp::factory()->for($guest)->create(['status' => RsvpStatus::Declined]);
 
@@ -127,7 +127,7 @@ class GuestEntryPassTest extends TestCase
     public function test_entry_pass_svg_404s_when_the_host_is_not_premium(): void
     {
         $owner = User::factory()->create();
-        $event = Event::factory()->for($owner)->create();
+        $event = Event::factory()->for($owner)->published()->create();
         $guest = $this->attendingGuest($owner, $event);
 
         $this->get(route('rsvp.token.entry-pass', $guest->invitation_token))->assertNotFound();
@@ -136,7 +136,7 @@ class GuestEntryPassTest extends TestCase
     public function test_closed_rsvp_window_still_shows_the_pass_for_an_upcoming_event(): void
     {
         $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->create([
+        $event = Event::factory()->for($owner)->published()->create([
             'event_date' => now()->addWeek(),
             'rsvp_deadline' => now()->subDay(),
         ]);
@@ -151,7 +151,7 @@ class GuestEntryPassTest extends TestCase
     public function test_closed_rsvp_window_hides_the_pass_once_the_event_is_over(): void
     {
         $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->create([
+        $event = Event::factory()->for($owner)->published()->create([
             'event_date' => now()->subWeek(),
         ]);
         $guest = $this->attendingGuest($owner, $event);
@@ -167,7 +167,7 @@ class GuestEntryPassTest extends TestCase
     public function test_dashboard_scanner_page_uses_the_same_base_for_its_own_and_the_guest_qr_shape(): void
     {
         $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->create();
+        $event = Event::factory()->for($owner)->published()->create();
 
         $response = $this->actingAs($owner)->get(route('events.checkin.scan', $event));
 
@@ -179,7 +179,7 @@ class GuestEntryPassTest extends TestCase
     public function test_staff_link_scanner_page_carries_a_different_guest_qr_base_than_its_own(): void
     {
         $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->create();
+        $event = Event::factory()->for($owner)->published()->create();
         $link = EventStaffLink::factory()->for($event)->create();
 
         $response = $this->get(route('checkin.public.scan', ['staffToken' => $link->token]));
@@ -199,7 +199,7 @@ class GuestEntryPassTest extends TestCase
         // QR to — checkin.public.confirm-token — accepts exactly the token shape
         // Guest::checkInQrUrl() extracts it from, end to end.
         $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->create($this->eventDateTimeInsideCheckInWindow());
+        $event = Event::factory()->for($owner)->published()->create($this->eventDateTimeInsideCheckInWindow());
         $link = EventStaffLink::factory()->for($event)->create();
         $guest = Guest::factory()->for($event)->create(['invitation_token' => 'staff-scan-token']);
 

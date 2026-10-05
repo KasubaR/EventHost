@@ -16,7 +16,7 @@
     };
 
     $imageUrl = $event->cover_image_url;
-    if (filled($event->cover_image)) {
+    if ($event->hasCoverImage()) {
         // Host set a cover — gallery still wins for share cards when present
         // (same as before botanical's portrait fallback).
         $galleryUrl = $storageImage($invitation['media']['gallery'][0] ?? null);

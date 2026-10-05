@@ -242,12 +242,21 @@ class PublicInvitationResolver
     }
 
     /**
-     * Status for a token RSVP (or any already-loaded event), ignoring publish/public.
-     * Personal links still honour cancelled / paused / deleted / ended.
+     * Status for a token RSVP (or any already-loaded event), ignoring is_public — a
+     * personal link is the host's own invite, so a private event still opens.
+     * Personal links still honour cancelled / paused / deleted / ended, and an
+     * unpublished event reads as Unavailable (same as GroupRsvpResolver), so a link
+     * copied off a draft's guest list can't show the invitation before it's paid for.
      */
     public function statusForLoadedEvent(Event $event): ?PublicInvitationStatus
     {
-        return $event->publicInvitationStatus();
+        $status = $event->publicInvitationStatus();
+
+        if ($status === null && ! $event->is_published) {
+            return PublicInvitationStatus::Unavailable;
+        }
+
+        return $status;
     }
 
     public function statusView(Event $event, PublicInvitationStatus $status): View

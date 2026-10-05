@@ -6,6 +6,7 @@ use App\Enums\CommissionMode;
 use App\Enums\EventProductKind;
 use App\Enums\TicketingStatus;
 use App\Exceptions\TicketingActivationException;
+use App\Exceptions\UnreadableCoverImageException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ApproveTicketingRequest;
 use App\Http\Requests\Admin\RejectTicketingRequest;
@@ -143,7 +144,12 @@ class TicketingController extends Controller
             abort(422);
         }
 
-        $newPath = InvitationMediaStager::storeCover($file);
+        try {
+            $newPath = InvitationMediaStager::storeCover($file);
+        } catch (UnreadableCoverImageException $e) {
+            throw $e->toValidationException($request->hasFile('file') ? 'file' : 'hero_image');
+        }
+
         $previous = $event->cover_image;
 
         try {
