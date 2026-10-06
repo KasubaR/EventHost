@@ -437,3 +437,14 @@
 }
 
 
+
+/* Long names and venues (up to 255 characters, possibly one word) must wrap on the status page and the generic public shell. */
+.evt-status-page,
+.evt-public-inner {
+    overflow-wrap: break-word;
+    overflow-wrap: anywhere;
+}
+
+.evt-detail-list li {
+    min-width: 0;
+}

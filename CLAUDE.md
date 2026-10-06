@@ -1071,6 +1071,34 @@ skipped where Node is missing), `InvitationShareImageTest`.
   content column is 720px by design), Opera Mini / UC Mini extreme mode, and any real-device behaviour (see the checklist in
   `docs/deployment.md` §3d)
 
+#### Long text and missing content
+
+What the guest pages do with a 255-character name or venue, an empty description, no place, and an RSVP that is not available. Plan and
+phases: `plans/invitation-page-content-limits.md` — all built. Tests: `InvitationContentLimitsTest`.
+
+- **Wrapping is global, not per layout.** `.evt-invitation` (and `.rsvp-page`, `.evt-status-page`, `.evt-public-inner`, `.tkc-page`, `.tev-wrap`)
+  carry `overflow-wrap: break-word; overflow-wrap: anywhere` and a `min-width: 0` rule for text elements, so a flex or grid child can shrink. A
+  new layout inherits it; do not add `white-space: nowrap` to text that holds a name, venue or location. `InvitationTextLength::nameClass()` adds
+  `evt-name--long` (over 40 characters) or `evt-name--xlong` (over 80) to the renderer root and the headings step down with `zoom`
+- **The limit stays 255.** Shrinking it would fail saves of existing events. The form warns softly (name from 70, venue from 80,
+  `data-length-hint-for` + `events-form.js`) and `InvitationDesignNotices` tells the host about a name over 80. `InvitationNames::split()` only
+  splits a name of 60 characters or fewer with at most 4 words a side; a short title that contains " and " still splits (cannot be told apart)
+- **A missing description is never invented wording for the wrong event.** `InvitationDescriptionFallback::for($event, $weddingWording)` returns the
+  host's text, else the layout's wedding sentence **for a wedding only**, else a short neutral line by event type. Still wedding-specific design
+  copy: Noir's invite defaults, the "Two hearts, one story" captions, Midnight Gold's "We're getting married!" tag
+- **A missing place reads "To be announced".** `EventPlace::isUnknown()` is true with no venue, location label, address or pin; every layout's
+  details section (event_invite's hero) and the open and group RSVP pages say so. A venue with no pin gets a Maps search link
+  (`partials/map-link` with `searchOnly`). The pass card, PDF, PNG and the API `venue` keep `null` (Android contract, cache fingerprint). The ICS
+  omits an empty `LOCATION` and folds every line at 75 octets on a character boundary (`EventIcsDocument::fold()`)
+- **RSVP not available.** `InvitationRsvpState::formShown()` mirrors the branches of `sections/rsvp.blade.php`; a jump button (event_invite,
+  Noir, Modern Minimal) renders only when the form is on the page. The `#rsvp` anchor is unique: layouts whose wrapper already has the id pass
+  `rsvpWrapperHasId`, otherwise the section or banner carries it. Closed, ended and "personal link" banners include `rsvp.partials.host-contact`.
+  `InvitationTemplateNotices` warns when a layout has no RSVP section. There is still no RSVP on/off switch
+- **Other channels.** `ShortText::subject()` (60 characters) is used by every notification subject that carries an event name,
+  `ShortText::whatsapp()` (100, one line) by the WhatsApp template variables for name and venue. A new notification with the event name in its
+  subject goes through the same helper. The PNG pass already wraps and ellipsizes; the PDF has its one-page guard
+- **Not covered:** an unbroken 255-character word in an email body, right-to-left names, and an event-level "online" / "location TBA" setting
+
 ### Featured Templates (homepage)
 
 The homepage "Invitation Templates" strip is curated from the admin panel, not hardcoded:

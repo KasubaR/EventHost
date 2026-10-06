@@ -20,7 +20,11 @@
         @endif
     </li>
     @if ($event->venue)
-        <li><i class="fa-solid fa-location-dot"></i> {{ $event->venue }}</li>
+        <li><i class="fa-solid fa-location-dot"></i> {{ $event->venue }}
+            @include('events.invitations.partials.map-link', ['searchOnly' => true])
+        </li>
+    @elseif (\App\Support\EventPlace::isUnknown($event))
+        <li><i class="fa-solid fa-location-dot"></i> {{ \App\Support\EventPlace::TO_BE_ANNOUNCED_LINE }}</li>
     @endif
     @if ($event->location_name)
         <li><i class="fa-regular fa-map"></i> {{ $event->location_name }}</li>

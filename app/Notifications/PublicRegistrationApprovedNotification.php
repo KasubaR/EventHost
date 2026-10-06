@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Event;
+use App\Support\ShortText;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -33,7 +34,7 @@ class PublicRegistrationApprovedNotification extends Notification implements Sho
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Your event was approved: '.$this->event->name)
+            ->subject('Your event was approved: '.ShortText::subject($this->event->name))
             ->greeting('Good news!')
             ->line('EventHost has approved "'.$this->event->name.'" for registration.')
             ->line('Quoted amount: ZMW '.number_format((float) $this->event->public_registration_quote_amount, 2))

@@ -25,6 +25,7 @@ use App\Notifications\RsvpConfirmationNotification;
 use App\Notifications\RsvpRejectedNotification;
 use App\Notifications\RsvpReminderNotification;
 use App\Support\EventReminderBuckets;
+use App\Support\ShortText;
 use App\Support\WhatsAppEventReminderBuckets;
 use App\Support\ZambianPhone;
 use Illuminate\Support\Carbon;
@@ -526,10 +527,10 @@ class CommunicationService
                 (string) config('services.twilio.invitation_content_sid'),
                 [
                     '1' => filled($guest->name) ? $guest->name : 'Guest',
-                    '2' => $event->name,
+                    '2' => ShortText::whatsapp($event->name),
                     '3' => $event->event_date?->format('j F Y') ?? '',
                     '4' => $event->hasStartTime() ? Carbon::parse($event->event_time)->format('H:i') : 'TBA',
-                    '5' => filled($event->venue) ? $event->venue : 'Venue TBA',
+                    '5' => filled($event->venue) ? ShortText::whatsapp($event->venue) : 'Venue TBA',
                     // Body footnote for plus-ones / full form — Quick Reply template has no URL button.
                     '6' => (string) $guest->personalRsvpUrl(),
                     // IMAGE header path after the production host (template: https://HOST/{{7}}).
@@ -627,10 +628,10 @@ class CommunicationService
                 $contentSid,
                 [
                     '1' => filled($guest->name) ? $guest->name : 'Guest',
-                    '2' => $event->name,
+                    '2' => ShortText::whatsapp($event->name),
                     '3' => $event->event_date?->format('j F Y') ?? '',
                     '4' => $event->hasStartTime() ? Carbon::parse($event->event_time)->format('H:i') : 'TBA',
-                    '5' => filled($event->venue) ? $event->venue : 'Venue TBA',
+                    '5' => filled($event->venue) ? ShortText::whatsapp($event->venue) : 'Venue TBA',
                     '6' => (string) $guest->passPageUrl(),
                     '7' => $mediaPath,
                 ]
@@ -729,10 +730,10 @@ class CommunicationService
                 $toE164,
                 $contentSid,
                 [
-                    '1' => WhatsAppEventReminderBuckets::leadForBucket($event->name, $bucket),
+                    '1' => WhatsAppEventReminderBuckets::leadForBucket(ShortText::whatsapp($event->name), $bucket),
                     '2' => $event->event_date?->format('j F Y') ?? '',
                     '3' => $event->hasStartTime() ? Carbon::parse($event->event_time)->format('H:i') : 'TBA',
-                    '4' => filled($event->venue) ? $event->venue : 'Venue TBA',
+                    '4' => filled($event->venue) ? ShortText::whatsapp($event->venue) : 'Venue TBA',
                 ]
             );
             $status = $result['status'] === 'sent' ? NotificationLog::STATUS_SENT : NotificationLog::STATUS_FAILED;

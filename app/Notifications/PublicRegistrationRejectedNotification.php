@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Event;
+use App\Support\ShortText;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -34,7 +35,7 @@ class PublicRegistrationRejectedNotification extends Notification implements Sho
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Your event was not approved: '.$this->event->name)
+            ->subject('Your event was not approved: '.ShortText::subject($this->event->name))
             ->greeting('Hello!')
             ->line('EventHost was unable to approve "'.$this->event->name.'" for registration.')
             ->line('Reason: '.$this->note)

@@ -8,7 +8,7 @@
         {{-- Personal token link (rsvp.token.show) — always the guest's own form here,
              regardless of $rsvpPublicAvailable/slug: those only govern the public/open
              flow, and a guest reading this already holds a valid personal invite. --}}
-        <div class="evt-inline-rsvp" id="rsvp">
+        <div class="evt-inline-rsvp" @if (! ($rsvpWrapperHasId ?? false)) id="rsvp" @endif>
             <h2 class="evt-inline-rsvp-heading">RSVP</h2>
             <p class="evt-inline-rsvp-lead">Hi {{ $guest->name }}, let the host know if you can make it.</p>
             @include('rsvp.partials.entry-pass', ['guest' => $guest, 'rsvp' => $existingRsvp ?? null, 'showEntryPass' => $showEntryPass ?? false])
@@ -23,7 +23,7 @@
         @php
             $inlineIsPrivate = ! $event->is_public;
         @endphp
-        <div class="evt-inline-rsvp" id="rsvp">
+        <div class="evt-inline-rsvp" @if (! ($rsvpWrapperHasId ?? false)) id="rsvp" @endif>
             <h2 class="evt-inline-rsvp-heading">RSVP</h2>
             <p class="evt-inline-rsvp-lead">
                 @if ($inlineIsPrivate)
@@ -41,18 +41,21 @@
             ])
         </div>
     @else
-        <div class="evt-rsvp-banner evt-rsvp-banner--open">
+        <div class="evt-rsvp-banner evt-rsvp-banner--open" @if (! ($rsvpWrapperHasId ?? false)) id="rsvp" @endif>
             <i class="fa-solid fa-envelope-open-text" aria-hidden="true"></i>
             Your host will send you a personal RSVP link.
         </div>
+        @include('rsvp.partials.host-contact', ['event' => $event])
     @endif
 @elseif ($event->isLocked())
-    <div class="evt-rsvp-banner evt-rsvp-banner--closed">
+    <div class="evt-rsvp-banner evt-rsvp-banner--closed" @if (! ($rsvpWrapperHasId ?? false)) id="rsvp" @endif>
         <i class="fa-solid fa-champagne-glasses" aria-hidden="true"></i>
         This event has already taken place. Thank you to everyone who came.
     </div>
+    @include('rsvp.partials.host-contact', ['event' => $event])
 @else
-    <div class="evt-rsvp-banner evt-rsvp-banner--closed">
+    <div class="evt-rsvp-banner evt-rsvp-banner--closed" @if (! ($rsvpWrapperHasId ?? false)) id="rsvp" @endif>
         <i class="fa-solid fa-clock" aria-hidden="true"></i> The RSVP deadline has passed.
     </div>
+    @include('rsvp.partials.host-contact', ['event' => $event])
 @endif

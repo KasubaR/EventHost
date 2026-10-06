@@ -43,8 +43,10 @@
                 </p>
             @endif
         </div>
-        <div class="wi2-hero-cta">
-            <a href="#rsvp" class="wi2-cta-btn">Reserve Your Seat</a>
-        </div>
+        @if (\App\Support\InvitationRsvpState::formShown((bool) ($rsvpOpen ?? false), isset($guest), ! empty($isPreview), (bool) ($rsvpPublicAvailable ?? false), filled($event->slug ?? null)))
+            <div class="wi2-hero-cta">
+                <a href="#rsvp" class="wi2-cta-btn">Reserve Your Seat</a>
+            </div>
+        @endif
     </div>
 </section>

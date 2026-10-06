@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Event;
 use App\Models\InvitationTemplate;
+use App\Services\InvitationCustomizationService;
 
 /**
  * Host-side notices about an event's invitation layout, rendered by <x-invitation-template-notice>
@@ -51,6 +52,17 @@ final class InvitationTemplateNotices
         }
 
         $notices = [];
+
+        // A layout with no RSVP section gives guests no way to answer from the invitation page itself.
+        if (! InvitationCustomizationService::rsvpSectionRequired($event, $template)) {
+            $notices[] = [
+                'tone' => 'warn',
+                'icon' => 'fa-envelope-open-text',
+                'message' => "{$template->name} has no RSVP section, so guests cannot reply on the invitation page. Choose a layout that has one, or collect replies another way.",
+                'link' => $chooseUrl,
+                'link_label' => 'Choose a layout',
+            ];
+        }
 
         if (! $template->is_active) {
             $notices[] = [

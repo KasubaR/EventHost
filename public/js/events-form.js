@@ -984,3 +984,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const dateField = document.getElementById('event_date');
     bindLiveFieldValidation(dateField && dateField.closest('form'));
 });
+
+/* Soft length warnings (never blocks): a hint under the field is shown once its text passes data-length-at characters. */
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-length-hint-for]').forEach((hint) => {
+        const input = document.getElementById(hint.getAttribute('data-length-hint-for'));
+        const limit = parseInt(hint.getAttribute('data-length-at'), 10);
+        if (!input || !limit) {
+            return;
+        }
+        const update = () => {
+            hint.hidden = input.value.trim().length <= limit;
+        };
+        input.addEventListener('input', update);
+        update();
+    });
+});

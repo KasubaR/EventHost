@@ -32,6 +32,27 @@ final class InvitationDesignNotices
         $editUrl = $onEditPage ? null : route('events.edit', $event);
         $notices = [];
 
+        $nameLength = mb_strlen(trim((string) $event->name));
+        if ($nameLength > InvitationTextLength::EXTRA_LONG) {
+            $notices[] = [
+                'tone' => 'info',
+                'icon' => 'fa-text-width',
+                'message' => "The event name is {$nameLength} characters long. Guests can read it, but it can look crowded on some layouts and in link previews, which cut it short. Check the preview, and shorten it if it does not look right.",
+                'link' => route('events.preview', $event),
+                'link_label' => 'Preview the invitation',
+            ];
+        }
+
+        if (EventPlace::isUnknown($event)) {
+            $notices[] = [
+                'tone' => 'info',
+                'icon' => 'fa-location-dot',
+                'message' => 'No venue, location or map pin is set, so guests will see "'.EventPlace::TO_BE_ANNOUNCED_LINE.'". That is fine if it is not decided yet; add it before you send invitations.',
+                'link' => ($editUrl ?? '').'#venue',
+                'link_label' => 'Add the venue',
+            ];
+        }
+
         if (($merged['restored_from_previous'] ?? false) === true) {
             $notices[] = [
                 'tone' => 'warn',
@@ -58,6 +79,16 @@ final class InvitationDesignNotices
         $variant = InvitationLayoutVariant::normalize($merged['layout_variant'] ?? null);
         $detailsBlocked = in_array(InvitationSections::DETAILS, InvitationLayoutVariant::blockedSections($variant), true);
 
+        if (trim((string) $event->description) === '' && self::showsDescription($merged, $variant)) {
+            $notices[] = [
+                'tone' => 'info',
+                'icon' => 'fa-align-left',
+                'message' => 'Your event has no description yet, so the invitation shows a standard line, or leaves that part out, instead of your own words. Add a few lines about the event for your guests.',
+                'link' => ($editUrl ?? '').'#description',
+                'link_label' => 'Add a description',
+            ];
+        }
+
         foreach ($merged['sections'] ?? [] as $row) {
             if (($row['type'] ?? null) === InvitationSections::DETAILS && ! $detailsBlocked && ! ($row['visible'] ?? true)) {
                 $notices[] = [
@@ -72,5 +103,25 @@ final class InvitationDesignNotices
         }
 
         return $notices;
+    }
+
+    /**
+     * Whether the saved design has a visible description section the layout does not block, i.e. somewhere the host's words would go.
+     *
+     * @param  array<string, mixed>  $merged
+     */
+    private static function showsDescription(array $merged, string $variant): bool
+    {
+        if (in_array(InvitationSections::DESCRIPTION, InvitationLayoutVariant::blockedSections($variant), true)) {
+            return false;
+        }
+
+        foreach ($merged['sections'] ?? [] as $row) {
+            if (($row['type'] ?? null) === InvitationSections::DESCRIPTION && ($row['visible'] ?? true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

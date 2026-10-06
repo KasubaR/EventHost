@@ -1,8 +1,5 @@
 @php
-    $wording = trim((string) $event->description);
-    if ($wording === '') {
-        $wording = 'We joyfully invite you to celebrate the union of two souls as they begin their forever journey together in love and laughter.';
-    }
+    $wording = \App\Support\InvitationDescriptionFallback::for($event, 'We joyfully invite you to celebrate the union of two souls as they begin their forever journey together in love and laughter.');
 @endphp
 
 <section class="bw-section bw-wording" id="invitation">

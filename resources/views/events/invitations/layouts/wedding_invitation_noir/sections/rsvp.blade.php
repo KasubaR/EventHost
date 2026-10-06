@@ -41,7 +41,7 @@
             @endif
         </div>
         <div class="wi2-rsvp-form-col">
-            @include('events.invitations.sections.rsvp')
+            @include('events.invitations.sections.rsvp', ['rsvpWrapperHasId' => true])
         </div>
     </div>
 </section>

@@ -689,3 +689,9 @@
     font-weight: 700;
     color: var(--navy, #0d0d2b);
 }
+
+/* Long event names and venues wrap instead of widening the page. */
+.tkc-page {
+    overflow-wrap: break-word;
+    overflow-wrap: anywhere;
+}

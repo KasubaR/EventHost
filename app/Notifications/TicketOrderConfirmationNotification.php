@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\TicketOrder;
 use App\Services\TicketPdfService;
+use App\Support\ShortText;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -46,7 +47,7 @@ class TicketOrderConfirmationNotification extends Notification implements Should
         }
 
         $mail = (new MailMessage)
-            ->subject('Your tickets for '.$order->event->name)
+            ->subject('Your tickets for '.ShortText::subject($order->event->name))
             ->greeting('Hi '.$order->buyer_name.',')
             ->line('Your payment was successful. Here are your tickets for '.$order->event->name.'.')
             ->line('Order reference: '.$order->order_reference)

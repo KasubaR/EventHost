@@ -2,10 +2,7 @@
     [$nameBefore, $nameAfter] = \App\Support\WeddingInvitationView::for($event, $invitation)->names();
     $signature = $nameAfter !== '' ? $nameBefore.' & '.$nameAfter : $nameBefore;
 
-    $wording = trim((string) $event->description);
-    if ($wording === '') {
-        $wording = 'We are getting married, and we would love for you to be there. Please save the date and join us as we celebrate the beginning of our forever.';
-    }
+    $wording = \App\Support\InvitationDescriptionFallback::for($event, 'We are getting married, and we would love for you to be there. Please save the date and join us as we celebrate the beginning of our forever.');
 @endphp
 
 <section class="db-section" id="invitation">

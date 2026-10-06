@@ -50,13 +50,41 @@ final class EventIcsDocument
             'DTSTART:'.$dtStart,
             'DTEND:'.$dtEnd,
             'SUMMARY:'.$summary,
-            'LOCATION:'.$location,
+            // An empty LOCATION line reads as "location: nothing" in some calendars; leave the property out instead.
+            ...($location !== '' ? ['LOCATION:'.$location] : []),
             'DESCRIPTION:'.$desc,
             'END:VEVENT',
             'END:VCALENDAR',
         ];
 
-        return implode("\r\n", $lines)."\r\n";
+        return implode("\r\n", array_map(self::fold(...), $lines))."\r\n";
+    }
+
+    /**
+     * RFC 5545 §3.1: a content line is at most 75 octets; a longer one is folded by starting each continuation line with one space.
+     * Folds fall on character boundaries, never inside a multi-byte UTF-8 character, which would corrupt the text.
+     */
+    public static function fold(string $line): string
+    {
+        if (strlen($line) <= 75) {
+            return $line;
+        }
+
+        $out = [];
+        $current = '';
+        $limit = 75;
+
+        foreach (mb_str_split($line) as $char) {
+            if (strlen($current) + strlen($char) > $limit) {
+                $out[] = $current;
+                $current = '';
+                $limit = 74; // the leading space of a continuation line counts toward the 75
+            }
+            $current .= $char;
+        }
+        $out[] = $current;
+
+        return implode("\r\n ", $out);
     }
 
     private static function escapeText(string $text): string

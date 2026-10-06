@@ -10,7 +10,7 @@
             <p class="mg-rsvp-lead">Kindly respond by {{ $event->rsvpDeadlineAt()->format('F jS') }}</p>
         @endif
         <div class="mg-rsvp-panel">
-            @include('events.invitations.sections.rsvp')
+            @include('events.invitations.sections.rsvp', ['rsvpWrapperHasId' => true])
         </div>
     </div>
 </section>

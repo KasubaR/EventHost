@@ -196,6 +196,15 @@ standard one and Beauty for Ashes, and check: all text readable (nothing white o
       no video / slider arrows, the countdown as a sentence and the gallery as a grid
 - [ ] **Facebook Sharing Debugger** on one event URL: no warnings about the image, size 1200×630
 
+**Long text and missing content** (`plans/invitation-page-content-limits.md`). On a phone, with a test event (preview is enough), try a
+name of about 250 characters with no spaces, the same as the venue, and a second event with a 100-character name made of real words:
+
+- [ ] No sideways scroll on the invitation, the RSVP page and the thank-you page; the name wraps and the heading is smaller, not clipped
+- [ ] Clear the description, then clear the venue, location and pin: the invitation reads "Venue to be announced" and shows no wedding wording
+      on a birthday or memorial
+- [ ] Let the RSVP deadline pass: no "RSVP" button that scrolls nowhere, and the host's number is shown
+- [ ] Add the event's calendar link to Apple Calendar and Outlook with the long name: the whole title arrives
+
 *Approximating an old engine on a laptop (rough):* paste this in the DevTools console of a guest page. It removes the declarations an old engine
 would drop, so you can see what the fallbacks leave. It cannot emulate the `@supports not` blocks (a modern browser supports the feature, so
 those never apply), so treat colours as indicative only.

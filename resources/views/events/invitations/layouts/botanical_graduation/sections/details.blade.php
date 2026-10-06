@@ -28,6 +28,12 @@
             <div class="detail-tile">
                 <span class="tile-label">Venue</span>
                 <p class="tile-value">{{ $event->venue }}</p>
+                @include('events.invitations.partials.map-link', ['searchOnly' => true])
+            </div>
+        @elseif (\App\Support\EventPlace::isUnknown($event))
+            <div class="detail-tile">
+                <span class="tile-label">Venue</span>
+                <p class="tile-value">{{ \App\Support\EventPlace::TO_BE_ANNOUNCED }}</p>
             </div>
         @endif
 

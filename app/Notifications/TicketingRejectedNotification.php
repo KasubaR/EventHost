@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Event;
+use App\Support\ShortText;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -34,7 +35,7 @@ class TicketingRejectedNotification extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Ticket sales activation declined: '.$this->event->name)
+            ->subject('Ticket sales activation declined: '.ShortText::subject($this->event->name))
             ->greeting('Hello!')
             ->line('EventHost was unable to activate ticket sales for "'.$this->event->name.'".')
             ->line('Reason: '.$this->note)

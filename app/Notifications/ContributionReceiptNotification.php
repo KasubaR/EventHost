@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\ContributionPayment;
 use App\Models\EventContribution;
+use App\Support\ShortText;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -43,7 +44,7 @@ class ContributionReceiptNotification extends Notification implements ShouldQueu
         $remaining = $contribution->remainingAmount();
 
         $mail = (new MailMessage)
-            ->subject('Thank you for your contribution to '.$contribution->event->name)
+            ->subject('Thank you for your contribution to '.ShortText::subject($contribution->event->name))
             ->greeting('Hi '.$contribution->contributor_name.',')
             ->line('We received your payment of '.$contribution->currency.' '.number_format((float) $this->payment->amount, 2).' toward '.$contribution->event->name.'.')
             ->line('Total paid so far: '.$contribution->currency.' '.number_format((float) $contribution->amount_paid, 2).' of '.number_format((float) $contribution->target_amount, 2).'.');

@@ -1,4 +1,7 @@
 @php
+    $rsvpFormShown = \App\Support\InvitationRsvpState::formShown(
+        (bool) ($rsvpOpen ?? false), isset($guest), ! empty($isPreview), (bool) ($rsvpPublicAvailable ?? false), filled($event->slug ?? null)
+    );
     [$nameBefore, $nameAfter] = \App\Support\WeddingInvitationView::for($event, $invitation)->names();
     $footerNames = $nameAfter !== '' ? $nameBefore.' & '.$nameAfter : $nameBefore;
     $footerLine = $footerNames.' · '.$event->event_date->format('Y');
@@ -14,9 +17,11 @@
     @if ($rsvpNote !== '')
         <p class="mm-rsvp-lead">{{ $rsvpNote }}</p>
     @endif
-    <a href="#rsvp-form" class="mm-rsvp-cta">RSVP</a>
+    @if ($rsvpFormShown)
+        <a href="#rsvp-form" class="mm-rsvp-cta">RSVP</a>
+    @endif
     <div class="mm-rsvp-form-panel" id="rsvp-form">
-        @include('events.invitations.sections.rsvp')
+        @include('events.invitations.sections.rsvp', ['rsvpWrapperHasId' => true])
     </div>
 </section>
 

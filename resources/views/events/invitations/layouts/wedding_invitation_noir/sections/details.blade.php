@@ -22,6 +22,12 @@
             <div class="wi2-detail-card">
                 <p class="wi2-detail-label">Venue</p>
                 <p class="wi2-detail-value">{{ $venueLine }}</p>
+                @include('events.invitations.partials.map-link', ['class' => 'wi2-detail-link', 'searchOnly' => true])
+            </div>
+        @elseif (\App\Support\EventPlace::isUnknown($event))
+            <div class="wi2-detail-card">
+                <p class="wi2-detail-label">Venue</p>
+                <p class="wi2-detail-value">{{ \App\Support\EventPlace::TO_BE_ANNOUNCED }}</p>
             </div>
         @endif
         @if ($locationLine !== '' || ($event->latitude !== null && $event->longitude !== null))

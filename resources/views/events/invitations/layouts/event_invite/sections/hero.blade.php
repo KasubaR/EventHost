@@ -21,7 +21,7 @@
         $venueLine = trim((string) $event->location_name);
     }
     if ($venueLine === '') {
-        $venueLine = '-';
+        $venueLine = \App\Support\EventPlace::TO_BE_ANNOUNCED;
     }
 
     $timeLine = '';

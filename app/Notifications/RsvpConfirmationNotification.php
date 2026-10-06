@@ -9,6 +9,7 @@ use App\Services\GuestPassImageService;
 use App\Services\GuestPassPdfService;
 use App\Services\QrCodeService;
 use App\Support\GuestPassCard;
+use App\Support\ShortText;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -40,7 +41,7 @@ class RsvpConfirmationNotification extends Notification implements ShouldQueue
         $statusLabel = $this->rsvp->status->attendanceLabel();
 
         $message = (new MailMessage)
-            ->subject('RSVP recorded: '.$this->event->name)
+            ->subject('RSVP recorded: '.ShortText::subject($this->event->name))
             ->greeting('Hello, '.$this->guest->name.'!')
             ->line('Thanks for letting us know about '.$this->event->name.'.')
             ->line('Your response: '.$statusLabel.'.')

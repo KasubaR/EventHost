@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\Event;
 use App\Models\Guest;
+use App\Support\ShortText;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -36,7 +37,7 @@ class EventUpdatedNotification extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         $mail = (new MailMessage)
-            ->subject('Update: '.$this->event->name)
+            ->subject('Update: '.ShortText::subject($this->event->name))
             ->greeting('Hello, '.$this->guest->name.'!')
             ->line('There is an update for '.$this->event->name.'.')
             ->line($this->updateMessage);

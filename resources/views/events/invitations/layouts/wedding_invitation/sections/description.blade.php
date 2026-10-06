@@ -1,10 +1,8 @@
 @php
     $w = \App\Support\WeddingInvitationView::for($event, $invitation);
 
-    $intro = trim((string) $event->description);
-    if ($intro === '') {
-        $intro = 'We joyfully invite you to celebrate the union of two souls as they begin their forever journey together in love and laughter.';
-    } else {
+    $intro = \App\Support\InvitationDescriptionFallback::for($event, 'We joyfully invite you to celebrate the union of two souls as they begin their forever journey together in love and laughter.');
+    if (trim((string) $event->description) !== '') {
         $lines = preg_split('/\R/u', $intro, 2);
         $intro = trim((string) ($lines[0] ?? ''));
         if (strlen($intro) > 500) {

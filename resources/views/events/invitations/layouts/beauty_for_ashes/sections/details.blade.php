@@ -39,6 +39,14 @@
                             @endif
                         </div>
                     </div>
+                @elseif (\App\Support\EventPlace::isUnknown($event))
+                    <div class="bfa-detail-card">
+                        <div class="bfa-detail-icon" aria-hidden="true">&#128205;</div>
+                        <div>
+                            <div class="bfa-detail-label">Venue</div>
+                            <div class="bfa-detail-value">{{ \App\Support\EventPlace::TO_BE_ANNOUNCED }}</div>
+                        </div>
+                    </div>
                 @endif
 
                 @if ($theme !== '')

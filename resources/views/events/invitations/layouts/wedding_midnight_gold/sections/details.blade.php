@@ -19,6 +19,12 @@
                 <div class="mg-card">
                     <h3 class="mg-card-title">Venue</h3>
                     <p>{{ $venueLine }}</p>
+                    @include('events.invitations.partials.map-link', ['class' => 'mg-map-link', 'searchOnly' => true])
+                </div>
+            @elseif (\App\Support\EventPlace::isUnknown($event))
+                <div class="mg-card">
+                    <h3 class="mg-card-title">Venue</h3>
+                    <p>{{ \App\Support\EventPlace::TO_BE_ANNOUNCED }}</p>
                 </div>
             @endif
             @if ($locationLine !== '' || $hasMap)

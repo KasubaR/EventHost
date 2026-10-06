@@ -4,6 +4,8 @@
 
 /* ── Page shell ── */
 .rsvp-page {
+    overflow-wrap: break-word;
+    overflow-wrap: anywhere;
     min-height: calc(100vh - 56px);
     min-height: calc(100svh - 56px);
     background: var(--gray-light, #f4f5f9);

@@ -4,7 +4,7 @@
     $rsvpPublicAvailable = $rsvpPublicAvailable ?? false;
 @endphp
 
-<div class="evt-bg-rsvp-wrap">
+<div class="evt-bg-rsvp-wrap" id="rsvp">
     @if (isset($guest))
         {{-- Personal token link — this layout's own banner/CTA below only makes sense
              for the public/open flow, so defer to the shared partial's guest form. --}}
@@ -44,16 +44,19 @@
                 <i class="fa-solid fa-envelope-open-text" aria-hidden="true"></i>
                 Your host will send you a personal RSVP link.
             </div>
+            @include('rsvp.partials.host-contact', ['event' => $event])
         @endif
     @elseif ($event->isLocked())
         <div class="evt-rsvp-banner evt-rsvp-banner--closed evt-bg-rsvp-banner">
             <i class="fa-solid fa-champagne-glasses" aria-hidden="true"></i>
             This event has already taken place. Thank you to everyone who came.
         </div>
+        @include('rsvp.partials.host-contact', ['event' => $event])
     @else
         <div class="evt-rsvp-banner evt-rsvp-banner--closed evt-bg-rsvp-banner">
             <i class="fa-solid fa-clock" aria-hidden="true"></i> The RSVP deadline has passed.
         </div>
+        @include('rsvp.partials.host-contact', ['event' => $event])
     @endif
 
     <footer class="evt-bg-footer">

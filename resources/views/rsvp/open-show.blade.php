@@ -23,6 +23,8 @@
                     </li>
                     @if ($event->venue)
                         <li><i class="fa-solid fa-location-dot" aria-hidden="true"></i> {{ $event->venue }}</li>
+                    @elseif (\App\Support\EventPlace::isUnknown($event))
+                        <li><i class="fa-solid fa-location-dot" aria-hidden="true"></i> {{ \App\Support\EventPlace::TO_BE_ANNOUNCED_LINE }}</li>
                     @endif
                 </ul>
                 <hr class="rsvp-divider">

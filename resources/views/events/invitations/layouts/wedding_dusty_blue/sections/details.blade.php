@@ -20,6 +20,12 @@
                 <div class="db-card">
                     <h3 class="db-card-title">Venue</h3>
                     <p>{{ $venueLine }}</p>
+                    @include('events.invitations.partials.map-link', ['class' => 'db-map-link', 'searchOnly' => true])
+                </div>
+            @elseif (\App\Support\EventPlace::isUnknown($event))
+                <div class="db-card">
+                    <h3 class="db-card-title">Venue</h3>
+                    <p>{{ \App\Support\EventPlace::TO_BE_ANNOUNCED }}</p>
                 </div>
             @endif
             @if ($locationLine !== '' || $hasMap)

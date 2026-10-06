@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\EventStaff;
+use App\Support\ShortText;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -42,7 +43,7 @@ class EventStaffInviteNotification extends Notification implements ShouldQueue
         $inviter = $this->eventStaff->inviter;
 
         return (new MailMessage)
-            ->subject('You\'ve been added as staff on '.$event->name)
+            ->subject('You\'ve been added as staff on '.ShortText::subject($event->name))
             ->greeting('Hello'.($this->eventStaff->name ? ', '.$this->eventStaff->name : '').'!')
             ->line(($inviter->name ?? 'The host').' has invited you to help run "'.$event->name.'" on '.config('app.name').'.')
             ->line('Your role: '.$this->eventStaff->role->label().': '.$this->eventStaff->role->description())

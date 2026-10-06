@@ -6,6 +6,33 @@
 .evt-invitation {
     background: var(--evt-background, #fafafa);
     font-family: var(--evt-font-body, system-ui, sans-serif);
+    /* Host text can be up to 255 characters with no spaces (a name, a venue). It inherits to every layout, so no
+       layout needs its own rule. break-word first: an engine without `anywhere` keeps it. */
+    overflow-wrap: break-word;
+    overflow-wrap: anywhere;
+}
+
+/* A flex or grid child will not shrink below its longest word unless told it may. */
+.evt-invitation h1,
+.evt-invitation h2,
+.evt-invitation h3,
+.evt-invitation p,
+.evt-invitation li,
+.evt-invitation span,
+.evt-invitation div {
+    min-width: 0;
+}
+
+/* Long event names step the headings down (class set by App\Support\InvitationTextLength). `zoom` scales the heading and
+   its spacing together; an engine without it keeps the full size and still wraps. */
+.evt-invitation.evt-name--long h1,
+.evt-invitation.evt-name--long .evt-public-title {
+    zoom: 0.85;
+}
+
+.evt-invitation.evt-name--xlong h1,
+.evt-invitation.evt-name--xlong .evt-public-title {
+    zoom: 0.7;
 }
 
 .evt-invitation-page {

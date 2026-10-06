@@ -268,3 +268,8 @@
         padding: 28px 0 48px;
     }
 }
+
+.tev-wrap {
+    overflow-wrap: break-word;
+    overflow-wrap: anywhere;
+}

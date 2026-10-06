@@ -5,6 +5,7 @@ namespace App\Notifications;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Models\Rsvp;
+use App\Support\ShortText;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -39,7 +40,7 @@ class RsvpRejectedNotification extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         $message = (new MailMessage)
-            ->subject('Update on your RSVP: '.$this->event->name)
+            ->subject('Update on your RSVP: '.ShortText::subject($this->event->name))
             ->greeting('Hello, '.$this->guest->name.'!')
             ->line('The host was not able to confirm your RSVP to '.$this->event->name.'.')
             ->line('Their note: '.$this->note);

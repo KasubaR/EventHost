@@ -63,7 +63,7 @@
     @if (empty($isPreview) && isset($event) && ! empty($invitation['effects']['audio_track']))
         data-audio-report-url="{{ route('audio-report.show', $event) }}"
     @endif
-    class="evt-invitation evt-skin-{{ $skinKey }} {{ $layoutClass }}@if ($invitation['effects']['animation_subtle']) evt-invitation--subtle-motion @endif"
+    class="evt-invitation evt-skin-{{ $skinKey }} {{ $layoutClass }} {{ \App\Support\InvitationTextLength::nameClass($event->name ?? null) }}@if ($invitation['effects']['animation_subtle']) evt-invitation--subtle-motion @endif"
     style="--evt-primary: {{ $invitation['theme']['primary'] }}; --evt-accent: {{ $invitation['theme']['accent'] }}; --evt-background: {{ $invitation['theme']['background'] }}; --evt-font-heading: {{ $invitation['theme']['font_heading_stack'] }}; --evt-font-body: {{ $invitation['theme']['font_body_stack'] }};"
 >
     {{-- Only when something here needs scripts; RSVP and the page itself work without them. --}}

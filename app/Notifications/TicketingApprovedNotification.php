@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Event;
+use App\Support\ShortText;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -33,7 +34,7 @@ class TicketingApprovedNotification extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         $mail = (new MailMessage)
-            ->subject('Ticket sales are live: '.$this->event->name)
+            ->subject('Ticket sales are live: '.ShortText::subject($this->event->name))
             ->greeting('Good news!')
             ->line('EventHost has approved ticket sales for "'.$this->event->name.'".')
             ->line('Your public ticket page is now live.');

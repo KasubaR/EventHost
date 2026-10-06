@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\Guest;
 use App\Models\Rsvp;
 use App\Notifications\Channels\FcmChannel;
+use App\Support\ShortText;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -71,7 +72,7 @@ class NewRsvpReceivedNotification extends Notification implements ShouldQueue
         $statusLabel = $this->rsvp->status->label();
 
         return (new MailMessage)
-            ->subject('New RSVP from '.$this->guest->name.': '.$this->event->name)
+            ->subject('New RSVP from '.$this->guest->name.': '.ShortText::subject($this->event->name))
             ->greeting('Hello, '.$notifiable->name.'!')
             ->line($this->guest->name.' just responded to '.$this->event->name.'.')
             ->line('Response: '.$statusLabel.'.')

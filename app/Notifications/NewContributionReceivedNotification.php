@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\ContributionPayment;
 use App\Models\EventContribution;
+use App\Support\ShortText;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -40,7 +41,7 @@ class NewContributionReceivedNotification extends Notification implements Should
         $contribution = $this->contribution->loadMissing('event');
 
         $mail = (new MailMessage)
-            ->subject('New contribution from '.$contribution->contributor_name.': '.$contribution->event->name)
+            ->subject('New contribution from '.$contribution->contributor_name.': '.ShortText::subject($contribution->event->name))
             ->greeting('Hello, '.$notifiable->name.'!')
             ->line($contribution->contributor_name.' just paid '.$contribution->currency.' '.number_format((float) $this->payment->amount, 2).' toward '.$contribution->event->name.'.')
             ->line('Total from them so far: '.$contribution->currency.' '.number_format((float) $contribution->amount_paid, 2).' of '.number_format((float) $contribution->target_amount, 2).'.');

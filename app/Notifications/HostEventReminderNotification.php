@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Event;
+use App\Support\ShortText;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -51,7 +52,7 @@ class HostEventReminderNotification extends Notification implements ShouldQueue
         }
 
         $mail = (new MailMessage)
-            ->subject('Reminder: '.$event->name.' is '.$when)
+            ->subject('Reminder: '.ShortText::subject($event->name).' is '.$when)
             ->greeting('Hello, '.$notifiable->name.'!')
             ->line($event->name.' is '.$when.'.');
 

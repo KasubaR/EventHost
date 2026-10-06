@@ -2,10 +2,7 @@
     [$nameBefore, $nameAfter] = \App\Support\WeddingInvitationView::for($event, $invitation)->names();
     $signature = $nameAfter !== '' ? $nameBefore.' & '.$nameAfter : $nameBefore;
 
-    $wording = trim((string) $event->description);
-    if ($wording === '') {
-        $wording = 'Together with their families, the couple joyfully invite you to celebrate their wedding. Join us for a ceremony, dinner and dancing, and help us begin our next chapter with the people we love most.';
-    }
+    $wording = \App\Support\InvitationDescriptionFallback::for($event, 'Together with their families, the couple joyfully invite you to celebrate their wedding. Join us for a ceremony, dinner and dancing, and help us begin our next chapter with the people we love most.');
 @endphp
 
 <section class="mg-section mg-section--alt" id="invitation">

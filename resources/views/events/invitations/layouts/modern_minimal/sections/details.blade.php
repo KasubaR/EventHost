@@ -16,6 +16,12 @@
             <div class="mm-detail-block">
                 <h3>Venue</h3>
                 <p>{{ $venueLine }}</p>
+                @include('events.invitations.partials.map-link', ['class' => 'mm-detail-link', 'searchOnly' => true])
+            </div>
+        @elseif (\App\Support\EventPlace::isUnknown($event))
+            <div class="mm-detail-block">
+                <h3>Venue</h3>
+                <p>{{ \App\Support\EventPlace::TO_BE_ANNOUNCED }}</p>
             </div>
         @endif
         @if ($locationLine !== '' || ($event->latitude !== null && $event->longitude !== null))

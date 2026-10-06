@@ -80,6 +80,7 @@
                 @error('name')
                     <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                 @enderror
+                <p class="evt-field-hint evt-length-hint" data-length-hint-for="name" data-length-at="70" @if (mb_strlen((string) old('name', $event?->name ?? '')) <= 70) hidden @endif>A long name can look crowded on some invitation layouts. Shorter is easier to read; check the preview.</p>
             </div>
 
             @unless ($isTicketed)
@@ -233,6 +234,7 @@
                     @error('venue')
                         <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                     @enderror
+                    <p class="evt-field-hint evt-length-hint" data-length-hint-for="venue" data-length-at="80" @if (mb_strlen((string) old('venue', $event?->venue ?? '')) <= 80) hidden @endif>A long venue name wraps over several lines on the invitation. Keep the name short and put the rest in the location label or description.</p>
                 </div>
 
                 <div class="profile-field">

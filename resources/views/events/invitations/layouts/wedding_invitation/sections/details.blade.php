@@ -29,6 +29,13 @@
                     <div class="wi-detail-icon" aria-hidden="true"><i class="fa-solid fa-location-dot"></i></div>
                     <p class="wi-detail-label">Venue</p>
                     <p class="wi-detail-value">{{ $venueLine }}</p>
+                    @include('events.invitations.partials.map-link', ['class' => 'wi-detail-link', 'searchOnly' => true])
+                </div>
+            @elseif (\App\Support\EventPlace::isUnknown($event))
+                <div class="wi-detail-card">
+                    <div class="wi-detail-icon" aria-hidden="true"><i class="fa-solid fa-location-dot"></i></div>
+                    <p class="wi-detail-label">Venue</p>
+                    <p class="wi-detail-value">{{ \App\Support\EventPlace::TO_BE_ANNOUNCED }}</p>
                 </div>
             @endif
             @if ($locationLine !== '' || ($event->latitude !== null && $event->longitude !== null))

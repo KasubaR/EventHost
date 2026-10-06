@@ -5,6 +5,7 @@ namespace App\Notifications;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Notifications\Concerns\OffersReminderOptOut;
+use App\Support\ShortText;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -44,7 +45,7 @@ class RsvpReminderNotification extends Notification implements ShouldQueue
         };
 
         $mail = (new MailMessage)
-            ->subject('Reminder: RSVP for '.$this->event->name)
+            ->subject('Reminder: RSVP for '.ShortText::subject($this->event->name))
             ->greeting('Hello, '.$this->guest->name.'!')
             ->line('The RSVP deadline for '.$this->event->name.' is '.$when.'.')
             ->line('Please take a moment to respond so the host can plan ahead.');

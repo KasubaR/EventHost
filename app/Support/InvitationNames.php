@@ -9,9 +9,17 @@ namespace App\Support;
  * Separators are tried in order: " for ", then "&", then " and " (case-insensitive). The second
  * name is '' when there is no separator, or when either side of it would be empty, so a caller
  * only needs to check the second part to decide between one line and two.
+ *
+ * Only a short name is split: a long one ("Annual Leadership and Innovation Summit") is a title, not two people, and splitting it
+ * would print an ampersand between two halves of a sentence. Longer than MAX_LENGTH characters, or a side of more than
+ * MAX_WORDS_PER_SIDE words, stays on one line.
  */
 final class InvitationNames
 {
+    public const MAX_LENGTH = 60;
+
+    public const MAX_WORDS_PER_SIDE = 4;
+
     /**
      * @return array{0: string, 1: string}
      */
@@ -45,6 +53,16 @@ final class InvitationNames
         $first = trim($first);
         $second = trim($second);
 
-        return ($first === '' || $second === '') ? [$whole, ''] : [$first, $second];
+        if ($first === '' || $second === '' || mb_strlen($whole) > self::MAX_LENGTH) {
+            return [$whole, ''];
+        }
+
+        foreach ([$first, $second] as $side) {
+            if (count(preg_split('/\s+/u', $side, -1, PREG_SPLIT_NO_EMPTY) ?: []) > self::MAX_WORDS_PER_SIDE) {
+                return [$whole, ''];
+            }
+        }
+
+        return [$first, $second];
     }
 }

@@ -1,10 +1,7 @@
 @php
     $w = \App\Support\WeddingInvitationView::for($event, $invitation);
 
-    $wording = trim((string) $event->description);
-    if ($wording === '') {
-        $wording = 'We joyfully invite you to celebrate the union of two souls as they begin their forever journey together in love and laughter.';
-    }
+    $wording = \App\Support\InvitationDescriptionFallback::for($event, 'We joyfully invite you to celebrate the union of two souls as they begin their forever journey together in love and laughter.');
 
     $caption = trim((string) ($invitation['content']['wi_couple_caption'] ?? ''));
 @endphp
