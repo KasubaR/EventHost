@@ -1,4 +1,5 @@
 @extends('layouts.site')
+@php $guestPage = true; @endphp
 
 @push('head')
     <link rel="stylesheet" href="{{ asset('css/rsvp-public.css') }}">

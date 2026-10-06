@@ -1,0 +1,14 @@
+Font Awesome Free 6.5.2
+https://fontawesome.com
+
+The SVG files in solid/, regular/ and brands/ are unmodified Font Awesome Free icons.
+Icons: Creative Commons Attribution 4.0 International (CC BY 4.0), https://creativecommons.org/licenses/by/4.0/
+Copyright 2024 Fonticons, Inc.
+
+Downloaded from https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/svgs/
+
+Why they are here: guest-facing pages draw their icons from public/css/guest-icons.css (built from these files by
+`php artisan icons:build-guest-css`) instead of loading the Font Awesome CDN stylesheet. See
+plans/invitation-page-compatibility.md Phase 4. Attribution for the generated stylesheet is in its header comment.
+
+To add an icon: download the SVG from the same version and folder, put it here, run the command, commit both.

@@ -30,6 +30,7 @@ class EventPurgeService
         'invitation-hero',
         'invitation-couple',
         'invitation-media',
+        'invitation-share',
     ];
 
     public function purge(int $eventId, bool $dryRun = false): PurgeOutcome

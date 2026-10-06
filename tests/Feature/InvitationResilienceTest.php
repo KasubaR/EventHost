@@ -351,7 +351,10 @@ class InvitationResilienceTest extends TestCase
             ['invitation' => ['theme' => ['google_font_families' => ['Lato:wght@400', 'Jost:wght@300;400']]]],
         );
 
-        $this->assertSame(1, substr_count($html, 'fonts.googleapis.com/css2'));
+        // One request for all the families: a stylesheet link (loaded without blocking) and its <noscript> copy.
+        $this->assertSame(2, substr_count($html, 'fonts.googleapis.com/css2'));
+        $this->assertSame(1, substr_count($html, '<noscript>'));
+        $this->assertStringContainsString("media=\"print\" onload=\"this.media='all'\"", $html);
         $this->assertStringContainsString('family=Lato:wght@400&family=Jost:wght@300;400&display=swap', html_entity_decode($html));
         $this->assertStringContainsString('<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>', $html);
 
@@ -474,7 +477,8 @@ class InvitationResilienceTest extends TestCase
     {
         $js = file_get_contents(public_path('js/invitation-public.js'));
 
-        $this->assertStringContainsString('function connectionAllowsMedia()', $js);
+        $this->assertStringContainsString('function mayStartMedia()', $js);
+        $this->assertStringContainsString('function connectionQuality()', $js);
         $this->assertStringContainsString('saveData', $js);
         $this->assertStringContainsString("'2g'", $js);
         $this->assertStringContainsString("'slow-2g'", $js);

@@ -7,6 +7,7 @@ use App\Models\Guest;
 use App\Models\StagedMedia;
 use App\Services\GuestPassFileCache;
 use App\Support\InvitationMediaUrl;
+use App\Support\InvitationShareImage;
 use App\Support\InvitationVideoBackground;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -104,11 +105,39 @@ class PruneOrphanedInvitationFilesCommand extends Command
         }
 
         $this->prunePassPdfs($dryRun);
+        $this->pruneShareImages($dryRun);
 
         $label = $dryRun ? 'Orphans found' : 'Orphans deleted';
         $this->info("{$label}: {$deleted}".($errors > 0 ? " | Errors: {$errors}" : ''));
 
         return $errors > 0 ? self::FAILURE : self::SUCCESS;
+    }
+
+    /**
+     * Link-preview JPEGs live one folder per event (invitation-share/{event_id}/). GenerateEventShareImageJob removes the older
+     * file when it writes a new one, so a live event's folder is never swept here: only a folder whose event no longer exists
+     * at all (not even soft-deleted) is.
+     */
+    private function pruneShareImages(bool $dryRun): void
+    {
+        $disk = Storage::disk('public');
+        $folders = $disk->directories(InvitationShareImage::DIRECTORY);
+        $ids = collect($folders)->map(fn (string $f): string => basename($f))->filter(fn (string $id): bool => ctype_digit($id))->map(fn (string $id): int => (int) $id)->all();
+        $existing = $ids === [] ? [] : Event::withTrashed()->whereIn('id', $ids)->pluck('id')->all();
+        $removed = 0;
+
+        foreach ($folders as $folder) {
+            $id = basename($folder);
+            if (! ctype_digit($id) || in_array((int) $id, $existing, true)) {
+                continue;
+            }
+            if (! $dryRun) {
+                $disk->deleteDirectory($folder);
+            }
+            $removed++;
+        }
+
+        $this->line(($dryRun ? '[dry-run] ' : '')."Orphaned link-preview image folders: {$removed}");
     }
 
     /**

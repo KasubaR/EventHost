@@ -5,6 +5,7 @@
 /* ── Page shell ── */
 .rsvp-page {
     min-height: calc(100vh - 56px);
+    min-height: calc(100svh - 56px);
     background: var(--gray-light, #f4f5f9);
     padding: 48px 20px 80px;
     display: flex;
@@ -40,6 +41,7 @@
 
 .rsvp-title {
     font-family: 'Outfit', sans-serif;
+    font-size: 22px;
     font-size: clamp(22px, 5vw, 28px);
     font-weight: 800;
     color: var(--navy, #0d0d2b);
@@ -467,6 +469,19 @@
     display: none;
 }
 
+/* The menu is opened by rsvp-thanks.js. Without JavaScript the panel would stay hidden and the button would do nothing, so
+   the links are shown in place and the button is hidden. */
+html:not(.js) .rsvp-thanks-menu[hidden] {
+    display: flex;
+    position: static;
+    box-shadow: none;
+    margin-top: 6px;
+}
+
+html:not(.js) [data-rsvp-calendar-trigger] {
+    display: none;
+}
+
 .rsvp-thanks-menu a {
     padding: 8px 10px;
     border-radius: 7px;
@@ -537,4 +552,23 @@
 
 .rsvp-reduce-form {
     margin-top: 10px;
+}
+
+/* The native radio is hidden, so which answer is chosen is drawn by the :has(input:checked) rules above and in each layout.
+   Browsers without :has() (Chrome < 105, Safari < 15.4) would show no selection at all, and colour alone is a weak signal
+   for everyone: a tick before the chosen label's text shows it in every browser. */
+.rsvp-radio input:checked + span::before {
+    content: "\2713\00a0";
+}
+
+.rsvp-radio input:checked + span {
+    font-weight: 800;
+}
+
+/* One line shown only inside Facebook's and Instagram's in-app browsers (see rsvp-thanks.js). */
+.rsvp-inapp-hint {
+    margin: 0 0 6px;
+    padding: 4px 8px;
+    font-size: 12px;
+    opacity: 0.8;
 }

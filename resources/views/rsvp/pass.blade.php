@@ -4,7 +4,7 @@
     plans/invitation-pass-card.md.
 --}}
 @extends('layouts.site')
-@php $hideSiteHeader = true; $hideSiteFooter = true; @endphp
+@php $hideSiteHeader = true; $hideSiteFooter = true; $guestPage = true; @endphp
 
 @push('head')
     <meta name="robots" content="noindex, nofollow">

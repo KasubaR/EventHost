@@ -1,6 +1,8 @@
 (function () {
     function pad(n) {
-        return String(n).padStart(2, '0');
+        var text = String(n);
+
+        return text.length < 2 ? '0' + text : text;
     }
 
     function tickCountdown(root) {
@@ -183,9 +185,13 @@
         var src = btn.getAttribute('data-audio-src');
         if (!src) return;
 
-        var audio = new Audio(src);
+        // Creating the audio with its source up front would start fetching the file at once. Where media may not start by itself (a phone on a connection we
+        // cannot measure, Save-Data, 2g) nothing is fetched until the guest taps the music button.
+        var autoStart = mayStartMedia();
+        var audio = new Audio();
         audio.loop = true;
-        audio.preload = 'auto';
+        audio.preload = autoStart ? 'auto' : 'none';
+        audio.src = src;
 
         // Show what is playing, next to whichever music button this layout draws.
         var caption = root.getAttribute('data-audio-caption');
@@ -244,11 +250,31 @@
             if (!userPaused && audio.paused) audio.play().catch(function () {});
         }
 
+        if (!autoStart) {
+            return;
+        }
+
         audio.play().catch(function () {
             events.forEach(function (name) {
                 window.addEventListener(name, onFirstGesture, { capture: true, passive: true });
             });
         });
+    }
+
+    // Facebook and Instagram's browsers often cannot open a link that leaves the page or hand a file to the calendar app. A guest
+    // there sees one line saying how to get out; everywhere else nothing is added.
+    function initInAppHint(root) {
+        if (!isInAppBrowser()) {
+            return;
+        }
+        var calendar = root.querySelector('.evt-calendar-actions');
+        if (!calendar || calendar.querySelector('.evt-inv-inapp-hint')) {
+            return;
+        }
+        var hint = document.createElement('p');
+        hint.className = 'evt-inv-inapp-hint';
+        hint.textContent = 'If a link does not open, use the menu to open this page in your browser.';
+        calendar.insertBefore(hint, calendar.firstChild);
     }
 
     function initWeddingNoirReveal(root) {
@@ -372,17 +398,50 @@
 
     // A slow or metered connection should not pay for a background video nobody asked for. Unknown (no Network
     // Information API, e.g. Safari and Firefox) counts as fine.
-    function connectionAllowsMedia() {
+    function connectionQuality() {
         var c = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
         if (!c) {
-            return true;
+            return 'unknown';
         }
         if (c.saveData) {
+            return 'no';
+        }
+
+        return c.effectiveType === 'slow-2g' || c.effectiveType === '2g' ? 'no' : 'yes';
+    }
+
+    // Facebook and Instagram's in-app browsers. WhatsApp's cannot be recognised (iOS sends no marker), so nothing here relies on
+    // detecting it: a phone whose connection cannot be measured is treated the same way whatever app it is in.
+    function isInAppBrowser() {
+        return /FBAN|FBAV|FB_IAB|Instagram/i.test(navigator.userAgent || '');
+    }
+
+    // A desktop-class device: a mouse-like pointer and a wide window. Without matchMedia we cannot tell, so we say no.
+    function isDesktopClass() {
+        if (!window.matchMedia) {
             return false;
         }
 
-        return c.effectiveType !== 'slow-2g' && c.effectiveType !== '2g';
+        return window.matchMedia('(pointer: fine)').matches && window.matchMedia('(min-width: 900px)').matches;
     }
+
+    // May media (a background video, the YouTube player, music) start by itself? The connection says yes or no outright when the
+    // browser reports it. When it cannot be measured (iOS, Firefox, most in-app browsers) a phone is where a guest is likely to be
+    // on cellular data, so only a desktop-class device starts on its own; a phone gets a button and one tap.
+    function mayStartMedia() {
+        var quality = connectionQuality();
+        if (quality === 'yes') {
+            return true;
+        }
+        if (quality === 'no') {
+            return false;
+        }
+
+        return isDesktopClass() && !isInAppBrowser();
+    }
+
+    // Used by tests/js/invitation-media.cjs; nothing on the page depends on it.
+    window.EventHostInvitation = { mayStartMedia: mayStartMedia, connectionQuality: connectionQuality, isInAppBrowser: isInAppBrowser };
 
     // The hero background video (a file, or a YouTube embed) is not in the page until it is wanted: the markup only
     // holds a placeholder. Start it on a normal connection; otherwise, or when the guest prefers reduced motion,
@@ -418,7 +477,7 @@
         var start = embed ? startEmbed : startVideo;
         var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-        if (connectionAllowsMedia() && !reduceMotion) {
+        if (mayStartMedia() && !reduceMotion) {
             start();
             return;
         }
@@ -498,22 +557,46 @@
         });
     }
 
-    function boot() {
-        // Tells the stall guard in the page head that scripts are running; undoes it if it already fired.
+    // Every step runs on its own. An old or unusual browser that throws in one (the slider, say) must not stop the
+    // others: above all the reveals, because a layout that hides its sections until they are revealed would stay blank.
+    function safely(name, step) {
+        try {
+            step();
+        } catch (error) {
+            if (window.console && typeof window.console.warn === 'function') {
+                window.console.warn('invitation: ' + name + ' failed', error);
+            }
+        }
+    }
+
+    // Tells the stall guard in the page head that scripts are running; undoes it if it already fired.
+    function markReady() {
         document.documentElement.setAttribute('data-inv-ready', '');
         document.documentElement.classList.remove('js-stalled');
+    }
 
-        document.querySelectorAll('.evt-invitation').forEach(function (root) {
-            tickCountdown(root);
-            initHeroMedia(root);
-            initImageFallbacks(root);
-            bindAudio(root);
-            initGallery(root);
-            initEventInviteLights(root);
-            initWeddingReveal(root);
-            initWeddingNoirReveal(root);
-            initLayoutLightboxes(root);
+    function boot() {
+        var roots = document.querySelectorAll('.evt-invitation');
+
+        Array.prototype.forEach.call(roots, function (root) {
+            // What reveals hidden content comes first. The page is marked ready right after, so the stall guard is
+            // only cancelled once nothing is left hiding; a slow gallery or video start below can no longer matter.
+            safely('wedding reveal', function () { initWeddingReveal(root); });
+            safely('noir reveal', function () { initWeddingNoirReveal(root); });
+            markReady();
+
+            safely('countdown', function () { tickCountdown(root); });
+            safely('image fallbacks', function () { initImageFallbacks(root); });
+            safely('hero media', function () { initHeroMedia(root); });
+            safely('audio', function () { bindAudio(root); });
+            safely('gallery', function () { initGallery(root); });
+            safely('event invite lights', function () { initEventInviteLights(root); });
+            safely('layout lightboxes', function () { initLayoutLightboxes(root); });
+            safely('in-app hint', function () { initInAppHint(root); });
         });
+
+        // A page with no invitation on it still tells the guard scripts ran.
+        markReady();
     }
 
     if (document.readyState === 'loading') {

@@ -1,5 +1,5 @@
 @extends('layouts.site')
-@php $hideSiteHeader = true; $hideSiteFooter = true; @endphp
+@php $hideSiteHeader = true; $hideSiteFooter = true; $guestPage = true; @endphp
 
 @push('head')
     <link rel="stylesheet" href="{{ asset('css/events-public.css') }}">

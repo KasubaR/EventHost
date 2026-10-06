@@ -23,6 +23,18 @@
     overflow-x: hidden;
 }
 
+@supports not (color: color-mix(in srgb, red, blue)) {
+    .evt-layout-wedding-invitation.evt-invitation {
+        --wi-cream: var(--evt-background, #faf6f0);
+        --wi-warm-white: var(--evt-background, #faf6f0);
+        --wi-gold-light: var(--evt-accent, #b8965a);
+        --wi-gold-pale: white;
+        --wi-gold-deep: var(--evt-accent, #b8965a);
+        --wi-brown: var(--evt-primary, #2c2520);
+        --wi-taupe: var(--evt-primary, #2c2520);
+    }
+}
+
 .evt-layout-wedding-invitation .evt-public-inner.evt-public-page {
     max-width: none;
     margin: 0;
@@ -64,6 +76,7 @@
 .evt-layout-wedding-invitation .wi-hero {
     position: relative;
     height: 100vh;
+    height: 100svh;
     min-height: 600px;
     display: flex;
     flex-direction: column;
@@ -74,7 +87,10 @@
 
 .evt-layout-wedding-invitation .wi-hero-img {
     position: absolute;
-    inset: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
     background-size: cover;
     background-position: center 30%;
     transform: scale(1.08);
@@ -90,7 +106,10 @@
 
 .evt-layout-wedding-invitation .wi-hero-overlay {
     position: absolute;
-    inset: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
     background: linear-gradient(
         to bottom,
         rgba(20, 15, 10, 0.28) 0%,
@@ -126,6 +145,7 @@
 
 .evt-layout-wedding-invitation .wi-hero-names {
     font-family: var(--evt-font-heading, "Playfair Display", Georgia, serif);
+    font-size: 3.625rem;
     font-size: clamp(3.625rem, 12vw, 6.5rem);
     font-weight: 400;
     font-style: italic;
@@ -209,6 +229,7 @@
 
 .evt-layout-wedding-invitation .wi-section-title {
     font-family: var(--evt-font-heading, "Playfair Display", Georgia, serif);
+    font-size: 2rem;
     font-size: clamp(2rem, 6vw, 3.25rem);
     font-weight: 400;
     color: var(--wi-charcoal);
@@ -278,6 +299,7 @@
 
 .evt-layout-wedding-invitation .wi-countdown-section .evt-inv-countdown-value {
     font-family: var(--evt-font-heading, "Playfair Display", Georgia, serif);
+    font-size: 2.25rem;
     font-size: clamp(2.25rem, 7vw, 3.5rem);
     font-weight: 400;
     line-height: 1;
@@ -427,6 +449,7 @@
     text-align: center;
     margin-top: 2.5rem;
     font-family: var(--evt-font-heading, "Playfair Display", Georgia, serif);
+    font-size: 1.75rem;
     font-size: clamp(1.75rem, 5vw, 2.75rem);
     font-style: italic;
     color: var(--wi-brown);
@@ -453,6 +476,7 @@
 }
 
 .evt-layout-wedding-invitation .wi-story-text .wi-section-title {
+    font-size: 1.75rem;
     font-size: clamp(1.75rem, 4vw, 2.5rem);
 }
 
@@ -498,7 +522,10 @@
 .evt-layout-wedding-invitation .wi-details-section::before {
     content: '';
     position: absolute;
-    inset: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
     background-image: var(--wi-details-bg, none);
     background-size: cover;
     background-position: center;
@@ -725,6 +752,7 @@
 
 .evt-layout-wedding-invitation .wi-rsvp-section .evt-inline-rsvp-heading {
     font-family: var(--evt-font-heading, "Playfair Display", Georgia, serif);
+    font-size: 1.75rem;
     font-size: clamp(1.75rem, 4vw, 2.25rem);
     font-weight: 400;
     text-align: center;
@@ -832,6 +860,7 @@
 
 .evt-layout-wedding-invitation .wi-rsvp-section .rsvp-radio[data-status="accepted"]:has(input:checked) {
     border-color: var(--wi-gold);
+    background: transparent;
     background: color-mix(in srgb, var(--wi-gold) 8%, transparent);
     color: var(--wi-charcoal);
     box-shadow: none;
@@ -839,6 +868,7 @@
 
 .evt-layout-wedding-invitation .wi-rsvp-section .rsvp-radio[data-status="declined"]:has(input:checked) {
     border-color: var(--wi-taupe);
+    background: transparent;
     background: color-mix(in srgb, var(--wi-taupe) 8%, transparent);
     color: var(--wi-charcoal);
     box-shadow: none;
@@ -846,6 +876,7 @@
 
 .evt-layout-wedding-invitation .wi-rsvp-section .rsvp-radio[data-status="maybe"]:has(input:checked) {
     border-color: var(--wi-gold-pale);
+    background: transparent;
     background: color-mix(in srgb, var(--wi-gold-pale) 20%, transparent);
     color: var(--wi-charcoal);
     box-shadow: none;
@@ -874,7 +905,10 @@
 .evt-layout-wedding-invitation .wi-rsvp-section .rsvp-submit::before {
     content: '';
     position: absolute;
-    inset: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
     background: linear-gradient(135deg, rgba(201, 169, 110, 0.15) 0%, transparent 70%);
     pointer-events: none;
 }
@@ -885,6 +919,7 @@
 }
 
 .evt-layout-wedding-invitation .wi-rsvp-section .rsvp-field-error {
+    color: #c0392b;
     color: color-mix(in srgb, #c0392b 70%, var(--wi-charcoal));
     font-family: "Cormorant Garamond", Georgia, serif;
     font-size: 0.875rem;
@@ -932,7 +967,10 @@
 .evt-layout-wedding-invitation .wi-footer::before {
     content: '';
     position: absolute;
-    inset: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
     background-size: cover;
     background-position: center;
     opacity: 0.06;
@@ -945,6 +983,7 @@
 
 .evt-layout-wedding-invitation .wi-footer-names {
     font-family: var(--evt-font-heading, "Playfair Display", Georgia, serif);
+    font-size: 2.25rem;
     font-size: clamp(2.25rem, 8vw, 4rem);
     font-style: italic;
     color: rgba(255, 255, 255, 0.9);
@@ -1047,3 +1086,4 @@ html.js-stalled .evt-layout-wedding-invitation .wi-reveal {
     transform: none;
     transition: none;
 }
+

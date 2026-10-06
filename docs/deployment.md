@@ -133,6 +133,23 @@ New photos get their small copy automatically (queue worker: `ProcessInvitationD
 re-run; it skips photos that already have one or are not wider than 600px. Until it runs, old photos simply load at full
 size. The nightly `invitation:prune-orphaned-files` keeps a small copy while its photo is in use.
 
+**Backfill the link-preview images once** (`plans/invitation-page-compatibility.md` Phase 5). WhatsApp and Facebook previews use a
+1200×630 JPEG per event, written by a queued job when the cover or design changes; existing events need one run:
+
+```bash
+php artisan invitation:make-share-images --dry-run   # which events would get one
+php artisan invitation:make-share-images
+```
+
+Then check one event's page: `curl -s https://<host>/e/<slug> | grep og:image` must show an **`https://`** URL ending in
+`invitation-share/<id>/<hash>.jpg`. Behind a proxy a wrong `APP_URL` makes it `http://`, which WhatsApp may ignore. WhatsApp and Facebook
+cache a preview by image URL; a changed picture gets a new URL by design. To refresh one already shared, use Facebook's Sharing Debugger
+(https://developers.facebook.com/tools/debug/) and "Scrape Again".
+
+**Guest icons are built, not edited.** `public/css/guest-icons.css` comes from `resources/icons/fa` via
+`php artisan icons:build-guest-css` (output is committed, so nothing runs at deploy). If you add an icon to a guest page, add its SVG,
+run the command and commit both; `php artisan icons:build-guest-css --check` fails when the file is stale.
+
 **Long cache lifetime on photos and libraries (server config, not app code).** Gallery, hero and couple photos get a new
 random file name on every upload, and the vendor libraries are requested with `?v=<version>`, so both can be cached for a
 year without ever being stale. On Apache / cPanel, add this to `public/.htaccess` **above** the Laravel rewrite block:
@@ -164,6 +181,37 @@ code, not how a browser behaves. Use a gallery-heavy wedding invitation and the 
       button appears; tapping it starts it
 - [ ] Rename one gallery photo on disk to simulate a failure: that photo disappears from the slider, nothing else moves
 - [ ] Repeat the gallery check on the layouts that use only GLightbox (wedding, modern minimal, botanical, dusty blue)
+
+**Old phones, in-app browsers and desktop** (`plans/invitation-page-compatibility.md`). None of this can be tested from a laptop; use real
+devices, or at least a recent Android Chrome with an old WebView / BrowserStack. For each, open a gallery-heavy wedding invitation, the
+standard one and Beauty for Ashes, and check: all text readable (nothing white on white, no overlay left uncovered), the RSVP form submits,
+**the chosen answer shows a tick**, calendar links work, and nothing is blank.
+
+- [ ] **An old Android phone** (Android 7-9 with an out-of-date system WebView, or Chrome ~70): the page is plainer but complete
+- [ ] **WhatsApp**: send yourself the link, open it in WhatsApp's browser (Android and iOS); the preview card in the chat shows the picture,
+      title and description; a background video shows **Play video**, not autoplay; the music waits for its button
+- [ ] **Facebook** (Android and iOS): post or message the link; the preview shows the picture; opened in Facebook's browser the hero is not
+      cut off by the toolbar, the one-line "open in your browser" hint shows above the calendar links, RSVP submits (cookies work)
+- [ ] **A laptop**: Safari, Firefox and Chrome; a video autoplays muted; **Print preview** shows every section (nothing transparent),
+      no video / slider arrows, the countdown as a sentence and the gallery as a grid
+- [ ] **Facebook Sharing Debugger** on one event URL: no warnings about the image, size 1200×630
+
+*Approximating an old engine on a laptop (rough):* paste this in the DevTools console of a guest page. It removes the declarations an old engine
+would drop, so you can see what the fallbacks leave. It cannot emulate the `@supports not` blocks (a modern browser supports the feature, so
+those never apply), so treat colours as indicative only.
+
+```js
+(async () => {
+  const drop = /color-mix\(|(?<![\w-])(clamp|min|max)\(|^\s*aspect-ratio\s*:|\bd?\d+svh\b|:has\(/;
+  for (const link of [...document.querySelectorAll('link[rel=stylesheet]')]) {
+    if (!link.href.startsWith(location.origin)) continue;
+    const css = await (await fetch(link.href)).text();
+    const style = document.createElement('style');
+    style.textContent = css.split('\n').filter(line => !drop.test(line)).join('\n');
+    link.replaceWith(style);
+  }
+})();
+```
 
 ## 4. If something in this checklist was skipped and a page is now 500ing
 

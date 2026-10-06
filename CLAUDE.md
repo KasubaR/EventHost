@@ -1010,6 +1010,67 @@ phases: `plans/invitation-page-resilience.md` — all built. Tests: `InvitationR
   which `InvitationMediaHealth` already hides when the page is built
 - **Caching headers are server config, not app code** — see `docs/deployment.md` §3d
 
+#### Compatibility: old browsers, in-app browsers, desktop
+
+How the guest-facing pages behave on an old Android phone, inside WhatsApp's and Facebook's browsers, and on desktop. Plan and
+phases: `plans/invitation-page-compatibility.md` — all built. Tests: `GuestCssFallbacksTest`, `GuestIconsTest`,
+`InvitationCompatibilityTest` (with `tests/js/invitation-boot.cjs` and `tests/js/invitation-media.cjs`, run through Node and
+skipped where Node is missing), `InvitationShareImageTest`.
+
+- **Support floor: readable, RSVP works, looks plainer.** Roughly Chrome/WebView before v90 and iOS before 15.4 must show all text
+  and controls and submit the RSVP; they do not have to look identical. Fall back only where a missing feature would break the page
+  (overlays that stop covering, text that turns invisible, sizes that collapse, images with no frame). Decoration may drop
+- **Every modern CSS declaration in the guest stylesheets needs a fallback BEFORE it**, enforced by `GuestCssFallbacksTest`:
+  `color-mix()`, `clamp()` / `min()` / `max()` → the same property with a plain value on the line before (a browser that
+  understands both takes the later one); `inset` → never, write `top/right/bottom/left`; `aspect-ratio` → an
+  `@supports not (aspect-ratio: 1)` block with a `min-height`; a **custom property** that uses `color-mix()` cannot fall back by
+  repeating (any token stream is valid, so `var(--x)` goes invalid instead), so it needs an
+  `@supports not (color: color-mix(in srgb, red, blue))` block that sets it to plain colours. The first pass was a one-off codemod;
+  new CSS is written by hand to the same rule. Flex `gap` and most `:has()` are deliberately not covered
+- **The chosen RSVP answer shows without `:has()`.** The native radio is hidden, and `:has(input:checked)` (Chrome 105+, Safari 15.4+)
+  alone left older browsers with no visible selection, so a tick and bold before the chosen label's text (`.rsvp-radio input:checked
+  + span`) show it in every browser. Colour alone is a weak signal for everyone
+- **One script step failing must not stop the page.** `boot()` in `invitation-public.js` runs every step through `safely()`; the reveal
+  steps run first and the page is marked ready (`data-inv-ready`, which cancels the stall guard) right after them. Keep the script plain
+  ES5 (no arrow functions, `const`, `let`, template literals, `padStart`): a test fails otherwise
+- **Guest pages use local icons, not the Font Awesome CDN.** A page that sets `$guestPage` (the invitation, previews, pass, status page
+  and the RSVP pages) loads `public/css/guest-icons.css`, **generated** by `php artisan icons:build-guest-css` from the Font Awesome Free
+  SVGs in `resources/icons/fa/{solid,regular,brands}` (CC BY 4.0, licence kept beside them and in the file header). Templates keep their
+  `<i class="fa-solid fa-music">` markup; each icon is a `mask-image` rule. **To use a new icon on a guest page:** download its SVG from
+  the same Font Awesome version into the right folder, run the command, commit both. `GuestIconsTest` fails if a guest view uses an icon
+  that is not in the set or the committed stylesheet is stale. Every other page (app, admin, ticket landing) keeps the CDN stylesheet, as
+  does a guest page while an admin is acting as a client (`session('acting_as')`: the banner uses an icon outside the set)
+- **Accepted third-party exceptions on guest pages:** Google Fonts (loaded without blocking: `media="print"` until loaded, with a
+  `<noscript>` copy; text shows in a fallback face meanwhile) and the Google Maps iframe (lazy). Nothing else, and never a render-blocking
+  third-party stylesheet or script
+- **Heroes are sized with a `vh` line and an `svh` line** (`min-height: 100vh; min-height: 100svh;`), because 100vh is taller than the
+  visible screen in iOS and in-app browsers; an engine without `svh` drops the second line. `@media print` in `events-invitation.css`
+  makes reveal sections opaque, releases viewport-sized heroes, hides video / music / slider controls, prints the countdown as its
+  sentence and the gallery as a grid (with `!important`, deliberately: layout stylesheets load after it). With JS off the thank-you page's
+  calendar links are shown in place (`html:not(.js) .rsvp-thanks-menu[hidden]`)
+- **Link previews use a JPEG.** WhatsApp and Facebook do not reliably render a WebP `og:image`. `InvitationShareImage::sourcePath()` is the
+  one definition of which picture represents the event (with a cover: first gallery photo, else the cover; without: first couple photo,
+  hero portrait, first gallery photo; only files that exist), used by `events/partials/public-invitation-meta.blade.php` **and** by
+  `GenerateEventShareImageJob`, which writes a 1200×630 JPEG at `invitation-share/{event_id}/{hash}.jpg`. The hash derives from the source's
+  path, size and modified time, so a changed picture is a **new URL** (previews are cached by URL) and the page computes the name without
+  listing a folder or a column. `Event::saved` dispatches the job after commit when `cover_image` or `invitation_customization` changes
+  (forms, API and the WebP job alike); the page uses the JPEG when it exists and the stored image before that, adding
+  `og:image:type/width/height` only for the JPEG and `og:image:alt` always. Purge deletes the folder; `invitation:prune-orphaned-files`
+  removes folders of events that no longer exist (soft-deleted ones are kept); `invitation:make-share-images [--dry-run]` backfills.
+  Ticketed events and the personal RSVP link are unchanged
+- **Media starts by itself only when the connection says so.** `mayStartMedia()` in `invitation-public.js` is one rule for the background
+  video, the YouTube player and the music: a measured connection decides (Save-Data or 2g → no, otherwise yes); when it **cannot be
+  measured** (iOS, Firefox, most in-app browsers, which is where guests are on cellular data) only a **desktop-class** device (a fine pointer
+  and a window at least 900px wide) outside Facebook / Instagram's in-app browsers starts media itself, and a phone gets "Play video" and one
+  tap. The music is created without a source and with `preload="none"` until allowed, so nothing is fetched early. WhatsApp's browser cannot
+  be recognised (iOS sends no marker), so no rule relies on detecting it
+- **In-app browser hint.** Inside Facebook or Instagram's browser (`FBAN|FBAV|FB_IAB|Instagram`) one line above the calendar links says to open
+  the page in the browser; on the invitation (`initInAppHint`) and the thank-you page (`rsvp-thanks.js`). Those webviews often cannot open
+  a link that leaves the page or hand an `.ics` file to the calendar app; Google and Outlook calendar links still work
+- **Not covered:** visual parity on old engines, a soft cover on very large or retina screens (the cover is cropped to 1200×630 and the
+  content column is 720px by design), Opera Mini / UC Mini extreme mode, and any real-device behaviour (see the checklist in
+  `docs/deployment.md` §3d)
+
 ### Featured Templates (homepage)
 
 The homepage "Invitation Templates" strip is curated from the admin panel, not hardcoded:
@@ -1100,7 +1161,8 @@ to them.
 Vite bundles `resources/css/app.css` (Tailwind) and `resources/js/app.js`. These are loaded with `@vite()` in the layouts. The custom CSS files in `public/css/` are loaded directly with `<link>` tags — they are not processed by Vite.
 
 `public/vendor/` holds vendored front-end libraries (Swiper, GLightbox) served as-is, not built by Vite; its README lists
-versions and how to upgrade. Nothing on a guest page may depend on a third-party host.
+versions and how to upgrade. No render-blocking third-party stylesheet or script may sit on a guest page (Google Fonts, loaded without
+blocking, and the lazy Maps iframe are the two accepted exceptions); `public/css/guest-icons.css` is generated, not edited.
 
 `public/js/media-uploader.js` must load **before** `event-edit-save.js` — saving waits on
 `window.MediaUploader.pending()` so a click mid-upload does not post ids for files still in transit.

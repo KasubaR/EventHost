@@ -1,5 +1,5 @@
 @extends('layouts.site')
-@php $hideSiteHeader = true; $hideSiteFooter = true; $noUnsplashPreconnect = true; @endphp
+@php $hideSiteHeader = true; $hideSiteFooter = true; $noUnsplashPreconnect = true; $guestPage = true; @endphp
 
 @push('head')
     @include('events.partials.public-invitation-meta', ['event' => $event, 'invitation' => $invitation])

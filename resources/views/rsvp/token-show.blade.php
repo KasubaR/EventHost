@@ -10,7 +10,7 @@
     is a personal link, not something meant to be shared/indexed.
 --}}
 @extends('layouts.site')
-@php $hideSiteHeader = true; $hideSiteFooter = true; $noUnsplashPreconnect = true; @endphp
+@php $hideSiteHeader = true; $hideSiteFooter = true; $noUnsplashPreconnect = true; $guestPage = true; @endphp
 
 @push('head')
     <meta name="robots" content="noindex, nofollow">

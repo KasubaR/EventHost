@@ -36,7 +36,9 @@
 
 .evt-invitation .evt-public-type {
     color: var(--evt-accent, #1e47bb);
+    border-color: rgba(128, 128, 128, 0.25);
     border-color: color-mix(in srgb, var(--evt-accent, #1e47bb) 35%, transparent);
+    background: transparent;
     background: color-mix(in srgb, var(--evt-accent, #1e47bb) 12%, transparent);
 }
 
@@ -45,6 +47,7 @@
 }
 
 .evt-invitation .evt-detail-list li {
+    border-color: rgba(128, 128, 128, 0.25);
     border-color: color-mix(in srgb, var(--evt-primary, #1a2a4a) 14%, transparent);
 }
 
@@ -58,7 +61,9 @@
 }
 
 .evt-invitation .evt-inv-countdown {
+    border-color: rgba(128, 128, 128, 0.25);
     border-color: color-mix(in srgb, var(--evt-accent, #1e47bb) 22%, transparent);
+    background: var(--evt-background, #fafafa);
     background: color-mix(in srgb, var(--evt-background, #fafafa) 85%, white);
 }
 
@@ -75,8 +80,10 @@
 }
 
 .evt-invitation .tpl-tag {
+    background: transparent;
     background: color-mix(in srgb, var(--evt-accent, #1e47bb) 12%, transparent);
     color: var(--evt-accent, #1e47bb);
+    border-color: rgba(128, 128, 128, 0.25);
     border-color: color-mix(in srgb, var(--evt-accent, #1e47bb) 22%, transparent);
 }
 
@@ -121,7 +128,10 @@
 
 .evt-inv-hero-video {
     position: absolute;
-    inset: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -131,7 +141,10 @@
 
 .evt-inv-hero-video-embed {
     position: absolute;
-    inset: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
     z-index: 0;
     overflow: hidden;
     border-radius: 16px;
@@ -152,7 +165,10 @@
 
 .evt-inv-hero-video-scrim {
     position: absolute;
-    inset: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
     border-radius: 16px;
     background: linear-gradient(to bottom, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.35));
     z-index: 1;
@@ -188,6 +204,7 @@
 .evt-inv-std-hero-date {
     margin: 0;
     font-family: var(--evt-font-heading, inherit);
+    font-size: 1.25rem;
     font-size: clamp(1.25rem, 4vw, 1.75rem);
     font-weight: 600;
 }
@@ -318,6 +335,7 @@
     text-align: center;
     padding: 12px 8px;
     border-radius: 10px;
+    background: var(--evt-background, #fafafa);
     background: color-mix(in srgb, var(--evt-background, #fafafa) 70%, var(--white, #fff));
     border: 1px solid var(--line, #e0e0e8);
 }
@@ -389,6 +407,7 @@
 .evt-calendar-actions {
     margin-top: 22px;
     padding-top: 18px;
+    border-top: 1px solid rgba(128, 128, 128, 0.25);
     border-top: 1px solid color-mix(in srgb, var(--evt-primary, #1a2a4a) 12%, transparent);
 }
 
@@ -420,7 +439,9 @@
     font-weight: 600;
     text-decoration: none;
     color: var(--evt-primary, #1a2a4a);
+    background: var(--evt-background, #fafafa);
     background: color-mix(in srgb, var(--evt-background, #fafafa) 88%, white);
+    border: 1px solid rgba(128, 128, 128, 0.25);
     border: 1px solid color-mix(in srgb, var(--evt-accent, #1e47bb) 35%, transparent);
 }
 
@@ -433,7 +454,9 @@
     margin-top: 28px;
     padding: 24px 20px;
     border-radius: 16px;
+    border: 1px solid rgba(128, 128, 128, 0.25);
     border: 1px solid color-mix(in srgb, var(--evt-primary, #1a2a4a) 14%, transparent);
+    background: var(--evt-background, #fafafa);
     background: color-mix(in srgb, var(--evt-background, #fafafa) 92%, white);
 }
 
@@ -448,6 +471,7 @@
     margin: 0 0 18px;
     font-size: 15px;
     line-height: 1.5;
+    color: var(--evt-primary, #1a2a4a);
     color: color-mix(in srgb, var(--evt-primary, #1a2a4a) 78%, gray);
 }
 
@@ -522,9 +546,16 @@
     max-width: 640px;
     margin-inline: auto;
     padding-block: 52px 64px;
+    padding-inline: 22px;
     padding-inline: clamp(22px, 4vw, 44px);
     border-radius: 32px;
+    border: 1px solid rgba(128, 128, 128, 0.25);
     border: 1px solid color-mix(in srgb, var(--evt-accent, #c87892) 32%, transparent);
+    background: linear-gradient(
+        165deg,
+        var(--evt-background, #faf5f2) 0%,
+        var(--evt-background, #faf5f2) 100%
+    );
     background: linear-gradient(
         165deg,
         color-mix(in srgb, var(--evt-background, #faf5f2) 94%, white) 0%,
@@ -541,9 +572,16 @@
     left: 50%;
     top: 14px;
     transform: translateX(-50%);
+    width: 48%;
     width: min(220px, 48%);
     height: 5px;
     border-radius: 999px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        var(--evt-accent, #c87892),
+        transparent
+    );
     background: linear-gradient(
         90deg,
         transparent,
@@ -559,6 +597,7 @@
 
 .evt-skin-botanical-blush .evt-public-cover {
     border-radius: 50% 50% 24px 24px / 28% 28% 24px 24px;
+    border: 3px solid var(--evt-accent, #c87892);
     border: 3px solid color-mix(in srgb, var(--evt-accent, #c87892) 50%, white);
     box-shadow:
         0 0 0 7px color-mix(in srgb, var(--evt-background, #faf5f2) 65%, var(--evt-accent, #c87892)),
@@ -579,7 +618,9 @@
     padding-block: 7px;
     border-width: 1px;
     font-weight: 700;
+    background: white;
     background: color-mix(in srgb, var(--evt-accent, #c87892) 14%, white);
+    color: var(--evt-primary, #5a4d52);
     color: color-mix(in srgb, var(--evt-primary, #5a4d52) 85%, var(--evt-accent, #c87892));
 }
 
@@ -592,7 +633,9 @@
 
 .evt-skin-botanical-blush .evt-detail-list li {
     border-radius: 16px;
+    border-color: rgba(128, 128, 128, 0.25);
     border-color: color-mix(in srgb, var(--evt-accent, #c87892) 38%, transparent);
+    background: var(--evt-background, #faf5f2);
     background: color-mix(in srgb, var(--evt-background, #faf5f2) 55%, white);
     box-shadow: none;
 }
@@ -601,19 +644,25 @@
     border-radius: 22px;
     border-style: solid;
     border-width: 1px;
+    border-color: rgba(128, 128, 128, 0.25);
     border-color: color-mix(in srgb, var(--evt-accent, #c87892) 36%, transparent);
+    background: var(--evt-background, #faf5f2);
     background: color-mix(in srgb, var(--evt-background, #faf5f2) 72%, white);
+    box-shadow: 0 16px 40px transparent;
     box-shadow: 0 16px 40px color-mix(in srgb, var(--evt-primary, #5a4d52) 8%, transparent);
 }
 
 .evt-skin-botanical-blush .evt-inv-countdown-unit {
     border-radius: 14px;
+    border-color: rgba(128, 128, 128, 0.25);
     border-color: color-mix(in srgb, var(--evt-accent, #c87892) 22%, transparent);
+    background: white;
     background: color-mix(in srgb, white 88%, var(--evt-background, #faf5f2));
 }
 
 .evt-skin-botanical-blush .evt-inv-gallery-item {
     border-radius: 18px;
+    border-color: rgba(128, 128, 128, 0.25);
     border-color: color-mix(in srgb, var(--evt-accent, #c87892) 30%, transparent);
 }
 
@@ -690,6 +739,7 @@
     margin: 6px 0 0;
     font-size: 0.95rem;
     line-height: 1.5;
+    color: var(--evt-primary, #1a2a4a);
     color: color-mix(in srgb, var(--evt-primary, #1a2a4a) 78%, gray);
 }
 
@@ -779,7 +829,6 @@ html:not(.js) .evt-inv-gallery .swiper-pagination,
     z-index: 4;
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
     padding: 0.45rem 0.9rem;
     border: 0;
     border-radius: 999px;
@@ -790,6 +839,11 @@ html:not(.js) .evt-inv-gallery .swiper-pagination,
     font-weight: 600;
     text-decoration: none;
     cursor: pointer;
+}
+
+.evt-inv-video-play i,
+.evt-inv-video-link i {
+    margin-right: 0.4rem;
 }
 
 .evt-inv-video-play:hover,
@@ -812,6 +866,100 @@ html.js.js-stalled .evt-inv-video-link {
 }
 
 .evt-inv-img-failed {
+    background: var(--evt-background, #ffffff);
     background: color-mix(in srgb, var(--evt-primary, #5a4d52) 14%, var(--evt-background, #ffffff));
     color: transparent;
+}
+
+/* Printing, or "Save as PDF". Everything here undoes something that only makes sense on a screen: sections that appear on
+   scroll are transparent until reached (a printout never scrolls), heroes sized to the viewport become page-sized blocks, and
+   video, music, sliders and a frozen countdown mean nothing on paper. !important is deliberate: these must beat the layout
+   stylesheets, which load after this one. */
+@media print {
+    .evt-invitation,
+    .evt-invitation * {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .evt-layout-wedding-invitation .wi-reveal,
+    .evt-layout-wedding-invitation-noir .wi2-reveal {
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
+        animation: none !important;
+    }
+
+    .evt-layout-wedding-invitation .wi-hero,
+    .evt-layout-wedding-invitation-noir .wi2-hero,
+    .evt-layout-beauty-for-ashes .bfa-hero,
+    .evt-layout-event-invite.evt-invitation,
+    .evt-layout-modern-minimal .mm-hero,
+    .evt-layout-wedding-midnight-gold .mg-hero,
+    .evt-layout-botanical-graduation .hero {
+        height: auto !important;
+        min-height: 0 !important;
+    }
+
+    .evt-preview-banner,
+    .evt-inv-nav,
+    .evt-inv-audio-wrap,
+    .evt-inv-hero-video,
+    .evt-inv-hero-video-embed,
+    .evt-inv-hero-video-scrim,
+    .bfa-hero-video,
+    .bfa-hero-video-embed,
+    .bfa-hero-video-scrim,
+    .evt-inv-video-play,
+    .evt-inv-video-link,
+    .evt-inv-gallery-prev,
+    .evt-inv-gallery-next,
+    .evt-inv-gallery-pagination,
+    .swiper-button-prev,
+    .swiper-button-next,
+    .swiper-pagination,
+    .swiper-slide-duplicate,
+    .evt-inv-countdown-done,
+    [data-inv-countdown] .evt-inv-countdown-grid {
+        display: none !important;
+    }
+
+    /* The countdown is frozen on paper: print the start as a sentence instead. */
+    .evt-inv-countdown-nojs {
+        display: block !important;
+    }
+
+    /* The gallery slider becomes a plain two-column grid. */
+    .evt-inv-gallery-swiper {
+        overflow: visible !important;
+        padding-bottom: 0 !important;
+    }
+
+    .evt-inv-gallery-swiper .swiper-wrapper {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 12px !important;
+        transform: none !important;
+        height: auto !important;
+    }
+
+    .evt-inv-gallery-swiper .swiper-slide {
+        width: auto !important;
+        height: auto !important;
+        margin: 0 !important;
+    }
+
+    .evt-inv-anchor,
+    .evt-inv-gallery,
+    .evt-calendar-actions {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+}
+
+/* One line shown only inside Facebook's and Instagram's in-app browsers (see initInAppHint in invitation-public.js). */
+.evt-inv-inapp-hint {
+    margin: 0 0 0.6rem;
+    font-size: 0.8rem;
+    opacity: 0.8;
 }

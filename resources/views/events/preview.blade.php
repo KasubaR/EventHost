@@ -1,5 +1,5 @@
 @extends('layouts.site')
-@php $hideSiteHeader = true; $hideSiteFooter = true; @endphp
+@php $hideSiteHeader = true; $hideSiteFooter = true; $guestPage = ! $event->isTicketed(); @endphp
 
 @push('head')
     <meta name="robots" content="noindex, nofollow">

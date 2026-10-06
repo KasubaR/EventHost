@@ -13,6 +13,7 @@ use App\Enums\RsvpStatus;
 use App\Enums\SubscriptionTier;
 use App\Enums\TicketingStatus;
 use App\Enums\TicketOrderStatus;
+use App\Jobs\GenerateEventShareImageJob;
 use App\Services\ActingAsService;
 use App\Support\BillingPlan;
 use App\Support\EventReminderBuckets;
@@ -413,6 +414,15 @@ class Event extends Model
 
             if ($event->created_by_admin_id === null && $acting->isActive()) {
                 $event->created_by_admin_id = $acting->admin()?->id;
+            }
+        });
+
+        // The link-preview JPEG follows whichever picture the page would choose, so it is regenerated when the cover or the
+        // invitation design (gallery, portraits) changes: from the forms, the API and the background WebP job alike. After the
+        // commit, so the job never reads a half-saved event. plans/invitation-page-compatibility.md Phase 5.
+        static::saved(function (self $event): void {
+            if ($event->isInvitation() && $event->wasChanged(['cover_image', 'invitation_customization'])) {
+                GenerateEventShareImageJob::dispatch($event->id)->afterCommit();
             }
         });
 

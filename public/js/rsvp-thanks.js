@@ -13,6 +13,14 @@
             return;
         }
 
+        // Facebook and Instagram's in-app browsers often cannot open these links or hand a file to the calendar app.
+        if (/FBAN|FBAV|FB_IAB|Instagram/i.test(navigator.userAgent || '') && !panel.querySelector('.rsvp-inapp-hint')) {
+            var hint = document.createElement('p');
+            hint.className = 'rsvp-inapp-hint';
+            hint.textContent = 'If a link does not open, use the menu to open this page in your browser.';
+            panel.insertBefore(hint, panel.firstChild);
+        }
+
         function close() {
             panel.hidden = true;
             trigger.setAttribute('aria-expanded', 'false');

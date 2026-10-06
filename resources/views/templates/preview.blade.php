@@ -1,4 +1,4 @@
-@extends('layouts.site', ['hideSiteFooter' => true, 'hideSiteHeader' => true])
+@extends('layouts.site', ['hideSiteFooter' => true, 'hideSiteHeader' => true, 'guestPage' => true])
 
 @include('events.invitations.partials.google-fonts', ['invitation' => $invitation])
 @include('events.invitations.partials.gallery-assets', ['invitation' => $invitation])

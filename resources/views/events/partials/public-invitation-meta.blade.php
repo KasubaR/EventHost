@@ -7,38 +7,18 @@
         ? Str::limit($descRaw, 200, preserveWords: true)
         : $event->name.' · '.$event->event_date->format('l, F j, Y');
 
-    $storageImage = function (mixed $path): ?string {
-        if (! is_string($path) || $path === '' || str_contains($path, '://')) {
-            return null;
-        }
+    // Which picture represents the event is decided in one place (InvitationShareImage::sourcePath) so this page and the job
+    // that writes the preview JPEG cannot disagree. A WhatsApp or Facebook preview wants a JPEG at about 1200x630, so the JPEG is
+    // used when it exists; until it does (an event not yet backfilled) the stored image is used, exactly as before.
+    $shareSource = \App\Support\InvitationShareImage::sourcePath($event, $invitation['media'] ?? []);
+    $shareJpeg = \App\Support\InvitationShareImage::existingFor($event, $shareSource);
 
-        return asset('storage/'.$path);
-    };
-
-    $imageUrl = $event->cover_image_url;
-    if ($event->hasCoverImage()) {
-        // Host set a cover — gallery still wins for share cards when present
-        // (same as before botanical's portrait fallback).
-        $galleryUrl = $storageImage($invitation['media']['gallery'][0] ?? null);
-        if ($galleryUrl !== null) {
-            $imageUrl = $galleryUrl;
-        }
+    if ($shareJpeg !== null) {
+        $imageUrl = asset('storage/'.$shareJpeg);
+    } elseif ($shareSource !== null) {
+        $imageUrl = asset('storage/'.$shareSource);
     } else {
-        // No cover (e.g. botanical hero portraits): prefer first portrait, then
-        // gallery, then the platform default from cover_image_url. Never write
-        // these paths into events.cover_image.
-        $couplePaths = array_values(array_filter(array_map('strval', $invitation['media']['couple_photos'] ?? [])));
-        $heroPortrait = $invitation['media']['hero_portrait'] ?? null;
-        $portraitUrl = $storageImage($couplePaths[0] ?? null)
-            ?? $storageImage(is_string($heroPortrait) ? $heroPortrait : null);
-        if ($portraitUrl !== null) {
-            $imageUrl = $portraitUrl;
-        } else {
-            $galleryUrl = $storageImage($invitation['media']['gallery'][0] ?? null);
-            if ($galleryUrl !== null) {
-                $imageUrl = $galleryUrl;
-            }
-        }
+        $imageUrl = $event->cover_image_url;
     }
 @endphp
 <link rel="canonical" href="{{ $publicUrl }}">
@@ -48,8 +28,15 @@
 <meta property="og:description" content="{{ $description }}">
 <meta property="og:url" content="{{ $publicUrl }}">
 <meta property="og:image" content="{{ $imageUrl }}">
+@if ($shareJpeg !== null)
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="{{ \App\Support\InvitationShareImage::WIDTH }}">
+<meta property="og:image:height" content="{{ \App\Support\InvitationShareImage::HEIGHT }}">
+@endif
+<meta property="og:image:alt" content="{{ \App\Support\InvitationShareImage::altText($event) }}">
 <meta property="og:site_name" content="{{ config('app.name') }}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="{{ $event->name }}">
 <meta name="twitter:description" content="{{ $description }}">
 <meta name="twitter:image" content="{{ $imageUrl }}">
+<meta name="twitter:image:alt" content="{{ \App\Support\InvitationShareImage::altText($event) }}">

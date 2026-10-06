@@ -29,12 +29,14 @@ nav.evt-inv-nav {
     height: auto;
     padding: 0;
     background: var(--inv-nav-bg);
+    border-bottom: 1px solid rgba(128, 128, 128, 0.25);
     border-bottom: 1px solid color-mix(in srgb, var(--inv-nav-fg) 14%, transparent);
 }
 
 .evt-inv-nav-list {
     display: flex;
     justify-content: center;
+    gap: 0.25rem 0.75rem;
     gap: 0.25rem clamp(0.75rem, 3vw, 2.25rem);
     margin: 0 auto;
     padding: 0 1.25rem;
@@ -56,6 +58,7 @@ nav.evt-inv-nav {
     display: block;
     padding: 1.05rem 0.15rem 0.95rem;
     border-bottom: 1px solid transparent;
+    color: var(--inv-nav-fg);
     color: color-mix(in srgb, var(--inv-nav-fg) 78%, var(--inv-nav-bg));
     font-family: var(--inv-nav-font);
     font-size: 0.72rem;
@@ -90,3 +93,4 @@ nav.evt-inv-nav {
 .evt-layout-modern-minimal .evt-inv-anchor:has(> .mm-section:last-child) + .evt-inv-anchor > .mm-section:first-child {
     border-top: 1px solid var(--mm-border);
 }
+

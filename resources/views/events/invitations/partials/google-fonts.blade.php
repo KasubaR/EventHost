@@ -5,6 +5,7 @@
 @if ($families !== [])
     @push('head')
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family={{ implode('&family=', $families) }}&display=swap">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family={{ implode('&family=', $families) }}&display=swap" media="print" onload="this.media='all'">
+        <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family={{ implode('&family=', $families) }}&display=swap"></noscript>
     @endpush
 @endif

@@ -21,6 +21,14 @@
     text-align: center;
 }
 
+@supports not (color: color-mix(in srgb, red, blue)) {
+    .evt-layout-wedding-dusty-blue.evt-invitation {
+        --db-panel: var(--evt-background, #c6d4e4);
+        --db-slot: var(--evt-background, #c6d4e4);
+        --db-shadow: 0 8px 22px transparent;
+    }
+}
+
 .evt-layout-wedding-dusty-blue .evt-public-inner.evt-public-page,
 .evt-layout-wedding-dusty-blue .evt-invitation-page {
     max-width: none;
@@ -62,6 +70,7 @@
 
 .evt-layout-wedding-dusty-blue .db-title {
     font-family: var(--evt-font-heading, "Cormorant Garamond", Georgia, serif);
+    font-size: 2rem;
     font-size: clamp(2rem, 6vw, 2.6rem);
     font-weight: 500;
     letter-spacing: 0.18em;
@@ -116,7 +125,10 @@
 
 .evt-layout-wedding-dusty-blue .db-hero-bg {
     position: absolute;
-    inset: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -125,7 +137,11 @@
 .evt-layout-wedding-dusty-blue .db-hero::after {
     content: "";
     position: absolute;
-    inset: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: var(--db-bg);
     background: color-mix(in srgb, var(--db-bg) 86%, transparent);
     pointer-events: none;
 }
@@ -146,11 +162,13 @@
 .evt-layout-wedding-dusty-blue .db-strip {
     display: grid;
     gap: 12px;
+    width: 100%;
     width: min(100%, 340px);
     margin: 0 auto;
     padding: 14px;
     background: #ffffff;
     transform: rotate(-2.5deg);
+    box-shadow: 0 10px 30px transparent;
     box-shadow: 0 10px 30px color-mix(in srgb, var(--db-navy) 22%, transparent);
 }
 
@@ -158,6 +176,12 @@
     aspect-ratio: 1 / 0.9;
     overflow: hidden;
     background: var(--db-slot);
+}
+
+@supports not (aspect-ratio: 1) {
+    .evt-layout-wedding-dusty-blue .db-strip-photo {
+        min-height: 180px;
+    }
 }
 
 .evt-layout-wedding-dusty-blue .db-strip-photo img,
@@ -171,6 +195,7 @@
 
 .evt-layout-wedding-dusty-blue .db-hero-title {
     font-family: var(--evt-font-heading, "Cormorant Garamond", Georgia, serif);
+    font-size: 2.6rem;
     font-size: clamp(2.6rem, 7vw, 3.8rem);
     font-weight: 500;
     letter-spacing: 0.08em;
@@ -181,6 +206,7 @@
 .evt-layout-wedding-dusty-blue .db-hero-the {
     display: block;
     margin: 0.2rem 0;
+    font-size: 2.2rem;
     font-size: clamp(2.2rem, 6vw, 3rem);
     letter-spacing: 0;
     text-transform: none;
@@ -215,6 +241,7 @@
 }
 
 .evt-layout-wedding-dusty-blue .db-hero-names {
+    font-size: 3.6rem;
     font-size: clamp(3.6rem, 10vw, 5.2rem);
     line-height: 0.95;
     color: var(--db-navy);
@@ -335,6 +362,7 @@
 }
 
 .evt-layout-wedding-dusty-blue .db-story-photo {
+    width: 100%;
     width: min(100%, 240px);
     aspect-ratio: 1;
     margin: 0 auto;
@@ -343,6 +371,12 @@
     overflow: hidden;
     background: #ffffff;
     box-shadow: var(--db-shadow);
+}
+
+@supports not (aspect-ratio: 1) {
+    .evt-layout-wedding-dusty-blue .db-story-photo {
+        min-height: 200px;
+    }
 }
 
 .evt-layout-wedding-dusty-blue .db-story-photo img {
@@ -385,6 +419,7 @@
 
 .evt-layout-wedding-dusty-blue .db-countdown .evt-inv-countdown-value {
     font-family: var(--evt-font-heading, "Cormorant Garamond", Georgia, serif);
+    font-size: 2.2rem;
     font-size: clamp(2.2rem, 8vw, 3.2rem);
     font-weight: 500;
     line-height: 1.2;
@@ -420,6 +455,12 @@
     transition: transform 0.3s ease;
 }
 
+@supports not (aspect-ratio: 1) {
+    .evt-layout-wedding-dusty-blue .db-print {
+        min-height: 200px;
+    }
+}
+
 .evt-layout-wedding-dusty-blue .db-print:nth-child(odd) {
     transform: rotate(-1deg);
 }
@@ -441,6 +482,14 @@
 .evt-layout-wedding-dusty-blue .db-gallery--count-5 .db-print:first-child {
     grid-column: span 2;
     aspect-ratio: 2 / 0.98;
+}
+
+@supports not (aspect-ratio: 1) {
+    .evt-layout-wedding-dusty-blue .db-gallery--count-1 .db-print:first-child,
+    .evt-layout-wedding-dusty-blue .db-gallery--count-3 .db-print:first-child,
+    .evt-layout-wedding-dusty-blue .db-gallery--count-5 .db-print:first-child {
+        min-height: 98px;
+    }
 }
 
 .evt-layout-wedding-dusty-blue .db-gallery--count-6 {
@@ -553,6 +602,7 @@
 .evt-layout-wedding-dusty-blue .db-rsvp-panel .rsvp-optional,
 .evt-layout-wedding-dusty-blue .db-rsvp-panel .rsvp-field-hint,
 .evt-layout-wedding-dusty-blue .db-rsvp-panel .rsvp-preview-note {
+    color: var(--db-navy);
     color: color-mix(in srgb, var(--db-navy) 70%, var(--db-panel));
     font-style: italic;
 }
@@ -562,6 +612,7 @@
 .evt-layout-wedding-dusty-blue .db-rsvp-panel .rsvp-textarea {
     border: 1px solid var(--db-navy);
     border-radius: 10px;
+    background-color: rgba(255, 255, 255, 0.6);
     background-color: color-mix(in srgb, white 60%, transparent);
     color: var(--db-navy);
     font-family: inherit;
@@ -581,6 +632,7 @@
 .evt-layout-wedding-dusty-blue .db-rsvp-panel .rsvp-radio {
     border: 1px solid var(--db-navy);
     border-radius: 14px;
+    background: rgba(255, 255, 255, 0.45);
     background: color-mix(in srgb, white 45%, transparent);
     color: var(--db-navy);
     font-family: inherit;
@@ -590,6 +642,7 @@
 
 .evt-layout-wedding-dusty-blue .db-rsvp-panel .rsvp-radio:hover {
     border-color: var(--db-navy);
+    background: rgba(255, 255, 255, 0.7);
     background: color-mix(in srgb, white 70%, transparent);
     color: var(--db-navy);
 }
@@ -619,6 +672,7 @@
 }
 
 .evt-layout-wedding-dusty-blue .db-rsvp-panel .rsvp-submit:hover:not(:disabled) {
+    background: var(--db-navy);
     background: color-mix(in srgb, var(--db-navy) 85%, white);
     filter: none;
 }
@@ -653,6 +707,7 @@
     }
 
     .evt-layout-wedding-dusty-blue .db-strip {
+        width: 78%;
         width: min(78%, 300px);
     }
 
@@ -697,8 +752,15 @@
         aspect-ratio: 1;
     }
 
+    @supports not (aspect-ratio: 1) {
+        .evt-layout-wedding-dusty-blue .db-gallery--count-6 .db-print:nth-child(n) {
+            min-height: 200px;
+        }
+    }
+
     .evt-layout-wedding-dusty-blue .db-countdown .evt-inv-countdown-label {
         letter-spacing: 0.08em;
         font-size: 0.7rem;
     }
 }
+

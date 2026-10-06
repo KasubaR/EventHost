@@ -19,6 +19,16 @@
     overflow-x: hidden;
 }
 
+@supports not (color: color-mix(in srgb, red, blue)) {
+    .evt-layout-wedding-invitation-noir.evt-invitation {
+        --wi2-obsidian: var(--evt-background, #0d0b09);
+        --wi2-ink: var(--evt-background, #0d0b09);
+        --wi2-gold-bright: var(--evt-accent, #c8973f);
+        --wi2-gold-dim: var(--evt-accent, #c8973f);
+        --wi2-ivory-dim: var(--evt-primary, #f5eedc);
+    }
+}
+
 .evt-layout-wedding-invitation-noir .evt-public-inner.evt-public-page,
 .evt-layout-wedding-invitation-noir .evt-invitation-page {
     max-width: none;
@@ -61,6 +71,7 @@
     position: relative;
     min-height: 700px;
     height: 100vh;
+    height: 100svh;
     display: grid;
     grid-template-columns: 1fr 1fr;
     overflow: hidden;
@@ -92,7 +103,10 @@
 .evt-layout-wedding-invitation-noir .wi2-hero-left::after {
     content: '';
     position: absolute;
-    inset: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
     background: linear-gradient(to right, transparent 60%, var(--wi2-onyx) 100%);
     z-index: 1;
 }
@@ -160,6 +174,7 @@
 
 .evt-layout-wedding-invitation-noir .wi2-hero-names {
     font-family: var(--evt-font-heading, "Bodoni Moda", Georgia, serif);
+    font-size: 3.25rem;
     font-size: clamp(3.25rem, 7vw, 5.625rem);
     font-weight: 400;
     line-height: 0.92;
@@ -251,7 +266,10 @@
 .evt-layout-wedding-invitation-noir .wi2-invite-card::before {
     content: '';
     position: absolute;
-    inset: 10px;
+    top: 10px;
+    right: 10px;
+    bottom: 10px;
+    left: 10px;
     border: 1px solid rgba(200, 151, 63, 0.15);
     pointer-events: none;
 }
@@ -279,6 +297,7 @@
 
 .evt-layout-wedding-invitation-noir .wi2-invite-names {
     font-family: var(--evt-font-heading, "Bodoni Moda", Georgia, serif);
+    font-size: 2.25rem;
     font-size: clamp(2.25rem, 7vw, 3.625rem);
     font-style: italic;
     color: var(--wi2-gold-bright);
@@ -377,6 +396,7 @@
 .evt-layout-wedding-invitation-noir .wi2-couple-caption {
     margin-top: 2.75rem;
     font-family: var(--evt-font-heading, "Bodoni Moda", Georgia, serif);
+    font-size: 1.625rem;
     font-size: clamp(1.625rem, 4.5vw, 2.5rem);
     font-style: italic;
     color: var(--wi2-gold-bright);
@@ -401,7 +421,10 @@
 
 .evt-layout-wedding-invitation-noir .wi2-photo-bleed-text {
     position: absolute;
-    inset: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -416,6 +439,7 @@
 
 .evt-layout-wedding-invitation-noir .wi2-photo-quote p {
     font-family: var(--evt-font-heading, "Bodoni Moda", Georgia, serif);
+    font-size: 1.5rem;
     font-size: clamp(1.5rem, 4vw, 2.75rem);
     font-style: italic;
     color: var(--wi2-ivory);
@@ -442,7 +466,10 @@
 
 .evt-layout-wedding-invitation-noir .wi2-photo-bleed--story img {
     position: absolute;
-    inset: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
 }
 
 .evt-layout-wedding-invitation-noir .wi2-photo-bleed--story .wi2-photo-bleed-text {
@@ -490,7 +517,10 @@
 .evt-layout-wedding-invitation-noir .wi2-detail-card::before {
     content: '';
     position: absolute;
-    inset: 8px;
+    top: 8px;
+    right: 8px;
+    bottom: 8px;
+    left: 8px;
     border: 1px solid rgba(200, 151, 63, 0.15);
     pointer-events: none;
 }
@@ -575,6 +605,7 @@
 
 .evt-layout-wedding-invitation-noir .wi2-countdown-section .evt-inv-countdown-value {
     font-family: var(--evt-font-heading, "Bodoni Moda", Georgia, serif);
+    font-size: 2rem;
     font-size: clamp(2rem, 6vw, 3.25rem);
     font-weight: 400;
     line-height: 1;
@@ -621,6 +652,7 @@
 
 .evt-layout-wedding-invitation-noir .wi2-section-heading {
     font-family: var(--evt-font-heading, "Bodoni Moda", Georgia, serif);
+    font-size: 2.125rem;
     font-size: clamp(2.125rem, 5vw, 3.625rem);
     font-weight: 400;
     color: var(--wi2-ivory);
@@ -776,6 +808,7 @@
 
 .evt-layout-wedding-invitation-noir .wi2-rsvp-left .wi2-section-heading {
     text-align: left;
+    font-size: 1.875rem;
     font-size: clamp(1.875rem, 4vw, 3.125rem);
 }
 
@@ -822,6 +855,7 @@
 
 .evt-layout-wedding-invitation-noir .wi2-footer-monogram {
     font-family: var(--evt-font-heading, "Bodoni Moda", Georgia, serif);
+    font-size: 4.375rem;
     font-size: clamp(4.375rem, 15vw, 8.125rem);
     font-style: italic;
     color: transparent;
@@ -869,7 +903,10 @@
 
     .evt-layout-wedding-invitation-noir .wi2-hero-left {
         position: absolute;
-        inset: 0;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
     }
 
     .evt-layout-wedding-invitation-noir .wi2-hero-left::after {
@@ -946,3 +983,4 @@ html.js-stalled .evt-layout-wedding-invitation-noir .wi2-reveal {
     transform: none;
     transition: none;
 }
+

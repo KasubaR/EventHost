@@ -17,6 +17,15 @@
     line-height: 1.6;
 }
 
+@supports not (color: color-mix(in srgb, red, blue)) {
+    .evt-layout-modern-minimal.evt-invitation {
+        --mm-muted: var(--evt-primary, #1a1a1a);
+        --mm-faint: white;
+        --mm-surface: var(--evt-background, #ffffff);
+        --mm-border: white;
+    }
+}
+
 .evt-layout-modern-minimal .evt-public-inner.evt-public-page,
 .evt-layout-modern-minimal .evt-invitation-page {
     max-width: none;
@@ -34,6 +43,7 @@
 .evt-layout-modern-minimal .mm-hero {
     position: relative;
     min-height: 100vh;
+    min-height: 100svh;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -45,6 +55,7 @@
 
 .evt-layout-modern-minimal .mm-hero-name {
     font-family: var(--evt-font-heading, "DM Sans", system-ui, sans-serif);
+    font-size: 2.75rem;
     font-size: clamp(2.75rem, 10vw, 4rem);
     font-weight: 300;
     letter-spacing: -0.0625rem;
@@ -77,12 +88,19 @@
 }
 
 .evt-layout-modern-minimal .mm-hero-photo {
+    width: 100%;
     width: min(360px, 100%);
     aspect-ratio: 4 / 5;
     margin: 2.5rem auto 3rem;
     padding: 10px;
     background: var(--evt-background, #ffffff);
     border: 1px solid var(--mm-border);
+}
+
+@supports not (aspect-ratio: 1) {
+    .evt-layout-modern-minimal .mm-hero-photo {
+        min-height: 250px;
+    }
 }
 
 .evt-layout-modern-minimal .mm-hero-photo img {
@@ -96,6 +114,7 @@
     position: absolute;
     bottom: 1.875rem;
     font-size: 0.75rem;
+    color: var(--mm-faint);
     color: color-mix(in srgb, var(--mm-faint) 80%, white);
     letter-spacing: 0.1875em;
     text-transform: uppercase;
@@ -169,6 +188,7 @@
     margin: 0 auto;
     font-size: 1.05rem;
     font-weight: 300;
+    color: var(--mm-text);
     color: color-mix(in srgb, var(--mm-text) 75%, white);
 }
 
@@ -183,7 +203,14 @@
     aspect-ratio: 3 / 4;
     overflow: hidden;
     border-radius: 2px;
+    background: var(--mm-surface);
     background: color-mix(in srgb, var(--mm-border) 40%, var(--mm-surface));
+}
+
+@supports not (aspect-ratio: 1) {
+    .evt-layout-modern-minimal .mm-couple-item {
+        min-height: 267px;
+    }
 }
 
 .evt-layout-modern-minimal .mm-couple-item:nth-child(2) {
@@ -286,6 +313,7 @@
 /* Story */
 .evt-layout-modern-minimal .mm-story-text {
     font-size: 1.05rem;
+    color: var(--mm-text);
     color: color-mix(in srgb, var(--mm-text) 75%, white);
     max-width: 520px;
     margin: 0 auto;
@@ -301,15 +329,28 @@
 
 .evt-layout-modern-minimal .mm-gallery-item {
     aspect-ratio: 4 / 3;
+    background: var(--mm-surface);
     background: color-mix(in srgb, var(--mm-border) 40%, var(--mm-surface));
     border-radius: 2px;
     overflow: hidden;
+}
+
+@supports not (aspect-ratio: 1) {
+    .evt-layout-modern-minimal .mm-gallery-item {
+        min-height: 150px;
+    }
 }
 
 /* Odd counts lead with one wide tile; even counts fill clean rows (six = two rows of three). */
 .evt-layout-modern-minimal .mm-gallery--odd .mm-gallery-item:first-child {
     grid-column: span 2;
     aspect-ratio: 16 / 9;
+}
+
+@supports not (aspect-ratio: 1) {
+    .evt-layout-modern-minimal .mm-gallery--odd .mm-gallery-item:first-child {
+        min-height: 113px;
+    }
 }
 
 .evt-layout-modern-minimal .mm-gallery:has(> .mm-gallery-item:nth-child(6)) {
@@ -352,6 +393,7 @@
 }
 
 .evt-layout-modern-minimal .mm-rsvp-cta:hover {
+    background: var(--mm-text);
     background: color-mix(in srgb, var(--mm-text) 80%, black);
     color: var(--evt-background, #ffffff);
 }
@@ -398,3 +440,4 @@
         text-align: left;
     }
 }
+

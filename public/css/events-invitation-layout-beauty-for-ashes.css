@@ -41,6 +41,7 @@
 .evt-layout-beauty-for-ashes .bfa-hero {
     position: relative;
     min-height: 100vh;
+    min-height: 100svh;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -53,7 +54,10 @@
 
 .evt-layout-beauty-for-ashes .bfa-hero-bg {
     position: absolute;
-    inset: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
     z-index: 1;
     background:
         radial-gradient(ellipse 90% 70% at 50% -10%, rgba(107, 33, 168, 0.8) 0%, transparent 65%),
@@ -65,7 +69,10 @@
 
 .evt-layout-beauty-for-ashes .bfa-hero-video {
     position: absolute;
-    inset: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -78,7 +85,10 @@
 
 .evt-layout-beauty-for-ashes .bfa-hero-video-scrim {
     position: absolute;
-    inset: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
     z-index: 1;
     background: linear-gradient(175deg, rgba(14, 0, 32, 0.55) 0%, rgba(14, 0, 32, 0.82) 100%);
     pointer-events: none;
@@ -86,7 +96,10 @@
 
 .evt-layout-beauty-for-ashes .bfa-hero-particles {
     position: absolute;
-    inset: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
     z-index: 2;
     pointer-events: none;
 }
@@ -147,6 +160,7 @@
 
 .evt-layout-beauty-for-ashes .bfa-hero-title {
     font-family: var(--bfa-font-script);
+    font-size: 2.8rem;
     font-size: clamp(2.8rem, 10vw, 6.5rem);
     font-weight: 700;
     font-style: italic;
@@ -158,6 +172,7 @@
 }
 
 .evt-layout-beauty-for-ashes .bfa-hero-for {
+    font-size: 1.6rem;
     font-size: clamp(1.6rem, 5.5vw, 3.6rem);
     font-weight: 400;
     color: var(--bfa-glow);
@@ -267,6 +282,7 @@
 
 .evt-layout-beauty-for-ashes .bfa-cd-value {
     font-family: var(--bfa-font-display);
+    font-size: 1.25rem;
     font-size: clamp(1.25rem, 4.2vw, 1.75rem);
     font-weight: 700;
     font-variant-numeric: tabular-nums;
@@ -387,6 +403,7 @@
 
 /* --- Shared sections --- */
 .evt-layout-beauty-for-ashes .bfa-section {
+    padding: 3.5rem 1.25rem;
     padding: clamp(3.5rem, 8vw, 5rem) 1.25rem;
     border-top: 1px solid rgba(168, 85, 247, 0.1);
 }
@@ -426,6 +443,7 @@
 
 .evt-layout-beauty-for-ashes .bfa-section-heading {
     font-family: var(--bfa-font-script);
+    font-size: 2rem;
     font-size: clamp(2rem, 5vw, 3.25rem);
     font-weight: 700;
     font-style: italic;
@@ -494,6 +512,12 @@
     position: relative;
     aspect-ratio: 3 / 4;
     overflow: hidden;
+}
+
+@supports not (aspect-ratio: 1) {
+    .evt-layout-beauty-for-ashes .bfa-speaker-photo {
+        min-height: 267px;
+    }
 }
 
 .evt-layout-beauty-for-ashes .bfa-speaker-photo img {
@@ -581,6 +605,7 @@
 
 .evt-layout-beauty-for-ashes .bfa-quote-script {
     font-family: var(--bfa-font-script);
+    font-size: 1.35rem;
     font-size: clamp(1.35rem, 3.2vw, 1.75rem);
     font-style: italic;
     color: var(--bfa-glow);
@@ -596,6 +621,7 @@
 .evt-layout-beauty-for-ashes .bfa-details-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
+    gap: 2rem;
     gap: clamp(2rem, 5vw, 3.75rem);
     align-items: start;
     margin-top: 2.5rem;
@@ -677,6 +703,7 @@
 
 .evt-layout-beauty-for-ashes .bfa-tagline-script {
     font-family: var(--bfa-font-script);
+    font-size: 1rem;
     font-size: clamp(1rem, 2.4vw, 1.45rem);
     font-style: italic;
     color: var(--bfa-glow);
@@ -838,6 +865,7 @@
 /* --- RSVP --- */
 .evt-layout-beauty-for-ashes .bfa-rsvp-wrap {
     font-family: var(--bfa-font-sans);
+    padding: 2.5rem 1.25rem;
     padding: clamp(2.5rem, 6vw, 4rem) 1.25rem;
     border-top: 1px solid rgba(168, 85, 247, 0.12);
     background: rgba(0, 0, 0, 0.25);
@@ -879,3 +907,4 @@
         display: none;
     }
 }
+
