@@ -2,6 +2,7 @@
 
 use App\Exceptions\GuestLimitReachedException;
 use App\Exceptions\RsvpClosedException;
+use App\Exceptions\RsvpUnavailableException;
 use App\Http\Middleware\AdminAuthenticate;
 use App\Http\Middleware\BlockWhileActingAs;
 use App\Http\Middleware\EnforceActingAsSession;
@@ -63,9 +64,22 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // The guest-facing page a failed RSVP POST should go back to, from the route it came in on.
+        $rsvpPageFor = function (Request $request): ?string {
+            $route = $request->route();
+            $name = (string) $route?->getName();
+
+            return match (true) {
+                str_starts_with($name, 'rsvp.token') && $route?->parameter('token') !== null => route('rsvp.token.show', ['token' => $route->parameter('token')]),
+                str_starts_with($name, 'group-rsvp') && $route?->parameter('token') !== null => route('group-rsvp.show', ['token' => $route->parameter('token')]),
+                $route?->parameter('slug') !== null => route('rsvp.open.show', ['slug' => $route->parameter('slug')]),
+                default => null,
+            };
+        };
+
         // A late RSVP is a refusal with an explanation, never a bare 403 (plans/rsvp-deadline-fixes.md G4).
         // JSON clients get 403 with a stable `code`; web pages go back to the page that explains it.
-        $exceptions->render(function (RsvpClosedException $e, Request $request) {
+        $exceptions->render(function (RsvpClosedException $e, Request $request) use ($rsvpPageFor) {
             if ($request->expectsJson() || $request->is('api/*')) {
                 return response()->json([
                     'message' => $e->getMessage(),
@@ -74,17 +88,23 @@ return Application::configure(basePath: dirname(__DIR__))
                 ], 403);
             }
 
-            $route = $request->route();
-            $name = (string) $route?->getName();
-            $target = match (true) {
-                str_starts_with($name, 'rsvp.token') && $route?->parameter('token') !== null => route('rsvp.token.show', ['token' => $route->parameter('token')]),
-                str_starts_with($name, 'group-rsvp') && $route?->parameter('token') !== null => route('group-rsvp.show', ['token' => $route->parameter('token')]),
-                $route?->parameter('slug') !== null => route('rsvp.open.show', ['slug' => $route->parameter('slug')]),
-                default => null,
-            };
-
-            return ($target !== null ? redirect($target) : redirect()->back(fallback: url('/')))
+            return ($rsvpPageFor($request) !== null ? redirect($rsvpPageFor($request)) : redirect()->back(fallback: url('/')))
                 ->with('rsvp_closed', $e->getMessage());
+        });
+
+        // Deleted, cancelled, paused or full since the form was opened: the GET page for the same link already
+        // renders the right status view, so go back to it instead of showing the generic 403 (T4).
+        $exceptions->render(function (RsvpUnavailableException $e, Request $request) use ($rsvpPageFor) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'message' => $e->getMessage(),
+                    'code' => 'rsvp_unavailable',
+                ], 403);
+            }
+
+            $target = $rsvpPageFor($request);
+
+            return $target !== null ? redirect($target) : redirect()->back(fallback: url('/'));
         });
 
         // A plus-one that does not fit the guest limit stays a 422 on `status`; this adds what still fits.

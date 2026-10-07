@@ -25,7 +25,9 @@ trait ValidatesRsvpPayload
                 'integer',
                 'min:0',
                 function (string $attribute, mixed $value, Closure $fail) use ($event, $plusOneAllowed, $heldSeats): void {
-                    $status = RsvpStatus::tryFrom((string) $this->input('status'));
+                    // A tampered `status[]=x` posts an array; the enum rule already fails it, so just stop here.
+                    $rawStatus = $this->input('status');
+                    $status = is_string($rawStatus) ? RsvpStatus::tryFrom($rawStatus) : null;
                     if ($status === null) {
                         return;
                     }

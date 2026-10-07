@@ -273,10 +273,8 @@ class RsvpController extends Controller
         StoreRsvpByTokenRequest $request,
         RsvpSubmissionService $rsvpSubmissionService,
     ): RedirectResponse {
-        $guest = Guest::query()
-            ->where('invitation_token', $token)
-            ->with(['event' => fn ($q) => $q->withTrashed()])
-            ->firstOrFail();
+        $guest = $request->guest();
+        abort_if($guest === null, 404);
 
         $event = $guest->event;
         // StoreRsvpByTokenRequest::authorize() already refuses a null/closed
@@ -289,6 +287,8 @@ class RsvpController extends Controller
         // The personal link is a secret only this guest holds, so after the deadline it may still
         // cancel or reduce (RsvpSubmissionService decides what counts as a reduction).
         $rsvp = $rsvpSubmissionService->submit($event, $guest, $payload, allowReductions: true);
+        // The request eager-loaded the guest's previous RSVP; point the relation at the one just saved.
+        $guest->setRelation('rsvp', $rsvp);
 
         $this->dispatchRsvpNotifications($event, $guest, $rsvp);
 
@@ -412,7 +412,8 @@ class RsvpController extends Controller
             ->firstOrFail();
 
         $event = $guest->event;
-        abort_if($event === null, 404);
+        // Same guard as showByToken() and the pass routes: a ticketed event has no personal RSVP page.
+        abort_if($event === null || ! $event->isInvitation(), 404);
 
         $rsvp = $guest->rsvp;
 

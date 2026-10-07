@@ -128,10 +128,11 @@ class EventAudienceLockAndDraftAccessTest extends TestCase
         $event = Event::factory()->create();
         $guest = Guest::factory()->for($event)->create();
 
+        // Web goes back to the invitation's own status page (RsvpUnavailableException); JSON stays a 403.
         $this->post(route('rsvp.token.store', $guest->invitation_token), [
             'status' => 'accepted',
             'attendee_count' => 1,
-        ])->assertForbidden();
+        ])->assertRedirect(route('rsvp.token.show', $guest->invitation_token));
 
         $this->postJson(route('api.v1.rsvp.token.store', $guest->invitation_token), [
             'status' => 'accepted',

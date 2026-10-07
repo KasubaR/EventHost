@@ -382,7 +382,7 @@ class PublicInvitationLifecycleTest extends TestCase
         $this->post(route('rsvp.token.store', ['token' => $guest->invitation_token]), [
             'status' => 'accepted',
             'attendee_count' => 1,
-        ])->assertForbidden();
+        ])->assertRedirect(route('rsvp.token.show', ['token' => $guest->invitation_token]));
 
         $this->assertDatabaseMissing('rsvps', ['guest_id' => $guest->id]);
     }

@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Exceptions\RsvpClosedException;
+use App\Exceptions\RsvpUnavailableException;
 use App\Http\Requests\Concerns\ValidatesRsvpPayload;
 use App\Models\Event;
 use App\Models\Guest;
@@ -18,11 +19,16 @@ class StoreOpenRsvpRequest extends FormRequest
     {
         $event = $this->resolveEvent();
         if ($event === null) {
+            // An event that WAS published and has since been deleted, cancelled or paused gets the same
+            // status page the GET shows, not a bare 404 (a form left open across that change). A slug that
+            // was never published stays a 404: it must not confirm a draft exists.
+            $this->throwIfPublishedButUnavailable();
+
             abort(404);
         }
 
         if (! $event->is_published) {
-            abort(403);
+            throw new RsvpUnavailableException;
         }
 
         if (! $event->acceptsRsvpSubmissions()) {
@@ -44,7 +50,8 @@ class StoreOpenRsvpRequest extends FormRequest
                 ->exists();
 
             if (! $isReturningGuest && $event->hasReachedGuestCapacity()) {
-                abort(403);
+                // The GET already tells the guest the list is full; send them there.
+                throw new RsvpUnavailableException('This event\'s guest list is full. Please contact the host.');
             }
         }
 
@@ -127,6 +134,21 @@ class StoreOpenRsvpRequest extends FormRequest
                 ]
             ),
         ], $this->rsvpFieldRules($event, plusOneAllowed: ! $event->is_public));
+    }
+
+    private function throwIfPublishedButUnavailable(): void
+    {
+        $slug = $this->route('slug');
+        if (! is_string($slug) || $slug === '') {
+            return;
+        }
+
+        $event = Event::withTrashed()->where('slug', $slug)->first();
+
+        if ($event !== null && $event->isInvitation() && $event->is_published
+            && ($event->trashed() || $event->isCancelled() || $event->isInvitationPaused())) {
+            throw new RsvpUnavailableException;
+        }
     }
 
     public function resolveEvent(): ?Event

@@ -77,10 +77,8 @@ class RsvpController extends Controller
         StoreRsvpByTokenRequest $request,
         RsvpSubmissionService $rsvpSubmissionService,
     ): RsvpResource {
-        $guest = Guest::query()
-            ->where('invitation_token', $token)
-            ->with(['event' => fn ($q) => $q->withTrashed()])
-            ->firstOrFail();
+        $guest = $request->guest();
+        abort_if($guest === null, 404);
 
         $event = $guest->event;
         // StoreRsvpByTokenRequest::authorize() already refuses a null/closed event before
@@ -90,6 +88,8 @@ class RsvpController extends Controller
         $payload = $request->validatedRsvpPayload();
 
         $rsvp = $rsvpSubmissionService->submit($event, $guest, $payload, allowReductions: true);
+        // The request eager-loaded the guest's previous RSVP; point the relation at the one just saved.
+        $guest->setRelation('rsvp', $rsvp);
 
         $this->dispatchRsvpNotifications($event, $guest, $rsvp);
 

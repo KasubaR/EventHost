@@ -364,8 +364,9 @@ class RsvpFlowTest extends TestCase
             'phone' => '+260970000000',
         ], $this->rsvpPayload(RsvpStatus::Accepted, 1));
 
+        // Back to the page that says the list is full, not a bare 403.
         $this->post(route('rsvp.open.store', ['slug' => $event->slug]), $payload)
-            ->assertForbidden();
+            ->assertRedirect(route('rsvp.open.show', ['slug' => $event->slug]));
 
         $this->assertSame(150, $event->guests()->count());
     }
