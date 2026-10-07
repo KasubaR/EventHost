@@ -252,6 +252,14 @@ class Event extends Model
         'guest_limit',
         'ticket_capacity',
         'host_contact_phone',
+        'organizer_name',
+        'organizer_phone',
+        'organizer_email',
+        'organizer_details_public',
+        'payout_account_name',
+        'payout_account_number',
+        'payout_bank',
+        'payout_branch',
         'allow_plus_one',
         'require_rsvp_approval',
         'show_guest_list',
@@ -860,6 +868,56 @@ class Event extends Model
             ->sum('quantity');
     }
 
+    /**
+     * Name, phone and email guests can use to ask about the event itself.
+     */
+    public function hasOrganizerDetails(): bool
+    {
+        return filled($this->organizer_name) && filled($this->organizer_phone) && filled($this->organizer_email);
+    }
+
+    /**
+     * Whether the Contact & Help card on the public ticket page shows the organizer.
+     */
+    public function showsOrganizerOnPublicPage(): bool
+    {
+        return (bool) $this->organizer_details_public && $this->hasOrganizerDetails();
+    }
+
+    public function hasPayoutAccount(): bool
+    {
+        return filled($this->payout_account_name)
+            && filled($this->payout_account_number)
+            && filled($this->payout_bank)
+            && filled($this->payout_branch);
+    }
+
+    /**
+     * Why a ticketed draft cannot move on to the review step yet, or null when it can:
+     * a ticket to sell, then the organizer's contact details, then a payout account.
+     * Returns the route to send the host back to along with the message.
+     *
+     * @return array{route: string, message: string}|null
+     */
+    public function reviewStepBlocker(): ?array
+    {
+        if (! $this->ticketTypes()->where('is_active', true)->exists()) {
+            return [
+                'route' => 'public-events.ticket-types.index',
+                'message' => 'Add at least one ticket type before you review your event and request activation.',
+            ];
+        }
+
+        if (! $this->hasOrganizerDetails() || ! $this->hasPayoutAccount()) {
+            return [
+                'route' => 'public-events.organizer.edit',
+                'message' => 'Add the organizer details and payout account before you review your event and request activation.',
+            ];
+        }
+
+        return null;
+    }
+
     public function canSubmitTicketing(): bool
     {
         return $this->isTicketed()
@@ -1356,6 +1414,9 @@ class Event extends Model
             'commission_percent_override' => 'decimal:2',
             'cancellation_fee_percent_override' => 'decimal:2',
             'ticket_capacity' => 'integer',
+            'organizer_details_public' => 'boolean',
+            'payout_account_name' => 'encrypted',
+            'payout_account_number' => 'encrypted',
             'rsvp_deadline' => 'datetime',
             'slug_changed_at' => 'datetime',
             'is_public' => 'boolean',

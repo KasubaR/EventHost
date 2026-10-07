@@ -160,6 +160,8 @@
                     @endif
                 </section>
             @endif
+
+            @include('events.tickets.partials.contact-help', ['event' => $event])
         </div>
 
         <aside class="tev-side">

@@ -159,14 +159,14 @@
                 <div class="evt-section-body evt-actions-bar">
                     @if ($ticketTypes->where('is_active', true)->isEmpty())
                         <button type="button" class="btn-primary" disabled>
-                            Continue to review &amp; publish <i class="fa-solid fa-arrow-right"></i>
+                            Continue to organizer details <i class="fa-solid fa-arrow-right"></i>
                         </button>
                         <span class="evt-muted">Add at least one ticket type to continue.</span>
                     @else
-                        <a href="{{ route('events.edit', $event) }}" class="btn-primary">
-                            Continue to review &amp; publish <i class="fa-solid fa-arrow-right"></i>
+                        <a href="{{ route('public-events.organizer.edit', $event) }}" class="btn-primary">
+                            Continue to organizer details <i class="fa-solid fa-arrow-right"></i>
                         </a>
-                        <span class="evt-muted">Review your event details, then submit for activation there.</span>
+                        <span class="evt-muted">Next: who guests can contact, and where your payouts go.</span>
                     @endif
                 </div>
             </div>

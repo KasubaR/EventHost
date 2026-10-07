@@ -31,6 +31,7 @@
             <div class="evt-card-actions">
                 @if ($event->isTicketed())
                     <a href="{{ route('public-events.ticket-types.index', $event) }}" class="evt-btn-outline"><x-ticket-icon /> Back to tickets</a>
+                    <a href="{{ route('public-events.organizer.edit', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-address-card"></i> Organizer details</a>
                 @endif
                 @unless ($event->isTicketed())
                     <a href="{{ route('events.choose-template', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-arrow-left"></i> Back to layout</a>
@@ -42,7 +43,7 @@
     </x-slot>
 
     @include('events.partials.steps', [
-        'current' => 4,
+        'current' => $event->isTicketed() ? 5 : 4,
         'ticketed' => $event->isTicketed(),
     ])
 

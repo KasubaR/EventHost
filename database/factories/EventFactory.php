@@ -92,6 +92,15 @@ class EventFactory extends Factory
             'commission_mode' => CommissionMode::Absorb,
             'is_public' => true,
             'event_type' => fake()->randomElement(Event::TICKETED_EVENT_TYPES),
+            // Wizard step 4. Pass nulls to test an event that has not filled it in.
+            'organizer_name' => fake()->company(),
+            'organizer_phone' => '0977123456',
+            'organizer_email' => fake()->safeEmail(),
+            'organizer_details_public' => true,
+            'payout_account_name' => fake()->name(),
+            'payout_account_number' => '0123456789012',
+            'payout_bank' => 'Zanaco (Zambia National Commercial Bank)',
+            'payout_branch' => 'Cairo Road',
         ]);
     }
 

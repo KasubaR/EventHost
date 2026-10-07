@@ -260,13 +260,15 @@ class EventController extends Controller
 
     public function edit(Event $event, InvitationCustomizationService $customizationService): View|RedirectResponse
     {
-        // Step 4 of the ticketed wizard (review & request activation) makes no sense
-        // before there is a ticket to sell, so send the host back to step 3. `?details=1` is the wizard's way back from
-        // step 3 to the details form (events/partials/steps); submitting for activation still needs a ticket type.
-        if ($event->canSubmitTicketing() && ! request()->boolean('details') && ! $event->ticketTypes()->where('is_active', true)->exists()) {
+        // Step 5 of the ticketed wizard (review & request activation) makes no sense
+        // before there is a ticket to sell and the organizer's details are in, so send
+        // the host back to the step that is missing. `?details=1` is the wizard's way back
+        // to the details form (events/partials/steps); submitting for activation still
+        // needs everything (EventTicketingController::submit()).
+        if ($event->canSubmitTicketing() && ! request()->boolean('details') && ($blocker = $event->reviewStepBlocker()) !== null) {
             return redirect()
-                ->route('public-events.ticket-types.index', $event)
-                ->withErrors(['ticket_type' => 'Add at least one ticket type before you review your event and request activation.']);
+                ->route($blocker['route'], $event)
+                ->withErrors(['ticket_type' => $blocker['message']]);
         }
 
         $invitationMerged = null;

@@ -7,7 +7,7 @@
 
     $labels = match (true) {
         $choosingKind => ['How People Join', 'Event Details'],
-        $ticketed => ['How People Join', 'Event Details', 'Tickets', 'Review Details & Request Activation'],
+        $ticketed => ['How People Join', 'Event Details', 'Tickets', 'Organizer Details', 'Review Details & Request Activation'],
         default => ['How People Join', 'Event Details', 'Choose Layout', 'Customize & Publish'],
     };
 
@@ -17,14 +17,15 @@
     // (it is fixed at creation). Nothing links to the page you are already on.
     $stepEvent = ($event ?? null) instanceof \App\Models\Event && $event->exists ? $event : null;
     $stepUrl = function (int $n) use ($stepEvent, $ticketed, $current): ?string {
-        if ($stepEvent === null || $n >= $current || $n > 3) {
+        if ($stepEvent === null || $n >= $current || $n > ($ticketed ? 4 : 3)) {
             return null;
         }
 
-        // A ticketed event's edit page is the review step and is closed until a ticket type exists; `details=1` opens
-        // it as the details form (the controller still refuses to submit for activation without a ticket).
+        // A ticketed event's edit page is the review step and is closed until a ticket type and the organizer details
+        // exist; `details=1` opens it as the details form (the controller still refuses to submit for activation).
         $url = match (true) {
             $n <= 2 => route('events.edit', $ticketed ? [$stepEvent, 'details' => 1] : $stepEvent),
+            $ticketed && $n === 4 => route('public-events.organizer.edit', $stepEvent),
             $ticketed => route('public-events.ticket-types.index', $stepEvent),
             default => route('events.choose-template', $stepEvent),
         };
@@ -38,7 +39,7 @@
         @foreach ($labels as $i => $label)
             @php
                 $n = $i + 1;
-                $state = $current === $n || (! $choosingKind && $ticketed && $n === 4 && $current >= 4)
+                $state = $current === $n || (! $choosingKind && $ticketed && $n === 5 && $current >= 5)
                     ? 'evt-step--active'
                     : ($current > $n ? 'evt-step--done' : '');
                 $url = $stepUrl($n);

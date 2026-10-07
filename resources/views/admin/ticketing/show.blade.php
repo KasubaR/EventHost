@@ -167,6 +167,32 @@
                 </form>
             @endif
 
+            <h3 class="admin-mt-lg">Organizer &amp; payout account</h3>
+            <dl class="admin-fact-grid">
+                <div class="admin-fact">
+                    <dt>Organizer</dt>
+                    <dd>
+                        {{ $ev->organizer_name ?? 'Not added' }}
+                        @if ($ev->organizer_name)
+                            <span class="admin-fact-sub">{{ $ev->organizer_phone }} · {{ $ev->organizer_email }}</span>
+                            <span class="admin-fact-sub">{{ $ev->organizer_details_public ? 'Shown on the event page' : 'Not shown on the event page' }}</span>
+                        @endif
+                    </dd>
+                </div>
+                <div class="admin-fact">
+                    <dt>Payout account</dt>
+                    <dd>
+                        @if ($ev->hasPayoutAccount())
+                            {{ $ev->payout_account_name }}
+                            <span class="admin-fact-sub">{{ $ev->payout_account_number }}</span>
+                            <span class="admin-fact-sub">{{ $ev->payout_bank }} · {{ $ev->payout_branch }}</span>
+                        @else
+                            Not added
+                        @endif
+                    </dd>
+                </div>
+            </dl>
+
             @if ($canApprove && $ev->canEditCommissionMode())
                 <form method="post" action="{{ route('admin.ticketing.commission', $ev) }}" class="profile-form admin-mt-md">
                     @csrf

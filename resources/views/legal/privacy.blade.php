@@ -62,6 +62,7 @@
                 <h3>Event content</h3>
                 <p>Everything you enter when building an event: its title, description, date, venue and location, cover image, chosen invitation template and design settings, table layouts, and any photos uploaded to the event gallery.</p>
                 <p>For an invitation event we also ask for a contact number. <strong>It is shown to your guests</strong> on the RSVP pages, with your name, so they can call you with questions. Give a number you are happy for your guests to see.</p>
+                <p>For a ticketed event we ask for an organizer name, contact number and email. <strong>If you choose to show them, they appear on the event's public ticket page</strong> in its Contact &amp; Help card, so buyers can ask about the event. If you choose not to, buyers only see our own support details, and we keep your organizer details to reach you.</p>
 
                 <h3>Payment information</h3>
                 <p>
@@ -70,6 +71,11 @@
                     Card and mobile-money details are entered on their systems, not ours. <strong>We never see or store your full
                     card number or mobile-money PIN</strong>. We keep a record of each transaction: amount,
                     currency, reference, status and timestamp.
+                </p>
+                <p>
+                    To pay out ticket sales we also ask a host of a ticketed event for a bank payout account: the account holder
+                    name, account number, bank and branch. These are stored encrypted, are used only to pay you, are visible to
+                    authorised members of our team who handle payouts, and are never shown to buyers or on any public page.
                 </p>
 
                 @if (config('admin.acting_as.enabled'))

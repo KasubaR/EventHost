@@ -93,4 +93,21 @@ return [
         'enabled' => (bool) env('CONTRIBUTIONS_ENABLED', false),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Platform support contact
+    |--------------------------------------------------------------------------
+    |
+    | Shown to ticket buyers in the Contact & Help card on every ticketed event
+    | page, next to the organizer's own details. The email is
+    | config('mail.support_address'); the number is a WhatsApp-capable line,
+    | the same one the contact page lists. Leave the number blank to hide it.
+    |
+    */
+
+    'support' => [
+        'phone' => env('SUPPORT_PHONE', '+260 965 023 606'),
+        'hours' => env('SUPPORT_HOURS', '08:00–20:00 CAT'),
+    ],
+
 ];

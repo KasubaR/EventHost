@@ -42,6 +42,9 @@
     <a href="{{ route('public-events.tickets.payouts', $event) }}" class="tkt-tab @if ($active === 'payouts') tkt-tab--active @endif">
         <i class="fa-solid fa-money-bill-transfer" aria-hidden="true"></i> Payouts
     </a>
+    <a href="{{ route('public-events.organizer.edit', $event) }}" class="tkt-tab @if ($active === 'organizer') tkt-tab--active @endif">
+        <i class="fa-solid fa-address-card" aria-hidden="true"></i> Organizer
+    </a>
     <a href="{{ route('public-events.ticket-types.index', $event) }}" class="tkt-tab @if ($active === 'settings') tkt-tab--active @endif">
         <i class="fa-solid fa-gear" aria-hidden="true"></i> Settings
     </a>

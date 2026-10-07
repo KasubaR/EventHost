@@ -44,6 +44,13 @@ class EventTicketingController extends Controller
         $this->authorize('publish', $event);
         abort_unless($event->isTicketed(), 404);
 
+        // Web wizard only: the API submit keeps its contract, so this is not in the service.
+        if ($event->canSubmitTicketing() && ($blocker = $event->reviewStepBlocker()) !== null) {
+            return redirect()
+                ->route($blocker['route'], $event)
+                ->withErrors(['ticketing' => $blocker['message']]);
+        }
+
         try {
             $activation->submit($event);
         } catch (TicketingActivationException $e) {

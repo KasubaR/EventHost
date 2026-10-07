@@ -21,6 +21,7 @@ use App\Http\Controllers\EventStaffLinkController;
 use App\Http\Controllers\EventTableController;
 use App\Http\Controllers\EventTicketCheckoutController;
 use App\Http\Controllers\EventTicketDashboardController;
+use App\Http\Controllers\EventOrganizerController;
 use App\Http\Controllers\EventTicketingController;
 use App\Http\Controllers\EventTicketManagementController;
 use App\Http\Controllers\EventTicketPurchaseController;
@@ -397,6 +398,11 @@ Route::middleware(['auth', 'account.active', 'verified'])->group(function () {
             ->parameters(['public-events' => 'event', 'ticket-types' => 'ticketType'])
             ->only(['index', 'create', 'store', 'edit', 'update', 'destroy'])
             ->scoped();
+        // Wizard step 4: organizer contact + payout account (also reachable later).
+        Route::get('/public-events/{event}/organizer', [EventOrganizerController::class, 'edit'])
+            ->name('public-events.organizer.edit');
+        Route::patch('/public-events/{event}/organizer', [EventOrganizerController::class, 'update'])
+            ->name('public-events.organizer.update');
         Route::patch('/public-events/{event}/ticketing', [EventTicketingController::class, 'update'])
             ->name('public-events.ticketing.update');
         Route::post('/public-events/{event}/ticketing/submit', [EventTicketingController::class, 'submit'])

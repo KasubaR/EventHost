@@ -1078,16 +1078,20 @@ class TicketingTest extends TestCase
         $this->actingAs($user)
             ->get(route('public-events.ticket-types.index', $event))
             ->assertOk()
-            // No way forward to the review step (the stepper's way back to the details form is `?details=1`).
-            ->assertDontSee('href="'.route('events.edit', $event).'" class="btn-primary"', false)
+            ->assertDontSee(route('public-events.organizer.edit', $event), false)
             ->assertSee('Add at least one ticket type to continue.', false);
+
+        // The organizer step is behind the tickets step too.
+        $this->actingAs($user)
+            ->get(route('public-events.organizer.edit', $event))
+            ->assertRedirect(route('public-events.ticket-types.index', $event));
 
         TicketType::factory()->for($event)->create(['quantity' => 100]);
 
         $this->actingAs($user)->get(route('events.edit', $event))->assertOk();
         $this->actingAs($user)
             ->get(route('public-events.ticket-types.index', $event))
-            ->assertSee(route('events.edit', $event), false);
+            ->assertSee(route('public-events.organizer.edit', $event), false);
     }
 
     private function ticketPayload(array $overrides = []): array

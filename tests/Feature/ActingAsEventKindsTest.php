@@ -164,6 +164,35 @@ class ActingAsEventKindsTest extends TestCase
 
         TicketType::factory()->for($event)->create();
 
+        // The organizer's contact details can be filled in by the admin, but the payout
+        // account is the client's alone: posting one while acting is silently not saved.
+        $this->patch(route('public-events.organizer.update', $event), [
+            'organizer_name' => 'Client Events Ltd',
+            'organizer_phone' => '0977123456',
+            'organizer_email' => 'client@example.com',
+            'organizer_details_public' => '1',
+            'payout_account_name' => 'Attacker',
+            'payout_account_number' => '999999999',
+            'payout_bank' => 'Zanaco (Zambia National Commercial Bank)',
+            'payout_branch' => 'Cairo Road',
+        ])->assertSessionHasNoErrors();
+
+        $event->refresh();
+        $this->assertSame('Client Events Ltd', $event->organizer_name);
+        $this->assertNull($event->payout_account_number);
+
+        // Without a payout account the event cannot be submitted for review yet.
+        $this->post(route('public-events.ticketing.submit', $event))->assertSessionHasErrors('ticketing');
+        $this->assertSame(TicketingStatus::Draft, $event->fresh()->ticketing_status);
+
+        // The client adds their own payout account from their own session.
+        $event->forceFill([
+            'payout_account_name' => 'Client Events Ltd',
+            'payout_account_number' => '0123456789012',
+            'payout_bank' => 'Zanaco (Zambia National Commercial Bank)',
+            'payout_branch' => 'Cairo Road',
+        ])->save();
+
         $this->post(route('public-events.ticketing.submit', $event))->assertSessionHas('status', 'ticketing-submitted');
         $this->assertSame(TicketingStatus::PendingReview, $event->fresh()->ticketing_status);
 
