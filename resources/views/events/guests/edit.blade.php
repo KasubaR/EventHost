@@ -119,6 +119,7 @@
                             <input type="checkbox" name="regenerate_invitation_token" value="1" class="profile-input evt-check-input" @checked(old('regenerate_invitation_token'))>
                             <span>Generate a new personal RSVP link (invalidates the old link)</span>
                         </label>
+                        <p class="evt-muted">The old link stops working at once. Send the guest the new one, or they will see "We couldn't find this invitation".</p>
                         @error('regenerate_invitation_token')
                             <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                         @enderror

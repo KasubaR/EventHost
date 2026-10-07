@@ -224,11 +224,12 @@ Route::get('/rsvp/thanks', [RsvpController::class, 'thanks'])->name('rsvp.thanks
 // off of, so they get a short-lived SIGNED link by RSVP id instead (rsvp.open.confirmed, Phase 6 of
 // plans/rsvp-submission-edge-cases.md). The flash-only /rsvp/thanks above stays as a fallback.
 Route::get('/rsvp/confirmed/{rsvp}', [RsvpController::class, 'confirmedOpen'])->middleware('signed')->name('rsvp.open.confirmed');
-Route::get('/rsvp/{token}/thanks', [RsvpController::class, 'thanksByToken'])->name('rsvp.token.thanks');
-Route::get('/rsvp/{token}', [RsvpController::class, 'showByToken'])->name('rsvp.token.show');
+// guest.token cleans a pasted link (trailing punctuation, spaces) before lookup; guest-link caps lookups per IP.
+Route::get('/rsvp/{token}/thanks', [RsvpController::class, 'thanksByToken'])->middleware(['throttle:guest-link', 'guest.token'])->name('rsvp.token.thanks');
+Route::get('/rsvp/{token}', [RsvpController::class, 'showByToken'])->middleware(['throttle:guest-link', 'guest.token'])->name('rsvp.token.show');
 // Same trust model as the line above: the token in the URL is the only guard, no
 // login, no throttle — a guest reopens this repeatedly to show their entry pass.
-Route::get('/rsvp/{token}/pass', [RsvpController::class, 'pass'])->name('rsvp.token.pass');
+Route::get('/rsvp/{token}/pass', [RsvpController::class, 'pass'])->middleware(['throttle:guest-link', 'guest.token'])->name('rsvp.token.pass');
 // "Stop these reminder emails" link in every guest reminder email. Signed (relative), not token-keyed, so it works
 // for guests with no RSVP token. GET only shows a page — mail scanners prefetch links; the POST is the change, and is
 // what a mail client's one-click unsubscribe sends, hence no CSRF (the signature authorises it).
@@ -249,22 +250,23 @@ Route::get('/events/{event}/app-preview', [EventPreviewController::class, 'showF
     ->middleware(['signed:relative', 'throttle:60,1'])
     ->name('events.app-preview');
 Route::get('/rsvp/{token}/pass/download', [RsvpController::class, 'passDownload'])
-    ->middleware('throttle:guest-pass-download')
+    ->middleware(['throttle:guest-pass-download', 'guest.token'])
     ->name('rsvp.token.pass-download');
 // Deliberately unthrottled, unlike the PDF: Twilio fetches every WhatsApp pass image from
 // a handful of its own IPs, so a per-IP limit would start failing deliveries at any busy
 // event. Not an abuse vector either — it needs a 48-char token and is cached by content.
-Route::get('/rsvp/{token}/pass.png', [RsvpController::class, 'passImage'])->name('rsvp.token.pass-image');
-Route::get('/rsvp/{token}/entry-pass.svg', [RsvpController::class, 'entryPassQr'])->name('rsvp.token.entry-pass');
-Route::get('/rsvp/{token}/entry-pass.png', [RsvpController::class, 'entryPassQrPng'])->name('rsvp.token.entry-pass-png');
+// No guest-link throttle on the three image routes: the page itself embeds them, and Twilio fetches the PNGs.
+Route::get('/rsvp/{token}/pass.png', [RsvpController::class, 'passImage'])->middleware('guest.token')->name('rsvp.token.pass-image');
+Route::get('/rsvp/{token}/entry-pass.svg', [RsvpController::class, 'entryPassQr'])->middleware('guest.token')->name('rsvp.token.entry-pass');
+Route::get('/rsvp/{token}/entry-pass.png', [RsvpController::class, 'entryPassQrPng'])->middleware('guest.token')->name('rsvp.token.entry-pass-png');
 Route::get('/e/{slug}/rsvp', [RsvpController::class, 'showOpen'])->name('rsvp.open.show');
 // Group seat-pool link (plans/group-rsvp-links.md). The secret is the group's own token, never the event slug.
-Route::get('/g/{token}', [GroupRsvpController::class, 'show'])->name('group-rsvp.show');
+Route::get('/g/{token}', [GroupRsvpController::class, 'show'])->middleware(['throttle:guest-link', 'guest.token:group'])->name('group-rsvp.show');
 
 Route::middleware('throttle:rsvp-submit')->group(function () {
-    Route::post('/rsvp/{token}', [RsvpController::class, 'storeByToken'])->name('rsvp.token.store');
+    Route::post('/rsvp/{token}', [RsvpController::class, 'storeByToken'])->middleware('guest.token')->name('rsvp.token.store');
     Route::post('/e/{slug}/rsvp', [RsvpController::class, 'storeOpen'])->name('rsvp.open.store');
-    Route::post('/g/{token}', [GroupRsvpController::class, 'store'])->name('group-rsvp.store');
+    Route::post('/g/{token}', [GroupRsvpController::class, 'store'])->middleware('guest.token:group')->name('group-rsvp.store');
 });
 
 // Staff invite accept flow (Phase 18) — twin paths depending on whether the

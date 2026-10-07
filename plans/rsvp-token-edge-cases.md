@@ -70,7 +70,7 @@ Add `tests/Feature/RsvpTokenEdgeCasesTest.php`. These should mostly pass today; 
 7. **Case:** document with a test that tokens match exactly (skip the case-folded assertion on SQLite, or assert exact-case lookups succeed, and note the MySQL difference).
 8. Add the missing `isInvitation()` guard to `thanksByToken()` (T6) with a test.
 
-### Phase 2 — A useful "link not found" for guests (T1, T2)
+### Phase 2 — A useful "link not found" for guests (T1, T2) — BUILT (`GuestLinkToken`, `guest.token` middleware, `rsvp/link-not-found`)
 
 1. **Normalise before lookup.** One helper, `GuestLinkToken::clean()`: trim whitespace, strip trailing `. , ; : ) ] > " '`, and return null (404 with no database query) when the result is empty, longer than 64 characters or not `[A-Za-z0-9_-]`. Used by every `where('invitation_token', ...)` on the guest-facing routes (web and API). Do not change case.
 2. If cleaning changed the token and the guest exists, **redirect to the canonical URL** (302, same route) instead of 404, so a link with a trailing `)` just works.
@@ -84,7 +84,7 @@ Add `tests/Feature/RsvpTokenEdgeCasesTest.php`. These should mostly pass today; 
 3. Resolve the guest once per request: a request-scoped memo on the form request, reused by `authorize()`, `rules()` and the controller via `$request->guest()`; the API twin does the same.
 4. Tests: guest with the form open while the host deletes, unpublishes or cancels the event gets the status page, not the verification 403; JSON clients keep status 403.
 
-### Phase 4 — Throttle token guessing without hurting real guests (T5)
+### Phase 4 — Throttle token guessing without hurting real guests (T5) — BUILT (miss bucket skipped)
 
 1. `rsvp-submit`: add an IP-wide ceiling to the personal branch as well, e.g. `Limit::perMinute(10)->by(ip|token)` **plus** `Limit::perMinute(60)->by(ip)`. A shared venue IP stays well inside 60 submits per minute.
 2. New `guest-link` limiter on the guest GET routes (`rsvp.token.show`, `rsvp.token.thanks`, `rsvp.token.pass`, the PDF is already throttled) at about 120 per minute per IP. **Not** on `pass.png` or `entry-pass.png` (Twilio fetches them from a few IPs, as the route comment explains).

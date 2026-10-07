@@ -9,6 +9,7 @@ use App\Http\Middleware\EnforceActingAsSession;
 use App\Http\Middleware\EnsureAccountIsActive;
 use App\Http\Middleware\EnsureEventAudience;
 use App\Http\Middleware\EnsureSanctumAccountIsActive;
+use App\Http\Middleware\NormalizeGuestToken;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -18,6 +19,7 @@ use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
 use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -55,6 +57,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin.auth' => AdminAuthenticate::class,
             'account.active' => EnsureAccountIsActive::class,
             'audience' => EnsureEventAudience::class,
+            'guest.token' => NormalizeGuestToken::class,
             // Slice C1 — the Sanctum-token twin of account.active. See
             // EnsureSanctumAccountIsActive's docblock for why this exists separately.
             'sanctum.active' => EnsureSanctumAccountIsActive::class,
@@ -126,6 +129,23 @@ return Application::configure(basePath: dirname(__DIR__))
             return redirect($e->redirectTo ?? url()->previous())
                 ->withInput($input)
                 ->withErrors($e->errors(), $e->errorBag);
+        });
+
+        // A guest's personal or group link that matches nobody (mistyped, cut off, replaced by the host, guest removed)
+        // gets a page that says what to do, not the site's "event isn't public" 404. Pages only: the image routes
+        // and JSON keep a plain 404. plans/rsvp-token-edge-cases.md T1.
+        $exceptions->render(function (NotFoundHttpException $e, Request $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return null;
+            }
+
+            $name = (string) $request->route()?->getName();
+            $isGuestLinkPage = in_array($name, [
+                'rsvp.token.show', 'rsvp.token.thanks', 'rsvp.token.pass', 'rsvp.token.store',
+                'group-rsvp.show', 'group-rsvp.store',
+            ], true);
+
+            return $isGuestLinkPage ? response()->view('rsvp.link-not-found', [], 404) : null;
         });
 
         // A stale CSRF token nearly always means the same form was sent twice: the

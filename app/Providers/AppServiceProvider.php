@@ -117,7 +117,13 @@ class AppServiceProvider extends ServiceProvider
             $ip = (string) $request->ip();
 
             if ($personal) {
-                return Limit::perMinute(10)->by($ip.'|'.$suffix);
+                // The per-token bucket is a guest's own taps. Each new token string would start a fresh one, so
+                // the per-IP ceiling is what stops someone posting endless wrong tokens (and caps rate-limiter
+                // cache growth); it is generous because a venue's guests can share one IP.
+                return [
+                    Limit::perMinute(10)->by($ip.'|'.$suffix),
+                    Limit::perMinute(120)->by($ip.'|personal-rsvp'),
+                ];
             }
 
             // The open and group links are shared by a whole guest list, so an announcement ("scan the QR
@@ -132,6 +138,11 @@ class AppServiceProvider extends ServiceProvider
                 Limit::perMinute(120)->by($ip.'|'.$suffix),
             ];
         });
+
+        // Guest-facing link pages (RSVP, thanks, pass, group link): a real guest loads a few; this only stops someone
+        // walking through guessed tokens. Per IP and generous, since a venue's guests can share one. Not applied to the
+        // pass image routes (Twilio fetches those). plans/rsvp-token-edge-cases.md Phase 4.
+        RateLimiter::for('guest-link', fn (Request $request): Limit => Limit::perMinute(120)->by((string) $request->ip().'|guest-link'));
 
         RateLimiter::for('staff-checkin', function (Request $request): Limit {
             $route = $request->route();

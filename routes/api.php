@@ -109,9 +109,10 @@ Route::prefix('v1')->group(function (): void {
     // Slice B1 plan for why storeByToken/storeOpen return the confirmation body directly
     // (200) instead of the web flow's redirect+session-flash.
     Route::prefix('rsvp')->name('api.v1.rsvp.')->group(function (): void {
-        Route::get('/{token}', [RsvpController::class, 'showByToken'])->name('token.show');
+        // guest.token:guest,quiet cleans a pasted token but never redirects a JSON client.
+        Route::get('/{token}', [RsvpController::class, 'showByToken'])->middleware(['throttle:guest-link', 'guest.token:guest,quiet'])->name('token.show');
         Route::post('/{token}', [RsvpController::class, 'storeByToken'])
-            ->middleware('throttle:rsvp-submit')
+            ->middleware(['throttle:rsvp-submit', 'guest.token:guest,quiet'])
             ->name('token.store');
     });
 
