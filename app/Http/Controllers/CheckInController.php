@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\CheckInClosedException;
+use App\Exceptions\CheckInNotAllowedException;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Services\CheckInAnalyticsService;
@@ -115,9 +116,13 @@ class CheckInController extends Controller
     private function confirmResponse(CheckInService $checkInService, Guest $guest, ?int $staffUserId): JsonResponse
     {
         try {
-            return response()->json($checkInService->confirm($guest, $staffUserId));
+            return response()->json($checkInService->confirm($guest, $staffUserId, null, request()->boolean('override')));
         } catch (CheckInClosedException $e) {
-            return response()->json(['message' => $e->getMessage()], 403);
+            // A refused RSVP can be overridden by the host's own scan (?override=1); a closed door cannot.
+            return response()->json([
+                'message' => $e->getMessage(),
+                'can_override' => $e instanceof CheckInNotAllowedException,
+            ], 403);
         }
     }
 

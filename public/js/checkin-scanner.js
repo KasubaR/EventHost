@@ -258,6 +258,20 @@
                 .then(function (payload) {
                     if (!payload.ok) {
                         showResult('error', (payload.data && payload.data.message) || config.notFoundMessage);
+
+                        // A declined or rejected guest is refused at the door. The host's own scanner may let them
+                        // in anyway; the server writes the override on the check-in.
+                        if (payload.data && payload.data.can_override && resultBox) {
+                            var overrideBtn = document.createElement('button');
+                            overrideBtn.type = 'button';
+                            overrideBtn.className = 'ckin-result-override';
+                            overrideBtn.textContent = 'Check in anyway';
+                            overrideBtn.addEventListener('click', function () {
+                                confirm(url + (url.indexOf('?') === -1 ? '?' : '&') + 'override=1');
+                            });
+                            resultBox.appendChild(overrideBtn);
+                        }
+
                         return;
                     }
 
@@ -293,7 +307,8 @@
                         showResultDetails(record, extras);
                         pulse([140, 70, 140, 70, 140]);
                     } else {
-                        showResult('success', name + ' checked in ✓');
+                        // A guest whose RSVP is not a plain "attending" gets a line for the staff.
+                        showResult('success', name + ' checked in ✓', payload.data.rsvp_warning || '');
                         bumpArrivedCount();
                         showResultDetails(record);
                         pulse(40);

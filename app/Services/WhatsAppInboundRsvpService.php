@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\RsvpStatus;
+use App\Exceptions\RsvpCheckedInException;
 use App\Exceptions\RsvpClosedException;
 use App\Models\Event;
 use App\Models\Guest;
@@ -92,6 +93,13 @@ class WhatsAppInboundRsvpService
                     $fromE164,
                     'RSVP is closed for '.$event->name.'. If you need help, contact the host.'
                 );
+            }
+
+            return;
+        } catch (RsvpCheckedInException) {
+            $this->recordInboundLog($event->id, $guest->id, $messageSid, 'ignored_checked_in', $status);
+            if ($fromE164 !== null) {
+                $this->whatsApp->sendText($fromE164, 'You are already checked in for '.$event->name.', so this response cannot be changed here. Please speak to the host.');
             }
 
             return;

@@ -3,8 +3,11 @@
 namespace App\Services;
 
 use App\Exceptions\CheckInClosedException;
+use App\Exceptions\CheckInNotAllowedException;
 use App\Models\Guest;
+use App\Support\CheckInRsvpState;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * Shared "mark this guest arrived" logic used by both the authenticated
@@ -28,9 +31,9 @@ class CheckInService
      * It is the only attribution those scans have — $staffUserId is null for
      * them, since there is no account behind the link.
      */
-    public function confirm(Guest $guest, ?int $staffUserId, ?string $viaLabel = null): array
+    public function confirm(Guest $guest, ?int $staffUserId, ?string $viaLabel = null, bool $override = false): array
     {
-        return DB::transaction(function () use ($guest, $staffUserId, $viaLabel): array {
+        return DB::transaction(function () use ($guest, $staffUserId, $viaLabel, $override): array {
             /** @var Guest $locked */
             $locked = Guest::query()->whereKey($guest->id)->lockForUpdate()->firstOrFail();
             $locked->loadMissing('event');
@@ -42,6 +45,19 @@ class CheckInService
             }
 
             $alreadyIn = $locked->isCheckedIn();
+            $locked->loadMissing('rsvp');
+            $rsvpState = CheckInRsvpState::for($locked);
+
+            // A declined or host-rejected guest is not let in by a scan. Only the host's own scanner may override
+            // it, and the override is written on the check-in so it is never silent. A repeat scan of someone
+            // already inside is not a new decision, so it is not refused.
+            if (! $alreadyIn && $rsvpState['block'] !== null) {
+                if (! $override) {
+                    throw new CheckInNotAllowedException($rsvpState['block'], (string) $rsvpState['reason']);
+                }
+
+                $viaLabel = Str::limit(trim(($viaLabel ?? '').' (host override: '.$rsvpState['reason'].')'), 120, '');
+            }
 
             if (! $alreadyIn) {
                 $locked->forceFill([
@@ -71,6 +87,9 @@ class CheckInService
                     'checked_in_by' => $locked->checkedInByLabel(),
                 ],
                 'already_checked_in' => $alreadyIn,
+                // Additive: what the RSVP says, and a line for the staff when it is not a plain "attending".
+                'rsvp_status' => $rsvpState['status'],
+                'rsvp_warning' => $rsvpState['warning'],
             ];
         });
     }

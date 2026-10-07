@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\RsvpApprovalStatus;
 use App\Enums\RsvpStatus;
 use App\Exceptions\GuestLimitReachedException;
+use App\Exceptions\RsvpCheckedInException;
 use App\Exceptions\RsvpClosedException;
 use App\Models\Event;
 use App\Models\Guest;
@@ -85,6 +86,17 @@ class RsvpSubmissionService
             $attendeeCount = $status->countsTowardGuestLimit() ? $payload['attendee_count'] : 0;
 
             $newAcceptedCount = $status === RsvpStatus::Accepted ? $attendeeCount : 0;
+
+            // A guest who is already inside cannot cancel or reduce from here: check-in opens up to a day before the
+            // start while reductions stay open until it. The guest row is locked too, so a scan and a decline cannot
+            // both win. (Taking seats, or answering the same again, is fine.) plans/rsvp-status-changes.md Phase 2.
+            if ($existing !== null && $previousHeldCount > $newAcceptedCount) {
+                $checkedInAt = Guest::query()->whereKey($guest->id)->lockForUpdate()->value('checked_in_at');
+
+                if ($checkedInAt !== null) {
+                    throw new RsvpCheckedInException;
+                }
+            }
 
             if ($enforceDeadline && ! $locked->acceptsRsvpSubmissions()) {
                 $mayReduce = $allowReductions && $locked->canReduceRsvp($existing);

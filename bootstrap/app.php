@@ -1,6 +1,7 @@
 <?php
 
 use App\Exceptions\GuestLimitReachedException;
+use App\Exceptions\RsvpCheckedInException;
 use App\Exceptions\RsvpClosedException;
 use App\Exceptions\RsvpUnavailableException;
 use App\Http\Middleware\AdminAuthenticate;
@@ -93,6 +94,19 @@ return Application::configure(basePath: dirname(__DIR__))
 
             return ($rsvpPageFor($request) !== null ? redirect($rsvpPageFor($request)) : redirect()->back(fallback: url('/')))
                 ->with('rsvp_closed', $e->getMessage());
+        });
+
+        // Already checked in: the answer cannot be cancelled or reduced from here. Shown on the form the guest used.
+        $exceptions->render(function (RsvpCheckedInException $e, Request $request) use ($rsvpPageFor) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json(['message' => $e->getMessage(), 'code' => 'rsvp_checked_in'], 403);
+            }
+
+            $target = $rsvpPageFor($request);
+
+            return ($target !== null ? redirect($target) : redirect()->back(fallback: url('/')))
+                ->withInput($request->except('_token'))
+                ->withErrors(['status' => $e->getMessage()]);
         });
 
         // Deleted, cancelled, paused or full since the form was opened: the GET page for the same link already

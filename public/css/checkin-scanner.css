@@ -298,3 +298,18 @@
   border: 1px solid var(--line, #e0e0e8);
   border-radius: var(--radius-sm, 6px);
 }
+
+/* "Check in anyway" under a refusal for a declined or rejected guest (host scanner only). */
+.ckin-result-override {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 8px 14px;
+  border: 2px solid currentColor;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
