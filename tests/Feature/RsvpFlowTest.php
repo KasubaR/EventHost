@@ -57,6 +57,43 @@ class RsvpFlowTest extends TestCase
         Notification::assertSentToTimes($user, NewRsvpReceivedNotification::class, 2);
     }
 
+    public function test_an_identical_resubmit_notifies_nobody_again(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create();
+        $event = Event::factory()->for($user)->published()->create([
+            'is_public' => true,
+            'rsvp_deadline' => null,
+            'guest_limit' => null,
+        ]);
+
+        $guest = Guest::factory()->for($event)->create([
+            'invitation_token' => 'tok_dup_submit',
+            'email' => 'dup@example.test',
+        ]);
+
+        $payload = ['status' => 'accepted', 'attendee_count' => 1, 'message' => 'See you there'];
+
+        $this->post(route('rsvp.token.store', ['token' => 'tok_dup_submit']), $payload)->assertRedirect();
+        $updatedAt = $guest->fresh()->rsvp->updated_at;
+
+        $this->travel(5)->minutes();
+        $this->post(route('rsvp.token.store', ['token' => 'tok_dup_submit']), $payload)
+            ->assertRedirect(route('rsvp.token.thanks', ['token' => 'tok_dup_submit']));
+
+        $this->assertSame(1, Rsvp::query()->where('guest_id', $guest->id)->count());
+        $this->assertEquals($updatedAt, $guest->fresh()->rsvp->updated_at, 'an unchanged resubmit must not rewrite the row');
+        Notification::assertSentOnDemandTimes(RsvpConfirmationNotification::class, 1);
+        Notification::assertSentToTimes($user, NewRsvpReceivedNotification::class, 1);
+
+        // A real change still notifies.
+        $this->post(route('rsvp.token.store', ['token' => 'tok_dup_submit']), [...$payload, 'message' => 'Running late'])->assertRedirect();
+
+        Notification::assertSentOnDemandTimes(RsvpConfirmationNotification::class, 2);
+        Notification::assertSentToTimes($user, NewRsvpReceivedNotification::class, 2);
+    }
+
     public function test_token_rsvp_rejected_after_deadline(): void
     {
         $user = User::factory()->create();

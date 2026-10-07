@@ -99,3 +99,7 @@
         </div>
     </article>
 @endsection
+
+@push('scripts')
+    <script src="{{ asset('js/rsvp-form.js') }}" defer></script>
+@endpush

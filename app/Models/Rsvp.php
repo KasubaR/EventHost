@@ -15,6 +15,14 @@ class Rsvp extends Model
     use HasFactory;
 
     /**
+     * Set by RsvpSubmissionService::submit(): false when the submit rewrote the same answer the guest
+     * already had (double tap, refresh-resubmit, retry after a lost response). Declared, so Eloquent
+     * keeps it out of the attributes and it is never persisted. Defaults to true so an RSVP made any
+     * other way is still notified.
+     */
+    public bool $submissionChanged = true;
+
+    /**
      * @var list<string>
      */
     protected $fillable = [

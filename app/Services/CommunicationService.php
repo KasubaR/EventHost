@@ -203,6 +203,11 @@ class CommunicationService
      */
     public function dispatchRsvpNotifications(Event $event, Guest $guest, Rsvp $rsvp, bool $viaWhatsAppInbound = false): void
     {
+        // A resubmit of the answer already on file (double tap, refresh, retry) tells nobody anything new.
+        if (! $rsvp->submissionChanged) {
+            return;
+        }
+
         try {
             $rsvp->loadMissing('guest');
 
@@ -613,8 +618,8 @@ class CommunicationService
             return 'rate_limited';
         }
 
-        // No idempotency key — same posture as sendRsvpConfirmation() (email) above: an
-        // edited/resubmitted RSVP notifies again exactly like the email side already does.
+        // No idempotency key — an edited RSVP notifies again like the email side. An unchanged
+        // resubmit never reaches here: dispatchRsvpNotifications() returns early (Rsvp::$submissionChanged).
         $log = $this->startLog($event, $guest, 'whatsapp', 'guest_rsvp_confirmation_whatsapp', null, null);
         if ($log === null) {
             return 'failed';

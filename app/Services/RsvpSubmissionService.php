@@ -164,6 +164,19 @@ class RsvpSubmissionService
                 $rsvpData['host_rejection_note'] = null;
             }
 
+            // The same answer again (double tap, refresh-resubmit, retry after a lost response) writes
+            // nothing and tells callers not to notify. Compared under the event lock, so two racing
+            // identical submits cannot both count as a change.
+            if ($existing !== null
+                && $existing->status === $status
+                && (int) $existing->attendee_count === $attendeeCount
+                && self::normalizeMessage($existing->message) === self::normalizeMessage($rsvpData['message'])
+                && $existing->host_approval_status === $approvalStatus) {
+                $existing->submissionChanged = false;
+
+                return $existing;
+            }
+
             try {
                 /** @var Rsvp $rsvp */
                 $rsvp = Rsvp::query()->updateOrCreate(
@@ -188,5 +201,10 @@ class RsvpSubmissionService
 
             return $rsvp;
         });
+    }
+
+    private static function normalizeMessage(?string $message): string
+    {
+        return trim((string) $message);
     }
 }

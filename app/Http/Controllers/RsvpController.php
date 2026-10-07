@@ -403,7 +403,8 @@ class RsvpController extends Controller
         // this page (GuestController::sendWhatsAppInvitation() — a real per-message
         // cost), so an automatic send here follows the same gate rather than giving
         // every plan a free way around it. Every plan still gets the email above.
-        if ($isPrivate && $event->ownerHasPremiumEventTools()) {
+        // An unchanged resubmit (double tap, refresh) must not send the invite again either.
+        if ($isPrivate && $rsvp->submissionChanged && $event->ownerHasPremiumEventTools()) {
             try {
                 $communicationService->sendWhatsAppInvitation($event, $guest);
             } catch (\Throwable $e) {
