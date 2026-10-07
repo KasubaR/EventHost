@@ -11,6 +11,7 @@ use App\Models\Event;
 use App\Models\Guest;
 use App\Models\GuestGroup;
 use App\Models\Rsvp;
+use App\Models\RsvpChange;
 use App\Support\EventAttendance;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
@@ -56,9 +57,9 @@ class RsvpSubmissionService
      *
      * @throws RsvpClosedException
      */
-    public function submit(Event $event, Guest $guest, array $payload, bool $enforceDeadline = true, bool $allowReductions = false): Rsvp
+    public function submit(Event $event, Guest $guest, array $payload, bool $enforceDeadline = true, bool $allowReductions = false, string $channel = RsvpChange::CHANNEL_WEB_TOKEN, ?int $actorUserId = null): Rsvp
     {
-        return DB::transaction(function () use ($event, $guest, $payload, $enforceDeadline, $allowReductions): Rsvp {
+        return DB::transaction(function () use ($event, $guest, $payload, $enforceDeadline, $allowReductions, $channel, $actorUserId): Rsvp {
             /** @var Event $locked */
             $locked = Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
 
@@ -111,6 +112,26 @@ class RsvpSubmissionService
                 }
             }
 
+            // The host's rejection is final. A guest the host rejected cannot come back by declining and accepting
+            // again, or by editing the request: only the very same request is a no-op, and nothing is queued for
+            // review. (Declining is still allowed; the rejection is kept through it, see below.)
+            // plans/rsvp-status-changes.md Phase 3.
+            if ($status === RsvpStatus::Accepted && $existing?->host_approval_status === RsvpApprovalStatus::Rejected) {
+                $identical = $existing->status === RsvpStatus::Accepted
+                    && (int) $existing->attendee_count === $attendeeCount
+                    && self::normalizeMessage($existing->message) === self::normalizeMessage($payload['message'] ?? null);
+
+                if (! $identical) {
+                    throw ValidationException::withMessages([
+                        'status' => ['The host has already declined your request to attend. If you think this is a mistake, please contact the host.'],
+                    ]);
+                }
+
+                $existing->submissionChanged = false;
+
+                return $existing;
+            }
+
             // A change that takes no more seats than the guest already holds is always allowed,
             // even when the host has since lowered the limit under current attendance.
             if ($locked->guest_limit !== null && $status === RsvpStatus::Accepted
@@ -141,30 +162,44 @@ class RsvpSubmissionService
             $requiresApproval = $locked->require_rsvp_approval
                 || ($hasSeatPool && $guest->group_link_joined_at !== null);
 
-            // Approval only (re)opens on a transition into Accepted from something else — a
-            // fresh accept, or an accept after a prior decline/maybe. Editing attendee_count/
-            // message while already Accepted keeps whatever decision the host already made
-            // (Pending/Approved/Rejected), so a minor edit can't reopen a settled review.
-            $approvalStatus = RsvpApprovalStatus::NotRequired;
+            // Approval follows SEATS, not answers (plans/rsvp-status-changes.md Phase 3). `approved_seats` is how many
+            // the host has approved, and it survives a Declined/Maybe round trip:
+            //  - coming back to Accepted within the approved seats needs no new review and no new alert;
+            //  - asking for more than was approved (a plus-one added later) reopens review for the extra seat only,
+            //    while the guest keeps their pass for the seats already approved;
+            //  - a guest with nothing approved yet starts a review, or keeps the one already open.
+            // A rejection is kept through a decline (and refused above if the guest accepts again).
+            $approvedSeats = $existing?->approvedSeatsOnFile() ?? 0;
+            $approvalStatus = $existing?->host_approval_status === RsvpApprovalStatus::Rejected
+                ? RsvpApprovalStatus::Rejected
+                : RsvpApprovalStatus::NotRequired;
             $resetReview = false;
 
             if ($status === RsvpStatus::Accepted && $requiresApproval) {
-                $wasAccepted = $existing !== null && $existing->status === RsvpStatus::Accepted;
+                $reviewIsOpen = $existing !== null
+                    && $existing->status === RsvpStatus::Accepted
+                    && $existing->host_approval_status === RsvpApprovalStatus::Pending;
 
-                if ($wasAccepted) {
-                    $approvalStatus = $existing->host_approval_status;
+                if ($attendeeCount <= $approvedSeats) {
+                    $approvalStatus = RsvpApprovalStatus::Approved;
+                } elseif ($reviewIsOpen) {
+                    // Still waiting on the host: editing the message or the count does not start a second review.
+                    $approvalStatus = RsvpApprovalStatus::Pending;
                 } else {
                     $approvalStatus = RsvpApprovalStatus::Pending;
                     $resetReview = true;
                 }
+            } elseif ($status === RsvpStatus::Accepted) {
+                $approvalStatus = RsvpApprovalStatus::NotRequired;
             }
-
             $rsvpData = [
                 'event_id' => $locked->id,
                 'status' => $status,
                 'attendee_count' => $attendeeCount,
                 'message' => $payload['message'] ?? null,
                 'host_approval_status' => $approvalStatus,
+                // Kept through a decline so coming back within it needs no new review.
+                'approved_seats' => $approvedSeats > 0 ? $approvedSeats : null,
             ];
 
             if ($resetReview) {
@@ -211,8 +246,39 @@ class RsvpSubmissionService
                 $rsvp = Rsvp::query()->where('guest_id', $guest->id)->firstOrFail();
             }
 
+            $this->recordAnswerChange($existing, $rsvp, $channel, $actorUserId);
+
             return $rsvp;
         });
+    }
+
+    /**
+     * Writes the history row when the ANSWER (status or seats) changed. A message or approval-only edit is not an answer
+     * change. Runs inside submit()'s transaction, so the row and the RSVP are saved together or not at all.
+     */
+    private function recordAnswerChange(?Rsvp $before, Rsvp $after, string $channel, ?int $actorUserId): void
+    {
+        if ($before !== null
+            && $before->status === $after->status
+            && (int) $before->attendee_count === (int) $after->attendee_count) {
+            return;
+        }
+
+        RsvpChange::query()->create([
+            'rsvp_id' => $after->id,
+            'guest_id' => $after->guest_id,
+            'event_id' => $after->event_id,
+            'from_status' => $before?->status,
+            'from_seats' => $before !== null ? (int) $before->attendee_count : null,
+            'to_status' => $after->status,
+            'to_seats' => (int) $after->attendee_count,
+            'channel' => $channel,
+            'actor_user_id' => $actorUserId,
+        ]);
+
+        if ($before !== null) {
+            $after->previousAnswer = ['status' => $before->status->value, 'seats' => (int) $before->attendee_count];
+        }
     }
 
     private static function normalizeMessage(?string $message): string

@@ -11,6 +11,7 @@ use App\Http\Resources\Api\V1\RsvpResource;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Models\Rsvp;
+use App\Models\RsvpChange;
 use App\Services\CommunicationService;
 use App\Services\InvitationCustomizationService;
 use App\Services\PublicInvitationResolver;
@@ -87,7 +88,7 @@ class RsvpController extends Controller
 
         $payload = $request->validatedRsvpPayload();
 
-        $rsvp = $rsvpSubmissionService->submit($event, $guest, $payload, allowReductions: true);
+        $rsvp = $rsvpSubmissionService->submit($event, $guest, $payload, allowReductions: true, channel: RsvpChange::CHANNEL_API);
         // The request eager-loaded the guest's previous RSVP; point the relation at the one just saved.
         $guest->setRelation('rsvp', $rsvp);
 
@@ -180,7 +181,7 @@ class RsvpController extends Controller
 
         $payload = $request->validatedRsvpPayload();
 
-        $rsvp = $rsvpSubmissionService->submit($event, $guest, $payload);
+        $rsvp = $rsvpSubmissionService->submit($event, $guest, $payload, channel: RsvpChange::CHANNEL_API);
 
         $this->dispatchRsvpNotifications($event, $guest, $rsvp);
 

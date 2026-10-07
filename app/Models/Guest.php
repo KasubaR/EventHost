@@ -91,6 +91,16 @@ class Guest extends Model
     }
 
     /**
+     * How this guest's answer changed over time, newest last. See RsvpChange.
+     *
+     * @return HasMany<RsvpChange, $this>
+     */
+    public function rsvpChanges(): HasMany
+    {
+        return $this->hasMany(RsvpChange::class);
+    }
+
+    /**
      * @return HasMany<NotificationLog, $this>
      */
     public function notificationLogs(): HasMany
@@ -135,7 +145,9 @@ class Guest extends Model
     {
         return $this->invitation_token !== null
             && $rsvp->status === RsvpStatus::Accepted
-            && ! in_array($rsvp->host_approval_status, [RsvpApprovalStatus::Pending, RsvpApprovalStatus::Rejected], true)
+            && $rsvp->host_approval_status !== RsvpApprovalStatus::Rejected
+            // Pending means "not approved yet", except for an extra seat asked for on top of seats the host already approved.
+            && ($rsvp->host_approval_status !== RsvpApprovalStatus::Pending || $rsvp->approvedSeatsOnFile() > 0)
             && $event->ownerHasPremiumEventTools();
     }
 

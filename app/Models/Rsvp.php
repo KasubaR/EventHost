@@ -23,6 +23,14 @@ class Rsvp extends Model
     public bool $submissionChanged = true;
 
     /**
+     * Set by RsvpSubmissionService::submit() when the ANSWER (status or seats) changed: what it was before, as plain
+     * scalars (`status`, `seats`) so a queued notification can carry it. Null for a first answer or no answer change.
+     *
+     * @var array{status: string, seats: int}|null
+     */
+    public ?array $previousAnswer = null;
+
+    /**
      * @var list<string>
      */
     protected $fillable = [
@@ -35,6 +43,7 @@ class Rsvp extends Model
         'host_reviewed_at',
         'host_reviewed_by',
         'host_rejection_note',
+        'approved_seats',
     ];
 
     /**
@@ -67,6 +76,31 @@ class Rsvp extends Model
     }
 
     /**
+     * Seats the host has approved for this guest. Rows approved before `approved_seats` existed (the migration backfills
+     * them, but a hand-made row may not be) count as approved for the seats they hold.
+     */
+    public function approvedSeatsOnFile(): int
+    {
+        if ($this->approved_seats !== null) {
+            return (int) $this->approved_seats;
+        }
+
+        return $this->host_approval_status === RsvpApprovalStatus::Approved ? (int) $this->attendee_count : 0;
+    }
+
+    /**
+     * Seats the entry pass admits. While an extra seat waits for the host, the pass covers only what was approved.
+     */
+    public function passSeats(): int
+    {
+        if ($this->host_approval_status === RsvpApprovalStatus::Pending && $this->approvedSeatsOnFile() > 0) {
+            return min((int) $this->attendee_count, $this->approvedSeatsOnFile());
+        }
+
+        return (int) $this->attendee_count;
+    }
+
+    /**
      * Seats this RSVP holds against the guest limit: an accepted response the host has not rejected.
      */
     public function heldSeats(): int
@@ -85,6 +119,7 @@ class Rsvp extends Model
         return [
             'status' => RsvpStatus::class,
             'attendee_count' => 'integer',
+            'approved_seats' => 'integer',
             'host_approval_status' => RsvpApprovalStatus::class,
             'host_reviewed_at' => 'datetime',
         ];

@@ -25,6 +25,7 @@ class RsvpRejectedNotification extends Notification implements ShouldQueue
         public Guest $guest,
         public Rsvp $rsvp,
         public string $note,
+        public bool $extraSeatOnly = false,
     ) {
         $this->onQueue('default');
     }
@@ -41,18 +42,28 @@ class RsvpRejectedNotification extends Notification implements ShouldQueue
     {
         $message = (new MailMessage)
             ->subject('Update on your RSVP: '.ShortText::subject($this->event->name))
-            ->greeting('Hello, '.$this->guest->name.'!')
-            ->line('The host was not able to confirm your RSVP to '.$this->event->name.'.')
-            ->line('Their note: '.$this->note);
+            ->greeting('Hello, '.$this->guest->name.'!');
+
+        if ($this->extraSeatOnly) {
+            $seats = $this->rsvp->attendee_count;
+            $message
+                ->line('The host was not able to confirm the extra seat you asked for at '.$this->event->name.'.')
+                ->line('Your RSVP for '.$seats.' '.($seats === 1 ? 'seat' : 'seats').' still stands, and your pass is unchanged.');
+        } else {
+            $message->line('The host was not able to confirm your RSVP to '.$this->event->name.'.');
+        }
+
+        $message->line('Their note: '.$this->note);
 
         $rsvpUrl = filled($this->guest->invitation_token)
             ? route('rsvp.token.show', ['token' => $this->guest->invitation_token], absolute: true)
             : null;
 
         if ($rsvpUrl !== null) {
+            // The host's decision is final, so this never invites another request.
             $message
-                ->line('If you believe this is a mistake, you can update your response and try again.')
-                ->action('View or change your RSVP', $rsvpUrl);
+                ->line('If you have questions, please contact the host.')
+                ->action('View your RSVP', $rsvpUrl);
         }
 
         return $message->salutation('The '.config('app.name').' Team');

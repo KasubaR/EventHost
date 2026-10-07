@@ -31,6 +31,8 @@ class RsvpApprovalService
                 'host_reviewed_at' => now(),
                 'host_reviewed_by' => $host->id,
                 'host_rejection_note' => null,
+                // The host approved the seats asked for, including any extra one added since the last approval.
+                'approved_seats' => $locked->attendee_count,
             ])->save();
 
             return $locked;
@@ -42,14 +44,35 @@ class RsvpApprovalService
         app(CommunicationService::class)->dispatchApprovedRsvpNotifications($locked->event, $locked->guest, $locked);
     }
 
+    /**
+     * Declining an RSVP the host has never approved is final (the guest cannot ask again). Declining an extra seat on top
+     * of seats already approved only turns the extra seat down: the RSVP goes back to the approved seats and stays approved.
+     */
     public function reject(Rsvp $rsvp, User $host, string $note): void
     {
-        $locked = DB::transaction(function () use ($rsvp, $host, $note): Rsvp {
+        $extraSeatOnly = false;
+
+        $locked = DB::transaction(function () use ($rsvp, $host, $note, &$extraSeatOnly): Rsvp {
             /** @var Rsvp $locked */
             $locked = Rsvp::query()->whereKey($rsvp->id)->lockForUpdate()->firstOrFail();
 
             if ($locked->host_approval_status !== RsvpApprovalStatus::Pending) {
                 throw new RsvpApprovalException('This RSVP is not awaiting approval.');
+            }
+
+            $approvedSeats = $locked->approvedSeatsOnFile();
+
+            if ($approvedSeats > 0 && $locked->attendee_count > $approvedSeats) {
+                $extraSeatOnly = true;
+                $locked->forceFill([
+                    'attendee_count' => $approvedSeats,
+                    'host_approval_status' => RsvpApprovalStatus::Approved,
+                    'host_reviewed_at' => now(),
+                    'host_reviewed_by' => $host->id,
+                    'host_rejection_note' => null,
+                ])->save();
+
+                return $locked;
             }
 
             $locked->forceFill([
@@ -63,6 +86,6 @@ class RsvpApprovalService
         });
 
         $locked->loadMissing(['guest', 'event']);
-        app(CommunicationService::class)->sendRsvpRejection($locked->event, $locked->guest, $locked, $note);
+        app(CommunicationService::class)->sendRsvpRejection($locked->event, $locked->guest, $locked, $note, $extraSeatOnly);
     }
 }

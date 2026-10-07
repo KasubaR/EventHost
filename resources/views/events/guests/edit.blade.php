@@ -145,5 +145,19 @@
                 </form>
             </div>
         </div>
+        <div class="evt-section">
+            <div class="evt-section-body">
+                <h2 class="evt-section-title">Response history</h2>
+                @forelse ($changes as $change)
+                    <p class="evt-muted">
+                        <strong>{{ $change->created_at->timezone(config('events.timezone'))->format('M j, Y \a\t g:i A') }}</strong>:
+                        {{ $change->describe() }}
+                        <span class="evt-word-break">({{ $change->channelLabel() }})</span>
+                    </p>
+                @empty
+                    <p class="evt-muted">No changes to this guest's answer have been recorded.</p>
+                @endforelse
+            </div>
+        </div>
     </div>
 </x-app-layout>

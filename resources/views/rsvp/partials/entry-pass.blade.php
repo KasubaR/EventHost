@@ -10,6 +10,9 @@
     @endphp
     <div class="gpass-panel">
         <p class="gpass-panel-badge"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> You're going!</p>
+        @if ($rsvp?->isAwaitingHostApproval())
+            <p class="gpass-panel-note">Your extra seat is waiting for the host. This pass is valid for {{ $rsvp->approvedSeatsOnFile() }} {{ $rsvp->approvedSeatsOnFile() === 1 ? 'seat' : 'seats' }} until they approve it.</p>
+        @endif
 
         @include('rsvp.partials.pass-card', ['card' => $passCard, 'guest' => $guest])
 
@@ -33,7 +36,7 @@
         <p class="gpass-panel-badge gpass-panel-badge--pending"><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i> Awaiting host confirmation</p>
         <p>The host reviews RSVPs before sending out passes. You'll get your confirmation and entry pass as soon as they approve yours.</p>
     </div>
-@elseif (($rsvp ?? null)?->host_approval_status === \App\Enums\RsvpApprovalStatus::Rejected)
+@elseif (($rsvp ?? null)?->host_approval_status === \App\Enums\RsvpApprovalStatus::Rejected && $rsvp->status === \App\Enums\RsvpStatus::Accepted)
     <div class="gpass-panel gpass-panel--rejected">
         <p class="gpass-panel-badge gpass-panel-badge--rejected"><i class="fa-solid fa-circle-xmark" aria-hidden="true"></i> Not confirmed</p>
         <p>The host was not able to confirm your RSVP.</p>

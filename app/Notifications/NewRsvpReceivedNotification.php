@@ -5,6 +5,7 @@ namespace App\Notifications;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Models\Rsvp;
+use App\Models\RsvpChange;
 use App\Notifications\Channels\FcmChannel;
 use App\Support\ShortText;
 use Illuminate\Bus\Queueable;
@@ -20,6 +21,9 @@ class NewRsvpReceivedNotification extends Notification implements ShouldQueue
         public Event $event,
         public Guest $guest,
         public Rsvp $rsvp,
+        // What the guest said before, as scalars: a queued notification reloads the RSVP from the database, so a
+        // property set on the model in the request would be gone by the time it is sent. Null for a first answer.
+        public ?array $previous = null,
     ) {
         $this->onQueue('default');
     }
@@ -57,8 +61,10 @@ class NewRsvpReceivedNotification extends Notification implements ShouldQueue
     public function toFcm(object $notifiable): array
     {
         return [
-            'title' => 'New RSVP: '.$this->event->name,
-            'body' => $this->guest->name.' responded '.$this->rsvp->status->label().'.',
+            'title' => ($this->previous !== null ? 'RSVP changed: ' : 'New RSVP: ').$this->event->name,
+            'body' => $this->previous !== null
+                ? $this->guest->name.' changed their response from '.$this->previousLabel().' to '.$this->currentLabel().'.'
+                : $this->guest->name.' responded '.$this->rsvp->status->label().'.',
             'data' => [
                 'type' => 'new_rsvp',
                 'event_id' => (string) $this->event->id,
@@ -70,11 +76,17 @@ class NewRsvpReceivedNotification extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         $statusLabel = $this->rsvp->status->label();
+        $changed = $this->previous !== null;
 
         return (new MailMessage)
-            ->subject('New RSVP from '.$this->guest->name.': '.ShortText::subject($this->event->name))
+            ->subject($changed
+                ? 'RSVP changed by '.$this->guest->name.': '.ShortText::subject($this->event->name)
+                : 'New RSVP from '.$this->guest->name.': '.ShortText::subject($this->event->name))
             ->greeting('Hello, '.$notifiable->name.'!')
-            ->line($this->guest->name.' just responded to '.$this->event->name.'.')
+            ->line($changed
+                ? $this->guest->name.' changed their response to '.$this->event->name.'.'
+                : $this->guest->name.' just responded to '.$this->event->name.'.')
+            ->when($changed, fn (MailMessage $m) => $m->line('Was: '.$this->previousLabel().'. Now: '.$this->currentLabel().'.'))
             ->line('Response: '.$statusLabel.'.')
             ->when(
                 $this->rsvp->status->countsTowardGuestLimit(),
@@ -83,5 +95,15 @@ class NewRsvpReceivedNotification extends Notification implements ShouldQueue
             ->action('View event', route('events.show', ['event' => $this->event], absolute: true))
             ->line('You can track responses from your event dashboard.')
             ->salutation('The '.config('app.name').' Team');
+    }
+
+    private function previousLabel(): string
+    {
+        return RsvpChange::answerLabel($this->previous['status'] ?? null, $this->previous['seats'] ?? null);
+    }
+
+    private function currentLabel(): string
+    {
+        return RsvpChange::answerLabel($this->rsvp->status, (int) $this->rsvp->attendee_count);
     }
 }

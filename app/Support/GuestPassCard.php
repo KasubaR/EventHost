@@ -78,7 +78,7 @@ final class GuestPassCard
             timeLine: $event->hasStartTime() ? substr((string) $event->event_time, 0, 5) : null,
             venue: $venue,
             guestName: (string) $guest->name,
-            admits: max(1, (int) ($rsvp?->attendee_count ?? 1)),
+            admits: max(1, $rsvp?->passSeats() ?? 1),
             table: $guest->tableLabel(),
             state: $state,
             checkedInLine: $guest->isCheckedIn()

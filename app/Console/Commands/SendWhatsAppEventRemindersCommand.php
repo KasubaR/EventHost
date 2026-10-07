@@ -45,8 +45,10 @@ class SendWhatsAppEventRemindersCommand extends Command
                         ->whereNotNull('phone')
                         // A Pending/Rejected guest has no pass and may never get one — a "see you
                         // tomorrow" reminder for an event they can't actually enter would be wrong.
+                        // (An extra seat still waiting on the host does not take back a pass the guest already holds.)
                         ->whereHas('rsvp', fn ($q) => $q->where('status', RsvpStatus::Accepted)
-                            ->whereNotIn('host_approval_status', [RsvpApprovalStatus::Pending, RsvpApprovalStatus::Rejected]))
+                            ->where('host_approval_status', '!=', RsvpApprovalStatus::Rejected)
+                            ->where(fn ($w) => $w->where('host_approval_status', '!=', RsvpApprovalStatus::Pending)->orWhere('approved_seats', '>', 0)))
                         ->with('rsvp')
                         ->cursor();
 

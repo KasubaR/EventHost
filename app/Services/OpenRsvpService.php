@@ -6,6 +6,7 @@ use App\Enums\RsvpStatus;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Models\Rsvp;
+use App\Models\RsvpChange;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -26,9 +27,9 @@ class OpenRsvpService
      * @param  array{status:RsvpStatus,attendee_count:int,message?:string|null}  $payload
      * @return array{guest: Guest, rsvp: Rsvp}
      */
-    public function submit(Event $event, array $contact, array $payload, bool $isPrivate): array
+    public function submit(Event $event, array $contact, array $payload, bool $isPrivate, string $channel = RsvpChange::CHANNEL_WEB_OPEN): array
     {
-        return DB::transaction(function () use ($event, $contact, $payload, $isPrivate): array {
+        return DB::transaction(function () use ($event, $contact, $payload, $isPrivate, $channel): array {
             // The lock every submit takes, taken first: the capacity check, the guest write and the RSVP
             // then all happen on one serialized view of the event, so two requests for the same email
             // cannot race on the unique(event_id, email) constraint.
@@ -70,7 +71,7 @@ class OpenRsvpService
             }
 
             // Throws (closed, guest limit...) roll the guest write above back with it.
-            $rsvp = $this->submissions->submit($event, $guest, $payload);
+            $rsvp = $this->submissions->submit($event, $guest, $payload, channel: $channel);
 
             return ['guest' => $guest, 'rsvp' => $rsvp];
         });

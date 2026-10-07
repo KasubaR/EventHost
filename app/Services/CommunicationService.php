@@ -22,6 +22,7 @@ use App\Notifications\NewRsvpReceivedNotification;
 use App\Notifications\PlusOneRemovedNotification;
 use App\Notifications\RsvpAwaitingApprovalNotification;
 use App\Notifications\RsvpConfirmationNotification;
+use App\Notifications\RsvpExtraSeatPendingNotification;
 use App\Notifications\RsvpRejectedNotification;
 use App\Notifications\RsvpReminderNotification;
 use App\Support\EventReminderBuckets;
@@ -90,6 +91,31 @@ class CommunicationService
         }
     }
 
+    /**
+     * Guest-facing: an extra seat was added on top of seats the host already approved. The pass stays valid for the
+     * approved seats; this says the extra one is waiting. Skipped silently when the guest gave no email.
+     */
+    public function sendRsvpExtraSeatPending(Event $event, Guest $guest, Rsvp $rsvp): void
+    {
+        if (! is_string($guest->email) || $guest->email === '') {
+            return;
+        }
+
+        $log = $this->startLog($event, $guest, 'email', 'rsvp_extra_seat_pending', null, null);
+        if ($log === null) {
+            return;
+        }
+
+        try {
+            Notification::route('mail', $guest->email)
+                ->notify(new RsvpExtraSeatPendingNotification($event, $guest, $rsvp));
+            $this->markSent($log);
+        } catch (\Throwable $e) {
+            $this->markFailed($log, $e);
+            throw $e;
+        }
+    }
+
     public function notifyHostNewRsvp(User $host, Event $event, Guest $guest, Rsvp $rsvp): void
     {
         // Either channel wanted is enough to bother notifying at all — the
@@ -109,7 +135,7 @@ class CommunicationService
         }
 
         try {
-            $host->notify(new NewRsvpReceivedNotification($event, $guest, $rsvp));
+            $host->notify(new NewRsvpReceivedNotification($event, $guest, $rsvp, $rsvp->previousAnswer));
             $this->markSent($log);
         } catch (\Throwable $e) {
             $this->markFailed($log, $e);
@@ -148,7 +174,7 @@ class CommunicationService
      * Guest-facing: the host declined an Accepted RSVP under require_rsvp_approval. Called by
      * RsvpApprovalService::reject(), never as part of dispatchRsvpNotifications().
      */
-    public function sendRsvpRejection(Event $event, Guest $guest, Rsvp $rsvp, string $note): void
+    public function sendRsvpRejection(Event $event, Guest $guest, Rsvp $rsvp, string $note, bool $extraSeatOnly = false): void
     {
         if (! is_string($guest->email) || $guest->email === '') {
             return;
@@ -161,7 +187,7 @@ class CommunicationService
 
         try {
             Notification::route('mail', $guest->email)
-                ->notify(new RsvpRejectedNotification($event, $guest, $rsvp, $note));
+                ->notify(new RsvpRejectedNotification($event, $guest, $rsvp, $note, $extraSeatOnly));
             $this->markSent($log);
         } catch (\Throwable $e) {
             $this->markFailed($log, $e);
@@ -219,6 +245,11 @@ class CommunicationService
 
                 if ($host !== null) {
                     $this->notifyHostRsvpAwaitingApproval($host, $event, $guest, $rsvp);
+                }
+
+                // A guest who already holds approved seats keeps their pass; tell them the extra seat is with the host.
+                if ($rsvp->approvedSeatsOnFile() > 0) {
+                    $this->sendRsvpExtraSeatPending($event, $guest, $rsvp);
                 }
 
                 return;

@@ -11,6 +11,8 @@ use App\Models\User;
 use App\Notifications\NewRsvpReceivedNotification;
 use App\Notifications\RsvpAwaitingApprovalNotification;
 use App\Notifications\RsvpConfirmationNotification;
+use App\Notifications\RsvpExtraSeatPendingNotification;
+use App\Notifications\RsvpRejectedNotification;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -21,7 +23,7 @@ use Tests\TestCase;
  * plans/rsvp-status-changes.md Phase 1: the transition matrix. What happens when a guest moves between answers,
  * with and without host approval, against the seat limit, and across the deadline and the start.
  *
- * Tests marked PIN record behaviour that the plan wants to CHANGE (Phase 3); when that lands, flip them.
+ * Tests marked `pinned_` record behaviour that a later phase of the plan changes (the host override, Phase 5).
  */
 class RsvpStatusTransitionsTest extends TestCase
 {
@@ -185,21 +187,117 @@ class RsvpStatusTransitionsTest extends TestCase
         $this->assertSame(RsvpApprovalStatus::NotRequired, $guest->fresh()->rsvp->host_approval_status);
     }
 
-    public function test_pinned_an_approved_guest_who_toggles_through_maybe_goes_back_to_pending(): void
+    public function test_an_approved_guest_who_toggles_through_maybe_keeps_their_approval_and_pass(): void
     {
-        // plans/rsvp-status-changes.md S4. Phase 3 changes this: an approved guest should keep their approval.
+        // plans/rsvp-status-changes.md S4 (Phase 3): approval follows seats, not answers.
         $this->event->update(['require_rsvp_approval' => true]);
-        $guest = $this->guest(RsvpStatus::Accepted, 1, RsvpApprovalStatus::Approved);
+        $guest = $this->guest(RsvpStatus::Accepted, 1, RsvpApprovalStatus::Approved, ['approved_seats' => 1]);
 
         $this->answer($guest, 'maybe')->assertSessionHasNoErrors();
+        $this->assertSame(1, $guest->fresh()->rsvp->approved_seats, 'the approval survives a decline or maybe');
+
+        Notification::fake();
         $this->answer($guest, 'accepted')->assertSessionHasNoErrors();
 
-        $this->assertSame(RsvpApprovalStatus::Pending, $guest->fresh()->rsvp->host_approval_status);
+        $rsvp = $guest->fresh()->rsvp;
+        $this->assertSame(RsvpApprovalStatus::Approved, $rsvp->host_approval_status);
+        $this->assertTrue($guest->fresh()->hasEntryPassFor($rsvp, $this->event));
+        Notification::assertNotSentTo($this->host, RsvpAwaitingApprovalNotification::class);
     }
 
-    public function test_pinned_a_rejected_guest_who_declines_and_re_accepts_gets_a_fresh_review_and_loses_the_note(): void
+    public function test_a_row_approved_before_approved_seats_existed_is_covered_by_the_seats_it_holds(): void
     {
-        // plans/rsvp-status-changes.md S5. Phase 3 changes this: a host's rejection should be final.
+        $this->event->update(['require_rsvp_approval' => true]);
+        $guest = $this->guest(RsvpStatus::Accepted, 2, RsvpApprovalStatus::Approved);
+        $this->assertNull($guest->rsvp->approved_seats);
+
+        $this->answer($guest, 'declined')->assertSessionHasNoErrors();
+        $this->assertSame(2, $guest->fresh()->rsvp->approved_seats, 'the legacy approval is written down on the way out');
+
+        $this->answer($guest, 'accepted', 2)->assertSessionHasNoErrors();
+        $this->assertSame(RsvpApprovalStatus::Approved, $guest->fresh()->rsvp->host_approval_status);
+    }
+
+    public function test_coming_back_for_more_seats_than_were_approved_reviews_only_the_extra_seat(): void
+    {
+        $this->event->update(['require_rsvp_approval' => true]);
+        $guest = $this->guest(RsvpStatus::Declined, 0, RsvpApprovalStatus::NotRequired, ['approved_seats' => 1]);
+
+        $this->answer($guest, 'accepted', 2)->assertSessionHasNoErrors();
+
+        $rsvp = $guest->fresh()->rsvp;
+        $this->assertSame(RsvpApprovalStatus::Pending, $rsvp->host_approval_status);
+        $this->assertSame(2, $rsvp->attendee_count);
+        $this->assertSame(1, $rsvp->approved_seats);
+    }
+
+    public function test_an_approved_guest_who_adds_a_plus_one_keeps_the_pass_for_the_approved_seat_and_the_host_is_asked_about_the_extra(): void
+    {
+        $this->event->update(['require_rsvp_approval' => true]);
+        $guest = $this->guest(RsvpStatus::Accepted, 1, RsvpApprovalStatus::Approved, ['approved_seats' => 1]);
+
+        $this->answer($guest, 'accepted', 2)->assertSessionHasNoErrors();
+
+        $rsvp = $guest->fresh()->rsvp;
+        $this->assertSame(RsvpApprovalStatus::Pending, $rsvp->host_approval_status);
+        $this->assertSame(1, $rsvp->approved_seats);
+        $this->assertSame(1, $rsvp->passSeats(), 'the pass admits only the approved seat');
+        $this->assertTrue($guest->fresh()->hasEntryPassFor($rsvp, $this->event), 'the pass is not taken back');
+
+        Notification::assertSentToTimes($this->host, RsvpAwaitingApprovalNotification::class, 1);
+        Notification::assertSentOnDemandTimes(RsvpExtraSeatPendingNotification::class, 1);
+        Notification::assertSentOnDemandTimes(RsvpConfirmationNotification::class, 0);
+
+        $this->get(route('rsvp.token.show', $guest->invitation_token))->assertOk()->assertSee('Your extra seat is waiting for the host');
+    }
+
+    public function test_the_host_approving_the_extra_seat_raises_the_approved_seats(): void
+    {
+        $this->event->update(['require_rsvp_approval' => true]);
+        $guest = $this->guest(RsvpStatus::Accepted, 2, RsvpApprovalStatus::Pending, ['approved_seats' => 1]);
+
+        $this->actingAs($this->host)
+            ->patch(route('events.guests.rsvp.approve', ['event' => $this->event, 'guest' => $guest]))
+            ->assertSessionHasNoErrors();
+
+        $rsvp = $guest->fresh()->rsvp;
+        $this->assertSame(RsvpApprovalStatus::Approved, $rsvp->host_approval_status);
+        $this->assertSame(2, $rsvp->approved_seats);
+        $this->assertSame(2, $rsvp->passSeats());
+    }
+
+    public function test_the_host_declining_the_extra_seat_leaves_the_rsvp_approved_for_the_original_seats(): void
+    {
+        $this->event->update(['require_rsvp_approval' => true]);
+        $guest = $this->guest(RsvpStatus::Accepted, 2, RsvpApprovalStatus::Pending, ['approved_seats' => 1]);
+
+        $this->actingAs($this->host)
+            ->patch(route('events.guests.rsvp.reject', ['event' => $this->event, 'guest' => $guest]), ['host_rejection_note' => 'No room for one more.'])
+            ->assertSessionHasNoErrors();
+
+        $rsvp = $guest->fresh()->rsvp;
+        $this->assertSame(RsvpApprovalStatus::Approved, $rsvp->host_approval_status, 'the guest is not thrown out');
+        $this->assertSame(1, $rsvp->attendee_count);
+        $this->assertTrue($guest->fresh()->hasEntryPassFor($rsvp, $this->event));
+        Notification::assertSentOnDemand(RsvpRejectedNotification::class, fn ($n) => $n->extraSeatOnly === true);
+    }
+
+    public function test_the_host_declining_a_first_request_is_final_for_that_guest(): void
+    {
+        $this->event->update(['require_rsvp_approval' => true]);
+        $guest = $this->guest(RsvpStatus::Accepted, 1, RsvpApprovalStatus::Pending);
+
+        $this->actingAs($this->host)
+            ->patch(route('events.guests.rsvp.reject', ['event' => $this->event, 'guest' => $guest]), ['host_rejection_note' => 'The list is full.'])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(RsvpApprovalStatus::Rejected, $guest->fresh()->rsvp->host_approval_status);
+        Notification::assertSentOnDemand(RsvpRejectedNotification::class, fn ($n) => $n->extraSeatOnly === false);
+    }
+
+    public function test_a_rejected_guest_who_declines_and_re_accepts_stays_rejected_and_keeps_the_note(): void
+    {
+        // plans/rsvp-status-changes.md S5 (Phase 3, decision 2): a host's rejection is final.
         $this->event->update(['require_rsvp_approval' => true]);
         $guest = $this->guest(RsvpStatus::Accepted, 1, RsvpApprovalStatus::Rejected, [
             'host_rejection_note' => 'The list is full.',
@@ -207,12 +305,40 @@ class RsvpStatusTransitionsTest extends TestCase
             'host_reviewed_by' => $this->host->id,
         ]);
 
+        // Declining is allowed, and the rejection is kept through it.
         $this->answer($guest, 'declined')->assertSessionHasNoErrors();
-        $this->answer($guest, 'accepted')->assertSessionHasNoErrors();
+        $rsvp = $guest->fresh()->rsvp;
+        $this->assertSame(RsvpStatus::Declined, $rsvp->status);
+        $this->assertSame(RsvpApprovalStatus::Rejected, $rsvp->host_approval_status);
+
+        Notification::fake();
+
+        // Coming back is not: nothing is queued, and the guest is told why.
+        $this->answer($guest, 'accepted')->assertSessionHasErrors(['status' => 'The host has already declined your request to attend. If you think this is a mistake, please contact the host.']);
 
         $rsvp = $guest->fresh()->rsvp;
-        $this->assertSame(RsvpApprovalStatus::Pending, $rsvp->host_approval_status);
-        $this->assertNull($rsvp->host_rejection_note);
+        $this->assertSame(RsvpStatus::Declined, $rsvp->status);
+        $this->assertSame(RsvpApprovalStatus::Rejected, $rsvp->host_approval_status);
+        $this->assertSame('The list is full.', $rsvp->host_rejection_note);
+        Notification::assertNothingSent();
+    }
+
+    public function test_a_rejected_guest_cannot_change_seats_or_message_either(): void
+    {
+        $this->event->update(['require_rsvp_approval' => true]);
+        $guest = $this->guest(RsvpStatus::Accepted, 1, RsvpApprovalStatus::Rejected, ['host_rejection_note' => 'The list is full.']);
+
+        $this->answer($guest, 'accepted', 2)->assertSessionHasErrors('status');
+        $this->assertSame(1, $guest->fresh()->rsvp->attendee_count);
+        $this->assertSame(RsvpApprovalStatus::Rejected, $guest->fresh()->rsvp->host_approval_status);
+    }
+
+    public function test_a_rejected_guest_who_declined_still_does_not_see_a_not_confirmed_panel(): void
+    {
+        $this->event->update(['require_rsvp_approval' => true]);
+        $guest = $this->guest(RsvpStatus::Declined, 0, RsvpApprovalStatus::Rejected, ['host_rejection_note' => 'The list is full.']);
+
+        $this->get(route('rsvp.token.show', $guest->invitation_token))->assertOk()->assertDontSee('The host was not able to confirm your RSVP');
     }
 
     public function test_a_rejected_guest_who_just_resubmits_accepted_stays_rejected(): void

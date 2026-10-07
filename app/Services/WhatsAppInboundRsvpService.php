@@ -9,6 +9,7 @@ use App\Models\Event;
 use App\Models\Guest;
 use App\Models\NotificationLog;
 use App\Models\Rsvp;
+use App\Models\RsvpChange;
 use App\Support\ZambianPhone;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -84,7 +85,7 @@ class WhatsAppInboundRsvpService
             $rsvp = $this->rsvpSubmission->submit($event, $guest, [
                 'status' => $status,
                 'attendee_count' => $status === RsvpStatus::Accepted ? $this->seatsForAccept($guest) : 0,
-            ], allowReductions: true);
+            ], allowReductions: true, channel: RsvpChange::CHANNEL_WHATSAPP);
         } catch (RsvpClosedException) {
             // Past the deadline: only a cancel or a reduction gets through, anything else lands here.
             $this->recordInboundLog($event->id, $guest->id, $messageSid, 'ignored_closed', $status);

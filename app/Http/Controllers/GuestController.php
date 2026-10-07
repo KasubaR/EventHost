@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -91,7 +92,7 @@ class GuestController extends Controller
         $this->authorizeInvitation($event);
 
         $guestsQuery = $this->applyGuestFilters(
-            $event->guests()->with(['rsvp', 'group', 'checkedInBy']),
+            $event->guests()->with(['rsvp', 'group', 'checkedInBy'])->withMax('rsvpChanges as last_rsvp_change_at', 'created_at'),
             $request
         )->orderBy('name');
 
@@ -104,7 +105,7 @@ class GuestController extends Controller
                 'Name', 'Email', 'Phone', 'Group',
                 'RSVP Status', 'Attendee Count', 'Message',
                 'Invitation Sent', 'Invitation Sent At',
-                'Checked In At', 'Checked In By',
+                'Checked In At', 'Checked In By', 'Response Last Changed',
             ]);
 
             $guestsQuery->chunk(200, function ($chunk) use ($handle) {
@@ -127,6 +128,7 @@ class GuestController extends Controller
                         // nobody scanned this guest in — including rows checked in
                         // before links were recorded.
                         $guest->checkedInByLabel() ?? '',
+                        $guest->last_rsvp_change_at ? Carbon::parse($guest->last_rsvp_change_at)->timezone(config('app.timezone'))->format('Y-m-d H:i') : '',
                     ]);
                 }
             });
@@ -222,8 +224,9 @@ class GuestController extends Controller
 
         $groups = $event->guestGroups()->get();
         $tables = $event->tables()->orderBy('sort_order')->orderBy('label')->get();
+        $changes = $guest->rsvpChanges()->with('actor')->latest('id')->limit(30)->get();
 
-        return view('events.guests.edit', compact('event', 'guest', 'groups', 'tables'));
+        return view('events.guests.edit', compact('event', 'guest', 'groups', 'tables', 'changes'));
     }
 
     public function update(UpdateGuestRequest $request, Event $event, Guest $guest): RedirectResponse

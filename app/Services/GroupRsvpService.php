@@ -7,6 +7,7 @@ use App\Models\Event;
 use App\Models\Guest;
 use App\Models\GuestGroup;
 use App\Models\Rsvp;
+use App\Models\RsvpChange;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -82,7 +83,7 @@ class GroupRsvpService
                 'status' => RsvpStatus::Accepted,
                 'attendee_count' => $payload['attendee_count'],
                 'message' => $payload['message'] ?? null,
-            ]);
+            ], channel: RsvpChange::CHANNEL_GROUP);
 
             return ['guest' => $guest, 'rsvp' => $rsvp];
         });
