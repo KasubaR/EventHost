@@ -312,6 +312,80 @@ class TicketingTest extends TestCase
         $this->assertSame(1, $owner->fresh()->event_credits);
     }
 
+    public function test_admin_cannot_approve_an_event_whose_date_has_passed(): void
+    {
+        Notification::fake();
+
+        $owner = User::factory()->create();
+        $event = Event::factory()->for($owner)->ticketed()->create([
+            'ticketing_status' => TicketingStatus::PendingReview,
+            'ticketing_submitted_at' => now(),
+            'cover_image' => 'events/hero.webp',
+            'event_date' => Event::venueToday()->subDays(3)->toDateString(),
+        ]);
+        TicketType::factory()->for($event)->create();
+
+        $admin = Admin::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.ticketing.show', $event))
+            ->assertOk()
+            ->assertSee('Event date has passed', false);
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.ticketing.approve', $event))
+            ->assertSessionHasErrors('ticketing');
+
+        $event->refresh();
+        $this->assertSame(TicketingStatus::PendingReview, $event->ticketing_status);
+        $this->assertFalse((bool) $event->is_published);
+        Notification::assertNotSentTo($owner, TicketingApprovedNotification::class);
+
+        // Declining a past event is still allowed.
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.ticketing.reject', $event), ['ticketing_rejection_note' => 'The event date has passed.'])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(TicketingStatus::Rejected, $event->fresh()->ticketing_status);
+    }
+
+    public function test_a_host_cannot_submit_an_event_whose_date_has_passed(): void
+    {
+        $user = User::factory()->create();
+        $event = Event::factory()->for($user)->ticketed()->create([
+            'event_date' => Event::venueToday()->subDay()->toDateString(),
+        ]);
+        TicketType::factory()->for($event)->create();
+
+        $this->actingAs($user)
+            ->post(route('public-events.ticketing.submit', $event))
+            ->assertSessionHasErrors('ticketing');
+
+        $this->assertSame(TicketingStatus::Draft, $event->fresh()->ticketing_status);
+    }
+
+    public function test_an_event_today_can_still_be_approved(): void
+    {
+        $owner = User::factory()->create();
+        $event = Event::factory()->for($owner)->ticketed()->create([
+            'ticketing_status' => TicketingStatus::PendingReview,
+            'ticketing_submitted_at' => now(),
+            'cover_image' => 'events/hero.webp',
+            'event_date' => Event::venueToday()->toDateString(),
+        ]);
+        TicketType::factory()->for($event)->create();
+
+        $admin = Admin::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.ticketing.approve', $event))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(TicketingStatus::Approved, $event->fresh()->ticketing_status);
+    }
+
     public function test_admin_approval_publishes_without_spending_a_credit(): void
     {
         $owner = User::factory()->withoutCredits()->create();

@@ -22,6 +22,8 @@ class TicketingActivationService
             throw new TicketingActivationException('This event is already in review or approved.');
         }
 
+        $this->refuseIfEnded($event, 'submitted for activation');
+
         $activeTypes = $event->ticketTypes()->where('is_active', true)->count();
         if ($activeTypes < 1) {
             throw new TicketingActivationException('Add at least one active ticket type before requesting activation.');
@@ -51,6 +53,8 @@ class TicketingActivationService
                 throw new TicketingActivationException('Only draft, declined, or awaiting-review events can be approved.');
             }
 
+            $this->refuseIfEnded($locked, 'approved');
+
             $activeTypes = $locked->ticketTypes()->where('is_active', true)->count();
             if ($activeTypes < 1) {
                 throw new TicketingActivationException('Add at least one active ticket type before approving ticket sales.');
@@ -78,6 +82,20 @@ class TicketingActivationService
         // once the approval has actually committed, and there's no reason to
         // hold the row lock while it dispatches.
         $locked->user?->notify(new TicketingApprovedNotification($locked));
+    }
+
+    /**
+     * An event whose date has passed (on the venue's calendar) can never sell a ticket: the public
+     * page reads "Ended" and the buy flow 404s, so activating it would only tell the host their
+     * sales are live when they are not. Reject is unaffected: declining a past event is fine.
+     */
+    private function refuseIfEnded(Event $event, string $action): void
+    {
+        if ($event->isLocked()) {
+            throw new TicketingActivationException(
+                "This event's date ({$event->event_date->format('j M Y')}) has already passed, so it cannot be {$action}. Change the event date to a future date first."
+            );
+        }
     }
 
     public function reject(Event $event, Admin $admin, string $note): void

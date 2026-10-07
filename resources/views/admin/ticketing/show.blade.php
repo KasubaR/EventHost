@@ -272,6 +272,18 @@
                 </div>
             @endif
 
+            @if ($canActivate && $ev->isLocked())
+                <div class="admin-callout admin-callout--danger">
+                    <div class="admin-callout-icon" aria-hidden="true">
+                        <i class="fa-solid fa-calendar-xmark"></i>
+                    </div>
+                    <div>
+                        <p class="admin-callout-kicker">Event date has passed</p>
+                        <p class="admin-callout-body">This event was on {{ $ev->event_date->format('j M Y') }}, so it cannot be approved: buyers could never purchase a ticket. The date has to be moved to a future one first, by the organizer or by you acting as the client.</p>
+                    </div>
+                </div>
+            @endif
+
             @if ($canActivate)
                 <form method="post" action="{{ route('admin.ticketing.approve', $ev) }}" class="profile-form admin-mt-md">
                     @csrf
@@ -281,7 +293,7 @@
                            min="{{ $ev->event_date?->format('Y-m-d') }}">
                     <div class="admin-actions admin-mt-md">
                         <button type="submit" class="btn-primary" data-hero-approve
-                                @disabled(! $ev->cover_image || ! $hasActiveType)>
+                                @disabled(! $ev->cover_image || ! $hasActiveType || $ev->isLocked())>
                             Approve ticket sales
                         </button>
                     </div>
