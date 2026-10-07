@@ -160,8 +160,6 @@
                     @endif
                 </section>
             @endif
-
-            @include('events.tickets.partials.contact-help', ['event' => $event])
         </div>
 
         <aside class="tev-side">
@@ -182,21 +180,26 @@
                         <a href="{{ route('events.public.tickets', $event->slug) }}" class="btn-primary tev-buy-btn">
                             <x-ticket-icon /> Buy tickets
                         </a>
-                        <p class="tev-secure-note">Secure payment through EventHost</p>
+                        <p class="tev-secure-note"><i class="fa-solid fa-lock" aria-hidden="true"></i> Secure payment through EventHost</p>
                     @else
                         <p class="tkc-muted">Ticket sales for this event haven't opened yet. Check back soon.</p>
                     @endif
                 @endif
 
                 <div class="tev-share">
-                    <button type="button" class="evt-btn-outline" data-tev-share data-share-url="{{ $shareUrl }}" data-share-title="{{ $event->name }}">
-                        <i class="fa-solid fa-share-nodes" aria-hidden="true"></i> <span data-tev-share-label>Share</span>
-                    </button>
-                    <a href="{{ $waShareUrl }}" target="_blank" rel="noopener" class="evt-btn-outline">
-                        <i class="fa-brands fa-whatsapp" aria-hidden="true"></i> WhatsApp
-                    </a>
+                    <p class="tev-share-label">Share this event</p>
+                    <div class="tev-share-actions">
+                        <button type="button" class="tev-share-btn" data-tev-share data-share-url="{{ $shareUrl }}" data-share-title="{{ $event->name }}">
+                            <i class="fa-solid fa-share-nodes" aria-hidden="true"></i> <span data-tev-share-label>Share</span>
+                        </button>
+                        <a href="{{ $waShareUrl }}" target="_blank" rel="noopener" class="tev-share-btn tev-share-btn--whatsapp">
+                            <i class="fa-brands fa-whatsapp" aria-hidden="true"></i> WhatsApp
+                        </a>
+                    </div>
                 </div>
             </div>
+
+            @include('events.tickets.partials.contact-help', ['event' => $event])
         </aside>
         </div>
     </div>

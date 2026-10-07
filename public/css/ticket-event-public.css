@@ -132,8 +132,18 @@
 }
 
 .tev-side {
-    position: sticky;
-    top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Buy box + Contact & Help are taller than a short screen, and a sticky column that outgrows
+   the viewport hides its bottom card. Only stick when there is room for both. */
+@media (min-width: 861px) and (min-height: 1000px) {
+    .tev-side {
+        position: sticky;
+        top: 20px;
+    }
 }
 
 @media (max-width: 860px) {
@@ -229,30 +239,105 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    margin-top: 8px;
+    gap: 10px;
+    margin-top: 14px;
+    padding: 13px 20px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    box-shadow: 0 6px 16px rgba(30, 71, 187, 0.22);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tev-buy-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(30, 71, 187, 0.3);
+}
+
+.tev-buy-btn:focus-visible,
+.tev-share-btn:focus-visible {
+    outline: 3px solid rgba(30, 71, 187, 0.35);
+    outline-offset: 2px;
 }
 
 .tev-secure-note {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 12px 0 0;
     font-size: 12px;
+    font-weight: 600;
     color: var(--gray-mid, #8e8ea8);
-    text-align: center;
-    margin: 10px 0 0;
 }
 
+.tev-secure-note i {
+    font-size: 11px;
+    color: var(--green, #27ae60);
+}
+
+/* Share: the public ticket page does not load events-admin.css, so .evt-btn-outline is
+   unstyled here. These buttons carry their own look. */
 .tev-share {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 18px;
+    margin-top: 20px;
     padding-top: 18px;
     border-top: 1px solid var(--line, #e0e0e8);
 }
 
-.tev-share .evt-btn-outline {
-    flex: 1;
+.tev-share-label {
+    margin: 0 0 10px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--gray-mid, #8e8ea8);
+}
+
+.tev-share-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.tev-share-btn {
+    display: inline-flex;
+    align-items: center;
     justify-content: center;
+    gap: 8px;
     min-width: 0;
+    padding: 10px 12px;
+    border: 1px solid var(--line, #e0e0e8);
+    border-radius: 10px;
+    background: var(--white, #fff);
+    color: var(--navy, #0d0d2b);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.2;
+    text-decoration: none;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.tev-share-btn i {
+    font-size: 15px;
+    color: var(--accent, #1e47bb);
+}
+
+.tev-share-btn:hover {
+    border-color: var(--accent, #1e47bb);
+    background: rgba(30, 71, 187, 0.06);
+    color: var(--accent, #1e47bb);
+}
+
+.tev-share-btn--whatsapp i {
+    color: #25d366;
+}
+
+.tev-share-btn--whatsapp:hover {
+    border-color: #25d366;
+    background: rgba(37, 211, 102, 0.1);
+    color: #128c7e;
 }
 
 @media (max-width: 540px) {
