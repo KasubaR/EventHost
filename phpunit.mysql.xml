@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    MySQL compatibility run. The normal suite (phpunit.xml) stays on in-memory SQLite for speed; this
+    config re-runs only the tests that SQLite cannot vouch for: the driver-branched daily-grouping
+    queries, aggregate/GROUP BY queries, and the flows that rely on nullOnDelete foreign keys.
+
+    Run:  php artisan test --configuration=phpunit.mysql.xml
+    Connection comes from DB_* environment variables (CI sets them; locally export them or edit the
+    defaults below). The target database is wiped by RefreshDatabase, so never point it at real data.
+-->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+>
+    <testsuites>
+        <testsuite name="MySQL">
+            <!-- Daily-grouping (DATE() vs strftime), GROUP BY / aggregates -->
+            <file>tests/Feature/DashboardAnalyticsTest.php</file>
+            <file>tests/Feature/PublicDashboardRegistrationsTest.php</file>
+            <file>tests/Feature/TicketDashboardOverviewTest.php</file>
+            <file>tests/Feature/AdminPanelTest.php</file>
+            <file>tests/Feature/AdminContributionRevenueTest.php</file>
+            <file>tests/Feature/AdminTicketRevenueTest.php</file>
+            <file>tests/Feature/AdminTicketReconciliationTest.php</file>
+            <file>tests/Feature/EventTicketRevenueTest.php</file>
+            <file>tests/Feature/TicketRevenueLedgerTest.php</file>
+            <file>tests/Unit/Services/PopularBillingPlanResolverTest.php</file>
+            <!-- Payments: row locks and the nullable user_id / nullOnDelete migrations -->
+            <file>tests/Feature/PaymentCompletionTest.php</file>
+            <file>tests/Feature/PaymentInitiationTest.php</file>
+            <file>tests/Feature/PaymentWebhookTest.php</file>
+            <file>tests/Feature/PollPendingPaymentsTest.php</file>
+            <file>tests/Feature/AstragateCardPaymentTest.php</file>
+            <file>tests/Feature/PublicRegistrationPaymentTest.php</file>
+            <!-- Purge and account deletion: foreign-key behaviour (nullOnDelete, cascades) -->
+            <file>tests/Feature/EventPurgeTest.php</file>
+            <file>tests/Feature/EventPurgeWarningTest.php</file>
+            <file>tests/Feature/AccountDeletionRecordsTest.php</file>
+            <file>tests/Feature/AdminReviewTest.php</file>
+            <!-- Seat pool: serialised by an event row lock -->
+            <file>tests/Feature/GroupRsvpLinkTest.php</file>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>app</directory>
+        </include>
+    </source>
+    <php>
+        <env name="APP_ENV" value="testing"/>
+        <env name="CONTRIBUTIONS_ENABLED" value="true"/>
+        <env name="COMM_GUEST_EMAIL_REMINDERS_ENABLED" value="true"/>
+        <env name="APP_MAINTENANCE_DRIVER" value="file"/>
+        <env name="BCRYPT_ROUNDS" value="4"/>
+        <env name="BROADCAST_CONNECTION" value="null"/>
+        <env name="CACHE_STORE" value="array"/>
+        <!-- Not forced: a DB_* variable already in the environment (CI, local shell) wins over these. -->
+        <env name="DB_CONNECTION" value="mysql"/>
+        <env name="DB_HOST" value="127.0.0.1"/>
+        <env name="DB_PORT" value="3306"/>
+        <env name="DB_DATABASE" value="eventhost_test"/>
+        <env name="DB_USERNAME" value="root"/>
+        <env name="DB_PASSWORD" value=""/>
+        <env name="DB_URL" value=""/>
+        <env name="MAIL_MAILER" value="array"/>
+        <env name="QUEUE_CONNECTION" value="sync"/>
+        <env name="SESSION_DRIVER" value="array"/>
+        <env name="PULSE_ENABLED" value="false"/>
+        <env name="TELESCOPE_ENABLED" value="false"/>
+        <env name="NIGHTWATCH_ENABLED" value="false"/>
+    </php>
+</phpunit>
