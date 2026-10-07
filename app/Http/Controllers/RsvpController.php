@@ -13,12 +13,12 @@ use App\Services\CommunicationService;
 use App\Services\GuestPassImageService;
 use App\Services\GuestPassPdfService;
 use App\Services\InvitationCustomizationService;
+use App\Services\OpenRsvpService;
 use App\Services\PublicInvitationResolver;
 use App\Services\QrCodeService;
 use App\Services\RsvpSubmissionService;
 use App\Support\EventCalendarLinks;
 use App\Support\GuestPassCard;
-use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -338,7 +338,7 @@ class RsvpController extends Controller
     public function storeOpen(
         string $slug,
         StoreOpenRsvpRequest $request,
-        RsvpSubmissionService $rsvpSubmissionService,
+        OpenRsvpService $openRsvp,
         CommunicationService $communicationService,
     ): RedirectResponse {
         $event = $request->resolveEvent();
@@ -356,46 +356,9 @@ class RsvpController extends Controller
         /** @var array{name:string,email:string,phone?:string|null} $contact */
         $contact = $request->validated();
 
-        try {
-            /** @var Guest $guest */
-            $guest = Guest::query()->firstOrCreate(
-                [
-                    'event_id' => $event->id,
-                    'email' => $contact['email'],
-                ],
-                [
-                    'name' => $contact['name'],
-                    'phone' => $contact['phone'] ?? null,
-                    'invitation_token' => $isPrivate ? Str::random(48) : null,
-                    'plus_one_allowed' => $isPrivate && (bool) $event->allow_plus_one,
-                ]
-            );
-        } catch (QueryException) {
-            // Concurrent request won the INSERT race on the unique(event_id, email) constraint.
-            // Re-fetch the row that was just created by the other request.
-            /** @var Guest $guest */
-            $guest = Guest::query()
-                ->where('event_id', $event->id)
-                ->where('email', $contact['email'])
-                ->firstOrFail();
-        }
-
-        $data = ['name' => $contact['name'], 'phone' => $contact['phone'] ?? null];
-
-        // A returning guest who first came through this link already has a token
-        // (branch above set one); a guest who existed beforehand from some other
-        // path (e.g. the public open-RSVP form, before this event became private —
-        // audience is otherwise immutable) did not — back-fill one now so the
-        // "you get a personal link" promise the private form makes always holds.
-        if ($isPrivate && $guest->invitation_token === null) {
-            $data['invitation_token'] = Str::random(48);
-        }
-
-        $guest->fill($data)->save();
-
-        $payload = $request->validatedRsvpPayload();
-
-        $rsvp = $rsvpSubmissionService->submit($event, $guest, $payload);
+        // Guest + RSVP are written in one transaction: a refused or interrupted submit leaves
+        // no half-made guest behind (plans/rsvp-submission-edge-cases.md Phase 3).
+        ['guest' => $guest, 'rsvp' => $rsvp] = $openRsvp->submit($event, $contact, $request->validatedRsvpPayload(), $isPrivate);
 
         $this->dispatchRsvpNotifications($event, $guest, $rsvp);
 

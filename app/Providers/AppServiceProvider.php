@@ -98,20 +98,39 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(20)->by((string) $request->user()->id);
         });
 
-        RateLimiter::for('rsvp-submit', function (Request $request): Limit {
+        RateLimiter::for('rsvp-submit', function (Request $request): Limit|array {
             $route = $request->route();
             $suffix = 'global';
+            $personal = false;
             if ($route !== null) {
                 $token = $route->parameter('token');
                 $slug = $route->parameter('slug');
                 if (is_string($token) && $token !== '') {
                     $suffix = 'token:'.$token;
+                    // A personal link belongs to one guest; a group link's token is shared by many.
+                    $personal = $route->getName() === 'rsvp.token.store';
                 } elseif (is_string($slug) && $slug !== '') {
                     $suffix = 'slug:'.$slug;
                 }
             }
 
-            return Limit::perMinute(10)->by((string) $request->ip().'|'.$suffix);
+            $ip = (string) $request->ip();
+
+            if ($personal) {
+                return Limit::perMinute(10)->by($ip.'|'.$suffix);
+            }
+
+            // The open and group links are shared by a whole guest list, so an announcement ("scan the QR
+            // now") sends many guests through one office, church or carrier IP. The tight limit follows the
+            // guest's own email (their taps and retries); the per-IP ceiling is generous and only stops a
+            // flood. plans/rsvp-submission-edge-cases.md Phase 4.
+            $email = $request->input('email');
+            $email = is_string($email) ? strtolower(trim($email)) : '';
+
+            return [
+                Limit::perMinute(10)->by($ip.'|'.$suffix.'|'.sha1($email)),
+                Limit::perMinute(120)->by($ip.'|'.$suffix),
+            ];
         });
 
         RateLimiter::for('staff-checkin', function (Request $request): Limit {

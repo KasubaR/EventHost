@@ -77,7 +77,7 @@ Severity: **H** = visible harm to guests/hosts or money, **M** = confusing or lo
 
 Ordered by value. Phases 1 to 3 carry the real risk; each can ship alone.
 
-### Phase 1 — Stop the duplicate notifications (G4, G5, G11, G12)
+### Phase 1 — Stop the duplicate notifications (G4, G5, G11, G12) — BUILT
 
 1. `RsvpSubmissionService::submit()` compares the stored row with the values it is about to write
    (status, attendee_count, normalised message, host_approval_status) **inside the lock** and records the
@@ -92,7 +92,7 @@ Ordered by value. Phases 1 to 3 carry the real risk; each can ship alone.
    sends exactly one; concurrent-style double dispatch (call `submit()` twice in one test) yields one
    notification set; approval-pending resubmit does not re-ping the host.
 
-### Phase 2 — Client lock and honest feedback (G8, G13, G7)
+### Phase 2 — Client lock and honest feedback (G8, G13, G7) — BUILT
 
 1. `rsvp-form.js`: on `submit`, if already submitting `preventDefault()`; otherwise disable the button,
    set `aria-busy`, swap the label to "Sending…". Re-enable on `pageshow` (bfcache back) and after about 20 s
@@ -102,7 +102,7 @@ Ordered by value. Phases 1 to 3 carry the real risk; each can ship alone.
 2. Cover both forms and the group form (`group-show`). Skip `data-rsvp-preview`.
 3. Test with the existing Node harness pattern in `tests/js/` (submit twice, one prevented).
 
-### Phase 3 — Make the open flow transactional (G15, G16, G17)
+### Phase 3 — Make the open flow transactional (G15, G16, G17) — BUILT (`OpenRsvpService`; G17 wording not done)
 
 1. Move guest find-or-create, the `fill()` of name/phone and the token back-fill **into** the same
    `DB::transaction` as `submit()` (either a new `OpenRsvpService::submit()` wrapping both, or pass a
@@ -114,7 +114,7 @@ Ordered by value. Phases 1 to 3 carry the real risk; each can ship alone.
 5. Tests: refused submit (closed at lock / guest limit) leaves no `Guest` row and no changed name/phone;
    cap not consumed by a failed attempt.
 
-### Phase 4 — Throttle and error pages (G9, G10)
+### Phase 4 — Throttle and error pages (G9, G10) — BUILT (`errors/429`, per-email limit, 419 on RSVP forms)
 
 1. `rsvp-submit`: key open and group links on `ip|slug|email-hash` (or add a second, much higher per-slug
    limit) so one shared IP is not the whole event's budget. Keep 10/min for the personal token, which is a

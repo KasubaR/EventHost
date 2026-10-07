@@ -129,6 +129,16 @@ return Application::configure(basePath: dirname(__DIR__))
                 ], 419);
             }
 
+            // A guest RSVP form has no `email` error slot (the token and group forms don't render one) and a
+            // timed-out session is not a login problem: say it where the form shows errors, keep the answers.
+            $routeName = (string) $request->route()?->getName();
+            if (str_starts_with($routeName, 'rsvp.') || str_starts_with($routeName, 'group-rsvp.')) {
+                return redirect()
+                    ->back(fallback: url('/'))
+                    ->withInput($request->except(['_token']))
+                    ->withErrors(['status' => 'This page timed out before your response was sent. Your answers are still filled in, so please send it again.']);
+            }
+
             $redirect = redirect()
                 ->back(fallback: route('login'))
                 ->withInput($request->except(['password', 'password_confirmation', '_token']));

@@ -94,6 +94,58 @@ class RsvpFlowTest extends TestCase
         Notification::assertSentToTimes($user, NewRsvpReceivedNotification::class, 2);
     }
 
+    public function test_a_refused_open_rsvp_leaves_no_guest_behind(): void
+    {
+        Notification::fake();
+
+        $event = Event::factory()->published()->create([
+            'is_public' => true,
+            'rsvp_deadline' => null,
+            'guest_limit' => 1,
+        ]);
+        $taker = Guest::factory()->for($event)->create(['email' => 'taker@example.test']);
+        Rsvp::query()->create([
+            'event_id' => $event->id,
+            'guest_id' => $taker->id,
+            'status' => RsvpStatus::Accepted,
+            'attendee_count' => 1,
+        ]);
+        $existing = Guest::factory()->for($event)->create(['name' => 'Original Name', 'email' => 'existing@example.test', 'phone' => '0971111111']);
+
+        $new = array_merge(['name' => 'Newcomer', 'email' => 'new@example.test', 'phone' => '0972222222'], $this->rsvpPayload(RsvpStatus::Accepted, 1));
+        $this->post(route('rsvp.open.store', ['slug' => $event->slug]), $new)->assertSessionHasErrors('status');
+
+        $this->assertDatabaseMissing('guests', ['event_id' => $event->id, 'email' => 'new@example.test']);
+
+        $changed = array_merge(['name' => 'Renamed', 'email' => 'existing@example.test', 'phone' => '0973333333'], $this->rsvpPayload(RsvpStatus::Accepted, 1));
+        $this->post(route('rsvp.open.store', ['slug' => $event->slug]), $changed)->assertSessionHasErrors('status');
+
+        $existing->refresh();
+        $this->assertSame('Original Name', $existing->name, 'a refused submit must not rewrite the guest');
+        $this->assertSame('0971111111', $existing->phone);
+        $this->assertSame(2, Guest::query()->where('event_id', $event->id)->count());
+    }
+
+    public function test_the_open_rsvp_throttle_follows_the_guests_email_not_the_whole_ip(): void
+    {
+        Notification::fake();
+
+        $event = Event::factory()->published()->create(['is_public' => true, 'rsvp_deadline' => null, 'guest_limit' => null]);
+        $url = route('rsvp.open.store', ['slug' => $event->slug]);
+        $payload = fn (string $email) => array_merge(['name' => 'A Guest', 'email' => $email], $this->rsvpPayload(RsvpStatus::Accepted, 1));
+
+        for ($i = 0; $i < 10; $i++) {
+            $this->post($url, $payload('one@example.test'))->assertRedirect();
+        }
+
+        $this->post($url, $payload('one@example.test'))
+            ->assertStatus(429)
+            ->assertSee('Please wait a moment');
+
+        // Another guest on the same IP is not locked out by it.
+        $this->post($url, $payload('two@example.test'))->assertRedirect();
+    }
+
     public function test_token_rsvp_rejected_after_deadline(): void
     {
         $user = User::factory()->create();
