@@ -312,7 +312,19 @@
             <h2>Ticket Sales</h2>
             <p>EventHost checkout is the only online payment path for this event.</p>
         </div>
-        <div class="evt-section-body">
+        <div class="evt-section-body profile-fields">
+            <div class="profile-field">
+                <label for="ticket_capacity" class="profile-label">Total event capacity</label>
+                <input id="ticket_capacity" name="ticket_capacity" type="number" min="1" max="1000000" step="1" inputmode="numeric"
+                       @if ($isTicketed) required @endif
+                       class="profile-input {{ $errors->has('ticket_capacity') ? 'profile-input--error' : '' }}"
+                       value="{{ old('ticket_capacity', $event?->ticket_capacity ?? '') }}"
+                       placeholder="e.g. 500">
+                <p class="evt-field-hint">The most people your venue can take. You will split this between ticket types (for example Early Bird 100, VIP 200) in the next step, and the types cannot add up to more than this.</p>
+                @error('ticket_capacity')
+                    <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
+                @enderror
+            </div>
             <p class="evt-muted">After you save this draft you can add ticket types, then submit them for EventHost to activate. Buyers will pay through Lenco. You cannot add an MTN number, bank details, or “pay me on WhatsApp” on the EventHost ticket page.</p>
         </div>
     </div>

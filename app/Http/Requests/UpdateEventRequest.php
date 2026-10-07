@@ -8,6 +8,7 @@ use App\Rules\EventSlugAvailable;
 use App\Rules\GuestLimitNotBelowConfirmed;
 use App\Support\BillingPlan;
 use App\Support\InvitationMediaRules;
+use App\Support\TicketCapacity;
 use Carbon\Carbon;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -37,7 +38,7 @@ class UpdateEventRequest extends FormRequest
     {
         $updates = [];
 
-        foreach (['latitude', 'longitude', 'guest_limit', 'description', 'venue', 'location_name', 'google_place_id', 'formatted_address', 'rsvp_deadline'] as $key) {
+        foreach (['latitude', 'longitude', 'guest_limit', 'ticket_capacity', 'description', 'venue', 'location_name', 'google_place_id', 'formatted_address', 'rsvp_deadline'] as $key) {
             if ($this->has($key) && $this->input($key) === '') {
                 $updates[$key] = null;
             }
@@ -100,6 +101,15 @@ class UpdateEventRequest extends FormRequest
             // a time on it at all (i.e. almost every real deadline).
             'rsvp_deadline' => ['nullable', 'date'],
             'guest_limit' => $this->guestLimitRules(),
+            // Total tickets across every ticket type — see TicketCapacity. Required when a
+            // ticketed event is saved from the web form; the API may leave it alone.
+            'ticket_capacity' => [
+                'sometimes',
+                $event?->isTicketed() && ! $this->is('api/*') ? 'required' : 'nullable',
+                'integer',
+                'min:1',
+                'max:1000000',
+            ],
             'host_contact_phone' => $this->hostContactPhoneRules($event),
             'allow_plus_one' => ['boolean'],
             'require_rsvp_approval' => ['boolean'],
@@ -178,7 +188,32 @@ class UpdateEventRequest extends FormRequest
             $this->guardRsvpDeadlineNotInPast($validator);
             $this->guardEventNotPushedIntoPast($validator);
             $this->guardCustomSlugChoice($validator);
+            $this->guardTicketCapacity($validator);
         });
+    }
+
+    /**
+     * The event total cannot drop below what its ticket types already hand out.
+     */
+    private function guardTicketCapacity(Validator $validator): void
+    {
+        $event = $this->route('event');
+
+        if (! $event instanceof Event || ! $event->isTicketed() || $validator->errors()->has('ticket_capacity')) {
+            return;
+        }
+
+        $capacity = $this->input('ticket_capacity');
+
+        if ($capacity === null || $capacity === '') {
+            return;
+        }
+
+        $problem = TicketCapacity::totalProblem($event, (int) $capacity);
+
+        if ($problem !== null) {
+            $validator->errors()->add('ticket_capacity', $problem);
+        }
     }
 
     /**

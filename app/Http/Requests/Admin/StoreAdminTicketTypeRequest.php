@@ -4,6 +4,8 @@ namespace App\Http\Requests\Admin;
 
 use App\Models\Event;
 use App\Models\TicketType;
+use App\Support\TicketCapacity;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -49,6 +51,33 @@ class StoreAdminTicketTypeRequest extends FormRequest
             'sort_order' => ['integer', 'min:0', 'max:65535'],
             'is_active' => ['boolean'],
         ];
+    }
+
+    /**
+     * Same capacity rule as the host form: ticket type quantities may not add up
+     * to more than the event's total capacity.
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            $event = $this->route('event');
+            $ticketType = $this->route('ticketType');
+
+            if (! $event instanceof Event || $validator->errors()->has('quantity')) {
+                return;
+            }
+
+            $quantity = $this->input('quantity');
+            $problem = TicketCapacity::typeProblem(
+                $event,
+                $quantity === null ? null : (int) $quantity,
+                $ticketType instanceof TicketType ? $ticketType->id : null,
+            );
+
+            if ($problem !== null) {
+                $validator->errors()->add('quantity', $problem);
+            }
+        });
     }
 
     public function event(): Event

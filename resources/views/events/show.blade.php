@@ -172,10 +172,6 @@
                     <div class="evt-stat-value">{{ $event->commission_mode?->label() ?? '-' }}</div>
                     <div class="evt-stat-label">Commission</div>
                 </div>
-                <div class="evt-stat-card evt-stat-card--accent">
-                    <div class="evt-stat-value">{{ $event->commissionPercent() }}%</div>
-                    <div class="evt-stat-label">EventHost commission</div>
-                </div>
             </div>
         @else
             <div class="evt-grid-2 evt-rsvp-summary-grid">

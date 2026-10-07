@@ -116,6 +116,7 @@ class PublicVisibilityPlanGateTest extends TestCase
             'product_kind' => EventProductKind::Ticketed->value,
             'event_date' => now()->addMonth()->format('Y-m-d'),
             'event_time' => '18:00',
+            'ticket_capacity' => '500',
         ])->assertRedirect();
 
         $event = Event::query()->where('user_id', $user->id)->firstOrFail();

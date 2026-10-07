@@ -53,18 +53,11 @@
                 <p>Payment infrastructure is set by EventHost. You choose how the commission is applied.</p>
             </div>
             <div class="evt-section-body">
-                <div class="tkt-summary-row">
-                    <span class="tkt-sales-status {{ $event->ticketSalesAreApproved() ? 'tkt-sales-status--on' : 'tkt-sales-status--off' }}">
-                        <i class="fa-solid {{ $event->ticketSalesAreApproved() ? 'fa-circle-check' : 'fa-circle-pause' }}"></i>
-                        {{ $event->ticketSalesAreApproved() ? 'Online ticket sales enabled' : 'Off until EventHost activates this event' }}
-                    </span>
-                    <span class="tkt-fact-chip">{{ rtrim(rtrim($commissionPercent, '0'), '.') }}% commission</span>
-                    <span class="tkt-fact-chip"><i class="fa-solid fa-mobile-screen-button"></i> Mobile Money / Bank Transfer</span>
-                    @if ($event->agreed_payout_on)
+                @if ($event->agreed_payout_on)
+                    <div class="tkt-summary-row">
                         <span class="tkt-fact-chip"><i class="fa-solid fa-calendar-check"></i> Payout {{ $event->agreed_payout_on->format('j M Y') }}</span>
-                    @endif
-                </div>
-                <p class="evt-muted tkt-locked-note">These values cannot be changed per event.</p>
+                    </div>
+                @endif
 
                 {{-- Step 3 of the wizard auto-saves on pick — data-auto-submit tells
                      events-form.js to submit on radio change instead of showing a
@@ -77,7 +70,7 @@
                     <div class="profile-field">
                         <div class="tkt-commission-heading">
                             <h3>Who Pays the Commission</h3>
-                            <p class="evt-muted">Choose whether buyers or you absorb the {{ $commissionPercent }}% fee.</p>
+                            <p class="evt-muted">Choose whether buyers or you absorb the platform fee.</p>
                         </div>
                         <div class="evt-product-choice" @if (! $event->canEditCommissionMode()) aria-disabled="true" @endif>
                             <label class="evt-product-choice-card">
@@ -86,7 +79,7 @@
                                        @disabled(! $event->canEditCommissionMode())>
                                 <span>
                                     <strong>Deducted from my earnings</strong>
-                                    <span class="evt-product-choice-hint">Buyers pay the listed ticket price. The {{ $commissionPercent }}% commission comes out of what you receive.</span>
+                                    <span class="evt-product-choice-hint">Buyers pay the listed ticket price. The platform fee comes out of what you receive.</span>
                                 </span>
                             </label>
                             <label class="evt-product-choice-card">
@@ -95,7 +88,7 @@
                                        @disabled(! $event->canEditCommissionMode())>
                                 <span>
                                     <strong>Added to the buyer’s price</strong>
-                                    <span class="evt-product-choice-hint">Buyers pay the ticket price plus {{ $commissionPercent }}%. You receive the listed price.</span>
+                                    <span class="evt-product-choice-hint">Buyers pay the ticket price plus the platform fee. You receive the listed price.</span>
                                 </span>
                             </label>
                         </div>
@@ -121,6 +114,15 @@
                 <a href="{{ route('public-events.ticket-types.create', $event) }}" class="btn-primary"><i class="fa-solid fa-plus"></i> Add ticket type</a>
             </div>
             <div class="evt-section-body">
+                @if ($event->ticket_capacity !== null)
+                    @php $allocated = $event->ticketCapacityAllocated(); @endphp
+                    <p class="evt-muted">
+                        <strong>{{ number_format($allocated) }}</strong> of <strong>{{ number_format($event->ticket_capacity) }}</strong> tickets given to ticket types
+                        @if ($allocated < $event->ticket_capacity)
+                            · {{ number_format($event->ticket_capacity - $allocated) }} left to give out
+                        @endif
+                    </p>
+                @endif
                 @if ($ticketTypes->isEmpty())
                     <p class="evt-muted">No ticket types yet. Add at least one before requesting activation.</p>
                 @else
@@ -155,10 +157,17 @@
                  first, so review never gets skipped. --}}
             <div class="evt-section">
                 <div class="evt-section-body evt-actions-bar">
-                    <a href="{{ route('events.edit', $event) }}" class="btn-primary">
-                        Continue to review &amp; publish <i class="fa-solid fa-arrow-right"></i>
-                    </a>
-                    <span class="evt-muted">Review your event details, then submit for activation there.</span>
+                    @if ($ticketTypes->where('is_active', true)->isEmpty())
+                        <button type="button" class="btn-primary" disabled>
+                            Continue to review &amp; publish <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                        <span class="evt-muted">Add at least one ticket type to continue.</span>
+                    @else
+                        <a href="{{ route('events.edit', $event) }}" class="btn-primary">
+                            Continue to review &amp; publish <i class="fa-solid fa-arrow-right"></i>
+                        </a>
+                        <span class="evt-muted">Review your event details, then submit for activation there.</span>
+                    @endif
                 </div>
             </div>
         @else

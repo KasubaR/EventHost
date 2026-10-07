@@ -30,6 +30,7 @@ class StoreEventRequest extends FormRequest
             'latitude' => $this->latitude === '' || $this->latitude === null ? null : $this->latitude,
             'longitude' => $this->longitude === '' || $this->longitude === null ? null : $this->longitude,
             'guest_limit' => $this->guest_limit === '' || $this->guest_limit === null ? null : $this->guest_limit,
+            'ticket_capacity' => $this->ticket_capacity === '' || $this->ticket_capacity === null ? null : $this->ticket_capacity,
             'description' => $this->description === '' ? null : $this->description,
             'venue' => $this->venue === '' ? null : $this->venue,
             'location_name' => $this->location_name === '' ? null : $this->location_name,
@@ -120,6 +121,14 @@ class StoreEventRequest extends FormRequest
             // a time on it at all (i.e. almost every real deadline).
             'rsvp_deadline' => ['nullable', 'date'],
             'guest_limit' => $this->guestLimitRules(),
+            // Total tickets across every ticket type. Required on the web for a ticketed
+            // event; optional for the Android API so its contract stays additive.
+            'ticket_capacity' => [
+                $productKind === EventProductKind::Ticketed && ! $this->is('api/*') ? 'required' : 'nullable',
+                'integer',
+                'min:1',
+                'max:1000000',
+            ],
             'host_contact_phone' => $this->hostContactPhoneRules($productKind),
             'allow_plus_one' => ['boolean'],
             'require_rsvp_approval' => ['boolean'],

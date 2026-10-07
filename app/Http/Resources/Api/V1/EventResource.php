@@ -68,6 +68,7 @@ class EventResource extends JsonResource
             'rsvp_deadline' => $this->rsvpDeadlineAt()?->toIso8601String(),
             'rsvp_closes_at' => $this->rsvpClosesAt()?->toIso8601String(),
             'guest_limit' => $this->guest_limit,
+            'ticket_capacity' => $this->ticket_capacity,
             'host_contact_phone' => $this->host_contact_phone,
             'allow_plus_one' => $this->allow_plus_one,
             'show_guest_list' => $this->show_guest_list,

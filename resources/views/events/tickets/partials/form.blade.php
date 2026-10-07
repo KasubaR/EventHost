@@ -51,10 +51,20 @@
             @enderror
         </div>
         <div class="profile-field">
-            <label for="ticket_quantity" class="profile-label">Quantity <span class="profile-optional">blank = unlimited</span></label>
-            <input id="ticket_quantity" name="quantity" type="number" min="1" step="1"
+            @php
+                $capacityLeft = $event->ticket_capacity !== null
+                    ? max(0, $event->ticket_capacity - $event->ticketCapacityAllocated($ticketType?->id))
+                    : null;
+            @endphp
+            <label for="ticket_quantity" class="profile-label">Quantity available</label>
+            <input id="ticket_quantity" name="quantity" type="number" min="1" step="1" required
+                   @if ($capacityLeft !== null) max="{{ $capacityLeft }}" @endif
                    class="profile-input {{ $errors->has('quantity') ? 'profile-input--error' : '' }}"
-                   value="{{ old('quantity', $ticketType?->quantity ?? '') }}">
+                   value="{{ old('quantity', $ticketType?->quantity ?? '') }}"
+                   placeholder="e.g. 100">
+            @if ($capacityLeft !== null)
+                <p class="evt-field-hint">{{ number_format($capacityLeft) }} of your {{ number_format($event->ticket_capacity) }} event capacity {{ $capacityLeft === 1 ? 'is' : 'are' }} still free to give to this ticket type.</p>
+            @endif
             @error('quantity')
                 <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
             @enderror

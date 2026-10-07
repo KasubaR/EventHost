@@ -250,6 +250,7 @@ class Event extends Model
         'is_public',
         'rsvp_deadline',
         'guest_limit',
+        'ticket_capacity',
         'host_contact_phone',
         'allow_plus_one',
         'require_rsvp_approval',
@@ -846,6 +847,19 @@ class Event extends Model
         return $query->whereNotNull('deleted_at')->where('deleted_at', '<=', $cutoff);
     }
 
+    /**
+     * Tickets already promised to ticket types (their quantities summed),
+     * optionally leaving one type out so an edit is compared against the rest.
+     * A type with no quantity counts as 0 here; TicketCapacity refuses those
+     * whenever the event has a total.
+     */
+    public function ticketCapacityAllocated(?int $exceptTicketTypeId = null): int
+    {
+        return (int) $this->ticketTypes()
+            ->when($exceptTicketTypeId !== null, fn ($q) => $q->where('id', '!=', $exceptTicketTypeId))
+            ->sum('quantity');
+    }
+
     public function canSubmitTicketing(): bool
     {
         return $this->isTicketed()
@@ -1341,6 +1355,7 @@ class Event extends Model
             'public_registration_quote_paid_at' => 'datetime',
             'commission_percent_override' => 'decimal:2',
             'cancellation_fee_percent_override' => 'decimal:2',
+            'ticket_capacity' => 'integer',
             'rsvp_deadline' => 'datetime',
             'slug_changed_at' => 'datetime',
             'is_public' => 'boolean',

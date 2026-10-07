@@ -105,7 +105,7 @@ class EventController extends Controller
             ], 201);
         }
 
-        unset($data['preferred_invitation_template_id'], $data['cover_image']);
+        unset($data['preferred_invitation_template_id'], $data['cover_image'], $data['ticket_capacity']);
         $newPath = null;
 
         try {
@@ -232,6 +232,8 @@ class EventController extends Controller
                         $data['allow_plus_one'],
                         $data['show_guest_list'],
                     );
+                } else {
+                    unset($data['ticket_capacity']);
                 }
 
                 if ($newCoverPath !== null) {

@@ -4,6 +4,8 @@ namespace App\Http\Requests;
 
 use App\Models\Event;
 use App\Models\TicketType;
+use App\Support\TicketCapacity;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -41,7 +43,10 @@ class StoreTicketTypeRequest extends FormRequest
             'badge_color' => ['required', Rule::in(array_keys(TicketType::BADGE_COLORS))],
             'description' => ['nullable', 'string', 'max:5000'],
             'price' => ['required', 'numeric', 'min:0.01', 'max:999999.99'],
-            'quantity' => ['nullable', 'integer', 'min:1', 'max:1000000'],
+            // Every ticket type needs its own capacity on the web. The Android API keeps
+            // blank = unlimited so its contract stays additive; either way a quantity
+            // is required once the event has a total (see withValidator()).
+            'quantity' => [$this->is('api/*') ? 'nullable' : 'required', 'integer', 'min:1', 'max:1000000'],
             'sales_starts_at' => ['nullable', 'date'],
             'sales_ends_at' => ['nullable', 'date', 'after_or_equal:sales_starts_at'],
             'min_per_order' => ['required', 'integer', 'min:1', 'max:100'],
@@ -51,5 +56,32 @@ class StoreTicketTypeRequest extends FormRequest
             'sort_order' => ['integer', 'min:0', 'max:65535'],
             'is_active' => ['boolean'],
         ];
+    }
+
+    /**
+     * The quantities of an event's ticket types may not add up to more than its
+     * total capacity (events.ticket_capacity).
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            $event = $this->route('event');
+            $ticketType = $this->route('ticketType');
+
+            if (! $event instanceof Event || $validator->errors()->has('quantity')) {
+                return;
+            }
+
+            $quantity = $this->input('quantity');
+            $problem = TicketCapacity::typeProblem(
+                $event,
+                $quantity === null ? null : (int) $quantity,
+                $ticketType instanceof TicketType ? $ticketType->id : null,
+            );
+
+            if ($problem !== null) {
+                $validator->errors()->add('quantity', $problem);
+            }
+        });
     }
 }

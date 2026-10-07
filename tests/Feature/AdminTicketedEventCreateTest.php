@@ -56,7 +56,27 @@ class AdminTicketedEventCreateTest extends TestCase
             'event_time' => '19:00',
             'description' => 'Admin-created ticketed event',
             'venue' => 'Lusaka Arena',
+            'ticket_capacity' => '500',
         ], $overrides);
+    }
+
+    public function test_admin_create_requires_and_saves_the_total_capacity(): void
+    {
+        $owner = User::factory()->create();
+        $admin = $this->adminWithApprove();
+
+        $payload = $this->ticketedPayload($owner);
+        unset($payload['ticket_capacity']);
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.ticketing.store'), $payload)
+            ->assertSessionHasErrors('ticket_capacity');
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.ticketing.store'), $this->ticketedPayload($owner, ['ticket_capacity' => '350']))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(350, Event::query()->where('name', 'Client Concert')->firstOrFail()->ticket_capacity);
     }
 
     public function test_admin_can_open_the_create_form_and_support_cannot(): void
@@ -272,6 +292,7 @@ class AdminTicketedEventCreateTest extends TestCase
             ->post(route('events.store'), [
                 'audience' => EventAudience::Public->value,
                 'product_kind' => EventProductKind::Ticketed->value,
+                'ticket_capacity' => '500',
                 'name' => 'Host Concert',
                 'event_type' => 'concert',
                 'event_date' => now()->addWeek()->format('Y-m-d'),

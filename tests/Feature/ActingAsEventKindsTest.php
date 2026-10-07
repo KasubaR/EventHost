@@ -154,6 +154,7 @@ class ActingAsEventKindsTest extends TestCase
             'event_type' => 'concert',
             'audience' => 'public',
             'product_kind' => 'ticketed',
+            'ticket_capacity' => '500',
         ]))->assertSessionHasNoErrors();
 
         $event = Event::query()->where('name', 'Client Concert')->firstOrFail();

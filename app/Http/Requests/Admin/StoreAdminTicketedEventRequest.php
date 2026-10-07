@@ -63,6 +63,8 @@ class StoreAdminTicketedEventRequest extends FormRequest
             'latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_with:longitude'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180', 'required_with:latitude'],
             'slug' => ['nullable', 'string', new EventSlugAvailable],
+            // Total tickets across every ticket type; ticket type quantities are held to it.
+            'ticket_capacity' => ['required', 'integer', 'min:1', 'max:1000000'],
         ];
     }
 

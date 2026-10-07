@@ -115,6 +115,7 @@ class TicketingTest extends TestCase
             'event_type' => 'corporate',
             'audience' => EventAudience::Public->value,
             'product_kind' => EventProductKind::Ticketed->value,
+            'ticket_capacity' => '500',
             'event_date' => now()->addMonth()->format('Y-m-d'),
             'event_time' => '18:00',
         ])->assertRedirect();
@@ -145,8 +146,8 @@ class TicketingTest extends TestCase
             ->get(route('public-events.ticket-types.index', $event))
             ->assertOk()
             ->assertSee('VIP', false)
-            ->assertSee('commission', false)
-            ->assertSee('Mobile Money / Bank Transfer', false)
+            ->assertDontSee('% commission', false)
+            ->assertDontSee('Mobile Money / Bank Transfer', false)
             ->assertDontSee('EventHost / Lenco', false);
     }
 
@@ -480,6 +481,7 @@ class TicketingTest extends TestCase
             'event_type' => 'corporate',
             'audience' => EventAudience::Public->value,
             'product_kind' => EventProductKind::Ticketed->value,
+            'ticket_capacity' => '500',
             'event_date' => now()->addMonth()->format('Y-m-d'),
             'event_time' => '18:00',
             'cover_image' => UploadedFile::fake()->image('cover.jpg', 1400, 800),
@@ -498,6 +500,7 @@ class TicketingTest extends TestCase
             'event_type' => 'corporate',
             'audience' => EventAudience::Public->value,
             'product_kind' => EventProductKind::Ticketed->value,
+            'ticket_capacity' => '500',
             'event_date' => now()->addMonth()->format('Y-m-d'),
             'event_time' => '18:00',
             'allow_plus_one' => '1',
@@ -774,6 +777,7 @@ class TicketingTest extends TestCase
             'event_type' => 'corporate',
             'audience' => EventAudience::Public->value,
             'product_kind' => EventProductKind::Ticketed->value,
+            'ticket_capacity' => '500',
             'event_date' => now()->addMonth()->format('Y-m-d'),
             'event_time' => '18:00',
         ]);
@@ -800,6 +804,7 @@ class TicketingTest extends TestCase
     {
         $user = User::factory()->create();
         $event = Event::factory()->for($user)->ticketed()->create();
+        TicketType::factory()->for($event)->create();
 
         $this->actingAs($user)
             ->get(route('events.edit', $event))
@@ -845,6 +850,133 @@ class TicketingTest extends TestCase
     /**
      * @return array<string, mixed>
      */
+    public function test_ticketed_store_requires_a_total_capacity(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->post(route('events.store'), [
+            'name' => 'Summer Festival',
+            'event_type' => 'corporate',
+            'audience' => EventAudience::Public->value,
+            'product_kind' => EventProductKind::Ticketed->value,
+            'event_date' => now()->addMonth()->format('Y-m-d'),
+            'event_time' => '18:00',
+        ])->assertSessionHasErrors('ticket_capacity');
+
+        $this->assertSame(0, Event::query()->where('user_id', $user->id)->count());
+    }
+
+    public function test_ticketed_store_saves_the_total_capacity(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->post(route('events.store'), [
+            'name' => 'Summer Festival',
+            'event_type' => 'corporate',
+            'audience' => EventAudience::Public->value,
+            'product_kind' => EventProductKind::Ticketed->value,
+            'event_date' => now()->addMonth()->format('Y-m-d'),
+            'event_time' => '18:00',
+            'ticket_capacity' => '300',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame(300, Event::query()->where('user_id', $user->id)->firstOrFail()->ticket_capacity);
+    }
+
+    public function test_ticket_type_quantity_is_required_on_the_web(): void
+    {
+        $user = User::factory()->create();
+        $event = Event::factory()->for($user)->ticketed()->create(['ticket_capacity' => 300]);
+
+        $this->actingAs($user)
+            ->post(route('public-events.ticket-types.store', $event), $this->ticketPayload(['quantity' => '']))
+            ->assertSessionHasErrors('quantity');
+    }
+
+    public function test_ticket_types_cannot_add_up_to_more_than_the_event_capacity(): void
+    {
+        $user = User::factory()->create();
+        $event = Event::factory()->for($user)->ticketed()->create(['ticket_capacity' => 300]);
+
+        $this->actingAs($user)
+            ->post(route('public-events.ticket-types.store', $event), $this->ticketPayload(['name' => 'Early bird', 'quantity' => '100']))
+            ->assertSessionHasNoErrors();
+
+        $this->actingAs($user)
+            ->post(route('public-events.ticket-types.store', $event), $this->ticketPayload(['name' => 'VIP', 'quantity' => '200']))
+            ->assertSessionHasNoErrors();
+
+        // 300 of 300 are now given out.
+        $this->actingAs($user)
+            ->post(route('public-events.ticket-types.store', $event), $this->ticketPayload(['name' => 'Extra', 'quantity' => '1']))
+            ->assertSessionHasErrors('quantity');
+
+        $this->assertSame(2, $event->ticketTypes()->count());
+    }
+
+    public function test_a_single_ticket_type_cannot_exceed_the_event_capacity(): void
+    {
+        $user = User::factory()->create();
+        $event = Event::factory()->for($user)->ticketed()->create(['ticket_capacity' => 300]);
+
+        $this->actingAs($user)
+            ->post(route('public-events.ticket-types.store', $event), $this->ticketPayload(['quantity' => '301']))
+            ->assertSessionHasErrors('quantity');
+    }
+
+    public function test_editing_a_ticket_type_does_not_count_its_own_quantity_twice(): void
+    {
+        $user = User::factory()->create();
+        $event = Event::factory()->for($user)->ticketed()->create(['ticket_capacity' => 300]);
+        $type = TicketType::factory()->for($event)->create(['quantity' => 300]);
+
+        $this->actingAs($user)
+            ->patch(route('public-events.ticket-types.update', [$event, $type]), $this->ticketPayload(['quantity' => '300']))
+            ->assertSessionHasNoErrors();
+    }
+
+    public function test_event_capacity_cannot_drop_below_what_ticket_types_hand_out(): void
+    {
+        $user = User::factory()->create();
+        $event = Event::factory()->for($user)->ticketed()->create(['ticket_capacity' => 300]);
+        TicketType::factory()->for($event)->create(['quantity' => 100]);
+        TicketType::factory()->for($event)->create(['quantity' => 150]);
+
+        $this->actingAs($user)
+            ->patch(route('events.update', $event), ['ticket_capacity' => '200'])
+            ->assertSessionHasErrors('ticket_capacity');
+
+        $this->actingAs($user)
+            ->patch(route('events.update', $event), ['ticket_capacity' => '250'])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(250, $event->fresh()->ticket_capacity);
+    }
+
+    public function test_review_step_is_unreachable_until_a_ticket_type_exists(): void
+    {
+        $user = User::factory()->create();
+        $event = Event::factory()->for($user)->ticketed()->create(['ticket_capacity' => 300]);
+
+        $this->actingAs($user)
+            ->get(route('events.edit', $event))
+            ->assertRedirect(route('public-events.ticket-types.index', $event))
+            ->assertSessionHasErrors('ticket_type');
+
+        $this->actingAs($user)
+            ->get(route('public-events.ticket-types.index', $event))
+            ->assertOk()
+            ->assertDontSee(route('events.edit', $event), false)
+            ->assertSee('Add at least one ticket type to continue.', false);
+
+        TicketType::factory()->for($event)->create(['quantity' => 100]);
+
+        $this->actingAs($user)->get(route('events.edit', $event))->assertOk();
+        $this->actingAs($user)
+            ->get(route('public-events.ticket-types.index', $event))
+            ->assertSee(route('events.edit', $event), false);
+    }
+
     private function ticketPayload(array $overrides = []): array
     {
         return array_merge([

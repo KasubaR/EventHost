@@ -157,7 +157,8 @@ class EventController extends Controller
             return redirect()->route('public-events.ticket-types.index', $event)->with('status', 'draft-saved');
         }
 
-        unset($data['preferred_invitation_template_id'], $data['cover_image']);
+        // Ticket capacity only means something for a ticketed event.
+        unset($data['preferred_invitation_template_id'], $data['cover_image'], $data['ticket_capacity']);
         $newPath = null;
 
         try {
@@ -234,8 +235,16 @@ class EventController extends Controller
         return view('events.show', compact('event', 'rsvpSummary', 'eventAnalytics', 'contributionSummary'));
     }
 
-    public function edit(Event $event, InvitationCustomizationService $customizationService): View
+    public function edit(Event $event, InvitationCustomizationService $customizationService): View|RedirectResponse
     {
+        // Step 4 of the ticketed wizard (review & request activation) makes no sense
+        // before there is a ticket to sell, so send the host back to step 3.
+        if ($event->canSubmitTicketing() && ! $event->ticketTypes()->where('is_active', true)->exists()) {
+            return redirect()
+                ->route('public-events.ticket-types.index', $event)
+                ->withErrors(['ticket_type' => 'Add at least one ticket type before you review your event and request activation.']);
+        }
+
         $invitationMerged = null;
         $templateFingerprint = null;
         $customizationToken = null;
@@ -333,6 +342,9 @@ class EventController extends Controller
                         $data['allow_plus_one'],
                         $data['show_guest_list'],
                     );
+                } else {
+                    // The ticketed panel's field is posted blank by invitation forms too.
+                    unset($data['ticket_capacity']);
                 }
 
                 if ($newCoverPath !== null) {
