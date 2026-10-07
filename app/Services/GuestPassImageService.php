@@ -74,8 +74,11 @@ class GuestPassImageService
             throw new RuntimeException('GD was built without FreeType; cannot draw the pass image.');
         }
 
-        $regular = resource_path('fonts/DejaVuSans.ttf');
-        $bold = resource_path('fonts/DejaVuSans-Bold.ttf');
+        // Overridable so a test can point at an empty directory instead of hiding the real font,
+        // which every parallel test worker shares.
+        $fontDir = config('guest_pass.font_path') ?: resource_path('fonts');
+        $regular = $fontDir.'/DejaVuSans.ttf';
+        $bold = $fontDir.'/DejaVuSans-Bold.ttf';
         foreach ([$regular, $bold] as $font) {
             if (! is_readable($font)) {
                 throw new RuntimeException("Pass image font missing: {$font}");

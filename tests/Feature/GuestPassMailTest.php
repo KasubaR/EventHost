@@ -96,14 +96,9 @@ class GuestPassMailTest extends TestCase
         Storage::fake('local');
         [$event, $guest, $rsvp] = $this->guestWith(RsvpStatus::Accepted, token: 'font-mail-token');
 
-        $font = resource_path('fonts/DejaVuSans-Bold.ttf');
-        $this->assertTrue(rename($font, $font.'.hidden'));
+        config(['guest_pass.font_path' => sys_get_temp_dir().'/no-such-font-dir-'.uniqid()]);
 
-        try {
-            $files = $this->attachments(new RsvpConfirmationNotification($event, $guest, $rsvp));
-        } finally {
-            rename($font.'.hidden', $font);
-        }
+        $files = $this->attachments(new RsvpConfirmationNotification($event, $guest, $rsvp));
 
         $this->assertSame(['amy-and-joe-wedding-pass.pdf'], array_keys($files));
     }

@@ -193,15 +193,9 @@ class GuestPassImageTest extends TestCase
         Storage::fake('local');
         $guest = $this->attendingGuest();
 
-        $font = resource_path('fonts/DejaVuSans-Bold.ttf');
-        $hidden = $font.'.hidden';
-        $this->assertTrue(rename($font, $hidden));
+        config(['guest_pass.font_path' => sys_get_temp_dir().'/no-such-font-dir-'.uniqid()]);
 
-        try {
-            $response = $this->get(route('rsvp.token.pass-image', $guest->invitation_token));
-        } finally {
-            rename($hidden, $font);
-        }
+        $response = $this->get(route('rsvp.token.pass-image', $guest->invitation_token));
 
         $response->assertOk();
         $info = getimagesizefromstring($response->getContent());
