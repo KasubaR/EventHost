@@ -2,8 +2,9 @@
     Two data sources land here, both normalised into the same $event/$guest/$rsvp
     shape by RsvpController::confirmationViewData():
       - thanksByToken() — re-queried fresh every load (refreshable, bookmarkable)
-      - thanks() — a one-shot session flash for open (no-token) RSVPs, since
-        there's no persistent guest identifier safe to put in a URL for them
+      - confirmedOpen() — a signed, expiring link by RSVP id for open (no-token) RSVPs
+      - thanks() — the old one-shot session flash for open RSVPs, kept as a fallback for stale links;
+        it cannot be refreshed
     $event/$guest/$rsvp are all null only when someone lands on /rsvp/thanks
     directly (flash already consumed, or never existed) — see the @else branch.
 --}}

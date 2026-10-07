@@ -43,6 +43,29 @@ trait ValidatesRsvpPayload
     }
 
     /**
+     * A failed submit returns the guest to the form, not the top of the page: the form sits at #rsvp,
+     * often far below a hero, so without the fragment the error is off-screen and the page looks unchanged.
+     */
+    protected function getRedirectUrl(): string
+    {
+        $url = parent::getRedirectUrl();
+
+        return strtok($url, '#').'#rsvp';
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'status.required' => 'Please choose whether you can come.',
+            'attendee_count.required_if' => 'Please say how many people are coming.',
+            'attendee_count.integer' => 'Please say how many people are coming.',
+        ];
+    }
+
+    /**
      * @return array{status:RsvpStatus,attendee_count:int,message?:string|null}
      */
     public function validatedRsvpPayload(): array

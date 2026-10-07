@@ -201,7 +201,7 @@ class RsvpFlowTest extends TestCase
         ], $this->rsvpPayload(RsvpStatus::Accepted, 1));
 
         $this->post(route('rsvp.open.store', ['slug' => $event->slug]), $payload)
-            ->assertRedirect(route('rsvp.thanks'));
+            ->assertRedirectContains('/rsvp/confirmed/');
 
         $guest = Guest::query()->where('event_id', $event->id)->where('email', 'jamie@example.test')->first();
         $this->assertNotNull($guest);
@@ -210,7 +210,7 @@ class RsvpFlowTest extends TestCase
         $payload['attendee_count'] = 0;
 
         $this->post(route('rsvp.open.store', ['slug' => $event->slug]), $payload)
-            ->assertRedirect(route('rsvp.thanks'));
+            ->assertRedirectContains('/rsvp/confirmed/');
 
         $this->assertSame(1, Guest::query()->where('event_id', $event->id)->where('email', 'jamie@example.test')->count());
         $this->assertSame(RsvpStatus::Maybe, $guest->fresh()->rsvp?->status);
@@ -244,7 +244,9 @@ class RsvpFlowTest extends TestCase
 
         $this->get(route('rsvp.open.show', ['slug' => $event->slug, 'status' => 'not-a-status']))
             ->assertOk()
-            ->assertSee('value="accepted" checked', false);
+            ->assertDontSee('value="accepted" checked', false)
+            ->assertDontSee('value="declined" checked', false)
+            ->assertDontSee('value="maybe" checked', false);
 
         $payload = array_merge([
             'name' => 'Family Member',
@@ -488,12 +490,11 @@ class RsvpFlowTest extends TestCase
             ->assertRedirect(route('rsvp.token.show', ['token' => 'tok_no_response_yet']));
     }
 
-    public function test_open_rsvp_thanks_page_shows_details_once_then_falls_back_after_flash_is_gone(): void
+    public function test_open_rsvp_confirmation_survives_a_refresh_and_rejects_a_tampered_link(): void
     {
         Notification::fake();
 
-        $user = User::factory()->create();
-        $event = Event::factory()->for($user)->published()->create([
+        $event = Event::factory()->published()->create([
             'is_public' => true,
             'rsvp_deadline' => null,
             'name' => 'Demo Party',
@@ -505,12 +506,47 @@ class RsvpFlowTest extends TestCase
             'phone' => null,
         ], $this->rsvpPayload(RsvpStatus::Accepted, 1));
 
-        $this->post(route('rsvp.open.store', ['slug' => $event->slug]), $payload)
-            ->assertRedirect(route('rsvp.thanks'));
+        $response = $this->post(route('rsvp.open.store', ['slug' => $event->slug]), $payload);
+        $response->assertRedirectContains('/rsvp/confirmed/');
+        $url = $response->headers->get('Location');
 
-        // Session flash survives exactly one subsequent request.
-        $this->get(route('rsvp.thanks'))->assertSee('Thank you, Jamie Guest!');
-        $this->get(route('rsvp.thanks'))->assertDontSee('Jamie Guest');
+        // Unlike the old one-shot flash, the same link works again.
+        $this->get($url)->assertOk()->assertSee('Thank you, Jamie Guest!')->assertSee('Demo Party');
+        $this->get($url)->assertOk()->assertSee('Thank you, Jamie Guest!');
+
+        // A tampered signature is refused.
+        $this->get($url.'0')->assertForbidden();
+
+        // An expired link is refused too.
+        $this->travel(2)->days();
+        $this->get($url)->assertForbidden();
+    }
+
+    public function test_the_open_form_starts_with_no_answer_chosen_but_a_returning_guest_keeps_theirs(): void
+    {
+        $event = Event::factory()->published()->create(['is_public' => true, 'rsvp_deadline' => null]);
+
+        $html = $this->get(route('rsvp.open.show', ['slug' => $event->slug]))->assertOk()->getContent();
+        $this->assertDoesNotMatchRegularExpression('/name="status"[^>]*checked/', $html, 'no answer should be pre-ticked');
+
+        $this->get(route('rsvp.open.show', ['slug' => $event->slug, 'status' => 'declined']))
+            ->assertSee('value="declined" checked', false);
+    }
+
+    public function test_a_submit_with_no_answer_goes_back_to_the_form_with_a_clear_message(): void
+    {
+        $event = Event::factory()->published()->create(['is_public' => true, 'rsvp_deadline' => null]);
+
+        $response = $this->from(route('events.public', ['slug' => $event->slug]))
+            ->post(route('rsvp.open.store', ['slug' => $event->slug]), [
+                'name' => 'No Answer',
+                'email' => 'noanswer@example.test',
+                'attendee_count' => 1,
+            ]);
+
+        $response->assertSessionHasErrors(['status' => 'Please choose whether you can come.']);
+        $this->assertStringEndsWith('#rsvp', $response->headers->get('Location'));
+        $this->assertDatabaseMissing('guests', ['email' => 'noanswer@example.test']);
     }
 
     public function test_host_notification_skipped_when_disabled_in_preferences(): void

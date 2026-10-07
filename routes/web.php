@@ -221,7 +221,9 @@ Route::get('/rsvp/thanks', [RsvpController::class, 'thanks'])->name('rsvp.thanks
 // Refreshable/bookmarkable confirmation page for token guests — re-queries fresh
 // event/guest/RSVP data on every load instead of relying on a one-shot session
 // flash. Open (no-token) RSVPs have no persistent identifier safe to key a URL
-// off of, so they still land on the flash-only /rsvp/thanks above.
+// off of, so they get a short-lived SIGNED link by RSVP id instead (rsvp.open.confirmed, Phase 6 of
+// plans/rsvp-submission-edge-cases.md). The flash-only /rsvp/thanks above stays as a fallback.
+Route::get('/rsvp/confirmed/{rsvp}', [RsvpController::class, 'confirmedOpen'])->middleware('signed')->name('rsvp.open.confirmed');
 Route::get('/rsvp/{token}/thanks', [RsvpController::class, 'thanksByToken'])->name('rsvp.token.thanks');
 Route::get('/rsvp/{token}', [RsvpController::class, 'showByToken'])->name('rsvp.token.show');
 // Same trust model as the line above: the token in the URL is the only guard, no

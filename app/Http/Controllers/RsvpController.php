@@ -23,6 +23,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -432,20 +433,35 @@ class RsvpController extends Controller
         return view('rsvp.thank-you', $this->confirmationViewData($event, $guest, $rsvp, refreshable: true));
     }
 
+    /**
+     * Confirmation for an open-link guest with no personal token (a free-registration signup). The URL is
+     * signed and expires, so it can be refreshed or bookmarked without a persistent guest identifier, and
+     * re-queries fresh data like thanksByToken(). The signature is the only guard, same trust level as the
+     * personal link it stands in for.
+     */
+    public function confirmedOpen(Rsvp $rsvp, PublicInvitationResolver $resolver): View
+    {
+        $guest = Guest::query()->with(['event' => fn ($q) => $q->withTrashed()])->find($rsvp->guest_id);
+        $event = $guest?->event;
+        abort_if($guest === null || $event === null, 404);
+
+        $lifecycle = $resolver->statusForLoadedEvent($event);
+        if ($lifecycle !== null && $lifecycle !== PublicInvitationStatus::Ended) {
+            return $resolver->statusView($event, $lifecycle);
+        }
+
+        return view('rsvp.thank-you', $this->confirmationViewData($event, $guest, $rsvp, refreshable: true));
+    }
+
     private function redirectThanks(Event $event, Guest $guest, Rsvp $rsvp): RedirectResponse
     {
         if ($guest->invitation_token !== null) {
             return redirect()->route('rsvp.token.thanks', ['token' => $guest->invitation_token]);
         }
 
-        // No token to build a fresh-data URL from — flash the models themselves so
-        // the very next request (the redirect this method returns) can render a full
-        // confirmation. A later refresh/bookmark loses this, same as it always has.
-        return redirect()
-            ->route('rsvp.thanks')
-            ->with('thanks_event', $event)
-            ->with('thanks_guest', $guest)
-            ->with('thanks_rsvp', $rsvp);
+        // No token to build a fresh-data URL from, so use a signed one keyed on the RSVP itself. It survives
+        // a refresh and a bookmark; the old one-shot flash (rsvp.thanks) is only a fallback for stale links.
+        return redirect()->to(URL::temporarySignedRoute('rsvp.open.confirmed', now()->addDay(), ['rsvp' => $rsvp->id]));
     }
 
     /**

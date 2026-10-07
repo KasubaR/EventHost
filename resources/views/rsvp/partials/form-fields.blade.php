@@ -10,10 +10,15 @@
     $_rfcVisible = fn(string $field): bool =>
         ! is_array($_rfc[$field] ?? null) || (bool) ($_rfc[$field]['visible'] ?? true);
     $preselected = ($preselectedStatus ?? null) instanceof RsvpStatus ? $preselectedStatus->value : null;
-    $statusOld = old('status', $existing?->status?->value ?? $preselected ?? RsvpStatus::Accepted->value);
+    // A guest with no answer on file starts with nothing chosen: a pre-ticked "Attending" turned a
+    // distracted tap on Send into a silent yes (and a taken seat). The radios are `required`, so the
+    // browser asks. A returning guest sees their stored answer; a ?status= deep link keeps its choice.
+    $statusOld = old('status', $existing?->status?->value ?? $preselected);
     $countOld = old('attendee_count', $existing ? ($existing->status === RsvpStatus::Accepted ? $existing->attendee_count : 0) : null);
     if ($countOld === null) {
-        $countOld = $statusOld === RsvpStatus::Accepted->value ? 1 : 0;
+        // Unchosen counts as 1, not 0: without JavaScript nothing syncs the count to the answer, and an
+        // attending guest posting 0 would be rejected. Declined/Maybe ignore the number anyway.
+        $countOld = in_array($statusOld, [RsvpStatus::Declined->value, RsvpStatus::Maybe->value], true) ? 0 : 1;
     }
     $statusIcons = [
         RsvpStatus::Accepted->value => 'fa-solid fa-circle-check',

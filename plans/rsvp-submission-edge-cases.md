@@ -124,7 +124,7 @@ Ordered by value. Phases 1 to 3 carry the real risk; each can ship alone.
    a banner and the input kept, instead of the `email` error.
 3. Tests: 11th request returns the friendly view; two IPs do not share a token budget.
 
-### Phase 5 — Selection and error visibility (G1, G2, G3)
+### Phase 5 — Selection and error visibility (G1, G2, G3) — BUILT
 
 1. Decide G1 (product): the open form should start with **no** answer selected, so a distracted tap is not
    a "yes". Keep the pre-selection for a returning guest (their stored answer) and for `?status=` deep links.
@@ -134,7 +134,7 @@ Ordered by value. Phases 1 to 3 carry the real risk; each can ship alone.
 3. Friendlier `messages()` for `status` ("Please choose whether you can come.").
 4. Tests: missing `status` returns a 302 with a `status` error and a `#rsvp` fragment; the message wording.
 
-### Phase 6 — Open-link confirmation that survives refresh (G6)
+### Phase 6 — Open-link confirmation that survives refresh (G6) — BUILT (`rsvp.open.confirmed`)
 
 1. Replace the flashed models with a **temporary signed URL** (`rsvp.open.confirmed`, keyed on the RSVP id,
    about 24 h) that re-queries fresh data. It is the same trust level as the personal link, and an open guest
