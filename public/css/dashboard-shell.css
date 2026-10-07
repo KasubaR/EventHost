@@ -390,20 +390,3 @@
 
 
 .dash-nav-link .ticket-icon { width: 17px; height: 17px; }
-
-/* ── LONG EVENT NAMES (up to 255 characters, possibly one word) ──
-   break-word keeps table columns from collapsing; the headings and cards, which sit in flex rows, get `anywhere` so they can shrink. */
-.dash-main {
-  overflow-wrap: break-word;
-}
-.dph-title,
-.dph-sub,
-.evt-card-body h3,
-.evt-card-meta {
-  overflow-wrap: break-word;
-  overflow-wrap: anywhere;
-  min-width: 0;
-}
-.evt-card-body {
-  min-width: 0;
-}
