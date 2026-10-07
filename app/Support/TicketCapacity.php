@@ -2,7 +2,9 @@
 
 namespace App\Support;
 
+use App\Enums\TicketStatus;
 use App\Models\Event;
+use App\Models\TicketType;
 
 /**
  * The one place that decides whether ticket type quantities fit inside an
@@ -19,6 +21,15 @@ class TicketCapacity
      */
     public static function typeProblem(Event $event, ?int $quantity, ?int $exceptTicketTypeId = null): ?string
     {
+        // Whatever the event total, a type cannot be cut below the tickets it has already sold.
+        if ($exceptTicketTypeId !== null && $quantity !== null) {
+            $sold = TicketType::query()->whereKey($exceptTicketTypeId)->first()?->soldQuantity() ?? 0;
+
+            if ($quantity < $sold) {
+                return number_format($sold).' of this ticket type '.($sold === 1 ? 'has' : 'have').' already been sold, so the quantity cannot be lower than '.number_format($sold).'.';
+            }
+        }
+
         $capacity = $event->ticket_capacity;
 
         if ($capacity === null) {
@@ -41,12 +52,20 @@ class TicketCapacity
     }
 
     /**
-     * Why the event total cannot be set to this number, or null when it can.
+     * Why the event total cannot be set to this number, or null when it can. It may not
+     * go below the tickets already sold, nor below what the ticket types hand out.
      */
     public static function totalProblem(Event $event, int $capacity): ?string
     {
         if ($event->ticketTypes()->whereNull('quantity')->exists()) {
             return 'Give every ticket type a quantity before setting a total capacity.';
+        }
+
+        // Tickets already issued are people with a seat; the total may never go below them.
+        $sold = $event->tickets()->whereIn('status', [TicketStatus::Valid, TicketStatus::Used])->count();
+
+        if ($capacity < $sold) {
+            return number_format($sold).' tickets have already been sold, so the capacity cannot be lower than '.number_format($sold).'.';
         }
 
         $allocated = $event->ticketCapacityAllocated();

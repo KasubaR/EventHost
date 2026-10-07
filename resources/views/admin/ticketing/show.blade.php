@@ -49,6 +49,8 @@
         <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Hero image saved. It is the banner on the public ticket page.</div>
     @elseif (session('status') === 'ticketing-terms-updated')
         <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Negotiated terms saved.</div>
+    @elseif (session('status') === 'ticketing-capacity-updated')
+        <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Event capacity saved.</div>
     @elseif (session('status') === 'ticketing-commission-updated')
         <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Commission mode saved.</div>
     @elseif (session('status') === 'ticketed-event-created')
@@ -139,7 +141,31 @@
                     <dt>Ticket types</dt>
                     <dd>{{ number_format($ev->ticketTypes->count()) }}</dd>
                 </div>
+                <div class="admin-fact">
+                    <dt>Event capacity</dt>
+                    <dd>
+                        {{ $ev->ticket_capacity === null ? 'Not set' : number_format($ev->ticket_capacity) }}
+                        <span class="admin-fact-sub">{{ number_format($ev->ticketCapacityAllocated()) }} given to ticket types</span>
+                    </dd>
+                </div>
             </dl>
+
+            @if ($canApprove)
+                <form method="post" action="{{ route('admin.ticketing.capacity', $ev) }}" class="profile-form admin-mt-md">
+                    @csrf
+                    @method('PATCH')
+                    <label for="ticket_capacity" class="profile-label">Total event capacity</label>
+                    <input id="ticket_capacity" name="ticket_capacity" type="number" min="1" max="1000000" step="1" required
+                           class="profile-input {{ $errors->has('ticket_capacity') ? 'profile-input--error' : '' }}"
+                           value="{{ old('ticket_capacity', $ev->ticket_capacity) }}">
+                    @error('ticket_capacity')
+                        <p class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
+                    @enderror
+                    <div class="admin-actions admin-mt-md">
+                        <button type="submit" class="btn-primary">Save capacity</button>
+                    </div>
+                </form>
+            @endif
 
             @if ($canApprove && $ev->canEditCommissionMode())
                 <form method="post" action="{{ route('admin.ticketing.commission', $ev) }}" class="profile-form admin-mt-md">

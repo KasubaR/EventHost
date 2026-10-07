@@ -231,6 +231,7 @@ Route::prefix('admin')
             Route::post('/ticketing/{event}/approve', [AdminTicketingController::class, 'approve'])->name('ticketing.approve');
             Route::post('/ticketing/{event}/reject', [AdminTicketingController::class, 'reject'])->name('ticketing.reject');
             Route::patch('/ticketing/{event}/terms', [AdminTicketingController::class, 'updateTerms'])->name('ticketing.terms');
+            Route::patch('/ticketing/{event}/capacity', [AdminTicketingController::class, 'updateCapacity'])->name('ticketing.capacity');
             Route::patch('/ticketing/{event}/commission', [AdminTicketingController::class, 'updateCommission'])->name('ticketing.commission');
 
             Route::get('/ticketing/{event}/ticket-types/create', [AdminTicketTypeController::class, 'create'])->name('ticketing.ticket-types.create');

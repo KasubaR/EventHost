@@ -12,6 +12,7 @@ use App\Http\Requests\Admin\ApproveTicketingRequest;
 use App\Http\Requests\Admin\RejectTicketingRequest;
 use App\Http\Requests\Admin\StoreAdminTicketedEventRequest;
 use App\Http\Requests\Admin\UpdateAdminEventCommissionRequest;
+use App\Http\Requests\Admin\UpdateEventTicketCapacityRequest;
 use App\Http\Requests\Admin\UpdateEventTicketingTermsRequest;
 use App\Http\Requests\Admin\UpdateTicketedHeroRequest;
 use App\Models\Admin;
@@ -231,6 +232,28 @@ class TicketingController extends Controller
         return redirect()
             ->route('admin.ticketing.show', $event)
             ->with('status', 'ticketing-terms-updated');
+    }
+
+    /**
+     * Sets the event's total capacity. Like updateTerms(), deliberately not tied to
+     * ticketing_status: an admin may need to raise or lower it after approval.
+     */
+    public function updateCapacity(UpdateEventTicketCapacityRequest $request, Event $event): RedirectResponse
+    {
+        abort_unless($event->isTicketed(), 404);
+
+        $previous = $event->ticket_capacity;
+        $event->forceFill(['ticket_capacity' => $request->validated('ticket_capacity')])->save();
+
+        AdminActivity::log('Admin updated ticket capacity', [
+            'event_id' => $event->id,
+            'from' => $previous,
+            'to' => $event->ticket_capacity,
+        ]);
+
+        return redirect()
+            ->route('admin.ticketing.show', $event)
+            ->with('status', 'ticketing-capacity-updated');
     }
 
     public function reject(

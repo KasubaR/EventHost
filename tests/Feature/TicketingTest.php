@@ -768,6 +768,118 @@ class TicketingTest extends TestCase
         $this->assertNull($event->fresh()->commission_percent_override);
     }
 
+    public function test_admin_can_change_event_capacity_after_approval(): void
+    {
+        $owner = User::factory()->create();
+        $event = Event::factory()->for($owner)->ticketed()->create([
+            'ticketing_status' => TicketingStatus::Approved,
+            'ticket_capacity' => 300,
+        ]);
+        TicketType::factory()->for($event)->create(['quantity' => 200]);
+
+        $admin = Admin::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.ticketing.show', $event))
+            ->assertOk()
+            ->assertSee('Save capacity', false);
+
+        $this->actingAs($admin, 'admin')
+            ->patch(route('admin.ticketing.capacity', $event), ['ticket_capacity' => '450'])
+            ->assertRedirect(route('admin.ticketing.show', $event))
+            ->assertSessionHas('status', 'ticketing-capacity-updated');
+
+        $this->assertSame(450, $event->fresh()->ticket_capacity);
+
+        // Still cannot drop below what the ticket types hand out.
+        $this->actingAs($admin, 'admin')
+            ->patch(route('admin.ticketing.capacity', $event), ['ticket_capacity' => '100'])
+            ->assertSessionHasErrors('ticket_capacity');
+
+        $this->assertSame(450, $event->fresh()->ticket_capacity);
+    }
+
+    public function test_capacity_cannot_be_lowered_below_tickets_already_sold(): void
+    {
+        $owner = User::factory()->create();
+        $event = Event::factory()->for($owner)->ticketed()->create([
+            'ticketing_status' => TicketingStatus::Approved,
+            'ticket_capacity' => 10,
+        ]);
+        $type = TicketType::factory()->for($event)->create(['quantity' => 3]);
+        \App\Models\Ticket::factory()->count(5)->for($event)->for($type, 'ticketType')->create();
+
+        $admin = Admin::factory()->create();
+        $admin->assignRole('admin');
+
+        // 5 sold, so 4 is refused even though the ticket types only hand out 3.
+        $this->actingAs($admin, 'admin')
+            ->patch(route('admin.ticketing.capacity', $event), ['ticket_capacity' => '4'])
+            ->assertSessionHasErrors('ticket_capacity');
+
+        $this->assertSame(10, $event->fresh()->ticket_capacity);
+
+        $this->actingAs($admin, 'admin')
+            ->patch(route('admin.ticketing.capacity', $event), ['ticket_capacity' => '5'])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(5, $event->fresh()->ticket_capacity);
+    }
+
+    public function test_ticket_type_quantity_cannot_be_lowered_below_its_sold_tickets(): void
+    {
+        $owner = User::factory()->create();
+        $event = Event::factory()->for($owner)->ticketed()->create(['ticket_capacity' => 500]);
+        $type = TicketType::factory()->for($event)->create(['quantity' => 200]);
+        \App\Models\Ticket::factory()->count(150)->for($event)->for($type, 'ticketType')->create();
+
+        $admin = Admin::factory()->create();
+        $admin->assignRole('admin');
+
+        $payload = fn (string $qty) => [
+            'name' => $type->name,
+            'badge_color' => 'standard',
+            'price' => '100',
+            'quantity' => $qty,
+            'min_per_order' => '1',
+            'max_per_order' => '6',
+            'is_active' => '1',
+            'sort_order' => '0',
+        ];
+
+        $this->actingAs($admin, 'admin')
+            ->patch(route('admin.ticketing.ticket-types.update', [$event, $type]), $payload('100'))
+            ->assertSessionHasErrors('quantity');
+
+        $this->actingAs($owner)
+            ->patch(route('public-events.ticket-types.update', [$event, $type]), $payload('149'))
+            ->assertSessionHasErrors('quantity');
+
+        $this->assertSame(200, $type->fresh()->quantity);
+
+        $this->actingAs($owner)
+            ->patch(route('public-events.ticket-types.update', [$event, $type]), $payload('150'))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(150, $type->fresh()->quantity);
+    }
+
+    public function test_support_cannot_change_event_capacity(): void
+    {
+        $owner = User::factory()->create();
+        $event = Event::factory()->for($owner)->ticketed()->create(['ticket_capacity' => 300]);
+
+        $support = Admin::factory()->create();
+        $support->assignRole('support');
+
+        $this->actingAs($support, 'admin')
+            ->patch(route('admin.ticketing.capacity', $event), ['ticket_capacity' => '400'])
+            ->assertForbidden();
+
+        $this->assertSame(300, $event->fresh()->ticket_capacity);
+    }
+
     public function test_ticketed_store_skips_choose_template_and_lands_on_tickets_step(): void
     {
         $user = User::factory()->create();
