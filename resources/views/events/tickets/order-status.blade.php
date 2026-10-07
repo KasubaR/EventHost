@@ -48,6 +48,13 @@
                     <h1 class="tkc-title">Approve the payment on your phone</h1>
                     <p class="tkc-muted">A mobile money prompt has been sent. Confirm it on your phone to finish buying your tickets.</p>
                 </div>
+            @elseif ($order->payment?->gateway === 'astragate' && filled($order->payment->payment_url))
+                <div class="tkc-result tkc-result--pending">
+                    <i class="fa-solid fa-credit-card" aria-hidden="true"></i>
+                    <h1 class="tkc-title">Complete your card payment</h1>
+                    <p class="tkc-muted">Pay on the secure card page. Keep this page open — it updates by itself once your payment is confirmed.</p>
+                    <a href="{{ $order->payment->payment_url }}" target="_blank" rel="noopener noreferrer" class="btn-primary tkc-submit-btn">Continue to card payment</a>
+                </div>
             @else
                 <div class="tkc-result tkc-result--pending">
                     <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>

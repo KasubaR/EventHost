@@ -1,8 +1,6 @@
 <?php
 
 use App\Enums\EventAudience;
-use App\Http\Controllers\AstragateTestController;
-use App\Http\Controllers\AstragateWebhookController;
 use App\Http\Controllers\AudioReportController;
 use App\Http\Controllers\CheckInController;
 use App\Http\Controllers\ContactController;
@@ -66,24 +64,7 @@ Route::post($lencoWebhookPath, [PaymentController::class, 'webhook'])
     ->withoutMiddleware([VerifyCsrfToken::class])
     ->name('lenco.webhook');
 
-Route::post('/webhooks/astragate/{secret}', AstragateWebhookController::class)
-    ->withoutMiddleware([VerifyCsrfToken::class])
-    ->middleware('throttle:120,1')
-    ->name('webhooks.astragate');
-
-// Sandbox test page for Astragate on a secret URL; absent unless ASTRAGATE_TEST_PATH is set.
-$astragateTestPath = trim((string) config('services.astragate.test_path'), '/');
-
-if ($astragateTestPath !== '') {
-    Route::middleware('throttle:20,1')->group(function () use ($astragateTestPath): void {
-        Route::get('/'.$astragateTestPath, [AstragateTestController::class, 'show'])->name('astragate.test');
-        Route::post('/'.$astragateTestPath, [AstragateTestController::class, 'initiate'])->name('astragate.test.initiate');
-        Route::post('/'.$astragateTestPath.'/checkout', [AstragateTestController::class, 'checkout'])->name('astragate.test.checkout');
-        Route::post('/'.$astragateTestPath.'/check/{reference}', [AstragateTestController::class, 'check'])
-            ->where('reference', 'TEST-[A-Za-z0-9-]+')
-            ->name('astragate.test.check');
-    });
-}
+// Astragate's callback route lives in routes/astragate.php.
 
 Route::post('/webhooks/twilio/whatsapp', TwilioWhatsAppWebhookController::class)
     ->withoutMiddleware([VerifyCsrfToken::class])

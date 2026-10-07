@@ -53,7 +53,19 @@
                             <span>Bank Transfer</span>
                         </button>
                     @endif
+                    @if (\App\Services\AstragateService::cardEnabled())
+                        <button type="button" class="billing-method-tab" data-method="card" role="tab" aria-selected="false">
+                            <i class="fa-solid fa-credit-card" aria-hidden="true"></i>
+                            <span>Card</span>
+                        </button>
+                    @endif
                 </div>
+
+                @if (\App\Services\AstragateService::cardEnabled())
+                    <div class="billing-method-panel" data-panel="card">
+                        <p class="billing-field-note">You will pay on a secure card page that opens in a new tab. Keep this page open — it updates when your payment is confirmed.</p>
+                    </div>
+                @endif
 
                 <div class="billing-method-panel is-active" data-panel="mobile_money">
                     <div class="billing-provider-grid">

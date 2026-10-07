@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\ZambiaPhone;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
@@ -257,21 +258,7 @@ class LencoService
 
     public function normalizeZambiaPhone(string $phone): string
     {
-        $digits = preg_replace('/\D+/', '', $phone) ?? '';
-
-        if (str_starts_with($digits, '260')) {
-            return '+'.$digits;
-        }
-
-        if (str_starts_with($digits, '0')) {
-            return '+260'.substr($digits, 1);
-        }
-
-        if (strlen($digits) === 9) {
-            return '+260'.$digits;
-        }
-
-        return $phone;
+        return ZambiaPhone::normalize($phone);
     }
 
     /**

@@ -20,7 +20,6 @@
     <php>
         <env name="APP_ENV" value="testing"/>
         <env name="CONTRIBUTIONS_ENABLED" value="true"/>
-        <env name="ASTRAGATE_TEST_PATH" value="astragate-sandbox-test"/>
         <env name="COMM_GUEST_EMAIL_REMINDERS_ENABLED" value="true"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>

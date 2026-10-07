@@ -68,7 +68,18 @@
                                 <i class="fa-solid fa-building-columns" aria-hidden="true"></i> Bank Transfer
                             </button>
                         @endif
+                        @if (\App\Services\AstragateService::cardEnabled())
+                            <button type="button" class="tkc-method-tab" data-method="card" role="tab" aria-selected="false">
+                                <i class="fa-solid fa-credit-card" aria-hidden="true"></i> Card
+                            </button>
+                        @endif
                     </div>
+
+                    @if (\App\Services\AstragateService::cardEnabled())
+                        <div class="tkc-method-panel" data-panel="card">
+                            <p class="tkc-muted">You will be taken to a secure card page to pay. Your tickets are held while you pay.</p>
+                        </div>
+                    @endif
 
                     <div class="tkc-method-panel is-active" data-panel="mobile_money">
                         <div class="tkc-provider-grid">

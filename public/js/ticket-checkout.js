@@ -91,6 +91,8 @@
                 const providerInput = root.querySelector('input[name="provider"]:checked');
                 payload.provider = providerInput ? providerInput.value : 'mtn';
                 payload.momo_phone = document.getElementById('tkc-momo-phone')?.value.trim();
+            } else if (method === 'card') {
+                // Card needs no extra fields; the buyer pays on the gateway's hosted page.
             } else {
                 payload.bank_name = document.getElementById('tkc-bank')?.value.trim();
             }
@@ -118,6 +120,12 @@
                     showStatus(firstError || data.message || 'Could not start payment. Please try again.', 'error');
                     payBtn.disabled = false;
                     return;
+                }
+
+                if (method === 'card' && data.payment_url) {
+                    // New tab for the card page; this tab goes to the order page, which polls for the result
+                    // and shows a "Continue to card payment" button if a popup blocker stopped the tab.
+                    window.open(data.payment_url, '_blank', 'noopener,noreferrer');
                 }
 
                 showStatus('Redirecting to confirm your payment…', 'success');

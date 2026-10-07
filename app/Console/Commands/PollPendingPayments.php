@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Payment;
 use App\Services\LencoService;
+use App\Services\PaymentGateway;
 use App\Services\PaymentStatusService;
 use App\Support\PaymentLog;
 use Illuminate\Console\Command;
@@ -13,7 +14,7 @@ class PollPendingPayments extends Command
 {
     protected $signature = 'payments:poll-pending';
 
-    protected $description = 'Poll Lenco for pending payments that may have missed webhook updates';
+    protected $description = 'Poll Lenco and Astragate for pending payments that may have missed webhook updates';
 
     public function handle(LencoService $lenco, PaymentStatusService $statusService): int
     {
@@ -57,7 +58,9 @@ class PollPendingPayments extends Command
             }
 
             try {
-                $verification = $lenco->verifyPayment((string) $payment->lenco_transaction_id);
+                $verification = PaymentGateway::isAstragate($payment)
+                    ? PaymentGateway::verifyByReference($payment)
+                    : $lenco->verifyPayment((string) $payment->lenco_transaction_id);
                 $statusService->applyVerificationResult($payment, $verification);
                 PaymentLog::forPayment($payment->fresh(), 'poll.verify_by_id', [
                     'mapped_status' => $verification['status'] ?? null,
@@ -79,7 +82,7 @@ class PollPendingPayments extends Command
         if ($apiCalls < $maxPerRun) {
             $branchB = Payment::query()
                 ->where('status', 'pending')
-                ->where('payment_method', 'mobile_money')
+                ->whereIn('payment_method', ['mobile_money', 'card'])
                 ->whereNotNull('payment_reference')
                 ->whereNull('lenco_transaction_id')
                 ->where('created_at', '<=', $headStart)
@@ -92,7 +95,7 @@ class PollPendingPayments extends Command
                 }
 
                 try {
-                    $verification = $lenco->verifyByReference((string) $payment->payment_reference);
+                    $verification = PaymentGateway::verifyByReference($payment);
                     $statusService->applyVerificationResult($payment, $verification);
                     PaymentLog::forPayment($payment->fresh(), 'poll.verify_by_reference', [
                         'mapped_status' => $verification['status'] ?? null,

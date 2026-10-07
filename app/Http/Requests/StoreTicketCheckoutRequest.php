@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Rules\ZambiaMobileMoneyPhone;
 use App\Rules\ZambianPhoneNumber;
+use App\Services\AstragateService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -22,6 +23,9 @@ class StoreTicketCheckoutRequest extends FormRequest
         $allowedMethods = ['mobile_money'];
         if (config('services.lenco.bank_transfer_enabled', true)) {
             $allowedMethods[] = 'bank_transfer';
+        }
+        if (AstragateService::cardEnabled()) {
+            $allowedMethods[] = 'card';
         }
 
         $rules = [

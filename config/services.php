@@ -35,18 +35,7 @@ return [
         ],
     ],
 
-    // Astragate (mobile-money collections), sandbox only. It is NOT part of the
-    // normal billing flow — it is reachable solely from the secret test page at
-    // `test_path`, which is not registered while that is unset.
-    'astragate' => [
-        'test_path' => env('ASTRAGATE_TEST_PATH'),
-        'base_url' => env('ASTRAGATE_API_BASE_URL', 'https://api.dev.astragate.africa'),
-        'auth_url' => env('ASTRAGATE_AUTH_URL', 'https://auth.dev.astragate.africa'),
-        'client_id' => env('ASTRAGATE_CLIENT_ID'),
-        'client_secret' => env('ASTRAGATE_CLIENT_SECRET'),
-        // Callbacks are unsigned, so this random string is the secret part of the callback URL.
-        'webhook_secret' => env('ASTRAGATE_WEBHOOK_SECRET'),
-    ],
+    // Astragate (card payments) has its own file: config/astragate.php.
 
     'lenco' => [
         'base_url' => env('LENCO_API_BASE_URL', 'https://api.lenco.co/access/v2'),

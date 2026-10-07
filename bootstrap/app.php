@@ -31,6 +31,9 @@ return Application::configure(basePath: dirname(__DIR__))
         then: function (): void {
             Route::middleware('web')
                 ->group(base_path('routes/admin.php'));
+
+            Route::middleware('web')
+                ->group(base_path('routes/astragate.php'));
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
@@ -39,6 +42,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: [
             $lencoWebhookPath,
             'webhooks/twilio/whatsapp',
+            'webhooks/astragate/*',
         ]);
 
         // After StartSession, so the session is readable. Ends an acting-as session the

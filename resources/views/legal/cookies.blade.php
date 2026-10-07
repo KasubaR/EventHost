@@ -83,6 +83,9 @@
                     <li><strong>Cloudflare (cdnjs)</strong>: the Font Awesome icon set, on every page</li>
                     <li><strong>Unsplash</strong>: stock imagery used in some page designs</li>
                     <li><strong>Lenco</strong>: the checkout flow, when you buy event credits</li>
+                    @if (\App\Services\AstragateService::cardEnabled())
+                    <li><strong>Astragate</strong>: the card checkout page, if you pay by card</li>
+                    @endif
                     <li><strong>YouTube</strong>: video testimonials on the homepage. These are <strong>click-to-play</strong>: nothing loads from YouTube until you press play on a video, so no YouTube cookies are set if you never do</li>
                 </ul>
             </section>

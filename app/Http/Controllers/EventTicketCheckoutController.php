@@ -6,7 +6,7 @@ use App\Exceptions\TicketPurchaseException;
 use App\Http\Requests\StoreTicketCheckoutRequest;
 use App\Models\Event;
 use App\Models\TicketOrder;
-use App\Services\LencoService;
+use App\Services\PaymentGateway;
 use App\Services\PublicInvitationResolver;
 use App\Services\TicketCheckoutService;
 use App\Services\TicketPaymentStatusService;
@@ -116,7 +116,7 @@ class EventTicketCheckoutController extends Controller
         return view('events.tickets.order-status', ['order' => $order]);
     }
 
-    public function verify(string $orderReference, LencoService $lenco, TicketPaymentStatusService $statusService): JsonResponse
+    public function verify(string $orderReference, TicketPaymentStatusService $statusService): JsonResponse
     {
         if (! preg_match('/^[A-Za-z0-9_\-]{1,128}$/', $orderReference)) {
             return response()->json(['success' => false, 'message' => 'Invalid reference.'], 422);
@@ -139,7 +139,7 @@ class EventTicketCheckoutController extends Controller
         }
 
         try {
-            $verification = $lenco->verifyByReference($orderReference);
+            $verification = PaymentGateway::verifyByReference($payment, $orderReference);
             $statusService->applyVerificationResult($payment, $verification);
         } catch (RuntimeException $e) {
             return response()->json([

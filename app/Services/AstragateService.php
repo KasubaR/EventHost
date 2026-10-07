@@ -7,11 +7,13 @@ use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
 /**
- * Astragate collections (https://docs.astragate.africa). Sandbox-first: the
- * base URLs come from config so go-live is an env change.
+ * Astragate (https://docs.astragate.africa). Card payments go through its hosted checkout;
+ * mobile money and bank transfer are Lenco's. This class shares nothing with
+ * {@see LencoService} — its own config (`config/astragate.php`), its own status vocabulary,
+ * its own HTTP client. Sandbox-first: base URLs come from config so go-live is an env change.
  *
- * Astragate callbacks carry no signature, so the callback URL itself is the
- * secret — see `AstragateWebhookController` and `services.astragate.webhook_secret`.
+ * Astragate callbacks carry no signature, so the callback URL itself is the secret and the
+ * callback body is never trusted — see `AstragateWebhookController`.
  */
 class AstragateService
 {
@@ -19,13 +21,19 @@ class AstragateService
 
     public static function configured(): bool
     {
-        return filled(config('services.astragate.client_id'))
-            && filled(config('services.astragate.client_secret'));
+        return filled(config('astragate.client_id'))
+            && filled(config('astragate.client_secret'));
+    }
+
+    /** Whether the checkout pages and APIs may offer "Pay by card". */
+    public static function cardEnabled(): bool
+    {
+        return (bool) config('astragate.card_enabled') && self::configured();
     }
 
     /**
      * Maps an Astragate status code to the app's payment statuses
-     * (same vocabulary as {@see LencoService::mapStatus()}).
+     * (`pending | processing | completed | failed | cancelled | refunded`).
      */
     public static function mapStatusCode(string|int|null $code): string
     {
@@ -40,57 +48,34 @@ class AstragateService
     }
 
     /**
-     * @param  array{reference: string, amount: float, currency?: string, description?: string}  $context
-     * @return array<string, mixed>
-     */
-    public function initiateCollection(array $context, string $phone): array
-    {
-        $payload = [
-            'accountNumber' => ltrim($this->normalizePhone($phone), '+'),
-            'correlatorId' => $context['reference'],
-            'currency' => $context['currency'] ?? 'ZMW',
-            'paymentDescription' => $context['description'] ?? 'Event Host payment',
-            'amount' => round((float) $context['amount'], 2),
-        ];
-
-        $response = $this->request('POST', '/v1/payment/collection', $payload);
-        $data = is_array($response['data'] ?? null) ? $response['data'] : [];
-        $code = $data['statusCode'] ?? null;
-
-        return [
-            'transactionId' => $data['astragateTransactionId'] ?? null,
-            'reference' => $context['reference'],
-            'status' => self::mapStatusCode($code),
-            'statusCode' => $code,
-            'paymentInstructions' => $data['statusDescription'] ?? null,
-            'rawResponse' => $response,
-        ];
-    }
-
-    /**
-     * Hosted checkout (card and/or mobile money). The customer pays on Astragate's page.
+     * Hosted checkout session, card only. The customer pays on Astragate's page.
      *
-     * @param  array{reference: string, amount: float, currency?: string, description?: string, name?: string}  $context
-     * `checkoutUrl` already has the session `token` appended — Astragate's checkout page
-     * does not load without it. `rawResponse` is the response minus that token, safe to store/show.
-     *
+     * @param  array{reference: string, amount: float, currency?: string, description?: string, name?: string, customer_name?: ?string, customer_email?: ?string}  $context
+     *                                                                                                                                                                       `checkoutUrl` already has the session `token` appended — Astragate's checkout page
+     *                                                                                                                                                                       does not load without it. `rawResponse` is the response minus that token, safe to store/show.
      * @return array{checkoutUrl: ?string, sessionId: ?string, rawResponse: array<string, mixed>}
      */
-    public function createCheckoutSession(array $context, ?string $paymentMode = 'CARD'): array
+    private function createCheckoutSession(array $context): array
     {
         $payload = [
             'lineItems' => [[
                 'itemId' => $context['reference'],
-                'name' => $context['name'] ?? 'Event Host sandbox test',
+                'name' => $context['name'] ?? 'Event Host payment',
                 'quantity' => 1,
                 'unitPrice' => round((float) $context['amount'], 2),
             ]],
             'currency' => $context['currency'] ?? 'ZMW',
             'correlatorId' => $context['reference'],
-            'description' => $context['description'] ?? 'Event Host sandbox test',
+            'description' => $context['description'] ?? 'Event Host payment',
+            'paymentMode' => 'CARD',
         ];
-        if ($paymentMode !== null) {
-            $payload['paymentMode'] = $paymentMode;
+
+        $customer = array_filter([
+            'customer_name' => $context['customer_name'] ?? null,
+            'customer_email' => $context['customer_email'] ?? null,
+        ], fn ($value) => is_string($value) && $value !== '');
+        if ($customer !== []) {
+            $payload['metadata'] = $customer;
         }
 
         $response = $this->request('POST', '/v1/payment/checkout-sessions', $payload);
@@ -112,22 +97,60 @@ class AstragateService
     }
 
     /**
-     * @return array<string, mixed>  shaped like {@see LencoService::verifyByReference()}
+     * A card payment for a real order: one hosted-checkout session, `reference` as the
+     * correlator. The buyer is sent to `checkoutUrl`; the result arrives by callback and by
+     * {@see self::verifyByReference()}.
+     *
+     * @param  array{reference: string, amount: float, currency?: string, description?: string, customer_name?: ?string, customer_email?: ?string}  $context
+     * @return array{checkoutUrl: string, sessionId: ?string, status: string, provider: string, rawResponse: array<string, mixed>}
      */
-    public function verifyByReference(string $correlatorId): array
+    public function initiateCardPayment(array $context): array
+    {
+        $session = $this->createCheckoutSession($context);
+
+        $url = $session['checkoutUrl'];
+        if (! is_string($url) || ! str_starts_with($url, 'https://')) {
+            throw new RuntimeException('Card payments are unavailable right now. Please try another payment method.', 502);
+        }
+
+        return [
+            'checkoutUrl' => $url,
+            'sessionId' => $session['sessionId'],
+            'status' => 'pending',
+            'provider' => 'astragate',
+            'rawResponse' => $session['rawResponse'],
+        ];
+    }
+
+    /**
+     * Reads a payment's status from Astragate.
+     *
+     * The status response is not documented to carry an amount or currency. When it does not,
+     * `$expectedAmount` / `$expectedCurrency` (what *we* put in the checkout session, which the
+     * customer cannot edit on the hosted page) stand in, so the settlement check still compares
+     * a real figure instead of failing every payment. If Astragate does return them, those win.
+     *
+     * @return array<string, mixed>
+     */
+    public function verifyByReference(string $correlatorId, ?float $expectedAmount = null, ?string $expectedCurrency = null): array
     {
         $response = $this->request('GET', '/v1/payment/status/'.rawurlencode($correlatorId));
         $data = is_array($response['data'] ?? null) ? $response['data'] : $response;
         $code = $data['statusCode'] ?? null;
         $status = self::mapStatusCode($code);
 
+        $amount = isset($data['amount']) && is_numeric($data['amount']) ? (float) $data['amount'] : $expectedAmount;
+        $currency = isset($data['currency']) && is_string($data['currency']) && $data['currency'] !== ''
+            ? $data['currency']
+            : $expectedCurrency;
+
         return [
             'transactionId' => $data['astragateTransactionId'] ?? $data['systemTransactionId'] ?? null,
             'reference' => $correlatorId,
-            'lencoStatus' => (string) ($code ?? $status),
+            'providerStatus' => (string) ($code ?? $status),
             'status' => $status,
-            'amount' => isset($data['amount']) ? (float) $data['amount'] : null,
-            'currency' => $data['currency'] ?? null,
+            'amount' => $amount,
+            'currency' => $currency,
             'rawResponse' => $response,
         ];
     }
@@ -142,10 +165,10 @@ class AstragateService
         $response = Http::asForm()
             ->acceptJson()
             ->timeout(30)
-            ->post(rtrim((string) config('services.astragate.auth_url'), '/').'/v1/auth/token', [
+            ->post(rtrim((string) config('astragate.auth_url'), '/').'/v1/auth/token', [
                 'grant_type' => 'client_credentials',
-                'client_id' => config('services.astragate.client_id'),
-                'client_secret' => config('services.astragate.client_secret'),
+                'client_id' => config('astragate.client_id'),
+                'client_secret' => config('astragate.client_secret'),
             ]);
 
         $token = $response->json('access_token');
@@ -165,7 +188,7 @@ class AstragateService
      */
     private function request(string $method, string $path, array $payload = []): array
     {
-        $url = rtrim((string) config('services.astragate.base_url'), '/').$path;
+        $url = rtrim((string) config('astragate.base_url'), '/').$path;
 
         $send = fn () => Http::withToken($this->accessToken())
             ->acceptJson()
@@ -190,10 +213,5 @@ class AstragateService
         }
 
         return $body;
-    }
-
-    private function normalizePhone(string $phone): string
-    {
-        return app(LencoService::class)->normalizeZambiaPhone($phone);
     }
 }

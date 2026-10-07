@@ -20,6 +20,8 @@ class TicketPayment extends Model
         'ticket_order_id',
         'provider',
         'payment_method',
+        'gateway',
+        'checkout_session_id',
         'amount',
         'currency',
         'status',
@@ -86,21 +88,21 @@ class TicketPayment extends Model
     public static function findForLencoWebhook(?string $reference, ?string $transactionId, ?string $lencoReference): ?self
     {
         if ($reference !== null && $reference !== '') {
-            $payment = self::query()->where('payment_reference', $reference)->first();
+            $payment = self::query()->where('gateway', 'lenco')->where('payment_reference', $reference)->first();
             if ($payment !== null) {
                 return $payment;
             }
         }
 
         if ($transactionId !== null && $transactionId !== '') {
-            $payment = self::query()->where('lenco_transaction_id', $transactionId)->first();
+            $payment = self::query()->where('gateway', 'lenco')->where('lenco_transaction_id', $transactionId)->first();
             if ($payment !== null) {
                 return $payment;
             }
         }
 
         if ($lencoReference !== null && $lencoReference !== '') {
-            return self::query()->where('lenco_reference', $lencoReference)->first();
+            return self::query()->where('gateway', 'lenco')->where('lenco_reference', $lencoReference)->first();
         }
 
         return null;

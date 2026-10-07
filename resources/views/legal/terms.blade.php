@@ -75,7 +75,8 @@
                     Event Host is paid for with <strong>event credits</strong>. Publishing an event costs one
                     credit, which is deducted when the event is published. Saving a draft does not use a
                     credit. Credits are bought through our
-                    payment provider, Lenco, in the currency shown at checkout.
+                    payment providers (Lenco@if (\App\Services\AstragateService::cardEnabled()) and, for card payments, Astragate@endif),
+                    in the currency shown at checkout.
                 </p>
                 <ul>
                     <li>Credits have no cash value and cannot be exchanged for money</li>

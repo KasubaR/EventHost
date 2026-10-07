@@ -61,7 +61,8 @@ class TicketPaymentStatusService
     public function applyVerificationResult(TicketPayment $payment, array $verification): TicketPayment
     {
         $mappedStatus = (string) ($verification['status'] ?? 'pending');
-        $lencoStatus = (string) ($verification['lencoStatus'] ?? $mappedStatus);
+        // `lencoStatus` for Lenco results, `providerStatus` for Astragate's; the column is shared.
+        $lencoStatus = (string) ($verification['lencoStatus'] ?? $verification['providerStatus'] ?? $mappedStatus);
 
         return DB::transaction(function () use ($payment, $verification, $mappedStatus, $lencoStatus): TicketPayment {
             /** @var TicketPayment $locked */

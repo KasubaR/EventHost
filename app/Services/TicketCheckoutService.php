@@ -31,6 +31,46 @@ class TicketCheckoutService
     ) {}
 
     /**
+     * Card goes to Astragate's hosted checkout. The buyer is redirected to `paymentUrl`; the
+     * order stays pending until the callback or a status check confirms it. A gateway failure
+     * fails the order straight away (releasing the hold) rather than queueing a retry — the
+     * buyer is waiting on a redirect.
+     *
+     * @param  array<string, mixed>  $context
+     * @param  array{name: string, email: string, phone: string}  $buyer
+     * @return array{order: TicketOrder, result: array<string, mixed>}
+     */
+    private function checkoutByCard(TicketOrder $order, TicketPayment $ticketPayment, array $context, array $buyer): array
+    {
+        try {
+            $card = app(AstragateService::class)->initiateCardPayment($context + [
+                'customer_name' => $buyer['name'],
+                'customer_email' => $buyer['email'],
+            ]);
+        } catch (RuntimeException $e) {
+            $this->paymentStatus->markFailed($ticketPayment, 'Card checkout could not be started: '.$e->getMessage());
+
+            throw $e;
+        }
+
+        $ticketPayment->update([
+            'checkout_session_id' => $card['sessionId'],
+            'lenco_response' => $card['rawResponse'],
+            'payment_url' => $card['checkoutUrl'],
+        ]);
+
+        return [
+            'order' => $order->fresh(),
+            'result' => [
+                'status' => 'pending',
+                'paymentInstructions' => null,
+                'bankDetails' => null,
+                'paymentUrl' => $card['checkoutUrl'],
+            ],
+        ];
+    }
+
+    /**
      * @param  array{name: string, email: string, phone: string}  $buyer
      * @param  array{method: string, provider?: ?string, phone?: ?string, bank_name?: ?string}  $payment
      * @return array{order: TicketOrder, result: array<string, mixed>}
@@ -114,7 +154,8 @@ class TicketCheckoutService
 
             $ticketPayment = TicketPayment::query()->create([
                 'ticket_order_id' => $order->id,
-                'provider' => $payment['provider'] ?? null,
+                'provider' => $payment['method'] === 'card' ? PaymentGateway::ASTRAGATE : ($payment['provider'] ?? null),
+                'gateway' => $payment['method'] === 'card' ? PaymentGateway::ASTRAGATE : PaymentGateway::LENCO,
                 'payment_method' => $payment['method'],
                 'amount' => $money->buyerTotal,
                 'currency' => 'ZMW',
@@ -151,6 +192,10 @@ class TicketCheckoutService
             'description' => 'Tickets: '.$event->name,
             'reference' => $order->order_reference,
         ];
+
+        if ($payment['method'] === 'card') {
+            return $this->checkoutByCard($order, $ticketPayment, $context, $buyer);
+        }
 
         try {
             $result = $payment['method'] === 'bank_transfer'

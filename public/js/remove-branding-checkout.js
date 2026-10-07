@@ -87,6 +87,8 @@
                 const phoneInput = document.getElementById('billing-phone');
                 payload.provider = providerInput ? providerInput.value : 'mtn';
                 payload.phone = phoneInput ? phoneInput.value.trim() : '';
+            } else if (method === 'card') {
+                // Card needs no extra fields; the buyer pays on the gateway's hosted page.
             } else {
                 const bankSelect = document.getElementById('billing-bank');
                 payload.bank_name = bankSelect ? bankSelect.value : '';
@@ -130,6 +132,13 @@
                     return;
                 }
 
+                if (method === 'card' && data.payment_url && data.payment_reference) {
+                    openCardCheckout(data.payment_url);
+                    showStatus('Complete the card payment in the new tab. Waiting for confirmation…', 'pending');
+                    schedulePoll(verifyRefUrl + '/' + encodeURIComponent(data.payment_reference));
+                    return;
+                }
+
                 if (data.status === 'queued' || !data.transaction_id) {
                     if (data.payment_reference) {
                         showStatus('Payment is being processed. Checking status…', 'pending');
@@ -144,6 +153,20 @@
                 showStatus('Network error. Please check your connection and try again.', 'error');
                 payBtn.disabled = false;
             }
+        }
+
+        // The gateway has no return URL, so the card page opens in a new tab and this page keeps
+        // polling. The link is the fallback for a popup blocker.
+        function openCardCheckout(url) {
+            instructionsEl.textContent = '';
+            const link = document.createElement('a');
+            link.href = url;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            link.textContent = 'Open card checkout';
+            instructionsEl.appendChild(link);
+            instructionsEl.classList.remove('is-hidden');
+            window.open(url, '_blank', 'noopener,noreferrer');
         }
 
         function schedulePoll(url) {

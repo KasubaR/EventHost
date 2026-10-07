@@ -88,6 +88,21 @@ A suspended host, or one with no email, is never warned — and their deleted ev
 
 With days > 0 and the date unset, the command refuses to run while old trash exists — deliberately.
 
+## 3b-2. Card payments through Astragate (off by default)
+
+Card is the only thing Astragate handles (billing + ticket checkout); mobile money and bank transfer stay on Lenco.
+Settings live in `config/astragate.php`, routes in `routes/astragate.php`.
+
+1. Set `ASTRAGATE_CLIENT_ID`, `ASTRAGATE_CLIENT_SECRET`, and a random `ASTRAGATE_WEBHOOK_SECRET`
+   (`php -r "echo bin2hex(random_bytes(24));"`). For production also switch `ASTRAGATE_API_BASE_URL` / `ASTRAGATE_AUTH_URL`
+   from the `*.dev.astragate.africa` sandbox hosts to the live ones.
+2. In the Astragate merchant portal register the callback URL `{APP_URL}/webhooks/astragate/{ASTRAGATE_WEBHOOK_SECRET}`.
+   Callbacks are unsigned: the secret in the URL is the credential, and the app re-reads every payment's status from
+   Astragate before acting on a callback.
+3. Run `php artisan migrate` (adds `gateway` + `checkout_session_id` to `payments` and `ticket_payments`) and `php artisan config:cache`.
+4. Last, set `ASTRAGATE_CARD_ENABLED=true`. Until then no "Card" option is shown and the Privacy/Terms/Cookies copy does not mention Astragate.
+5. The pollers (`payments:poll-pending`, `tickets:poll-pending`) also cover card payments if a callback is missed.
+
 ## 3c. Guest email reminders (off by default)
 
 `events:send-guest-email-reminders` runs daily at 09:00 Africa/Lusaka and does nothing while

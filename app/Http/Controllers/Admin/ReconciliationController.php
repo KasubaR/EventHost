@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\TicketOrder;
-use App\Services\LencoService;
+use App\Services\PaymentGateway;
 use App\Services\TicketPaymentStatusService;
 use App\Services\TicketReconciliationService;
 use App\Support\AdminActivity;
@@ -41,22 +41,21 @@ class ReconciliationController extends Controller
 
     public function reverify(
         TicketOrder $order,
-        LencoService $lenco,
         TicketPaymentStatusService $statusService,
     ): RedirectResponse {
         $payment = $order->payment;
         abort_if($payment === null, 404, 'This order has no payment record to re-verify.');
 
         try {
-            $verification = $lenco->verifyByReference($order->order_reference);
+            $verification = PaymentGateway::verifyByReference($payment, $order->order_reference);
             $statusService->applyVerificationResult($payment, $verification);
         } catch (RuntimeException $e) {
             return redirect()
                 ->route('admin.ticketing.reconciliation.order', $order)
-                ->withErrors(['reverify' => 'Lenco verification failed: '.$e->getMessage()]);
+                ->withErrors(['reverify' => 'Payment verification failed: '.$e->getMessage()]);
         }
 
-        AdminActivity::log('Admin re-verified a ticket payment with Lenco', [
+        AdminActivity::log('Admin re-verified a ticket payment with the payment gateway', [
             'ticket_order_id' => $order->id,
             'ticket_payment_id' => $payment->id,
         ]);

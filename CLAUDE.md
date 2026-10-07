@@ -225,6 +225,32 @@ This app requires the **GD** extension (or Imagick) for image processing (profil
 4. Click **Save** / **Apply**
 5. If `imagick` is available in the list, enabling it is preferred over GD for better image quality
 
+### Payment gateways (Lenco and Astragate)
+
+Two gateways, deliberately sharing no code: **Lenco** (`LencoService`, `config/services.php`) takes mobile money and bank
+transfer; **Astragate** (`AstragateService`, `config/astragate.php`, `routes/astragate.php`, `AstragateWebhookController`) takes
+**card only**, through its hosted checkout. Card covers platform billing (`payments`: credits, remove branding, public
+registration fee, enterprise quote) and guest ticket checkout (`ticket_payments`). **Contributions stay Lenco-only.**
+Off until `ASTRAGATE_CARD_ENABLED=true` and a client id/secret exist (`AstragateService::cardEnabled()`); the checkout views, both
+payment requests and the Privacy/Terms/Cookies copy all read that one method. Go-live order: `docs/deployment.md` §3b-2.
+
+- `payments.gateway` / `ticket_payments.gateway` (`lenco` default, `astragate`) say who took a row; `checkout_session_id` holds the
+  Astragate session. The `lenco_*` columns are **reused as the generic provider fields** for Astragate rows (transaction id, status,
+  response, `payment_url`) — renaming them is a ~40-file change that has not been done. `payment_reference` is Astragate's `correlatorId`
+- `App\Services\PaymentGateway::verifyByReference()` is the one place that picks which gateway to ask; verify endpoints, both pollers and
+  admin reconciliation go through it. Both gateways return the same array shape (`status` mapped, `lencoStatus` **or** `providerStatus`,
+  amount, currency) so `PaymentStatusService` / `TicketPaymentStatusService` are gateway-agnostic
+- **The Astragate callback body is never trusted.** It is unsigned (the secret in `/webhooks/astragate/{secret}` is the credential), so it
+  only names a `correlatorId`; the status that gets applied is re-read from Astragate's API. It only matches rows with
+  `gateway = astragate`, and the Lenco webhook finders only match `gateway = lenco`, so neither can move the other's payments
+- Astragate's status response is not documented to carry an amount/currency, so `verifyByReference()` falls back to the amount and
+  currency *we* put in the checkout session (the customer cannot edit them on the hosted page); if Astragate does return them, those win
+- The checkout API has **no return URL**, so the card page opens in a new tab (`window.open`, with an "Open card checkout" link as the
+  popup-blocker fallback) while the original page keeps polling. A pending card ticket order shows "Continue to card payment"
+- A gateway failure on card initiate is reported straight back (billing: no row is stored; tickets: the order is failed and the hold
+  released). There is no `RetryLenco*` equivalent — the buyer is waiting on a redirect
+- The old sandbox test page and its mobile-money collection method were removed
+
 ### Event Credits (Payments)
 
 Users have an `event_credits` column. Publishing an event costs 1 credit (`User::canCreateEvent()` checks `event_credits > 0`; `EventController` spends inside the publish transaction). Drafts are free. Admins assign credits manually via the user show page in the admin panel.

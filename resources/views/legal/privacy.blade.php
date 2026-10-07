@@ -65,8 +65,9 @@
 
                 <h3>Payment information</h3>
                 <p>
-                    Event credits are purchased through our payment provider, Lenco. Card and mobile-money
-                    details are entered on their systems, not ours. <strong>We never see or store your full
+                    Payments for event credits and tickets are taken by our payment providers: Lenco for mobile money and bank
+                    transfer@if (\App\Services\AstragateService::cardEnabled()), and Astragate for card payments@endif.
+                    Card and mobile-money details are entered on their systems, not ours. <strong>We never see or store your full
                     card number or mobile-money PIN</strong>. We keep a record of each transaction: amount,
                     currency, reference, status and timestamp.
                 </p>
@@ -152,7 +153,10 @@
                 <h2 id="sharing">5. Who we share it with</h2>
                 <p>We do not sell personal information. We share it only with the service providers we need to run the platform:</p>
                 <ul>
-                    <li><strong>Lenco</strong>: payment processing for event credits</li>
+                    <li><strong>Lenco</strong>: payment processing (mobile money and bank transfer)</li>
+                    @if (\App\Services\AstragateService::cardEnabled())
+                    <li><strong>Astragate</strong>: card payment processing</li>
+                    @endif
                     <li><strong>Our email delivery provider</strong>: delivery of invitation, reminder and account email</li>
                     @if (config('communications.whatsapp.enabled'))
                         <li>

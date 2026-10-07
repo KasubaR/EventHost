@@ -6,6 +6,7 @@ use App\Enums\CustomQuoteStatus;
 use App\Models\CustomQuote;
 use App\Models\Event;
 use App\Rules\ZambiaMobileMoneyPhone;
+use App\Services\AstragateService;
 use App\Support\BillingPlan;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -26,6 +27,9 @@ class InitiatePaymentRequest extends FormRequest
         $allowedMethods = ['mobile_money'];
         if (config('services.lenco.bank_transfer_enabled', true)) {
             $allowedMethods[] = 'bank_transfer';
+        }
+        if (AstragateService::cardEnabled()) {
+            $allowedMethods[] = 'card';
         }
 
         $planKeys = array_keys(BillingPlan::all());

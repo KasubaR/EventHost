@@ -12,9 +12,11 @@ use App\Models\InvitationTemplate;
 use App\Models\Payment;
 use App\Models\TicketPayment;
 use App\Models\User;
+use App\Services\AstragateService;
 use App\Services\ContributionPaymentStatusService;
 use App\Services\LencoService;
 use App\Services\PaymentCompletionService;
+use App\Services\PaymentGateway;
 use App\Services\PaymentStatusService;
 use App\Services\PopularBillingPlanResolver;
 use App\Services\TicketPaymentStatusService;
@@ -245,6 +247,10 @@ class PaymentController extends Controller
                     $metadata['previous_tier'] = $previousTier->value;
                 }
 
+                if ($method === 'card') {
+                    return $this->initiateCardPayment($lockedUser, $planKey, $planLabel, $creditsGranted, $amount, $userRef, $reference, $description, $metadata);
+                }
+
                 try {
                     $result = $method === 'mobile_money'
                         ? $lenco->initiateMobileMoneyPayment(
@@ -345,6 +351,70 @@ class PaymentController extends Controller
         }
     }
 
+    /**
+     * Card goes to Astragate's hosted checkout: the row is stored first-class with
+     * `gateway = astragate` and the buyer is sent to `payment_url`. No retry job — the
+     * buyer is waiting on a redirect, so a gateway failure is reported straight back.
+     *
+     * @param  array<string, mixed>  $metadata
+     */
+    private function initiateCardPayment(
+        User $user,
+        string $planKey,
+        string $planLabel,
+        int $creditsGranted,
+        float $amount,
+        string $userRef,
+        string $reference,
+        string $description,
+        array $metadata,
+    ): JsonResponse {
+        $result = app(AstragateService::class)->initiateCardPayment([
+            'reference' => $reference,
+            'amount' => $amount,
+            'currency' => BillingPlan::currency(),
+            'description' => $description,
+            'customer_name' => $user->name,
+            'customer_email' => $user->email,
+        ]);
+
+        $payment = Payment::query()->create([
+            'user_id' => $user->id,
+            'plan_key' => $planKey,
+            'credits_granted' => $creditsGranted,
+            'user_ref' => $userRef,
+            'payment_method' => 'card',
+            'provider' => $result['provider'],
+            'gateway' => PaymentGateway::ASTRAGATE,
+            'checkout_session_id' => $result['sessionId'],
+            'amount' => $amount,
+            'currency' => BillingPlan::currency(),
+            'status' => 'pending',
+            'lenco_response' => $result['rawResponse'],
+            'payment_reference' => $reference,
+            'payment_url' => $result['checkoutUrl'],
+            'expires_at' => now()->addHours(Payment::IN_FLIGHT_HOURS),
+            'metadata' => $metadata,
+        ]);
+
+        PaymentLog::forPayment($payment, 'initiate.success', [
+            'plan_key' => $payment->plan_key,
+            'method' => 'card',
+            'gateway' => PaymentGateway::ASTRAGATE,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'status' => $payment->status,
+            'transaction_id' => null,
+            'payment_reference' => $payment->payment_reference,
+            'payment_instructions' => null,
+            'bank_details' => null,
+            'payment_url' => $payment->payment_url,
+            'plan_label' => $planLabel,
+        ]);
+    }
+
     public function verify(string $transactionId, LencoService $lenco, PaymentStatusService $statusService): JsonResponse
     {
         if (! preg_match('/^[A-Za-z0-9_\-]{1,64}$/', $transactionId)) {
@@ -369,7 +439,9 @@ class PaymentController extends Controller
         }
 
         try {
-            $verification = $lenco->verifyPayment($transactionId);
+            $verification = PaymentGateway::isAstragate($payment)
+                ? PaymentGateway::verifyByReference($payment)
+                : $lenco->verifyPayment($transactionId);
             $payment = $statusService->applyVerificationResult($payment, $verification);
             PaymentLog::forPayment($payment, 'verify.by_id', [
                 'transaction_id' => $transactionId,
@@ -405,7 +477,7 @@ class PaymentController extends Controller
         }
 
         try {
-            $verification = $lenco->verifyByReference($reference);
+            $verification = PaymentGateway::verifyByReference($payment);
             $payment = $statusService->applyVerificationResult($payment, $verification);
             PaymentLog::forPayment($payment, 'verify.by_reference', [
                 'reference' => $reference,

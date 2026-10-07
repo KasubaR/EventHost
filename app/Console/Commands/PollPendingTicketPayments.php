@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\TicketPayment;
 use App\Services\LencoService;
+use App\Services\PaymentGateway;
 use App\Services\TicketPaymentStatusService;
 use Illuminate\Console\Command;
 use RuntimeException;
@@ -53,7 +54,9 @@ class PollPendingTicketPayments extends Command
             }
 
             try {
-                $verification = $lenco->verifyPayment((string) $payment->lenco_transaction_id);
+                $verification = PaymentGateway::isAstragate($payment)
+                    ? PaymentGateway::verifyByReference($payment)
+                    : $lenco->verifyPayment((string) $payment->lenco_transaction_id);
                 $statusService->applyVerificationResult($payment, $verification);
                 $processed++;
             } catch (RuntimeException $e) {
@@ -81,7 +84,7 @@ class PollPendingTicketPayments extends Command
                 }
 
                 try {
-                    $verification = $lenco->verifyByReference((string) $payment->payment_reference);
+                    $verification = PaymentGateway::verifyByReference($payment);
                     $statusService->applyVerificationResult($payment, $verification);
                     $processed++;
                 } catch (RuntimeException $e) {
