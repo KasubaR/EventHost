@@ -21,6 +21,7 @@ use App\Services\EventSlugService;
 use App\Services\InvitationCustomizationService;
 use App\Services\TicketedEventCreator;
 use App\Support\InvitationMediaStager;
+use App\Support\RecentEventDraft;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -130,8 +131,30 @@ class EventController extends Controller
         return view('events.create', compact('prefTemplateId', 'templateSlug', 'audience', 'productKind'));
     }
 
+    /**
+     * Where the wizard goes after step 2 for a draft that already exists: ticket setup for a ticketed event, the layout
+     * picker until a layout is chosen, then the edit page. Flashes `draft_reused`, shown by events/partials/steps.
+     */
+    private function continueDraft(Event $event): RedirectResponse
+    {
+        $route = match (true) {
+            $event->isTicketed() => redirect()->route('public-events.ticket-types.index', $event),
+            $event->invitation_template_id === null => redirect()->route('events.choose-template', $event),
+            default => redirect()->route('events.edit', $event),
+        };
+
+        return $route->with('draft_reused', true);
+    }
+
     public function store(StoreEventRequest $request, TicketedEventCreator $ticketedCreator): RedirectResponse
     {
+        // Back from the next wizard step and Next again would otherwise create a second event. Checked before the
+        // draft cap, so resubmitting at the limit continues the draft instead of reporting "limit reached".
+        $recent = RecentEventDraft::find((int) $request->user()->id, $request->validated());
+        if ($recent !== null) {
+            return $this->continueDraft($recent);
+        }
+
         if (Event::openDraftCountFor((int) $request->user()->id) >= Event::MAX_OPEN_DRAFTS) {
             // See the identical comment in create() — validation has already run
             // by this point (StoreEventRequest), so the submitted audience is
@@ -238,8 +261,9 @@ class EventController extends Controller
     public function edit(Event $event, InvitationCustomizationService $customizationService): View|RedirectResponse
     {
         // Step 4 of the ticketed wizard (review & request activation) makes no sense
-        // before there is a ticket to sell, so send the host back to step 3.
-        if ($event->canSubmitTicketing() && ! $event->ticketTypes()->where('is_active', true)->exists()) {
+        // before there is a ticket to sell, so send the host back to step 3. `?details=1` is the wizard's way back from
+        // step 3 to the details form (events/partials/steps); submitting for activation still needs a ticket type.
+        if ($event->canSubmitTicketing() && ! request()->boolean('details') && ! $event->ticketTypes()->where('is_active', true)->exists()) {
             return redirect()
                 ->route('public-events.ticket-types.index', $event)
                 ->withErrors(['ticket_type' => 'Add at least one ticket type before you review your event and request activation.']);

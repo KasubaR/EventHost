@@ -13,7 +13,7 @@
                 <p class="dph-sub">{{ $event->name }}: preview styles, then pick one to customize colors and sections.</p>
             </div>
             <div class="evt-card-actions">
-                <a href="{{ route('events.edit', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-arrow-left"></i> Back to edit event</a>
+                <a href="{{ route('events.edit', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-arrow-left"></i> Back to details</a>
             </div>
         </div>
     </x-slot>

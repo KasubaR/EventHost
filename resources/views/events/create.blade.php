@@ -97,6 +97,9 @@
             ])
 
             <div class="evt-section-body evt-actions-bar">
+                <a href="{{ $audience === \App\Enums\EventAudience::Public ? route('events.create', ['audience' => 'public']) : route('events.create') }}" class="evt-btn-outline">
+                    <i class="fa-solid fa-arrow-left"></i> Back
+                </a>
                 {{-- Neither "Save draft" nor "Publish" belongs here — both are chosen
                      later, on step 4, once there's a design to save or publish. Every
                      path here just creates the row and moves the wizard on, so it

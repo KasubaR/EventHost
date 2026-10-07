@@ -1577,6 +1577,25 @@ body > .evt-more-menu .evt-more-item--danger:hover {
     color: var(--accent, #1e47bb);
 }
 
+/* A finished step links back to its page once the event exists. */
+.evt-step-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: inherit;
+    text-decoration: none;
+    border-radius: 6px;
+}
+
+.evt-step-link:hover .evt-step-label {
+    text-decoration: underline;
+}
+
+.evt-step-link:focus-visible {
+    outline: 2px solid var(--accent, #1e47bb);
+    outline-offset: 3px;
+}
+
 .evt-step--done {
     color: var(--green, #27ae60);
 }

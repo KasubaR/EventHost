@@ -1078,7 +1078,8 @@ class TicketingTest extends TestCase
         $this->actingAs($user)
             ->get(route('public-events.ticket-types.index', $event))
             ->assertOk()
-            ->assertDontSee(route('events.edit', $event), false)
+            // No way forward to the review step (the stepper's way back to the details form is `?details=1`).
+            ->assertDontSee('href="'.route('events.edit', $event).'" class="btn-primary"', false)
             ->assertSee('Add at least one ticket type to continue.', false);
 
         TicketType::factory()->for($event)->create(['quantity' => 100]);

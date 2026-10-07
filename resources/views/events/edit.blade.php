@@ -32,6 +32,9 @@
                 @if ($event->isTicketed())
                     <a href="{{ route('public-events.ticket-types.index', $event) }}" class="evt-btn-outline"><x-ticket-icon /> Back to tickets</a>
                 @endif
+                @unless ($event->isTicketed())
+                    <a href="{{ route('events.choose-template', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-arrow-left"></i> Back to layout</a>
+                @endunless
                 <a href="{{ route('events.show', $event) }}" class="evt-btn-outline"><i class="fa-solid fa-eye"></i> View</a>
                 <a href="{{ route($event->isPublicAudience() ? 'public-events.index' : 'events.index') }}" class="evt-btn-outline"><i class="fa-solid fa-list"></i> All events</a>
             </div>
