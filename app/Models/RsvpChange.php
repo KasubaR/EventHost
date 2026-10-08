@@ -32,7 +32,7 @@ class RsvpChange extends Model
     protected $fillable = [
         'rsvp_id', 'guest_id', 'event_id',
         'from_status', 'from_seats', 'to_status', 'to_seats',
-        'channel', 'actor_user_id',
+        'channel', 'actor_user_id', 'over_limit',
     ];
 
     /**
@@ -45,6 +45,7 @@ class RsvpChange extends Model
             'to_status' => RsvpStatus::class,
             'from_seats' => 'integer',
             'to_seats' => 'integer',
+            'over_limit' => 'boolean',
         ];
     }
 
@@ -81,7 +82,8 @@ class RsvpChange extends Model
 
     public function describe(): string
     {
-        return self::answerLabel($this->from_status, $this->from_seats).' to '.self::answerLabel($this->to_status, $this->to_seats);
+        return self::answerLabel($this->from_status, $this->from_seats).' to '.self::answerLabel($this->to_status, $this->to_seats)
+            .($this->over_limit ? ', over the guest limit' : '');
     }
 
     public function channelLabel(): string

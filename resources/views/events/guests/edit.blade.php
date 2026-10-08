@@ -145,6 +145,64 @@
                 </form>
             </div>
         </div>
+        @if (session('status') === 'guest-rsvp-set')
+            <div class="evt-admin-flash">Response recorded for {{ $guest->name }}.</div>
+        @elseif (session('status') === 'guest-rsvp-set-unchanged')
+            <div class="evt-admin-flash">That is already {{ $guest->name }}'s response, so nothing changed.</div>
+        @endif
+
+        <div class="evt-section">
+            <div class="evt-section-body">
+                <h2 class="evt-section-title">Set this guest's response</h2>
+                <p class="evt-muted">
+                    Use this when a guest tells you their answer another way. It works at any time, even after the deadline or the
+                    event start. Currently:
+                    <strong>{{ \App\Models\RsvpChange::answerLabel($guest->rsvp?->status, $guest->rsvp ? (int) $guest->rsvp->attendee_count : null) }}</strong>.
+                </p>
+                @if ($errors->rsvpSet->any())
+                    @foreach ($errors->rsvpSet->all() as $message)
+                        <div class="evt-admin-flash">{{ $message }}</div>
+                    @endforeach
+                @endif
+                <form method="post" action="{{ route('events.guests.rsvp.set', ['event' => $event, 'guest' => $guest->id]) }}" class="profile-form">
+                    @csrf
+                    @method('PATCH')
+                    <div class="profile-field">
+                        <label for="set_rsvp_status" class="profile-label">Response</label>
+                        <select id="set_rsvp_status" name="status" class="profile-input" required>
+                            <option value="accepted" @selected(old('status', 'accepted') === 'accepted')>Attending</option>
+                            <option value="declined" @selected(old('status') === 'declined')>Not attending</option>
+                            <option value="maybe" @selected(old('status') === 'maybe')>Maybe</option>
+                        </select>
+                    </div>
+                    <div class="profile-field">
+                        <label for="set_rsvp_seats" class="profile-label">Seats (when attending)</label>
+                        <select id="set_rsvp_seats" name="attendee_count" class="profile-input">
+                            <option value="1" @selected((int) old('attendee_count', 1) === 1)>Just the guest</option>
+                            <option value="2" @selected((int) old('attendee_count', 1) === 2)>Guest + 1</option>
+                        </select>
+                    </div>
+                    <div class="profile-field">
+                        <input type="hidden" name="allow_over_limit" value="0">
+                        <label class="profile-label evt-check-label">
+                            <input type="checkbox" name="allow_over_limit" value="1" class="profile-input evt-check-input" @checked(old('allow_over_limit'))>
+                            <span>Allow this to go over the guest limit{{ $event->guest_limit !== null ? ' ('.$event->guest_limit.')' : '' }}</span>
+                        </label>
+                    </div>
+                    <div class="profile-field">
+                        <input type="hidden" name="notify_guest" value="0">
+                        <label class="profile-label evt-check-label">
+                            <input type="checkbox" name="notify_guest" value="1" class="profile-input evt-check-input" @checked(old('notify_guest'))>
+                            <span>Tell the guest {{ $guest->email ? '('.$guest->email.')' : '(no email on file, so this does nothing)' }}</span>
+                        </label>
+                    </div>
+                    <div class="profile-form-actions">
+                        <button type="submit" class="btn-primary">Record response</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <div class="evt-section">
             <div class="evt-section-body">
                 <h2 class="evt-section-title">Response history</h2>

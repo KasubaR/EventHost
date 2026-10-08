@@ -6,12 +6,14 @@ use App\Enums\RsvpStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\StoreGuestApiRequest;
 use App\Http\Requests\Api\V1\UpdateGuestApiRequest;
+use App\Http\Requests\SetGuestRsvpRequest;
 use App\Http\Resources\Api\V1\GuestGroupResource;
 use App\Http\Resources\Api\V1\GuestResource;
 use App\Http\Resources\Api\V1\TableResource;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Services\CommunicationService;
+use App\Services\HostRsvpOverrideService;
 use App\Services\QrCodeService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
@@ -235,6 +237,30 @@ class GuestController extends Controller
         $guest->delete();
 
         return response()->json(null, 204);
+    }
+
+    /**
+     * Host override of a guest's answer (twin of the web action; plans/rsvp-status-changes.md Phase 5). Additive: a
+     * 422 with the usual shape when the guest limit refuses it and `allow_over_limit` was not sent.
+     */
+    public function setRsvp(SetGuestRsvpRequest $request, Event $event, Guest $guest, HostRsvpOverrideService $override): JsonResponse
+    {
+        $guest->loadMissing('event.user');
+        $this->authorize('update', $guest);
+        abort_unless($guest->event_id === $event->id, 404);
+        abort_unless($event->isInvitation(), 404);
+
+        $override->set(
+            $event,
+            $guest,
+            RsvpStatus::from($request->validated('status')),
+            (int) ($request->validated('attendee_count') ?? 1),
+            $request->user(),
+            allowOverLimit: $request->boolean('allow_over_limit'),
+            notifyGuest: $request->boolean('notify_guest'),
+        );
+
+        return response()->json(new GuestResource($guest->fresh(['rsvp']), $event));
     }
 
     public function markInvitationSent(Event $event, Guest $guest): JsonResponse

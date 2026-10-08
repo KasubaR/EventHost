@@ -452,7 +452,8 @@ class RsvpStatusTransitionsTest extends TestCase
 
     public function test_pinned_the_host_has_no_way_to_set_a_guests_answer_only_to_approve_or_reject_a_pending_one(): void
     {
-        // plans/rsvp-status-changes.md S6. Phase 5 adds a host override.
+        // plans/rsvp-status-changes.md S6. Phase 5 added a SEPARATE override route (events.guests.rsvp.set, HostRsvpOverrideTest);
+        // approve and reject are still only for a Pending request, and this pins that.
         $guest = $this->guest(RsvpStatus::Accepted, 1);
 
         $this->actingAs($this->host)

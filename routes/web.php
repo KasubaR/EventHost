@@ -360,6 +360,9 @@ Route::middleware(['auth', 'account.active', 'verified'])->group(function () {
     Route::patch('/events/{event}/guests/{guest}/rsvp/reject', [GuestController::class, 'rejectRsvp'])
         ->name('events.guests.rsvp.reject');
 
+    Route::patch('/events/{event}/guests/{guest}/rsvp', [GuestController::class, 'setRsvp'])
+        ->name('events.guests.rsvp.set');
+
     Route::patch('/events/{event}/guests/{guest}/rsvp/remove-plus-one', [GuestController::class, 'removePlusOne'])
         ->name('events.guests.rsvp.remove-plus-one');
 

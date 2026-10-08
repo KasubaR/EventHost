@@ -57,9 +57,12 @@ class RsvpSubmissionService
      *
      * @throws RsvpClosedException
      */
-    public function submit(Event $event, Guest $guest, array $payload, bool $enforceDeadline = true, bool $allowReductions = false, string $channel = RsvpChange::CHANNEL_WEB_TOKEN, ?int $actorUserId = null): Rsvp
+    public function submit(Event $event, Guest $guest, array $payload, bool $enforceDeadline = true, bool $allowReductions = false, string $channel = RsvpChange::CHANNEL_WEB_TOKEN, ?int $actorUserId = null, bool $hostOverride = false, bool $allowOverLimit = false): Rsvp
     {
-        return DB::transaction(function () use ($event, $guest, $payload, $enforceDeadline, $allowReductions, $channel, $actorUserId): Rsvp {
+        // Only the host can go past the guest limit, and only on purpose.
+        $allowOverLimit = $hostOverride && $allowOverLimit;
+
+        return DB::transaction(function () use ($event, $guest, $payload, $enforceDeadline, $allowReductions, $channel, $actorUserId, $hostOverride, $allowOverLimit): Rsvp {
             /** @var Event $locked */
             $locked = Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
 
@@ -74,6 +77,11 @@ class RsvpSubmissionService
 
             // A seat already confirmed stays valid even if plus-ones were switched off since.
             $maxAttendees = max($locked->maxAttendeeSlotsForGuest($guest), $previousHeldCount);
+
+            // The host knows about the plus-one even when the guest's own flag is off (an invitation RSVP is 1 or 2).
+            if ($hostOverride) {
+                $maxAttendees = max($maxAttendees, 2);
+            }
 
             // Never store a different number from the one asked for: the request layers already
             // reject out-of-range counts, so a mismatch here is a channel that skipped them.
@@ -91,7 +99,7 @@ class RsvpSubmissionService
             // A guest who is already inside cannot cancel or reduce from here: check-in opens up to a day before the
             // start while reductions stay open until it. The guest row is locked too, so a scan and a decline cannot
             // both win. (Taking seats, or answering the same again, is fine.) plans/rsvp-status-changes.md Phase 2.
-            if ($existing !== null && $previousHeldCount > $newAcceptedCount) {
+            if (! $hostOverride && $existing !== null && $previousHeldCount > $newAcceptedCount) {
                 $checkedInAt = Guest::query()->whereKey($guest->id)->lockForUpdate()->value('checked_in_at');
 
                 if ($checkedInAt !== null) {
@@ -116,7 +124,7 @@ class RsvpSubmissionService
             // again, or by editing the request: only the very same request is a no-op, and nothing is queued for
             // review. (Declining is still allowed; the rejection is kept through it, see below.)
             // plans/rsvp-status-changes.md Phase 3.
-            if ($status === RsvpStatus::Accepted && $existing?->host_approval_status === RsvpApprovalStatus::Rejected) {
+            if (! $hostOverride && $status === RsvpStatus::Accepted && $existing?->host_approval_status === RsvpApprovalStatus::Rejected) {
                 $identical = $existing->status === RsvpStatus::Accepted
                     && (int) $existing->attendee_count === $attendeeCount
                     && self::normalizeMessage($existing->message) === self::normalizeMessage($payload['message'] ?? null);
@@ -134,13 +142,20 @@ class RsvpSubmissionService
 
             // A change that takes no more seats than the guest already holds is always allowed,
             // even when the host has since lowered the limit under current attendance.
+            // A host may go past the limit only with the explicit tick, and the history row says so.
+            $overLimit = false;
+
             if ($locked->guest_limit !== null && $status === RsvpStatus::Accepted
                 && $newAcceptedCount > $previousHeldCount) {
                 $heldByOthers = EventAttendance::heldSeats($locked->id, $guest->id);
                 $seatsLeft = max(0, $locked->guest_limit - $heldByOthers);
 
                 if ($newAcceptedCount > $seatsLeft) {
-                    throw GuestLimitReachedException::forSeats($seatsLeft, $previousHeldCount, $newAcceptedCount);
+                    if (! $allowOverLimit) {
+                        throw GuestLimitReachedException::forSeats($seatsLeft, $previousHeldCount, $newAcceptedCount);
+                    }
+
+                    $overLimit = true;
                 }
             }
 
@@ -152,9 +167,13 @@ class RsvpSubmissionService
 
             if ($hasSeatPool && $status === RsvpStatus::Accepted
                 && $newAcceptedCount > $group->seatsRemaining($guest->id)) {
-                throw ValidationException::withMessages([
-                    'status' => ['This group has no seats left. Please call the host for more information.'],
-                ]);
+                if (! $allowOverLimit) {
+                    throw ValidationException::withMessages([
+                        'status' => ['This group has no seats left. Please call the host for more information.'],
+                    ]);
+                }
+
+                $overLimit = true;
             }
 
             // Guests who signed up through the group link are always held for the host, whatever
@@ -192,15 +211,33 @@ class RsvpSubmissionService
             } elseif ($status === RsvpStatus::Accepted) {
                 $approvalStatus = RsvpApprovalStatus::NotRequired;
             }
+            // A host setting someone to Accepted IS the approval: no review is queued, any earlier rejection is lifted, and
+            // the approved seats are what the host set. (Declined / Maybe from the host keep the usual rules above.)
+            if ($hostOverride && $status === RsvpStatus::Accepted) {
+                $approvalStatus = $requiresApproval ? RsvpApprovalStatus::Approved : RsvpApprovalStatus::NotRequired;
+                $approvedSeats = $requiresApproval ? $attendeeCount : $approvedSeats;
+                $resetReview = false;
+            }
+
             $rsvpData = [
                 'event_id' => $locked->id,
                 'status' => $status,
                 'attendee_count' => $attendeeCount,
-                'message' => $payload['message'] ?? null,
+                // The host sets the answer, not the guest's words: their message is kept as it was.
+                'message' => $hostOverride ? $existing?->message : ($payload['message'] ?? null),
                 'host_approval_status' => $approvalStatus,
                 // Kept through a decline so coming back within it needs no new review.
                 'approved_seats' => $approvedSeats > 0 ? $approvedSeats : null,
             ];
+
+            if ($hostOverride && $status === RsvpStatus::Accepted) {
+                $rsvpData['host_rejection_note'] = null;
+
+                if ($requiresApproval) {
+                    $rsvpData['host_reviewed_at'] = now();
+                    $rsvpData['host_reviewed_by'] = $actorUserId;
+                }
+            }
 
             if ($resetReview) {
                 // A new review episode — clear any reviewed_at/by/note left over from a
@@ -246,7 +283,7 @@ class RsvpSubmissionService
                 $rsvp = Rsvp::query()->where('guest_id', $guest->id)->firstOrFail();
             }
 
-            $this->recordAnswerChange($existing, $rsvp, $channel, $actorUserId);
+            $this->recordAnswerChange($existing, $rsvp, $channel, $actorUserId, $overLimit);
 
             return $rsvp;
         });
@@ -256,7 +293,7 @@ class RsvpSubmissionService
      * Writes the history row when the ANSWER (status or seats) changed. A message or approval-only edit is not an answer
      * change. Runs inside submit()'s transaction, so the row and the RSVP are saved together or not at all.
      */
-    private function recordAnswerChange(?Rsvp $before, Rsvp $after, string $channel, ?int $actorUserId): void
+    private function recordAnswerChange(?Rsvp $before, Rsvp $after, string $channel, ?int $actorUserId, bool $overLimit = false): void
     {
         if ($before !== null
             && $before->status === $after->status
@@ -274,6 +311,7 @@ class RsvpSubmissionService
             'to_seats' => (int) $after->attendee_count,
             'channel' => $channel,
             'actor_user_id' => $actorUserId,
+            'over_limit' => $overLimit,
         ]);
 
         if ($before !== null) {

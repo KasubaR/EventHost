@@ -281,6 +281,7 @@ Route::prefix('v1/host')->middleware(['auth:sanctum', 'sanctum.active'])->group(
             Route::patch('/{guest}', [GuestController::class, 'update'])->name('update');
             Route::delete('/{guest}', [GuestController::class, 'destroy'])->name('destroy');
             Route::patch('/{guest}/invitation-sent', [GuestController::class, 'markInvitationSent'])->name('mark-sent');
+            Route::patch('/{guest}/rsvp', [GuestController::class, 'setRsvp'])->name('rsvp.set');
             Route::get('/{guest}/qr.png', [GuestController::class, 'qr'])->name('qr');
             Route::post('/{guest}/whatsapp-invite', [GuestController::class, 'sendWhatsAppInvitation'])
                 ->middleware('throttle:guest-whatsapp-send')

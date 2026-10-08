@@ -6,11 +6,13 @@ use App\Enums\RsvpApprovalStatus;
 use App\Enums\RsvpStatus;
 use App\Exceptions\RsvpApprovalException;
 use App\Http\Requests\RejectRsvpApprovalRequest;
+use App\Http\Requests\SetGuestRsvpRequest;
 use App\Http\Requests\StoreGuestRequest;
 use App\Http\Requests\UpdateGuestRequest;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Services\CommunicationService;
+use App\Services\HostRsvpOverrideService;
 use App\Services\QrCodeService;
 use App\Services\RsvpApprovalService;
 use App\Services\RsvpSubmissionService;
@@ -22,6 +24,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -303,6 +306,38 @@ class GuestController extends Controller
         }
 
         return back()->with('status', 'guest-rsvp-approved');
+    }
+
+    /**
+     * plans/rsvp-status-changes.md Phase 5 — the host records a guest's answer for them, at any time (after the deadline,
+     * after the event started, while checked in). The seat limit still applies unless the host ticks "allow over the
+     * guest limit"; the guest is only told if the host ticks "tell the guest".
+     */
+    public function setRsvp(SetGuestRsvpRequest $request, Event $event, Guest $guest, HostRsvpOverrideService $override): RedirectResponse
+    {
+        $guest->loadMissing('event');
+        $this->authorize('update', $guest);
+
+        abort_unless($guest->event_id === $event->id, 404);
+        abort_unless($event->isInvitation(), 404);
+
+        $status = RsvpStatus::from($request->validated('status'));
+
+        try {
+            $rsvp = $override->set(
+                $event,
+                $guest,
+                $status,
+                (int) ($request->validated('attendee_count') ?? 1),
+                $request->user(),
+                allowOverLimit: $request->boolean('allow_over_limit'),
+                notifyGuest: $request->boolean('notify_guest'),
+            );
+        } catch (ValidationException $e) {
+            return back()->withInput()->withErrors($e->errors(), 'rsvpSet');
+        }
+
+        return back()->with('status', $rsvp->submissionChanged ? 'guest-rsvp-set' : 'guest-rsvp-set-unchanged');
     }
 
     /**

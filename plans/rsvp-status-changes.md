@@ -101,7 +101,7 @@ Severity: **H** = wrong outcome at the door or for money, **M** = confusing or l
 3. The guest edit page shows the history; the CSV export gains "last changed".
 4. Prune with the guest (cascade); nothing else reads it.
 
-### Phase 5: host override (S6, S7), after Phase 4
+### Phase 5: host override (S6, S7), after Phase 4 : BUILT, not yet run (`HostRsvpOverrideService`, `events.guests.rsvp.set`, `HostRsvpOverrideTest`)
 
 1. `PATCH events/{event}/guests/{guest}/rsvp` (web) and the API twin: set status, seats and an optional note. Goes through `RsvpSubmissionService::submit(..., enforceDeadline: false)` with a new actor argument, so the lock, seat-limit and seat-pool rules still apply (an explicit "allow over the guest limit" tick is the only bypass).
 2. Recorded in `rsvp_changes` as `host`, with the host as actor. Allowed at any time, **including after the event starts** (this is how a late no-show or walk-in is recorded); it does not need the event to be open.
