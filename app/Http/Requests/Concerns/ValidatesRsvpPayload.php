@@ -4,7 +4,7 @@ namespace App\Http\Requests\Concerns;
 
 use App\Enums\RsvpStatus;
 use App\Models\Event;
-use Closure;
+use App\Rules\AttendeeCount;
 use Illuminate\Validation\Rule;
 
 trait ValidatesRsvpPayload
@@ -19,26 +19,23 @@ trait ValidatesRsvpPayload
             // Only an acceptance carries a seat count. A Declined or Maybe answer ignores whatever was sent
             // (a form without JavaScript still posts the default 1, which used to be rejected); the service
             // stores 0 for those. plans/invitation-page-resilience.md Phase 2.
+            // `bail`: one sentence per mistake, not one per rule. AttendeeCount does the whole check (whole number,
+            // at least 1, at most the guest's maximum) and only for an acceptance. plans/rsvp-attendance.md Phase 1.
             'attendee_count' => [
+                'bail',
                 'required_if:status,'.RsvpStatus::Accepted->value,
                 'nullable',
-                'integer',
-                'min:0',
-                function (string $attribute, mixed $value, Closure $fail) use ($event, $plusOneAllowed, $heldSeats): void {
-                    // A tampered `status[]=x` posts an array; the enum rule already fails it, so just stop here.
-                    $rawStatus = $this->input('status');
-                    $status = is_string($rawStatus) ? RsvpStatus::tryFrom($rawStatus) : null;
-                    if ($status === null) {
-                        return;
-                    }
+                new AttendeeCount(
                     // A seat already confirmed stays valid if plus-ones were switched off since, so an
                     // unchanged re-submit does not fail. RsvpSubmissionService applies the same floor.
-                    $max = max(($event->allow_plus_one && $plusOneAllowed) ? 2 : 1, $heldSeats);
-                    $intVal = (int) $value;
-                    if ($status === RsvpStatus::Accepted && ($intVal < 1 || $intVal > $max)) {
-                        $fail('Choose between 1 and '.$max.' attendee(s) for your response.');
-                    }
-                },
+                    max(($event->allow_plus_one && $plusOneAllowed) ? 2 : 1, $heldSeats),
+                    function (): bool {
+                        // A tampered `status[]=x` posts an array; the enum rule already fails it.
+                        $rawStatus = $this->input('status');
+
+                        return is_string($rawStatus) && RsvpStatus::tryFrom($rawStatus) === RsvpStatus::Accepted;
+                    },
+                ),
             ],
             'message' => ['nullable', 'string', 'max:1000'],
         ];
@@ -62,8 +59,7 @@ trait ValidatesRsvpPayload
     {
         return [
             'status.required' => 'Please choose whether you can come.',
-            'attendee_count.required_if' => 'Please say how many people are coming.',
-            'attendee_count.integer' => 'Please say how many people are coming.',
+            'attendee_count.required_if' => 'Please choose how many people are coming.',
         ];
     }
 
@@ -79,7 +75,7 @@ trait ValidatesRsvpPayload
 
         return [
             'status' => $status,
-            'attendee_count' => $status === RsvpStatus::Accepted ? (int) ($data['attendee_count'] ?? 0) : 0,
+            'attendee_count' => $status === RsvpStatus::Accepted ? (AttendeeCount::parse($data['attendee_count'] ?? null) ?? 0) : 0,
             'message' => $data['message'] ?? null,
         ];
     }

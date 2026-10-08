@@ -5,6 +5,7 @@ namespace App\Rules;
 use App\Support\EventAttendance;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Validation\ValidationException;
 
 /**
  * A host may not lower `guest_limit` under the seats already confirmed — that would leave the
@@ -23,7 +24,30 @@ class GuestLimitNotBelowConfirmed implements ValidationRule
         $held = EventAttendance::heldSeats($this->eventId);
 
         if ((int) $value < $held) {
-            $fail("The guest limit can't be lower than the {$held} seat".($held === 1 ? '' : 's').' already confirmed. Decline or reject some RSVPs first.');
+            $fail(self::message($held));
         }
+    }
+
+    /**
+     * The same check again, called by the save itself once it holds the event's row lock. The rule above runs before the
+     * lock, so a guest accepting in between could otherwise leave the event over the limit the host just saved.
+     * plans/rsvp-attendance.md Phase 3.
+     */
+    public static function assertHolds(int $eventId, mixed $limit): void
+    {
+        if ($limit === null || $limit === '' || ! is_numeric($limit)) {
+            return;
+        }
+
+        $held = EventAttendance::heldSeats($eventId);
+
+        if ((int) $limit < $held) {
+            throw ValidationException::withMessages(['guest_limit' => [self::message($held)]]);
+        }
+    }
+
+    private static function message(int $held): string
+    {
+        return "The guest limit can't be lower than the {$held} seat".($held === 1 ? '' : 's').' already confirmed. Decline or reject some RSVPs first.';
     }
 }

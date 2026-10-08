@@ -411,7 +411,7 @@ class PlusOneEdgeCasesTest extends TestCase
         $this->fullishEvent(limit: 2, takenByOthers: 2);
 
         $this->post(route('rsvp.token.store', ['token' => 'tok_fit']), ['status' => 'accepted', 'attendee_count' => 1])
-            ->assertSessionHasErrors(['status' => 'This event has reached its guest limit for confirmed attendees.']);
+            ->assertSessionHasErrors(['status' => 'This event has reached its guest limit for confirmed attendees. Please call the host for more information.']);
     }
 
     public function test_guest_who_already_holds_a_seat_is_told_it_is_unchanged(): void

@@ -152,7 +152,11 @@ class GroupRsvpLinkTest extends TestCase
     {
         $group = $this->group($this->event(['allow_plus_one' => true]), seats: 1);
 
-        $this->request($group, ['attendee_count' => 2])->assertSessionHasErrors('attendee_count');
+        // The service says how many fit (and the form comes back with that count), instead of a bare range error.
+        $this->request($group, ['attendee_count' => 2])
+            ->assertSessionHasErrors(['status' => 'Only 1 seat is left for this group. You can RSVP for yourself only.'])
+            ->assertSessionHasInput('attendee_count', 1);
+        $this->assertSame(0, Guest::query()->count());
     }
 
     public function test_a_closed_link_refuses_requests_and_shows_the_host_number(): void

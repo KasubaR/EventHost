@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\RsvpApprovalStatus;
 use App\Enums\RsvpStatus;
 use App\Exceptions\GuestLimitReachedException;
+use App\Exceptions\RsvpBusyException;
 use App\Exceptions\RsvpCheckedInException;
 use App\Exceptions\RsvpClosedException;
 use App\Models\Event;
@@ -12,13 +13,59 @@ use App\Models\Guest;
 use App\Models\GuestGroup;
 use App\Models\Rsvp;
 use App\Models\RsvpChange;
+use App\Rules\AttendeeCount;
 use App\Support\EventAttendance;
+use Closure;
+use Illuminate\Database\QueryException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class RsvpSubmissionService
 {
+    /** A deadlock is retried this many times before the guest is asked to try again. */
+    public const TRANSACTION_ATTEMPTS = 3;
+
+    /**
+     * The transaction every RSVP write runs in. Each one waits on the event's row lock, so a busy event can hit a
+     * deadlock (retried here, it succeeds on the next go) or a lock wait timeout (nothing to retry: the lock holder is
+     * still working). What is left becomes RsvpBusyException instead of a 500 showing a database error. Only the
+     * outermost transaction can retry or convert; a nested call simply joins it. plans/rsvp-attendance.md Phase 4.
+     *
+     * @template T
+     *
+     * @param  Closure(): T  $callback
+     * @return T
+     */
+    public static function transaction(Closure $callback): mixed
+    {
+        $outermost = DB::transactionLevel() === 0;
+
+        try {
+            return DB::transaction($callback, $outermost ? self::TRANSACTION_ATTEMPTS : 1);
+        } catch (QueryException $e) {
+            if ($outermost && self::isLockFailure($e)) {
+                throw new RsvpBusyException(previous: $e);
+            }
+
+            throw $e;
+        }
+    }
+
+    private static function isLockFailure(QueryException $e): bool
+    {
+        // MySQL 1205 = lock wait timeout, 1213 = deadlock; SQLSTATE 40001 = serialization failure.
+        if (in_array($e->errorInfo[1] ?? null, [1205, 1213], true) || $e->getCode() === '40001') {
+            return true;
+        }
+
+        $message = strtolower($e->getMessage());
+
+        return str_contains($message, 'lock wait timeout')
+            || str_contains($message, 'deadlock')
+            || str_contains($message, 'database is locked');
+    }
+
     /**
      * Host action: take a confirmed guest back to one seat. This is the only way a plus-one already
      * confirmed goes away after plus-ones are switched off — switching them off never does it.
@@ -62,7 +109,7 @@ class RsvpSubmissionService
         // Only the host can go past the guest limit, and only on purpose.
         $allowOverLimit = $hostOverride && $allowOverLimit;
 
-        return DB::transaction(function () use ($event, $guest, $payload, $enforceDeadline, $allowReductions, $channel, $actorUserId, $hostOverride, $allowOverLimit): Rsvp {
+        return self::transaction(function () use ($event, $guest, $payload, $enforceDeadline, $allowReductions, $channel, $actorUserId, $hostOverride, $allowOverLimit): Rsvp {
             /** @var Event $locked */
             $locked = Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
 
@@ -88,7 +135,7 @@ class RsvpSubmissionService
             if ($status->countsTowardGuestLimit()
                 && ($payload['attendee_count'] < 1 || $payload['attendee_count'] > $maxAttendees)) {
                 throw ValidationException::withMessages([
-                    'attendee_count' => ['Choose between 1 and '.$maxAttendees.' attendee(s) for your response.'],
+                    'attendee_count' => [AttendeeCount::outOfRangeMessage((int) $payload['attendee_count'], $maxAttendees)],
                 ]);
             }
 
@@ -145,32 +192,39 @@ class RsvpSubmissionService
             // A host may go past the limit only with the explicit tick, and the history row says so.
             $overLimit = false;
 
-            if ($locked->guest_limit !== null && $status === RsvpStatus::Accepted
-                && $newAcceptedCount > $previousHeldCount) {
-                $heldByOthers = EventAttendance::heldSeats($locked->id, $guest->id);
-                $seatsLeft = max(0, $locked->guest_limit - $heldByOthers);
-
-                if ($newAcceptedCount > $seatsLeft) {
-                    if (! $allowOverLimit) {
-                        throw GuestLimitReachedException::forSeats($seatsLeft, $previousHeldCount, $newAcceptedCount);
-                    }
-
-                    $overLimit = true;
-                }
-            }
-
             // A guest in a group with a seat pool (plans/group-rsvp-links.md) may not take more
             // seats than remain. Every submit locks the event row above, so two people racing
             // for the last seat are serialized here — exactly one gets it.
             $group = $guest->guest_group_id !== null ? GuestGroup::query()->find($guest->guest_group_id) : null;
             $hasSeatPool = $group !== null && $group->hasSeatPool();
 
-            if ($hasSeatPool && $status === RsvpStatus::Accepted
-                && $newAcceptedCount > $group->seatsRemaining($guest->id)) {
+            // Both limits are worked out before either refuses, so a guest is told the one that bites hardest
+            // (and which it is) instead of fixing one and meeting the other. plans/rsvp-attendance.md Phase 2.
+            $exceeded = [];
+
+            if ($locked->guest_limit !== null && $status === RsvpStatus::Accepted
+                && $newAcceptedCount > $previousHeldCount) {
+                $heldByOthers = EventAttendance::heldSeats($locked->id, $guest->id);
+                $eventSeatsLeft = max(0, $locked->guest_limit - $heldByOthers);
+
+                if ($newAcceptedCount > $eventSeatsLeft) {
+                    $exceeded[GuestLimitReachedException::EVENT] = $eventSeatsLeft;
+                }
+            }
+
+            if ($hasSeatPool && $status === RsvpStatus::Accepted) {
+                $groupSeatsLeft = $group->seatsRemaining($guest->id);
+
+                if ($newAcceptedCount > $groupSeatsLeft) {
+                    $exceeded[GuestLimitReachedException::GROUP] = $groupSeatsLeft;
+                }
+            }
+
+            if ($exceeded !== []) {
                 if (! $allowOverLimit) {
-                    throw ValidationException::withMessages([
-                        'status' => ['This group has no seats left. Please call the host for more information.'],
-                    ]);
+                    asort($exceeded); // the tightest limit first; the event wins a tie (it was inserted first)
+
+                    throw GuestLimitReachedException::forSeats(reset($exceeded), $previousHeldCount, $newAcceptedCount, (string) array_key_first($exceeded));
                 }
 
                 $overLimit = true;

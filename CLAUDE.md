@@ -658,6 +658,18 @@ A plus-one is `rsvps.attendee_count = 2`; an invitation RSVP is only ever 1 or 2
   fits ("You can RSVP for yourself only"), says when the guest's current RSVP is unchanged, adds `seats_left` to the API body, and the web
   form comes back with the count preselected to what fits (rendered in `bootstrap/app.php`)
 - **Wording:** the form says "Not attending" / "Just me" / "Me + 1 guest"; the API's `attendee_count` includes the guest themselves
+- **The count has one rule: `App\Rules\AttendeeCount`**, used by the personal link, open form, group link and host override (with `bail`, so one sentence
+  per mistake). It runs only for an acceptance; a Declined/Maybe count is ignored. A count is a whole number in digits (`" 2 "` and `"+2"` are fine; `2.5`,
+  `2.0`, `1e0`, `"two"` and arrays are refused; more than four digits is "too many" before it is ever cast). `parse()` is the one cast and
+  `outOfRangeMessage()` is shared with the service. Plan: `plans/rsvp-attendance.md` (all phases built)
+- **Two seat limits, weighed together.** The event's `guest_limit` (seats) and a group's seat pool are both worked out in `submit()` before either refuses;
+  the tighter one is reported, by name ("for confirmed attendees" / "for this group"), through `GuestLimitReachedException` (the event wins a tie). Neither is
+  the plan's guest-**list** cap (`hasReachedGuestCapacity()`, which counts guests, not seats). Lowering `guest_limit` is re-checked under the event's row lock
+  by both update controllers (`GuestLimitNotBelowConfirmed::assertHolds()`); the form rule alone runs before the lock
+- **Concurrency.** Every RSVP write runs through `RsvpSubmissionService::transaction()`: the outermost one retries a deadlock 3 times and turns a final lock
+  failure into `RsvpBusyException` (web: back to the form with the answers kept; JSON: 503 `rsvp_busy` + `Retry-After`). SQLite ignores `lockForUpdate()`, so
+  the last-seat race is only proven by `RsvpLastSeatConcurrencyTest`, which forks real processes and runs on MySQL in the "MySQL compatibility" workflow
+  (`phpunit.mysql.xml`); locally it is skipped
 - Not built: a waitlist for freed seats; "Remove plus-one" and a disallow bulk action on the API
 
 ### Guest Event Reminders

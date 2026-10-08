@@ -1,6 +1,7 @@
 <?php
 
 use App\Exceptions\GuestLimitReachedException;
+use App\Exceptions\RsvpBusyException;
 use App\Exceptions\RsvpCheckedInException;
 use App\Exceptions\RsvpClosedException;
 use App\Exceptions\RsvpUnavailableException;
@@ -110,6 +111,22 @@ return Application::configure(basePath: dirname(__DIR__))
 
             return ($rsvpPageFor($request) !== null ? redirect($rsvpPageFor($request)) : redirect()->back(fallback: url('/')))
                 ->with('rsvp_closed', $e->getMessage());
+        });
+
+        // The database could not take the event's lock in time. Nothing was saved; ask the guest to send it again.
+        $exceptions->render(function (RsvpBusyException $e, Request $request) use ($rsvpPageFor) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'message' => $e->getMessage(),
+                    'code' => 'rsvp_busy',
+                ], 503)->header('Retry-After', '5');
+            }
+
+            $target = $rsvpPageFor($request);
+
+            return ($target !== null ? redirect($target) : redirect()->back(fallback: url('/')))
+                ->withInput($request->except('_token'))
+                ->withErrors(['status' => $e->getMessage()]);
         });
 
         // Already checked in: the answer cannot be cancelled or reduced from here. Shown on the form the guest used.

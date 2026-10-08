@@ -18,6 +18,7 @@ use App\Models\CreditTransaction;
 use App\Models\Event;
 use App\Models\InvitationTemplate;
 use App\Models\StagedMedia;
+use App\Rules\GuestLimitNotBelowConfirmed;
 use App\Services\DashboardAnalyticsService;
 use App\Services\EventCreditService;
 use App\Services\EventSlugService;
@@ -234,6 +235,11 @@ class EventController extends Controller
                     );
                 } else {
                     unset($data['ticket_capacity']);
+                }
+
+                // Held seats can change between validation and this lock; check again with the lock held.
+                if (! $event->isTicketed()) {
+                    GuestLimitNotBelowConfirmed::assertHolds($event->id, $data['guest_limit'] ?? null);
                 }
 
                 if ($newCoverPath !== null) {

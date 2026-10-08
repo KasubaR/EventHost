@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\AttendeeCount;
 use App\Services\GroupRsvpResolver;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -38,13 +39,13 @@ class StoreGroupRsvpRequest extends FormRequest
     {
         $resolved = app(GroupRsvpResolver::class)->resolve((string) $this->route('token'));
         $perPerson = $resolved['event']->allow_plus_one ? 2 : 1;
-        $max = max(1, min($perPerson, $resolved['remaining']));
+        // The pool is checked by the service, under the lock, which says how many seats are actually left.
 
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email:rfc', 'max:255'],
             'phone' => ['required', 'string', 'max:50'],
-            'attendee_count' => ['required', 'integer', 'min:1', 'max:'.$max],
+            'attendee_count' => ['bail', 'required', new AttendeeCount($perPerson, fn (): bool => true)],
             'message' => ['nullable', 'string', 'max:1000'],
         ];
     }

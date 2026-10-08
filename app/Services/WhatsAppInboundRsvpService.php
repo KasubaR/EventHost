@@ -360,6 +360,8 @@ class WhatsAppInboundRsvpService
                 if (is_string($message) && (
                     str_contains(strtolower($message), 'full')
                     || str_contains(strtolower($message), 'guest limit')
+                    || str_contains(strtolower($message), 'seats left')
+                    || str_contains(strtolower($message), 'left for')
                 )) {
                     return true;
                 }

@@ -17,15 +17,26 @@ class GuestLimitReachedException extends ValidationException
 
     public int $requestedSeats = 0;
 
+    /** Which limit refused: the event's guest limit or the group's seat pool. */
+    public string $limit = self::EVENT;
+
+    public const EVENT = 'event';
+
+    public const GROUP = 'group';
+
     /**
      * @param  int  $seatsLeft  Seats this guest could still hold, counting any they already have.
      * @param  int  $heldSeats  Seats they hold now (0 for a first RSVP).
      */
-    public static function forSeats(int $seatsLeft, int $heldSeats, int $requestedSeats): self
+    public static function forSeats(int $seatsLeft, int $heldSeats, int $requestedSeats, string $limit = self::EVENT): self
     {
+        $what = $limit === self::GROUP ? 'for this group' : 'for confirmed attendees';
+
         $message = $seatsLeft === 0
-            ? 'This event has reached its guest limit for confirmed attendees.'
-            : "Only {$seatsLeft} ".($seatsLeft === 1 ? 'seat is' : 'seats are').' left for confirmed attendees.';
+            ? ($limit === self::GROUP
+                ? 'This group has no seats left. Please call the host for more information.'
+                : 'This event has reached its guest limit for confirmed attendees. Please call the host for more information.')
+            : "Only {$seatsLeft} ".($seatsLeft === 1 ? 'seat is' : 'seats are')." left {$what}.";
 
         // The guest asked for a plus-one that does not fit: say what still does, instead of leaving them
         // to guess that RSVPing for themselves alone would work.
@@ -41,6 +52,7 @@ class GuestLimitReachedException extends ValidationException
         $e->seatsLeft = $seatsLeft;
         $e->heldSeats = $heldSeats;
         $e->requestedSeats = $requestedSeats;
+        $e->limit = $limit;
 
         return $e;
     }

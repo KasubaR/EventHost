@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreGroupRsvpRequest;
+use App\Rules\AttendeeCount;
 use App\Services\CommunicationService;
 use App\Services\GroupRsvpResolver;
 use App\Services\GroupRsvpService;
@@ -40,7 +41,7 @@ class GroupRsvpController extends Controller
             $resolved['group'],
             $resolved['event'],
             ['name' => $validated['name'], 'email' => $validated['email'], 'phone' => $validated['phone']],
-            ['attendee_count' => (int) $validated['attendee_count'], 'message' => $validated['message'] ?? null],
+            ['attendee_count' => AttendeeCount::parse($validated['attendee_count']) ?? 1, 'message' => $validated['message'] ?? null],
         );
 
         // Held for host review, so this sends the host's "awaiting approval" notice and nothing to the guest.

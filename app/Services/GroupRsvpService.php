@@ -8,7 +8,6 @@ use App\Models\Guest;
 use App\Models\GuestGroup;
 use App\Models\Rsvp;
 use App\Models\RsvpChange;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -28,7 +27,7 @@ class GroupRsvpService
      */
     public function request(GuestGroup $group, Event $event, array $contact, array $payload): array
     {
-        return DB::transaction(function () use ($group, $event, $contact, $payload): array {
+        return RsvpSubmissionService::transaction(function () use ($group, $event, $contact, $payload): array {
             // Same lock RsvpSubmissionService takes, taken first so the state check, the guest
             // insert and the seat count all happen on one serialized view of the event.
             Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
