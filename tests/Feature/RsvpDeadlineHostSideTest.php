@@ -259,7 +259,7 @@ class RsvpDeadlineHostSideTest extends TestCase
 
     public function test_sending_works_again_once_the_deadline_is_extended(): void
     {
-        $guest = Guest::factory()->for($this->event)->create(['email' => 'g@example.test']);
+        $guest = Guest::factory()->for($this->event)->create(['email' => 'g@example.test', 'phone' => '0971234567']);
         $this->closeRsvp();
         $this->update(['rsvp_deadline' => '2026-10-30T18:00'])->assertSessionHasNoErrors();
 

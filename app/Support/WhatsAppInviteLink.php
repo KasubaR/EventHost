@@ -5,17 +5,14 @@ namespace App\Support;
 final class WhatsAppInviteLink
 {
     /**
-     * Build a WhatsApp chat deeplink. Returns null if the phone has no digits.
+     * Build a WhatsApp chat deeplink. wa.me needs the country code, so a local Zambian number is dialled as +260 and
+     * anything that is not one dialable number (too short, two numbers run together) returns null.
      */
     public static function url(?string $phone, string $message): ?string
     {
-        if ($phone === null || $phone === '') {
-            return null;
-        }
+        $digits = GuestPhone::whatsAppDigits($phone);
 
-        $digits = preg_replace('/\D+/', '', $phone);
-
-        if ($digits === '') {
+        if ($digits === null) {
             return null;
         }
 

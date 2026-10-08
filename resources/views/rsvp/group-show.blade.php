@@ -64,17 +64,17 @@
                     @enderror
                     <div class="rsvp-field-group">
                         <label class="rsvp-field-label" for="grp_name">Full name</label>
-                        <input id="grp_name" type="text" name="name" class="rsvp-input" required maxlength="255" value="{{ old('name') }}" autocomplete="name">
+                        <input id="grp_name" type="text" name="name" class="rsvp-input" required maxlength="191" value="{{ old('name') }}" autocomplete="name">
                         @error('name')<p class="rsvp-field-error">{{ $message }}</p>@enderror
                     </div>
                     <div class="rsvp-field-group">
                         <label class="rsvp-field-label" for="grp_email">Email</label>
-                        <input id="grp_email" type="email" name="email" class="rsvp-input" required maxlength="255" value="{{ old('email') }}" autocomplete="email">
+                        <input id="grp_email" type="email" name="email" class="rsvp-input" required maxlength="191" value="{{ old('email') }}" autocomplete="email">
                         @error('email')<p class="rsvp-field-error">{{ $message }}</p>@enderror
                     </div>
                     <div class="rsvp-field-group">
                         <label class="rsvp-field-label" for="grp_phone">Phone</label>
-                        <input id="grp_phone" type="tel" name="phone" class="rsvp-input" required maxlength="50" value="{{ old('phone') }}" autocomplete="tel">
+                        <input id="grp_phone" type="tel" name="phone" class="rsvp-input" required maxlength="50" value="{{ old('phone') }}" autocomplete="tel" placeholder="0971234567">
                         @error('phone')<p class="rsvp-field-error">{{ $message }}</p>@enderror
                     </div>
                     <div class="rsvp-field-group">

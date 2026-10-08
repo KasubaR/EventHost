@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Guest;
 use App\Rules\AttendeeCount;
+use App\Rules\GuestPhoneNumber;
 use App\Services\GroupRsvpResolver;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -19,11 +21,13 @@ class StoreGroupRsvpRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        foreach (['name', 'phone'] as $field) {
-            $v = $this->input($field);
-            if (is_string($v)) {
-                $this->merge([$field => trim($v) === '' ? null : trim($v)]);
-            }
+        $phone = $this->input('phone');
+        if (is_string($phone)) {
+            $this->merge(['phone' => trim($phone) === '' ? null : trim($phone)]);
+        }
+
+        if (is_string($this->input('name'))) {
+            $this->merge(['name' => Guest::cleanName($this->input('name'))]);
         }
 
         $email = $this->input('email');
@@ -42,9 +46,9 @@ class StoreGroupRsvpRequest extends FormRequest
         // The pool is checked by the service, under the lock, which says how many seats are actually left.
 
         return [
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email:rfc', 'max:255'],
-            'phone' => ['required', 'string', 'max:50'],
+            'name' => ['required', 'string', 'max:'.Guest::NAME_MAX],
+            'email' => ['required', 'email:rfc', 'max:'.Guest::EMAIL_MAX],
+            'phone' => ['bail', 'required', 'string', 'max:50', new GuestPhoneNumber],
             'attendee_count' => ['bail', 'required', new AttendeeCount($perPerson, fn (): bool => true)],
             'message' => ['nullable', 'string', 'max:1000'],
         ];

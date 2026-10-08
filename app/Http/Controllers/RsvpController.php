@@ -221,7 +221,7 @@ class RsvpController extends Controller
         $headers = ['Content-Type' => 'image/svg+xml'];
 
         if ($request->boolean('download')) {
-            $filename = Str::slug($guest->name).'-entry-qr.svg';
+            $filename = (Str::slug($guest->name) ?: 'guest').'-entry-qr.svg';
             $headers['Content-Disposition'] = 'attachment; filename="'.$filename.'"';
         }
 

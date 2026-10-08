@@ -12,7 +12,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * JSON sibling of App\Http\Controllers\GuestImportController — returns the
- * created/skipped/capped counts directly instead of via flash keys. Authorizes via
+ * created/skipped/capped/invalid counts (plus the first invalid rows) directly
+ * instead of via flash keys. Authorizes via
  * EventPolicy directly instead of the narrower owner-only FormRequest check (Slice
  * C3 plan, design decision #1). Web controller untouched.
  */
@@ -30,6 +31,8 @@ class GuestImportController extends Controller
             'created' => $import->createdCount,
             'skipped' => $import->skippedCount,
             'capped' => $import->cappedCount,
+            'invalid' => $import->invalidCount,
+            'problems' => $import->problems,
         ]);
     }
 

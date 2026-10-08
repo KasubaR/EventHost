@@ -46,7 +46,7 @@
         <dl class="gpass-details">
             <div>
                 <dt>Guest</dt>
-                <dd>{{ $card->guestName }}</dd>
+                <dd dir="auto">{{ $card->guestName }}</dd>
             </div>
             @if ($card->partyLabel())
                 <div>

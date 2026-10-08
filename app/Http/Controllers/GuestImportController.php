@@ -32,7 +32,9 @@ class GuestImportController extends Controller
             ->with('status', 'guests-imported')
             ->with('import_created', $import->createdCount)
             ->with('import_skipped', $import->skippedCount)
-            ->with('import_capped', $import->cappedCount);
+            ->with('import_capped', $import->cappedCount)
+            ->with('import_invalid', $import->invalidCount)
+            ->with('import_problems', $import->problems);
     }
 
     public function downloadTemplate(Event $event): StreamedResponse

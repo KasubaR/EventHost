@@ -635,6 +635,38 @@ events** (`StoreEventRequest` / `UpdateEventRequest`), optional for the Android 
 Call {host} on {number}" on every guest-facing RSVP page and **renders nothing** when there is no number — add it to any new
 RSVP page. Privacy §2 tells hosts the number is shown to guests
 
+### Adding guests: contact details, duplicates and names
+
+What every way of adding a guest (host form, import, API, open RSVP, group link) does with missing, repeated, long, foreign or
+badly written details. Tests: `GuestAddEdgeCasesTest`, `GuestPhoneTest`.
+
+- **`App\Support\GuestPhone` is the one definition of a guest phone.** `problem()` returns the sentence to show (or null):
+ one number only (a `/`, `,`, `;`, "or" between digits, or more than 15 digits), allowed characters, then a Zambian number
+ (`0` + 9 digits, `260…`, or 9 bare digits; the subscriber number starts with 2, 7 or 9) or an international one (`+` or `00`,
+ 8–15 digits). `key()` is the comparison key (`260` + subscriber number for Zambian, all digits otherwise), so `0971234567`
+ and `+260 97 123 4567` match while a foreign number sharing the last nine digits does not. `whatsAppDigits()` feeds `wa.me`
+ (`WhatsAppInviteLink`) and is null when WhatsApp cannot open the number. Validate with `App\Rules\GuestPhoneNumber`
+- **Editing keeps a legacy phone.** `UpdateGuestRequest` checks the format only when the phone changed, so a guest saved
+ before the rule existed can still be edited
+- **Duplicates are refused under the event's row lock.** Email (case-insensitive) and phone (by `key()`) are unique per event.
+ Host and API adds go through `App\Services\GuestCreator`, which re-checks inside the lock; the import runs in one transaction
+ under the same lock and also catches the same number written two ways within one file. **Names may repeat**: the host gets a
+ `guest_same_name` flash, and QR downloads are named by guest id (`Guest::qrDownloadName()`) so two people with the same name never share a filename
+- **No email and no phone is allowed** (the host shares the link). The add flashes `guest_unreachable`, the list says "No
+ contact details", and bulk reminder/update emails and WhatsApp share **skip** guests they cannot reach and report it
+ (`bulk_skipped`; API: additive `skipped_count`)
+- **The length limit is 191 characters.** `AppServiceProvider` sets `Schema::defaultStringLength(191)`, so `guests.name`/`email`/`phone` are
+ `VARCHAR(191)` on MySQL. `Guest::NAME_MAX` / `EMAIL_MAX` are used by every request, the import and `maxlength`. SQLite does not
+ enforce length, so only a MySQL run catches a mismatch
+- **Names are cleaned the same way everywhere** (`Guest::cleanName()`: trim, collapse whitespace, Unicode NFC) so a name typed on
+ a phone and a name pasted from a spreadsheet compare equal. The list and pass card render names with `dir="auto"` / `<bdi>`
+ for right-to-left scripts; the phone column is `dir="ltr"` and never wraps
+- **Import reports bad rows** instead of dropping them silently: each row is checked (name length, `email:rfc`, `GuestPhone`), and
+ the first `EventGuestsImport::PROBLEMS_SHOWN` (10) problems are flashed with their spreadsheet row number (`import_invalid`,
+ `import_problems`; API: additive `invalid`, `problems`). A group named in the file is created only when a row is imported
+- **Not covered:** the PDF and PNG pass fonts (DejaVu) cannot draw CJK, Arabic or emoji; internationalised email addresses
+ are refused by `email:rfc`; event names and other tables still allow 255 characters against a 191 column
+
 ### Plus-ones
 
 A plus-one is `rsvps.attendee_count = 2`; an invitation RSVP is only ever 1 or 2. Plan and phases:

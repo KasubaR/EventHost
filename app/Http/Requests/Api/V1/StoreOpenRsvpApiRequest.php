@@ -6,6 +6,7 @@ use App\Enums\PublicInvitationStatus;
 use App\Http\Requests\Concerns\ValidatesRsvpPayload;
 use App\Models\Event;
 use App\Models\Guest;
+use App\Rules\GuestPhoneNumber;
 use App\Services\PublicInvitationResolver;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\RedirectResponse;
@@ -73,12 +74,14 @@ class StoreOpenRsvpApiRequest extends FormRequest
             $this->merge(['email' => $trimmed === '' ? null : $trimmed]);
         }
 
-        foreach (['phone', 'name'] as $field) {
-            $v = $this->input($field);
-            if (is_string($v)) {
-                $t = trim($v);
-                $this->merge([$field => $t === '' ? null : $t]);
-            }
+        $phone = $this->input('phone');
+        if (is_string($phone)) {
+            $t = trim($phone);
+            $this->merge(['phone' => $t === '' ? null : $t]);
+        }
+
+        if (is_string($this->input('name'))) {
+            $this->merge(['name' => Guest::cleanName($this->input('name'))]);
         }
     }
 
@@ -98,16 +101,16 @@ class StoreOpenRsvpApiRequest extends FormRequest
             ->value('id');
 
         return array_merge([
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:'.Guest::NAME_MAX],
             'email' => [
                 'required',
                 'email:rfc',
-                'max:255',
+                'max:'.Guest::EMAIL_MAX,
                 Rule::unique('guests', 'email')
                     ->where(fn ($q) => $q->where('event_id', $event->id))
                     ->ignore($existingGuestId),
             ],
-            'phone' => ['nullable', 'string', 'max:50'],
+            'phone' => ['bail', 'nullable', 'string', 'max:50', new GuestPhoneNumber],
         ], $this->rsvpFieldRules($event, plusOneAllowed: false));
     }
 

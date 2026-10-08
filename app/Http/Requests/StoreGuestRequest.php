@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Event;
 use App\Models\Guest;
+use App\Rules\GuestPhoneNumber;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -26,12 +27,14 @@ class StoreGuestRequest extends FormRequest
             $this->merge(['email' => $t === '' ? null : $t]);
         }
 
-        foreach (['phone', 'name'] as $field) {
-            $v = $this->input($field);
-            if (is_string($v)) {
-                $t = trim($v);
-                $this->merge([$field => $t === '' ? null : $t]);
-            }
+        $phone = $this->input('phone');
+        if (is_string($phone)) {
+            $t = trim($phone);
+            $this->merge(['phone' => $t === '' ? null : $t]);
+        }
+
+        if (is_string($this->input('name'))) {
+            $this->merge(['name' => Guest::cleanName($this->input('name'))]);
         }
 
         $this->merge([
@@ -49,15 +52,15 @@ class StoreGuestRequest extends FormRequest
         $event = $this->route('event');
 
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:'.Guest::NAME_MAX],
             'email' => [
                 'nullable',
                 'email:rfc',
-                'max:255',
+                'max:'.Guest::EMAIL_MAX,
                 Rule::unique('guests', 'email')->where(fn ($q) => $q->where('event_id', $event->id)),
             ],
             'phone' => [
-                'nullable', 'string', 'max:50',
+                'bail', 'nullable', 'string', 'max:50', new GuestPhoneNumber,
                 function (string $attribute, mixed $value, Closure $fail) use ($event): void {
                     if (Guest::phoneAlreadyUsed($event, (string) $value)) {
                         $fail('This phone number is already used by another guest for this event.');

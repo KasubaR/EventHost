@@ -562,7 +562,7 @@ class CommunicationService
                 $toE164,
                 (string) config('services.twilio.invitation_content_sid'),
                 [
-                    '1' => filled($guest->name) ? $guest->name : 'Guest',
+                    '1' => filled($guest->name) ? ShortText::whatsapp($guest->name) : 'Guest',
                     '2' => ShortText::whatsapp($event->name),
                     '3' => $event->event_date?->format('j F Y') ?? '',
                     '4' => $event->hasStartTime() ? Carbon::parse($event->event_time)->format('H:i') : 'TBA',
@@ -663,7 +663,7 @@ class CommunicationService
                 $toE164,
                 $contentSid,
                 [
-                    '1' => filled($guest->name) ? $guest->name : 'Guest',
+                    '1' => filled($guest->name) ? ShortText::whatsapp($guest->name) : 'Guest',
                     '2' => ShortText::whatsapp($event->name),
                     '3' => $event->event_date?->format('j F Y') ?? '',
                     '4' => $event->hasStartTime() ? Carbon::parse($event->event_time)->format('H:i') : 'TBA',

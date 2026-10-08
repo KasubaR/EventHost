@@ -46,6 +46,12 @@
 
     @if (session('status') === 'guest-created')
         <div class="evt-admin-flash">{{ $isRegistrations ? 'Registration added.' : 'Guest added.' }}</div>
+        @if (session('guest_unreachable'))
+            <div class="evt-admin-flash"><bdi>{{ session('guest_unreachable') }}</bdi> has no email or phone, so we can't send them anything. Copy their link from the row menu and share it yourself, or add a contact detail.</div>
+        @endif
+        @if (session('guest_same_name'))
+            <div class="evt-admin-flash">Another guest on this list is also called <bdi>{{ session('guest_same_name') }}</bdi>. If they're different people, an email or phone helps you tell them apart. If not, remove the extra one.</div>
+        @endif
     @elseif (session('status') === 'guest-updated')
         <div class="evt-admin-flash">{{ $isRegistrations ? 'Registration updated.' : 'Guest updated.' }}</div>
         @if (session('plus_one_kept'))
@@ -75,6 +81,17 @@
             @if (session('import_capped', 0) > 0)
                 {{ session('import_capped') }} more {{ Str::plural('guest', session('import_capped')) }} weren't added. This event is at its plan's guest limit.
             @endif
+            @if (session('import_invalid', 0) > 0)
+                {{ session('import_invalid') }} {{ Str::plural('row', session('import_invalid')) }} couldn't be imported. Fix {{ session('import_invalid') === 1 ? 'it' : 'them' }} in the file and import again:
+                <ul class="evt-import-problems">
+                    @foreach (session('import_problems', []) as $problem)
+                        <li>Row {{ $problem['row'] }}: {{ $problem['message'] }}</li>
+                    @endforeach
+                    @if (session('import_invalid') > count(session('import_problems', [])))
+                        <li>And {{ session('import_invalid') - count(session('import_problems', [])) }} more.</li>
+                    @endif
+                </ul>
+            @endif
         </div>
     @elseif (session('status') === 'guests-bulk-group')
         <div class="evt-admin-flash">Selected guests updated.</div>
@@ -85,13 +102,28 @@
     @elseif (session('status') === 'guests-bulk-deleted')
         <div class="evt-admin-flash">Selected guests removed.</div>
     @elseif (session('status') === 'guests-bulk-reminder')
-        <div class="evt-admin-flash">Reminder emails queued for {{ session('bulk_count', 0) }} guest(s).</div>
+        <div class="evt-admin-flash">
+            Reminder emails queued for {{ session('bulk_count', 0) }} guest(s).
+            @if (session('bulk_skipped', 0) > 0)
+                {{ session('bulk_skipped') }} skipped because they have no email address.
+            @endif
+        </div>
     @elseif (session('status') === 'guests-bulk-update')
-        <div class="evt-admin-flash">Update emails queued for {{ session('bulk_count', 0) }} guest(s).</div>
+        <div class="evt-admin-flash">
+            Update emails queued for {{ session('bulk_count', 0) }} guest(s).
+            @if (session('bulk_skipped', 0) > 0)
+                {{ session('bulk_skipped') }} skipped because they have no email address.
+            @endif
+        </div>
     @elseif (session('status') === 'guests-bulk-plus-one')
         <div class="evt-admin-flash">{{ session('bulk_count', 0) }} {{ Str::plural('guest', session('bulk_count', 0)) }} can now bring a plus-one.</div>
     @elseif (session('status') === 'guests-bulk-whatsapp')
-        <div class="evt-admin-flash">Selected guests prepared for WhatsApp sharing.</div>
+        <div class="evt-admin-flash">
+            {{ session('bulk_count', 0) }} {{ Str::plural('guest', session('bulk_count', 0)) }} prepared for WhatsApp sharing.
+            @if (session('bulk_skipped', 0) > 0)
+                {{ session('bulk_skipped') }} skipped because they have no phone number WhatsApp can open.
+            @endif
+        </div>
     @endif
 
     <div class="evt-stack">
@@ -300,16 +332,16 @@
                                     <td>
                                         <input type="checkbox" name="guest_ids[]" value="{{ $guestRow->id }}" form="guest-bulk-form" data-evt-guest-select aria-label="Select {{ $guestRow->name }}">
                                     </td>
-                                    <td>{{ $guestRow->name }}</td>
+                                    <td class="evt-guest-name-cell" dir="auto">{{ $guestRow->name }}</td>
                                     <td class="evt-guest-contact-cell">
                                         @if ($guestRow->email)
                                             <span class="evt-guest-contact-line">{{ $guestRow->email }}</span>
                                         @endif
                                         @if ($guestRow->phone)
-                                            <span class="evt-guest-contact-line">{{ $guestRow->phone }}</span>
+                                            <span class="evt-guest-contact-line evt-guest-phone" dir="ltr">{{ $guestRow->phone }}</span>
                                         @endif
-                                        @if (!$guestRow->email && !$guestRow->phone)
-                                            <span class="evt-muted">-</span>
+                                        @if ($guestRow->hasNoContactDetails())
+                                            <span class="evt-muted">No contact details. Share their link yourself.</span>
                                         @endif
                                     </td>
                                     <td>{{ $guestRow->group?->name ?? '-' }}</td>
@@ -367,13 +399,13 @@
                                                             <span>WhatsApp</span>
                                                         </a>
                                                     @else
-                                                        <span class="evt-more-item evt-more-item--disabled" role="menuitem" aria-disabled="true" title="Add a phone number for WhatsApp sharing">
+                                                        <span class="evt-more-item evt-more-item--disabled" role="menuitem" aria-disabled="true" title="{{ $guestRow->phone ? 'This phone number cannot be opened in WhatsApp. Edit the guest to fix it.' : 'Add a phone number for WhatsApp sharing' }}">
                                                             <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
                                                             <span>WhatsApp</span>
                                                         </span>
                                                     @endif
                                                     @if ($event->ownerHasPremiumEventTools())
-                                                        <a href="{{ route('events.guests.qr', ['event' => $event, 'guest' => $guestRow->id]) }}" class="evt-more-item" role="menuitem" data-evt-qr-open data-qr-name="{{ $guestRow->name }}" data-qr-filename="guest-{{ \Illuminate\Support\Str::slug($guestRow->name) }}-qr.png">
+                                                        <a href="{{ route('events.guests.qr', ['event' => $event, 'guest' => $guestRow->id]) }}" class="evt-more-item" role="menuitem" data-evt-qr-open data-qr-name="{{ $guestRow->name }}" data-qr-filename="{{ $guestRow->qrDownloadName() }}">
                                                             <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
                                                             <span>QR check-in</span>
                                                         </a>

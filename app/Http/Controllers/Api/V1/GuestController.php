@@ -13,6 +13,7 @@ use App\Http\Resources\Api\V1\TableResource;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Services\CommunicationService;
+use App\Services\GuestCreator;
 use App\Services\HostRsvpOverrideService;
 use App\Services\QrCodeService;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -138,7 +139,7 @@ class GuestController extends Controller
 
         return response($qrCodeService->png($url), 200, [
             'Content-Type' => 'image/png',
-            'Content-Disposition' => 'inline; filename="guest-'.Str::slug($guest->name).'-qr.png"',
+            'Content-Disposition' => 'inline; filename="'.$guest->qrDownloadName().'"',
         ]);
     }
 
@@ -162,7 +163,7 @@ class GuestController extends Controller
         ]);
     }
 
-    public function store(StoreGuestApiRequest $request, Event $event): JsonResponse
+    public function store(StoreGuestApiRequest $request, Event $event, GuestCreator $guestCreator): JsonResponse
     {
         $this->authorize('update', $event);
         abort_unless($event->isInvitation(), 404);
@@ -174,21 +175,7 @@ class GuestController extends Controller
             ], 422);
         }
 
-        $validated = $request->validated();
-        $markSent = $validated['mark_invitation_sent'] ?? false;
-
-        $guest = Guest::query()->create([
-            'event_id' => $event->id,
-            'guest_group_id' => $validated['guest_group_id'] ?? null,
-            'event_table_id' => $validated['event_table_id'] ?? null,
-            'name' => $validated['name'],
-            'email' => $validated['email'] ?? null,
-            'phone' => $validated['phone'] ?? null,
-            'invitation_token' => Str::random(48),
-            'plus_one_allowed' => $validated['plus_one_allowed'] ?? false,
-            'invitation_sent' => $markSent,
-            'invitation_sent_at' => $markSent ? now() : null,
-        ]);
+        $guest = $guestCreator->create($event, $request->validated());
 
         $event->loadMissing('user');
 

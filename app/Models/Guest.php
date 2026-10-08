@@ -6,6 +6,7 @@ use App\Casts\AsRsvpRemindersSent;
 use App\Casts\AsWhatsAppEventRemindersSent;
 use App\Enums\RsvpApprovalStatus;
 use App\Enums\RsvpStatus;
+use App\Support\GuestPhone;
 use App\Support\RsvpReminderBuckets;
 use App\Support\WhatsAppEventReminderBuckets;
 use Database\Factories\GuestFactory;
@@ -17,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Str;
 
 /**
  * @property Carbon|null $email_reminders_stopped_at When the guest stopped reminder emails from the link in one; null = still receiving them.
@@ -27,6 +29,14 @@ class Guest extends Model
 {
     /** @use HasFactory<GuestFactory> */
     use HasFactory;
+
+    /**
+     * Column length of `name` and `email`: AppServiceProvider sets Schema::defaultStringLength(191), so on MySQL these
+     * are VARCHAR(191), not 255. SQLite (the test database) does not enforce length, so only this rule catches it.
+     */
+    public const NAME_MAX = 191;
+
+    public const EMAIL_MAX = 191;
 
     /**
      * @var list<string>
@@ -281,13 +291,13 @@ class Guest extends Model
     }
 
     /**
-     * Compares by subscriber number, not raw digits, so "0971234567" and
-     * "+260971234567" — the same Zambian number in local vs. country-code
-     * form, the single most common way the same guest ends up typed twice —
-     * are recognised as one guest, not two. Also swallows punctuation/spacing
-     * ("+260 97 123 4567", "097-123-4567"). Used by StoreGuestRequest,
-     * UpdateGuestRequest (passes $ignoreGuestId) and EventGuestsImport, so all
-     * three guest-creation paths agree on what counts as a duplicate.
+     * Compares through GuestPhone::key(), so "0971234567" and "+260 97 123 4567"
+     * — the same Zambian number in local vs. country-code form, the single most
+     * common way the same guest ends up typed twice — are recognised as one
+     * guest, while a foreign number that merely ends in the same nine digits is
+     * not. Used by StoreGuestRequest, UpdateGuestRequest (passes $ignoreGuestId)
+     * and EventGuestsImport, so every guest-creation path agrees on what counts
+     * as a duplicate.
      */
     public static function phoneAlreadyUsed(Event $event, ?string $phone, ?int $ignoreGuestId = null): bool
     {
@@ -303,7 +313,7 @@ class Guest extends Model
      */
     public static function matchingPhone(Event $event, ?string $phone, ?int $ignoreGuestId = null): ?self
     {
-        $key = static::phoneComparisonKey($phone);
+        $key = GuestPhone::key($phone);
         if ($key === null) {
             return null;
         }
@@ -313,21 +323,53 @@ class Guest extends Model
             ->whereNotNull('phone')
             ->when($ignoreGuestId !== null, fn (Builder $q) => $q->where('id', '!=', $ignoreGuestId))
             ->get(['id', 'phone', 'email', 'name'])
-            ->first(fn (Guest $g): bool => static::phoneComparisonKey($g->phone) === $key);
+            ->first(fn (Guest $g): bool => GuestPhone::key($g->phone) === $key);
     }
 
-    private static function phoneComparisonKey(?string $phone): ?string
+    /**
+     * A typed name as it is stored: trimmed, runs of whitespace collapsed, and in Unicode NFC so "é" typed as one
+     * character and as "e" plus an accent are the same name. Null when nothing is left.
+     */
+    public static function cleanName(?string $name): ?string
     {
-        $digits = is_string($phone) ? (preg_replace('/\D+/', '', $phone) ?? '') : '';
-        if ($digits === '') {
+        if (! is_string($name)) {
             return null;
         }
 
-        // A Zambian mobile number is a 9-digit subscriber number behind either
-        // a local trunk "0" or the "260" country code — keep just that
-        // subscriber number so both forms compare equal. Shorter strings
-        // (test data, other-country numbers) are compared as-is.
-        return strlen($digits) > 9 ? substr($digits, -9) : $digits;
+        $clean = trim((string) preg_replace('/\s+/u', ' ', $name));
+
+        if ($clean !== '' && class_exists(\Normalizer::class)) {
+            $clean = \Normalizer::normalize($clean, \Normalizer::FORM_C) ?: $clean;
+        }
+
+        return $clean === '' ? null : $clean;
+    }
+
+    /** Other guests on this event with the same name, ignoring case. */
+    public static function sameNameCount(Event $event, string $name, ?int $ignoreGuestId = null): int
+    {
+        return static::query()
+            ->where('event_id', $event->id)
+            ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])
+            ->when($ignoreGuestId !== null, fn (Builder $q) => $q->where('id', '!=', $ignoreGuestId))
+            ->count();
+    }
+
+    /**
+     * Host-side QR download name. Carries the id because two guests can share a name, and a name in a script the
+     * slugger cannot transliterate slugs to nothing.
+     */
+    public function qrDownloadName(): string
+    {
+        $slug = Str::slug((string) $this->name);
+
+        return 'guest-'.$this->id.($slug !== '' ? '-'.$slug : '').'-qr.png';
+    }
+
+    /** True when the host has no email and no phone for this guest, so only a copied link reaches them. */
+    public function hasNoContactDetails(): bool
+    {
+        return blank($this->email) && blank($this->phone);
     }
 
     /**

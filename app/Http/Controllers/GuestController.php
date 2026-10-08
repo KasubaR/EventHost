@@ -12,6 +12,7 @@ use App\Http\Requests\UpdateGuestRequest;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Services\CommunicationService;
+use App\Services\GuestCreator;
 use App\Services\HostRsvpOverrideService;
 use App\Services\QrCodeService;
 use App\Services\RsvpApprovalService;
@@ -187,7 +188,7 @@ class GuestController extends Controller
         return view('events.guests.create', compact('event', 'groups', 'tables'));
     }
 
-    public function store(StoreGuestRequest $request, Event $event): RedirectResponse
+    public function store(StoreGuestRequest $request, Event $event, GuestCreator $guestCreator): RedirectResponse
     {
         abort_unless($event->isInvitation(), 404);
 
@@ -197,26 +198,13 @@ class GuestController extends Controller
             ])->withInput();
         }
 
-        $validated = $request->validated();
-
-        $markSent = $validated['mark_invitation_sent'] ?? false;
-
-        Guest::query()->create([
-            'event_id' => $event->id,
-            'guest_group_id' => $validated['guest_group_id'] ?? null,
-            'event_table_id' => $validated['event_table_id'] ?? null,
-            'name' => $validated['name'],
-            'email' => $validated['email'] ?? null,
-            'phone' => $validated['phone'] ?? null,
-            'invitation_token' => Str::random(48),
-            'plus_one_allowed' => $validated['plus_one_allowed'] ?? false,
-            'invitation_sent' => $markSent,
-            'invitation_sent_at' => $markSent ? now() : null,
-        ]);
+        $guest = $guestCreator->create($event, $request->validated());
 
         return redirect()
             ->route('events.guests.index', $event)
-            ->with('status', 'guest-created');
+            ->with('status', 'guest-created')
+            ->with('guest_unreachable', $guest->hasNoContactDetails() ? $guest->name : null)
+            ->with('guest_same_name', Guest::sameNameCount($event, $guest->name, ignoreGuestId: $guest->id) > 0 ? $guest->name : null);
     }
 
     public function edit(Event $event, Guest $guest): View

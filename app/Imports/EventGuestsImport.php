@@ -6,13 +6,19 @@ use App\Models\Event;
 use App\Models\EventTable;
 use App\Models\Guest;
 use App\Models\GuestGroup;
+use App\Support\GuestPhone;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 
 class EventGuestsImport implements ToCollection, WithHeadingRow
 {
+    /** How many row problems are kept for the report; the count still covers every one. */
+    public const PROBLEMS_SHOWN = 10;
+
     public int $createdCount = 0;
 
     public int $skippedCount = 0;
@@ -25,11 +31,31 @@ class EventGuestsImport implements ToCollection, WithHeadingRow
      */
     public int $cappedCount = 0;
 
+    /** Rows refused because a value would not pass the add-guest form (name too long, bad email or phone). */
+    public int $invalidCount = 0;
+
+    /** @var list<array{row: int, message: string}> The first PROBLEMS_SHOWN invalid rows, by spreadsheet row number. */
+    public array $problems = [];
+
     public function __construct(
         protected Event $event,
     ) {}
 
+    /**
+     * One transaction under the event's row lock (the lock GuestCreator and GroupRsvpService take too): a database
+     * error part-way leaves the list as it was rather than half-imported, and a guest added by hand at the same
+     * moment cannot slip a duplicate email or phone between this file's check and its insert.
+     */
     public function collection(Collection $rows): void
+    {
+        DB::transaction(function () use ($rows): void {
+            Event::query()->whereKey($this->event->id)->lockForUpdate()->firstOrFail();
+
+            $this->importRows($rows);
+        });
+    }
+
+    private function importRows(Collection $rows): void
     {
         $capacity = $this->event->guestCapacity();
         $currentCount = $capacity !== null ? $this->event->guests()->count() : 0;
@@ -45,34 +71,38 @@ class EventGuestsImport implements ToCollection, WithHeadingRow
             ->get(['id', 'label'])
             ->keyBy(fn (EventTable $t) => mb_strtolower(trim($t->label)));
 
-        foreach ($rows as $row) {
-            $name = isset($row['name']) ? trim((string) $row['name']) : '';
-            if ($name === '') {
+        foreach ($rows->values() as $index => $row) {
+            // Row 1 is the heading row.
+            $rowNumber = $index + 2;
+
+            $name = Guest::cleanName(isset($row['name']) ? (string) $row['name'] : null);
+            if ($name === null) {
+                continue;
+            }
+
+            if (mb_strlen($name) > Guest::NAME_MAX) {
+                $this->refuse($rowNumber, 'the name is longer than '.Guest::NAME_MAX.' characters.');
+
                 continue;
             }
 
             $emailRaw = isset($row['email']) ? trim((string) $row['email']) : '';
             $email = $emailRaw === '' ? null : strtolower($emailRaw);
 
+            if ($email !== null && Validator::make(['email' => $email], ['email' => ['email:rfc', 'max:'.Guest::EMAIL_MAX]])->fails()) {
+                $this->refuse($rowNumber, '"'.Str::limit($emailRaw, 60).'" is not a valid email address.');
+
+                continue;
+            }
+
             $phoneRaw = isset($row['phone']) ? trim((string) $row['phone']) : '';
             $phone = $phoneRaw === '' ? null : $phoneRaw;
 
-            $groupLabel = isset($row['group']) ? trim((string) $row['group']) : '';
-            $guestGroupId = null;
+            if ($phone !== null && ($problem = GuestPhone::problem($phone)) !== null) {
+                $this->refuse($rowNumber, 'phone "'.Str::limit($phone, 40).'": '.lcfirst($problem));
 
-            if ($groupLabel !== '') {
-                /** @var GuestGroup $group */
-                $group = GuestGroup::query()->firstOrCreate([
-                    'event_id' => $this->event->id,
-                    'name' => $groupLabel,
-                ]);
-                $guestGroupId = $group->id;
+                continue;
             }
-
-            $tableLabel = isset($row['table']) ? trim((string) $row['table']) : '';
-            $eventTableId = $tableLabel !== ''
-                ? $tablesByLabel->get(mb_strtolower($tableLabel))?->id
-                : null;
 
             if ($email !== null && Guest::query()->where('event_id', $this->event->id)->where('email', $email)->exists()) {
                 $this->skippedCount++;
@@ -81,9 +111,9 @@ class EventGuestsImport implements ToCollection, WithHeadingRow
             }
 
             if ($phone !== null) {
-                $phoneDigits = preg_replace('/\D+/', '', $phone) ?? '';
-                if ($phoneDigits !== '') {
-                    if (isset($phonesSeenThisFile[$phoneDigits])) {
+                $phoneKey = GuestPhone::key($phone);
+                if ($phoneKey !== null) {
+                    if (isset($phonesSeenThisFile[$phoneKey])) {
                         $this->skippedCount++;
 
                         continue;
@@ -95,7 +125,7 @@ class EventGuestsImport implements ToCollection, WithHeadingRow
                         continue;
                     }
 
-                    $phonesSeenThisFile[$phoneDigits] = true;
+                    $phonesSeenThisFile[$phoneKey] = true;
                 }
             }
 
@@ -104,6 +134,24 @@ class EventGuestsImport implements ToCollection, WithHeadingRow
 
                 continue;
             }
+
+            // Created only for a row that is actually imported, so a refused row cannot leave an empty group behind.
+            $groupLabel = isset($row['group']) ? trim((string) $row['group']) : '';
+            $guestGroupId = null;
+
+            if ($groupLabel !== '') {
+                /** @var GuestGroup $group */
+                $group = GuestGroup::query()->firstOrCreate([
+                    'event_id' => $this->event->id,
+                    'name' => mb_substr($groupLabel, 0, 191),
+                ]);
+                $guestGroupId = $group->id;
+            }
+
+            $tableLabel = isset($row['table']) ? trim((string) $row['table']) : '';
+            $eventTableId = $tableLabel !== ''
+                ? $tablesByLabel->get(mb_strtolower($tableLabel))?->id
+                : null;
 
             Guest::query()->create([
                 'event_id' => $this->event->id,
@@ -120,6 +168,15 @@ class EventGuestsImport implements ToCollection, WithHeadingRow
 
             $this->createdCount++;
             $currentCount++;
+        }
+    }
+
+    private function refuse(int $rowNumber, string $message): void
+    {
+        $this->invalidCount++;
+
+        if (count($this->problems) < self::PROBLEMS_SHOWN) {
+            $this->problems[] = ['row' => $rowNumber, 'message' => $message];
         }
     }
 

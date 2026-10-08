@@ -58,24 +58,25 @@
                     @method('PATCH')
                     <div class="profile-field">
                         <label for="guest_name" class="profile-label">Name</label>
-                        <input id="guest_name" type="text" name="name" class="profile-input {{ $errors->has('name') ? 'profile-input--error' : '' }}" value="{{ old('name', $guest->name) }}" required maxlength="255">
+                        <input id="guest_name" type="text" name="name" class="profile-input {{ $errors->has('name') ? 'profile-input--error' : '' }}" value="{{ old('name', $guest->name) }}" required maxlength="191">
                         @error('name')
                             <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                         @enderror
                     </div>
                     <div class="profile-field">
                         <label for="guest_email" class="profile-label">Email <span class="profile-optional">optional</span></label>
-                        <input id="guest_email" type="email" name="email" class="profile-input {{ $errors->has('email') ? 'profile-input--error' : '' }}" value="{{ old('email', $guest->email) }}" maxlength="255" autocomplete="email">
+                        <input id="guest_email" type="email" name="email" class="profile-input {{ $errors->has('email') ? 'profile-input--error' : '' }}" value="{{ old('email', $guest->email) }}" maxlength="191" autocomplete="email">
                         @error('email')
                             <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                         @enderror
                     </div>
                     <div class="profile-field">
                         <label for="guest_phone" class="profile-label">Phone <span class="profile-optional">optional</span></label>
-                        <input id="guest_phone" type="tel" name="phone" class="profile-input {{ $errors->has('phone') ? 'profile-input--error' : '' }}" value="{{ old('phone', $guest->phone) }}" maxlength="50" autocomplete="tel">
+                        <input id="guest_phone" type="tel" name="phone" class="profile-input {{ $errors->has('phone') ? 'profile-input--error' : '' }}" value="{{ old('phone', $guest->phone) }}" maxlength="50" autocomplete="tel" aria-describedby="guest_phone_hint">
                         @error('phone')
                             <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                         @enderror
+                        <p id="guest_phone_hint" class="evt-field-hint">One number, for example 0971234567. For a number outside Zambia, start with + and the country code.</p>
                     </div>
                     <div class="profile-field">
                         <label for="guest_group_id" class="profile-label">Group <span class="profile-optional">optional</span></label>

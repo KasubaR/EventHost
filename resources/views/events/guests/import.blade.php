@@ -36,6 +36,7 @@
                         @enderror
                     </div>
                     <p class="evt-muted">Duplicates are skipped when the same email exists for this event, or when another guest shares the same phone number.</p>
+                    <p class="evt-muted">Each row is checked like the Add guest form: a name up to 191 characters, a valid email, and one phone number per guest (for example 0971234567, or +44 7700 900123 outside Zambia). Rows that fail are listed after the import so you can fix them, and the rest are still added.</p>
                     <div class="profile-actions">
                         <button type="submit" class="btn-primary">Import guests</button>
                     </div>

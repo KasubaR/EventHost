@@ -6,6 +6,7 @@ use App\Http\Requests\GuestBulkActionRequest;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Services\CommunicationService;
+use App\Support\GuestPhone;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 
@@ -57,7 +58,10 @@ class GuestBulkActionController extends Controller
             return back()->withErrors(['action' => $reason.' Extend the RSVP deadline first, then try again.']);
         }
 
-        DB::transaction(function () use ($event, $ids, $action, $validated, $communicationService, &$bulkCount): void {
+        // Guests the action could not reach: no email for the two email actions, no usable phone for the WhatsApp share.
+        $skippedCount = 0;
+
+        DB::transaction(function () use ($event, $ids, $action, $validated, $communicationService, &$bulkCount, &$skippedCount): void {
             $builder = Guest::query()
                 ->where('event_id', $event->id)
                 ->whereIn('id', $ids)
@@ -108,6 +112,12 @@ class GuestBulkActionController extends Controller
             $guests = $builder->get();
             foreach ($guests as $guest) {
                 if ($action === 'prepare_whatsapp_share') {
+                    // Only a guest the share link can actually reach is marked sent; anyone else would read "Sent" forever.
+                    if ($guest->invitation_token === null || GuestPhone::whatsAppDigits($guest->phone) === null) {
+                        $skippedCount++;
+
+                        continue;
+                    }
                     $guest->forceFill([
                         'invitation_sent' => true,
                         'invitation_sent_at' => $guest->invitation_sent_at ?? now(),
@@ -123,6 +133,12 @@ class GuestBulkActionController extends Controller
                     }
                     // The guest asked not to get these; skipped before the bucket is marked sent or counted.
                     if ($guest->hasStoppedEmailReminders()) {
+                        continue;
+                    }
+                    // Nothing can be sent, so the bucket stays unused for when an email is added.
+                    if (blank($guest->email)) {
+                        $skippedCount++;
+
                         continue;
                     }
                     $daysUntil = (int) ($validated['days_until'] ?? 3);
@@ -148,6 +164,11 @@ class GuestBulkActionController extends Controller
                     if ($updateMessage === '') {
                         continue;
                     }
+                    if (blank($guest->email)) {
+                        $skippedCount++;
+
+                        continue;
+                    }
                     $communicationService->sendEventUpdate($event, $guest, $updateMessage);
                     $bulkCount++;
                 }
@@ -166,6 +187,7 @@ class GuestBulkActionController extends Controller
         return redirect()
             ->route('events.guests.index', array_merge(['event' => $event], $filters))
             ->with('bulk_count', $bulkCount)
+            ->with('bulk_skipped', $skippedCount)
             ->with('status', match ($action) {
                 'assign_group' => 'guests-bulk-group',
                 'assign_table' => 'guests-bulk-table',

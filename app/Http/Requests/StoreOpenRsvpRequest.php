@@ -7,6 +7,7 @@ use App\Exceptions\RsvpUnavailableException;
 use App\Http\Requests\Concerns\ValidatesRsvpPayload;
 use App\Models\Event;
 use App\Models\Guest;
+use App\Rules\GuestPhoneNumber;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -71,12 +72,14 @@ class StoreOpenRsvpRequest extends FormRequest
             $this->merge(['email' => $trimmed === '' ? null : $trimmed]);
         }
 
-        foreach (['phone', 'name'] as $field) {
-            $v = $this->input($field);
-            if (is_string($v)) {
-                $t = trim($v);
-                $this->merge([$field => $t === '' ? null : $t]);
-            }
+        $phone = $this->input('phone');
+        if (is_string($phone)) {
+            $t = trim($phone);
+            $this->merge(['phone' => $t === '' ? null : $t]);
+        }
+
+        if (is_string($this->input('name'))) {
+            $this->merge(['name' => Guest::cleanName($this->input('name'))]);
         }
     }
 
@@ -96,11 +99,11 @@ class StoreOpenRsvpRequest extends FormRequest
             ->value('id');
 
         return array_merge([
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:'.Guest::NAME_MAX],
             'email' => [
                 'required',
                 'email:rfc',
-                'max:255',
+                'max:'.Guest::EMAIL_MAX,
                 Rule::unique('guests', 'email')
                     ->where(fn ($q) => $q->where('event_id', $event->id))
                     ->ignore($existingGuestId),
@@ -110,7 +113,9 @@ class StoreOpenRsvpRequest extends FormRequest
             // one of the two channels that delivers it (RsvpController::storeOpen()).
             // A public/free-registration signup keeps phone optional, unchanged.
             'phone' => array_merge(
-                $event->is_public ? ['nullable', 'string', 'max:50'] : ['required', 'string', 'max:50'],
+                $event->is_public
+                    ? ['bail', 'nullable', 'string', 'max:50', new GuestPhoneNumber]
+                    : ['bail', 'required', 'string', 'max:50', new GuestPhoneNumber],
                 // The duplicate-phone check below only makes sense for a private
                 // event's real guest list — a public/free-registration signup is
                 // token-less by design (a headcount, not a guest list; see the

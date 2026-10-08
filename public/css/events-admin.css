@@ -1727,10 +1727,30 @@ body > .evt-more-menu .evt-more-item--danger:hover {
 
 .evt-guest-contact-cell {
     font-size: 13px;
+    overflow-wrap: break-word;
+}
+
+/* A name can be 255 characters with no spaces; wrap it inside the column instead of widening the table. */
+.evt-guest-name-cell {
+    min-width: 120px;
+    max-width: 260px;
+    overflow-wrap: break-word;
+    overflow-wrap: anywhere;
+}
+
+.evt-import-problems {
+    margin: 8px 0 0;
+    padding-left: 20px;
+    overflow-wrap: break-word;
+    overflow-wrap: anywhere;
 }
 
 .evt-guest-contact-line {
     display: block;
+}
+
+.evt-guest-phone {
+    white-space: nowrap;
 }
 
 .evt-guest-sent-meta {

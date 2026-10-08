@@ -14,14 +14,14 @@
 @endif
     <div class="rsvp-field-group">
         <label class="rsvp-field-label" for="rsvp_name">Full name</label>
-        <input id="rsvp_name" type="text" name="name" class="rsvp-input" required maxlength="255" value="{{ old('name') }}" autocomplete="name">
+        <input id="rsvp_name" type="text" name="name" class="rsvp-input" required maxlength="191" value="{{ old('name') }}" autocomplete="name">
         @error('name')
             <p class="rsvp-field-error">{{ $message }}</p>
         @enderror
     </div>
     <div class="rsvp-field-group">
         <label class="rsvp-field-label" for="rsvp_email">Email</label>
-        <input id="rsvp_email" type="email" name="email" class="rsvp-input" required maxlength="255" value="{{ old('email') }}" autocomplete="email">
+        <input id="rsvp_email" type="email" name="email" class="rsvp-input" required maxlength="191" value="{{ old('email') }}" autocomplete="email">
         @error('email')
             <p class="rsvp-field-error">{{ $message }}</p>
         @enderror
@@ -33,7 +33,7 @@
         @else
             <label class="rsvp-field-label" for="rsvp_phone">Phone <span class="rsvp-optional">optional</span></label>
         @endif
-        <input id="rsvp_phone" type="tel" name="phone" class="rsvp-input" @required($phoneRequired) maxlength="50" value="{{ old('phone') }}" autocomplete="tel">
+        <input id="rsvp_phone" type="tel" name="phone" class="rsvp-input" @required($phoneRequired) maxlength="50" value="{{ old('phone') }}" autocomplete="tel" placeholder="0971234567">
         @error('phone')
             <p class="rsvp-field-error">{{ $message }}</p>
         @enderror
