@@ -23,11 +23,25 @@ use Tests\TestCase;
  */
 class RsvpLastSeatConcurrencyTest extends TestCase
 {
-    use DatabaseTruncation;
+    use DatabaseTruncation {
+        truncateDatabaseTables as private truncateTables;
+    }
 
     private const CONTENDERS = 6;
 
     private bool $committedRows = false;
+
+    /**
+     * Only a real server is touched. On the in-memory SQLite of the normal suite this test skips in setUp(), but the trait
+     * runs before that and, unlike RefreshDatabase, does not rebuild an in-memory database: it would seed into tables that
+     * do not exist and fail the whole run whenever another test class went first.
+     */
+    protected function truncateDatabaseTables(): void
+    {
+        if (DB::connection()->getDriverName() === 'mysql') {
+            $this->truncateTables();
+        }
+    }
 
     protected function setUp(): void
     {

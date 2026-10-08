@@ -26,7 +26,7 @@
     $rsvpLead = 'Your presence would mean the world to us. Please respond at your earliest convenience so we may prepare every detail with care.';
     $deadlineText = '';
     if ($event->rsvpDeadlineAt()) {
-        $deadlineText = 'Respond by '.$event->rsvpDeadlineAt()->format('jS F Y');
+        $deadlineText = 'Respond by '.$event->rsvpDeadlineAt()->format('jS F Y'.' \a\t g:i A T');
     }
 @endphp
 

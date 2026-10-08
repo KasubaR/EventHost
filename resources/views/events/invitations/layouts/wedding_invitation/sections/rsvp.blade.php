@@ -10,7 +10,7 @@
 
     $rsvpNote = '';
     if ($event->rsvpDeadlineAt()) {
-        $rsvpNote = 'Please respond by '.$event->rsvpDeadlineAt()->format('jS F Y').' so we can make every detail perfect for your presence.';
+        $rsvpNote = 'Please respond by '.$event->rsvpDeadlineAt()->format('jS F Y'.' \a\t g:i A T').' so we can make every detail perfect for your presence.';
     }
 @endphp
 

@@ -8,7 +8,7 @@
 
     $rsvpNote = '';
     if ($event->rsvpDeadlineAt()) {
-        $rsvpNote = 'Kindly respond by '.$event->rsvpDeadlineAt()->format('F j');
+        $rsvpNote = 'Kindly respond by '.$event->rsvpDeadlineAt()->format('F j'.' \a\t g:i A T');
     }
 @endphp
 

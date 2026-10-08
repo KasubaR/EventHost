@@ -44,7 +44,7 @@ class StoreOpenRsvpApiRequest extends FormRequest
         }
 
         if (! $resolved['event']->acceptsRsvpSubmissions()) {
-            throw new RsvpClosedException;
+            throw new RsvpClosedException(event: $resolved['event']);
         }
 
         // PublicInvitationResolver::resolveOpenRsvp() allows a private event

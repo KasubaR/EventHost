@@ -12,16 +12,17 @@ use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventGalleryController;
 use App\Http\Controllers\EventInvitationDesignController;
 use App\Http\Controllers\EventInvitationMediaController;
+use App\Http\Controllers\EventOrganizerController;
 use App\Http\Controllers\EventPhotoController;
 use App\Http\Controllers\EventPreviewController;
 use App\Http\Controllers\EventPublicRegistrationController;
+use App\Http\Controllers\EventRsvpClosureController;
 use App\Http\Controllers\EventStaffController;
 use App\Http\Controllers\EventStaffInvitationController;
 use App\Http\Controllers\EventStaffLinkController;
 use App\Http\Controllers\EventTableController;
 use App\Http\Controllers\EventTicketCheckoutController;
 use App\Http\Controllers\EventTicketDashboardController;
-use App\Http\Controllers\EventOrganizerController;
 use App\Http\Controllers\EventTicketingController;
 use App\Http\Controllers\EventTicketManagementController;
 use App\Http\Controllers\EventTicketPurchaseController;
@@ -506,6 +507,8 @@ Route::middleware(['auth', 'account.active', 'verified'])->group(function () {
     Route::patch('/events/{event}/publish', [EventController::class, 'publish'])->name('events.publish');
     Route::patch('/events/{event}/pause', [EventController::class, 'pause'])->name('events.pause');
     Route::patch('/events/{event}/resume', [EventController::class, 'resume'])->name('events.resume');
+    Route::post('/events/{event}/rsvp-closure', [EventRsvpClosureController::class, 'store'])->name('events.rsvp-closure.store');
+    Route::delete('/events/{event}/rsvp-closure', [EventRsvpClosureController::class, 'destroy'])->name('events.rsvp-closure.destroy');
     Route::patch('/events/{event}/audience-migration-notice/dismiss', [EventController::class, 'dismissAudienceMigrationNotice'])
         ->name('events.audience-migration-notice.dismiss');
     Route::patch('/events/{event}/cancel', [EventController::class, 'cancel'])->name('events.cancel');

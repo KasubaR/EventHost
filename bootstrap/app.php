@@ -106,10 +106,14 @@ return Application::configure(basePath: dirname(__DIR__))
                     'message' => $e->getMessage(),
                     'code' => 'rsvp_closed',
                     'can_reduce' => $e->mayReduce,
+                    'closed_reason' => $e->reason,
+                    'closes_at' => $e->closesAt,
                 ], 403);
             }
 
             return ($rsvpPageFor($request) !== null ? redirect($rsvpPageFor($request)) : redirect()->back(fallback: url('/')))
+                // The typed answer rides along so the closed page can show it: the guest has something to pass to the host.
+                ->withInput($request->except(['_token', 'password']))
                 ->with('rsvp_closed', $e->getMessage());
         });
 

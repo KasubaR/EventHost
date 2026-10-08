@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\V1\EventInvitationDesignController;
 use App\Http\Controllers\Api\V1\EventInvitationMediaController;
 use App\Http\Controllers\Api\V1\EventPhotoController;
 use App\Http\Controllers\Api\V1\EventPreviewController;
+use App\Http\Controllers\Api\V1\EventRsvpClosureController;
 use App\Http\Controllers\Api\V1\EventStaffController;
 use App\Http\Controllers\Api\V1\EventStaffLinkController;
 use App\Http\Controllers\Api\V1\EventTableController;
@@ -236,6 +237,8 @@ Route::prefix('v1/host')->middleware(['auth:sanctum', 'sanctum.active'])->group(
         Route::patch('/{event}/publish', [EventController::class, 'publish'])->name('publish');
         Route::patch('/{event}/pause', [EventController::class, 'pause'])->name('pause');
         Route::patch('/{event}/resume', [EventController::class, 'resume'])->name('resume');
+        Route::post('/{event}/rsvp-closure', [EventRsvpClosureController::class, 'store'])->name('rsvp-closure.store');
+        Route::delete('/{event}/rsvp-closure', [EventRsvpClosureController::class, 'destroy'])->name('rsvp-closure.destroy');
         Route::patch('/{event}/cancel', [EventController::class, 'cancel'])->name('cancel');
         Route::patch('/{event}/uncancel', [EventController::class, 'uncancel'])->name('uncancel');
 

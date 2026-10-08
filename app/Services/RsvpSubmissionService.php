@@ -163,7 +163,7 @@ class RsvpSubmissionService
                 );
 
                 if (! $isReduction) {
-                    throw new RsvpClosedException($mayReduce);
+                    throw new RsvpClosedException($mayReduce, $locked);
                 }
             }
 

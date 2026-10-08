@@ -32,7 +32,7 @@ class StoreOpenRsvpRequest extends FormRequest
         }
 
         if (! $event->acceptsRsvpSubmissions()) {
-            throw new RsvpClosedException;
+            throw new RsvpClosedException(event: $event);
         }
 
         // The plan's guest-list cap only matters for a private event here — a

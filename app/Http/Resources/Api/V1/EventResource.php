@@ -67,6 +67,8 @@ class EventResource extends JsonResource
             // value labelled +00:00. rsvp_closes_at is additive: the deadline, or the start when there is none.
             'rsvp_deadline' => $this->rsvpDeadlineAt()?->toIso8601String(),
             'rsvp_closes_at' => $this->rsvpClosesAt()?->toIso8601String(),
+            // Additive: the host stopped taking RSVPs by hand (null = following the deadline). plans/rsvp-deadline-moments.md.
+            'rsvp_closed_at' => $this->rsvp_closed_at?->toIso8601String(),
             'guest_limit' => $this->guest_limit,
             'ticket_capacity' => $this->ticket_capacity,
             'host_contact_phone' => $this->host_contact_phone,

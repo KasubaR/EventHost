@@ -27,6 +27,10 @@
     ];
 @endphp
 
+@if (isset($event) && $event->rsvp_deadline !== null && ! $event->rsvpManuallyClosed())
+    <p class="rsvp-field-hint rsvp-cutoff"><i class="fa-solid fa-clock" aria-hidden="true"></i> RSVP closes {{ $event->rsvpDeadlineLabel() }}.</p>
+@endif
+
 <div class="rsvp-field-group">
     <span class="rsvp-field-label">Your response</span>
     <div class="rsvp-status-options">

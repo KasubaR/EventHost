@@ -748,6 +748,17 @@ When RSVP closes, who may still change an answer, and how the deadline reminders
   deliberately **no automatic broadcast**, web only). The free per-guest wa.me share link is client-side and cannot be blocked
 - **API.** `EventResource::rsvp_deadline` is now a real ISO instant with the venue offset (`+02:00`, it used to carry the typed
   value labelled `+00:00`), and `rsvp_closes_at` is new. Both are additive; no Android client is shipped
+- **Four ways RSVP closes, one gate.** `isRsvpOpen()` covers all of them: the deadline (or the event start with none), the **host closing by hand**
+  (`events.rsvp_closed_at`, `Event::rsvpManuallyClosed()`), a paused/cancelled/deleted event, and the event having been held. `rsvpClosureCause()` names
+  which (`host` | `deadline` | `started` | `unavailable`) and `rsvpClosedGuestMessage()` is the one guest sentence for it; `RsvpClosedException` carries
+  `reason` and `closesAt` (JSON: `closed_reason`, `closes_at`, additive). Plan: `plans/rsvp-deadline-moments.md` (all phases built)
+- **Closing by hand** (`EventRsvpClosureController`, `POST|DELETE /events/{event}/rsvp-closure`, API `.../rsvp-closure`, `<x-rsvp-closed-banner>` buttons): blocks new
+  answers and increases like a passed deadline, but a guest who already answered can still cancel or reduce until the event starts, and the invitation page
+  stays visible (pausing hides it). **No grace** (the 60 s is for a clock the guest cannot see), nobody is notified, **extending the deadline never reopens
+  it**, and reopening flashes the same "remind them from the guest list" prompt as a deadline reopen. A host override still works while closed. Owner only
+  (the `pause` ability), live invitation events only. `EventResource::rsvp_closed_at` is additive
+- **Guests are shown the cut-off time** (`rsvpDeadlineLabel()`, venue zone) on the personal-link, open and group forms, and every layout's "respond by" line carries the
+  time. A refused submit keeps what the guest typed (`withInput`) and the closed page shows it under "What you sent", with a "Check again" link
 - **Tests:** `RsvpDeadlineTest`, `RsvpClosedHandlingTest`, `RsvpReminderCadenceTest`, `RsvpDeadlineHostSideTest`. Fake the clock with a
   **UTC** instance, `Carbon::setTestNow(Carbon::parse($venueTime, config('events.timezone'))->utc())`: a Lusaka-zone fake clock
   makes Carbon parse dates in Lusaka too and shifts `event_date`. Build deadline fixtures on the venue calendar

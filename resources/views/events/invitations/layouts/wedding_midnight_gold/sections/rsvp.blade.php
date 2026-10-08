@@ -7,7 +7,7 @@
     <div class="mg-wrap mg-wrap--form">
         <h2 class="mg-title">RSVP</h2>
         @if ($event->rsvpDeadlineAt())
-            <p class="mg-rsvp-lead">Kindly respond by {{ $event->rsvpDeadlineAt()->format('F jS') }}</p>
+            <p class="mg-rsvp-lead">Kindly respond by {{ $event->rsvpDeadlineAt()->format('F jS'.' \a\t g:i A T') }}</p>
         @endif
         <div class="mg-rsvp-panel">
             @include('events.invitations.sections.rsvp', ['rsvpWrapperHasId' => true])

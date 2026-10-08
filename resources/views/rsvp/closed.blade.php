@@ -28,6 +28,13 @@
                     @else
                         This event has already taken place.
                     @endif
+                @elseif ($event->rsvpManuallyClosed())
+                    <i class="fa-solid fa-lock"></i>
+                    @if ($guest)
+                        Hi {{ $guest->name }}, the host has stopped taking responses for this event.
+                    @else
+                        The host has stopped taking responses for this event.
+                    @endif
                 @else
                     <i class="fa-solid fa-clock"></i>
                     @if ($guest)
@@ -40,10 +47,38 @@
             @unless ($guestListFull ?? false)
                 @if ($event->isLocked())
                     <p class="rsvp-muted">It was held on {{ $event->event_date->format('l, F j, Y') }}.</p>
-                @elseif ($event->rsvp_deadline)
+                @elseif ($event->rsvp_deadline && ! $event->rsvpManuallyClosed())
                     <p class="rsvp-muted">Deadline was {{ $event->rsvpDeadlineLabel() }}.</p>
                 @endif
+
+                {{-- The host can reopen or extend at any time; this page doesn't refresh itself. --}}
+                @unless ($event->isLocked())
+                    <p class="rsvp-muted"><a href="{{ url()->current() }}">Check again</a> if the host has reopened RSVPs.</p>
+                @endunless
             @endunless
+
+            {{-- A guest turned away at the door of a closed form keeps what they typed, to pass on to the host. --}}
+            @if (session('rsvp_closed') && old('status'))
+                @php
+                    $sentStatus = \App\Enums\RsvpStatus::tryFrom((string) old('status'));
+                    $sentCount = \App\Rules\AttendeeCount::parse(old('attendee_count'));
+                @endphp
+                <div class="rsvp-card rsvp-sent">
+                    <h2 class="rsvp-reduce-title">What you sent</h2>
+                    <p class="rsvp-muted">It was not saved. You can pass it on to the host.</p>
+                    <ul class="rsvp-sent-list">
+                        @if ($sentStatus)
+                            <li>Response: {{ $sentStatus->attendanceLabel() }}@if ($sentStatus === \App\Enums\RsvpStatus::Accepted && $sentCount) ({{ $sentCount }} {{ $sentCount === 1 ? 'person' : 'people' }})@endif</li>
+                        @endif
+                        @if (is_string(old('name')) && old('name') !== '')
+                            <li>Name: {{ old('name') }}</li>
+                        @endif
+                        @if (is_string(old('message')) && old('message') !== '')
+                            <li>Message: {{ old('message') }}</li>
+                        @endif
+                    </ul>
+                </div>
+            @endif
         </header>
 
         {{-- Past the deadline a guest who already answered can still cancel or take fewer seats until the

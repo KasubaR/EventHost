@@ -10,7 +10,7 @@
         <h2 class="mg-title">You're Invited</h2>
         <p class="mg-invite-text">{!! nl2br(e($wording)) !!}</p>
         @if ($event->rsvpDeadlineAt())
-            <p class="mg-invite-note">Please reply by {{ $event->rsvpDeadlineAt()->format('F jS') }}.</p>
+            <p class="mg-invite-note">Please reply by {{ $event->rsvpDeadlineAt()->format('F jS'.' \a\t g:i A T') }}.</p>
         @endif
         <p class="mg-signature">{{ $signature }}</p>
     </div>

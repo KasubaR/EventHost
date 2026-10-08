@@ -35,7 +35,7 @@ class StoreRsvpByTokenRequest extends FormRequest
         // Closed is not a bare 403: the guest is sent to the closed page with a message (and, if they
         // already answered, the chance to cancel or reduce). The service re-checks under the lock.
         if (! $event->acceptsRsvpSubmissions() && ! $event->canReduceRsvp($guest->rsvp)) {
-            throw new RsvpClosedException;
+            throw new RsvpClosedException(event: $event);
         }
 
         return true;

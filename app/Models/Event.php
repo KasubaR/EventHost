@@ -267,6 +267,7 @@ class Event extends Model
         'is_published',
         'cancelled_at',
         'invitation_paused_at',
+        'rsvp_closed_at',
         'photo_wall_enabled',
         'photo_wall_requires_approval',
         'contribution_enabled',
@@ -1426,6 +1427,7 @@ class Event extends Model
             'is_published' => 'boolean',
             'cancelled_at' => 'datetime',
             'invitation_paused_at' => 'datetime',
+            'rsvp_closed_at' => 'datetime',
             'photo_wall_enabled' => 'boolean',
             'photo_wall_requires_approval' => 'boolean',
             'contribution_enabled' => 'boolean',
@@ -1459,6 +1461,15 @@ class Event extends Model
     public function isInvitationPaused(): bool
     {
         return $this->invitation_paused_at !== null;
+    }
+
+    /**
+     * The host stopped taking responses by hand. Separate from the deadline (moving the deadline never reopens it) and from
+     * pausing (the invitation stays visible, and guests who answered can still cancel or reduce).
+     */
+    public function rsvpManuallyClosed(): bool
+    {
+        return $this->rsvp_closed_at !== null;
     }
 
     /**
@@ -1796,6 +1807,11 @@ class Event extends Model
             return false;
         }
 
+        // A deliberate close by the host holds whatever $at is: it has no clock to be late for.
+        if ($this->rsvpManuallyClosed()) {
+            return false;
+        }
+
         $closesAt = $this->rsvpClosesAt();
 
         if ($closesAt === null) {
@@ -1828,6 +1844,10 @@ class Event extends Model
             return 'This event has already taken place.';
         }
 
+        if ($this->rsvpManuallyClosed()) {
+            return 'You closed RSVPs on '.$this->rsvp_closed_at->copy()->setTimezone($this->venueTimezone())->format('l, F j, Y \a\t g:i A T').'.';
+        }
+
         if ($this->isRsvpOpen()) {
             return null;
         }
@@ -1835,6 +1855,43 @@ class Event extends Model
         return $this->rsvp_deadline !== null
             ? 'The RSVP deadline passed on '.$this->rsvpDeadlineLabel().'.'
             : 'RSVP closed when the event started.';
+    }
+
+    /**
+     * Why a guest's RSVP was refused, in a word: `host` (closed by hand), `deadline`, `started` (no deadline, the event began) or
+     * `unavailable` (deleted, cancelled, paused or already held). Picks the guest-facing sentence. plans/rsvp-deadline-moments.md L1.
+     */
+    public function rsvpClosureCause(): string
+    {
+        if ($this->trashed() || $this->isCancelled() || $this->isInvitationPaused() || $this->isLocked()) {
+            return 'unavailable';
+        }
+
+        if ($this->rsvpManuallyClosed()) {
+            return 'host';
+        }
+
+        return $this->rsvp_deadline !== null ? 'deadline' : 'started';
+    }
+
+    /**
+     * The sentence for a guest whose response was refused because RSVP is closed. Says which kind of close it was and, for a
+     * deadline, when. `$mayReduce` adds that they can still cancel or take fewer seats.
+     */
+    public function rsvpClosedGuestMessage(bool $mayReduce): string
+    {
+        $cause = $this->rsvpClosureCause();
+
+        $what = match ($cause) {
+            'host' => 'The host has stopped taking responses',
+            'deadline' => 'The RSVP deadline has passed (it was '.$this->rsvpDeadlineLabel().')',
+            'started' => 'RSVP closed when the event started',
+            default => 'The RSVP deadline has passed',
+        };
+
+        return $mayReduce
+            ? "{$what}, so a new or larger response cannot be saved. You can still cancel your RSVP or reduce the number of guests."
+            : "{$what}, so this response could not be saved. If you still want to come, please contact the host.";
     }
 
     /**

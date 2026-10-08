@@ -35,6 +35,9 @@
                         Seats for {{ $group->name }} are limited. Request yours below &mdash; the host confirms each request,
                         and we'll email you a personal pass once it is approved.
                     </p>
+                    @if ($event->rsvp_deadline !== null)
+                        <p class="rsvp-muted rsvp-cutoff"><i class="fa-solid fa-clock" aria-hidden="true"></i> RSVP closes {{ $event->rsvpDeadlineLabel() }}.</p>
+                    @endif
                 @elseif ($state === \App\Services\GroupRsvpResolver::FULL)
                     <div class="evt-rsvp-banner evt-rsvp-banner--closed rsvp-closed-banner">
                         <i class="fa-solid fa-users"></i>
