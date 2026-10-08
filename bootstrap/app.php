@@ -11,6 +11,7 @@ use App\Http\Middleware\EnsureAccountIsActive;
 use App\Http\Middleware\EnsureEventAudience;
 use App\Http\Middleware\EnsureSanctumAccountIsActive;
 use App\Http\Middleware\NormalizeGuestToken;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -83,6 +84,21 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // A late RSVP is a refusal with an explanation, never a bare 403 (plans/rsvp-deadline-fixes.md G4).
         // JSON clients get 403 with a stable `code`; web pages go back to the page that explains it.
+        // A database error carries the SQL, its bound values and the database name. None of that
+        // belongs in front of a visitor, and the checkout pages print a JSON `message` verbatim, so a
+        // failed insert used to read as a wall of SQL. Reporting is untouched (it is still logged in
+        // full); only the response changes. A developer on a local machine still sees the real error.
+        $exceptions->render(function (QueryException $e, Request $request) {
+            if (! $request->expectsJson() || app()->isLocal()) {
+                return null;
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong on our side. Please try again in a moment. If it keeps happening, contact support.',
+            ], 500);
+        });
+
         $exceptions->render(function (RsvpClosedException $e, Request $request) use ($rsvpPageFor) {
             if ($request->expectsJson() || $request->is('api/*')) {
                 return response()->json([
