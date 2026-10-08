@@ -71,4 +71,6 @@ jobs:
           php artisan migrate --force
 
       - name: Run MySQL test subset
-        run: php artisan test --configuration=phpunit.mysql.xml
+        # PHPUnit directly: `artisan test` passes its own --configuration on the runner, and PHPUnit
+        # exits 1 on the duplicate option even when every test passes.
+        run: vendor/bin/phpunit -c phpunit.mysql.xml
