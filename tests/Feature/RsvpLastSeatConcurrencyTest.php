@@ -27,6 +27,8 @@ class RsvpLastSeatConcurrencyTest extends TestCase
 
     private const CONTENDERS = 6;
 
+    private bool $committedRows = false;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -40,8 +42,24 @@ class RsvpLastSeatConcurrencyTest extends TestCase
         }
     }
 
+    /**
+     * DatabaseTruncation empties the tables before a test, never after. This test commits its rows, so
+     * without this they stay behind for whichever RefreshDatabase test runs next (GroupRsvpLinkTest
+     * saw six stray guests) — a leak that only shows on the Linux CI runner, where this test is not skipped.
+     */
+    protected function tearDown(): void
+    {
+        if ($this->committedRows) {
+            $this->truncateDatabaseTables();
+        }
+
+        parent::tearDown();
+    }
+
     public function test_only_one_of_many_simultaneous_guests_gets_the_last_seat(): void
     {
+        $this->committedRows = true;
+
         Notification::fake();
 
         $event = Event::factory()->for(User::factory()->create())->published()->create([
