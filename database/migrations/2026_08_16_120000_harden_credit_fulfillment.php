@@ -27,6 +27,14 @@ return new class extends Migration
 
     public function down(): void
     {
+        // MySQL refuses to drop the unique index while it is the only index the payment_id foreign
+        // key can use (error 1553), so give the key a plain index of its own first.
+        if (! Schema::hasIndex('credit_transactions', ['payment_id'])) {
+            Schema::table('credit_transactions', function (Blueprint $table): void {
+                $table->index('payment_id');
+            });
+        }
+
         Schema::table('credit_transactions', function (Blueprint $table): void {
             $table->dropUnique('credit_transactions_payment_reason_unique');
         });

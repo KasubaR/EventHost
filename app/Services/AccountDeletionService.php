@@ -84,6 +84,7 @@ class AccountDeletionService
 
             $this->settlePayments($locked);
             $this->detachReviewPhotos($locked);
+            $this->detachReviews($locked);
 
             $locked->delete();
 
@@ -107,6 +108,17 @@ class AccountDeletionService
             ->where('user_id', $user->getKey())
             ->where('author_photo', $user->profile_photo)
             ->update(['author_photo' => null]);
+    }
+
+    /**
+     * Null reviews.user_id ourselves rather than leaving it to the foreign key. Deleting the user also
+     * cascades to their events, which null reviews.event_id on the same row; MariaDB then re-checks the
+     * user_id key against a user that is mid-delete and refuses (error 1452). Doing it first leaves
+     * the cascade only one column to change, on every database.
+     */
+    private function detachReviews(User $user): void
+    {
+        Review::query()->where('user_id', $user->getKey())->update(['user_id' => null]);
     }
 
     /**
