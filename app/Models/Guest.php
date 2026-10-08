@@ -183,6 +183,21 @@ class Guest extends Model
     }
 
     /**
+     * Guests the door would not turn away on their RSVP: everyone except those who declined and those the host rejected.
+     * A guest with no answer yet, Maybe, and awaiting approval all stay (they are let in with a warning). Used for
+     * the printed QR badges, so nobody gets a badge the scanner would refuse. plans/rsvp-status-changes.md Phase 6.
+     *
+     * @param  Builder<Guest>  $query
+     * @return Builder<Guest>
+     */
+    public function scopeWantedAtTheDoor(Builder $query): Builder
+    {
+        return $query->whereDoesntHave('rsvp', fn (Builder $q) => $q
+            ->where('status', RsvpStatus::Declined)
+            ->orWhere('host_approval_status', RsvpApprovalStatus::Rejected));
+    }
+
+    /**
      * Seating label to display alongside the guest's entry pass and on the
      * printed badge sheet — e.g. "Table 5". Null when unassigned; callers must
      * not render a blank row, just omit it.

@@ -246,17 +246,23 @@ class RsvpHostApprovalTest extends TestCase
             'host_reviewed_at' => now(),
         ]);
 
-        // Guest edits their attendee count while still Accepted — this must not
-        // reopen a decision the host already made.
+        // Guest asks for a plus-one while still Accepted. Approval follows seats (plans/rsvp-status-changes.md
+        // Phase 3): the seat the host approved stays approved and keeps its pass, and only the EXTRA seat goes to review.
         $this->post(route('rsvp.token.store', ['token' => 'tok_stays_approved']), $this->rsvpPayload(RsvpStatus::Accepted, 2))
             ->assertRedirect(route('rsvp.token.thanks', ['token' => 'tok_stays_approved']));
 
         $rsvp = $guest->fresh()->rsvp;
-        $this->assertSame(RsvpApprovalStatus::Approved, $rsvp->host_approval_status);
+        $this->assertSame(RsvpApprovalStatus::Pending, $rsvp->host_approval_status);
         $this->assertSame(2, $rsvp->attendee_count);
+        $this->assertSame(1, $rsvp->approvedSeatsOnFile());
+        $this->assertSame(1, $rsvp->passSeats());
+
+        // Asking for fewer seats than were approved needs no review at all.
+        $this->post(route('rsvp.token.store', ['token' => 'tok_stays_approved']), $this->rsvpPayload(RsvpStatus::Accepted, 1));
+        $this->assertSame(RsvpApprovalStatus::Approved, $guest->fresh()->rsvp->host_approval_status);
     }
 
-    public function test_declining_then_re_accepting_reopens_review(): void
+    public function test_declining_then_re_accepting_after_a_rejection_stays_rejected(): void
     {
         Notification::fake();
 
@@ -277,15 +283,17 @@ class RsvpHostApprovalTest extends TestCase
             'host_rejection_note' => 'old note',
         ]);
 
-        // Declines, then changes their mind and accepts again — a fresh accept
-        // starts a new review episode and clears the stale rejection note.
+        // A host's rejection is final (plans/rsvp-status-changes.md Phase 3, decision 2): declining is allowed, coming
+        // back is not, no new review is queued, and the host's note is kept.
         $this->post(route('rsvp.token.store', ['token' => 'tok_reopens_review']), $this->rsvpPayload(RsvpStatus::Declined, 0));
-        $this->post(route('rsvp.token.store', ['token' => 'tok_reopens_review']), $this->rsvpPayload(RsvpStatus::Accepted, 1));
+        $this->post(route('rsvp.token.store', ['token' => 'tok_reopens_review']), $this->rsvpPayload(RsvpStatus::Accepted, 1))
+            ->assertSessionHasErrors('status');
 
         $rsvp = $guest->fresh()->rsvp;
-        $this->assertSame(RsvpApprovalStatus::Pending, $rsvp->host_approval_status);
-        $this->assertNull($rsvp->host_reviewed_at);
-        $this->assertNull($rsvp->host_rejection_note);
+        $this->assertSame(RsvpStatus::Declined, $rsvp->status);
+        $this->assertSame(RsvpApprovalStatus::Rejected, $rsvp->host_approval_status);
+        $this->assertNotNull($rsvp->host_reviewed_at);
+        $this->assertSame('old note', $rsvp->host_rejection_note);
     }
 
     public function test_toggling_requirement_on_does_not_retroactively_pend_existing_acceptances(): void

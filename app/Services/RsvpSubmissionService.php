@@ -283,6 +283,13 @@ class RsvpSubmissionService
                 $rsvp = Rsvp::query()->where('guest_id', $guest->id)->firstOrFail();
             }
 
+            // A guest who declines gives up their seat at a table (guest or host, any channel). Only the move INTO Declined
+            // does it: a table the host assigns later, to someone already declined, is theirs to keep.
+            if ($status === RsvpStatus::Declined && $existing?->status !== RsvpStatus::Declined && $guest->event_table_id !== null) {
+                Guest::query()->whereKey($guest->id)->update(['event_table_id' => null]);
+                $guest->event_table_id = null;
+            }
+
             $this->recordAnswerChange($existing, $rsvp, $channel, $actorUserId, $overLimit);
 
             return $rsvp;

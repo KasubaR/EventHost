@@ -10,7 +10,7 @@
     @endphp
     <div class="gpass-panel">
         <p class="gpass-panel-badge"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> You're going!</p>
-        @if ($rsvp?->isAwaitingHostApproval())
+        @if (($rsvp ?? null)?->isAwaitingHostApproval())
             <p class="gpass-panel-note">Your extra seat is waiting for the host. This pass is valid for {{ $rsvp->approvedSeatsOnFile() }} {{ $rsvp->approvedSeatsOnFile() === 1 ? 'seat' : 'seats' }} until they approve it.</p>
         @endif
 

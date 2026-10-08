@@ -370,6 +370,8 @@ class GuestController extends Controller
 
         $guests = $event->guests()
             ->whereNotNull('invitation_token')
+            // No badge for someone who declined or whom the host rejected: the scanner would refuse it.
+            ->wantedAtTheDoor()
             ->with('eventTable')
             ->orderBy('name')
             ->get()

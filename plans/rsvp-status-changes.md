@@ -87,21 +87,21 @@ Severity: **H** = wrong outcome at the door or for money, **M** = confusing or l
 4. `submit()` refuses a decline or reduction once `checked_in_at` is set, from guest channels only (`RsvpCheckedInException`, rendered like `RsvpClosedException`: "You are already checked in. Ask the host to change your response."). The host path (Phase 5) is exempt.
 5. Tests: declined guest's old PDF pass is refused at the door; Maybe guest checks in with a flag; checked-in guest cannot decline.
 
-### Phase 3: a host's decision sticks (S4, S5) : BUILT, not yet run (tests are run once after all phases; `approved_seats`, rejection is final, extra seat only)
+### Phase 3: a host's decision sticks (S4, S5): BUILT (`approved_seats`, rejection is final, extra seat only)
 
 1. **Approved is per guest, not per answer.** Re-accepting after Declined / Maybe keeps **Approved** when the seats asked for do not exceed the approved count (store `approved_seats` on approval); asking for more reopens review for the extra only.
 2. **Rejected is final** for that guest unless the host reverses it: a rejected guest who re-accepts sees "The host has already declined this request" and nothing is queued. The note is kept. (Decision 2, made.)
 3. When a change does reopen review, the guest is told ("Your response is back with the host, your pass will return once they approve it").
 4. Tests: Approved → Maybe → Accepted keeps the pass; Rejected → Declined → Accepted stays rejected with the note intact; reopened review sends the guest message.
 
-### Phase 4: a change log (S8) : BUILT, not yet run (`rsvp_changes`, `RsvpChange`, `RsvpChangeLogTest`)
+### Phase 4: a change log (S8): BUILT (`rsvp_changes`, `RsvpChange`, `RsvpChangeLogTest`)
 
 1. New table `rsvp_changes` (`rsvp_id`, `guest_id`, `event_id`, `from_status`, `from_seats`, `to_status`, `to_seats`, `channel` of web-token / web-open / group / whatsapp / api / host, `actor_user_id` nullable, `created_at`). Written inside `submit()` under the lock, only when something changed (the Phase 1 change-detection already knows).
 2. `NewRsvpReceivedNotification` says "changed from Attending (2) to Not attending" when there is a previous row.
 3. The guest edit page shows the history; the CSV export gains "last changed".
 4. Prune with the guest (cascade); nothing else reads it.
 
-### Phase 5: host override (S6, S7), after Phase 4 : BUILT, not yet run (`HostRsvpOverrideService`, `events.guests.rsvp.set`, `HostRsvpOverrideTest`)
+### Phase 5: host override (S6, S7), after Phase 4: BUILT (`HostRsvpOverrideService`, `events.guests.rsvp.set`, `HostRsvpOverrideTest`)
 
 1. `PATCH events/{event}/guests/{guest}/rsvp` (web) and the API twin: set status, seats and an optional note. Goes through `RsvpSubmissionService::submit(..., enforceDeadline: false)` with a new actor argument, so the lock, seat-limit and seat-pool rules still apply (an explicit "allow over the guest limit" tick is the only bypass).
 2. Recorded in `rsvp_changes` as `host`, with the host as actor. Allowed at any time, **including after the event starts** (this is how a late no-show or walk-in is recorded); it does not need the event to be open.
@@ -109,7 +109,7 @@ Severity: **H** = wrong outcome at the door or for money, **M** = confusing or l
 4. Bulk "mark attending / declined" is out of scope unless asked.
 5. Tests: host changes Accepted → Declined after the deadline and after the start; seat limit still enforced; history row says `host`; guest is told only when ticked.
 
-### Phase 6: tables (S3)
+### Phase 6: tables (S3): BUILT (tables have no seat counts, so the fix is: a decline frees the table, and no QR badge for declined or rejected guests; `RsvpTableSeatingTest`)
 
 Confirm the tables page and seat counts exclude Declined / Maybe / Rejected guests; if not, count only held seats (`Rsvp::heldSeats()`). Offer to clear a declined guest's table when they decline.
 

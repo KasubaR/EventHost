@@ -284,7 +284,7 @@ class HostRsvpOverrideTest extends TestCase
         $this->actingAs($this->host)->get(route('events.guests.edit', ['event' => $this->event, 'guest' => $guest]))
             ->assertOk()
             ->assertSee('Host ('.$this->host->name.')', false)
-            ->assertSee('Set this guest&#039;s response', false);
+            ->assertSee("Set this guest's response", false);
     }
 
     // ---------------------------------------------------------------- who may
