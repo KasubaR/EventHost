@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 /**
@@ -173,6 +174,14 @@ class AstragateService
 
         $token = $response->json('access_token');
         if (! $response->successful() || ! is_string($token) || $token === '') {
+            // The exception text is shown to buyers, so the detail goes to the log only.
+            // Never log the request body: it carries the client secret.
+            Log::warning('astragate.auth_failed', [
+                'auth_url' => (string) config('astragate.auth_url'),
+                'status' => $response->status(),
+                'body' => mb_substr($response->body(), 0, 500),
+            ]);
+
             throw new RuntimeException('Could not authenticate with Astragate', $response->status() ?: 502);
         }
 
@@ -209,6 +218,13 @@ class AstragateService
         }
 
         if (! $response->successful() || ($body['success'] ?? true) === false) {
+            Log::warning('astragate.request_failed', [
+                'method' => $method,
+                'path' => $path,
+                'status' => $response->status(),
+                'body' => mb_substr($response->body(), 0, 500),
+            ]);
+
             throw new RuntimeException((string) ($body['message'] ?? 'Astragate request failed'), $response->status() ?: 422);
         }
 
