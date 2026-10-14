@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\RsvpStatus;
 use App\Models\Event;
 use App\Models\Guest;
+use App\Models\GuestRemoval;
 use App\Models\Rsvp;
 use App\Models\RsvpChange;
 use Illuminate\Support\Str;
@@ -55,6 +56,8 @@ class OpenRsvpService
                     'phone' => $contact['phone'] ?? null,
                     'invitation_token' => $isPrivate ? Str::random(48) : null,
                     'plus_one_allowed' => $isPrivate && (bool) $locked->allow_plus_one,
+                    // A person the host removed signing up again waits for the host (plans/guest-deletion-gaps.md Phase 6).
+                    'previously_removed_at' => GuestRemoval::matchesContact($event->id, $contact['email'], $contact['phone'] ?? null) ? now() : null,
                 ]);
             } else {
                 $data = ['name' => $contact['name'], 'phone' => $contact['phone'] ?? null];

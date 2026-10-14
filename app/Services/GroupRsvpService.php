@@ -6,6 +6,7 @@ use App\Enums\RsvpStatus;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Models\GuestGroup;
+use App\Models\GuestRemoval;
 use App\Models\Rsvp;
 use App\Models\RsvpChange;
 use Illuminate\Support\Str;
@@ -73,6 +74,7 @@ class GroupRsvpService
                     'phone' => $contact['phone'],
                     'invitation_token' => Str::random(48),
                     'plus_one_allowed' => (bool) $event->allow_plus_one,
+                    'previously_removed_at' => GuestRemoval::matchesContact($event->id, $contact['email'], $contact['phone']) ? now() : null,
                 ]);
             } else {
                 $guest->fill(['name' => $contact['name'], 'phone' => $contact['phone']])->save();

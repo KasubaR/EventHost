@@ -6,6 +6,7 @@ use App\Exceptions\CheckInClosedException;
 use App\Exceptions\CheckInNotAllowedException;
 use App\Models\Event;
 use App\Models\Guest;
+use App\Models\GuestRemoval;
 use App\Services\CheckInAnalyticsService;
 use App\Services\CheckInService;
 use App\Support\CheckInLookup;
@@ -65,7 +66,7 @@ class CheckInController extends Controller
             ->first();
 
         if ($guest === null) {
-            return response()->json(['message' => 'No matching invitation for this event.'], 404);
+            return GuestRemoval::scanResponse($event->id, $token);
         }
 
         return $this->confirmResponse($checkInService, $guest, auth()->id());

@@ -106,6 +106,14 @@
                     remind guests about your event and run check-in) and for nothing else. We do not use your guest list to market to
                     those guests, and we do not sell it.
                 </p>
+                <p>
+                    <strong>When you remove a guest</strong>, their RSVP and its history are deleted and their personal link and
+                    entry pass stop working. We keep a short record that they were removed: their name, email address, a
+                    simplified form of their phone number, whether they had answered, and when and by whom they were removed. It
+                    lets us show you who you removed, tell a person who opens an old link that it was removed, and hold for your
+                    approval a new sign-up from someone you removed. If you ask us to email them that they were removed, that
+                    email is the only use of their address. The record is deleted when the event is permanently deleted.
+                </p>
             </section>
 
             <section>
@@ -199,6 +207,7 @@
                 @php $retentionDays = \App\Models\Event::retentionDays(); @endphp
                 <ul>
                     <li><strong>Account data</strong>: until you delete your account</li>
+                    <li><strong>Records of removed guests</strong>: until the event they belonged to is permanently deleted. A guest's RSVP and answer history are deleted at once when you remove them; only the short removal record described in section 3 is kept</li>
                     @if ($retentionDays > 0)
                         <li>
                             <strong>Event and guest data</strong>: until you delete the event. A deleted event stays in

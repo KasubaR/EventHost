@@ -12,6 +12,8 @@ use App\Http\Middleware\EnsureAccountIsActive;
 use App\Http\Middleware\EnsureEventAudience;
 use App\Http\Middleware\EnsureSanctumAccountIsActive;
 use App\Http\Middleware\NormalizeGuestToken;
+use App\Models\Event;
+use App\Models\GuestRemoval;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -186,11 +188,37 @@ return Application::configure(basePath: dirname(__DIR__))
         // gets a page that says what to do, not the site's "event isn't public" 404. Pages only: the image routes
         // and JSON keep a plain 404. plans/rsvp-token-edge-cases.md T1.
         $exceptions->render(function (NotFoundHttpException $e, Request $request) {
+            $name = (string) $request->route()?->getName();
+            $token = $request->route()?->parameter('token');
+
+            // A personal link whose guest the host removed says so (Phase 4 of plans/guest-deletion-gaps.md). Only
+            // reached once the link already failed to match, so a live link never pays for the extra query. The
+            // image routes stay a plain 404; JSON keeps its 404 and gains a stable `code`.
+            $removal = is_string($token)
+                && in_array($name, [
+                    'rsvp.token.show', 'rsvp.token.thanks', 'rsvp.token.pass', 'rsvp.token.store', 'rsvp.token.pass-download',
+                    'api.v1.rsvp.token.show', 'api.v1.rsvp.token.store',
+                ], true)
+                ? GuestRemoval::forToken($token)
+                : null;
+
+            if ($removal !== null) {
+                if ($request->expectsJson() || $request->is('api/*')) {
+                    return response()->json([
+                        'message' => 'This invitation was removed by the host.',
+                        'code' => 'invitation_removed',
+                    ], 404);
+                }
+
+                return response()->view('rsvp.guest-removed', [
+                    'event' => Event::withTrashed()->with('user')->find($removal->event_id),
+                ], 410);
+            }
+
             if ($request->expectsJson() || $request->is('api/*')) {
                 return null;
             }
 
-            $name = (string) $request->route()?->getName();
             $isGuestLinkPage = in_array($name, [
                 'rsvp.token.show', 'rsvp.token.thanks', 'rsvp.token.pass', 'rsvp.token.store',
                 'group-rsvp.show', 'group-rsvp.store',

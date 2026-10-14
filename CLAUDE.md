@@ -749,6 +749,45 @@ badly written details. Tests: `GuestAddEdgeCasesTest`, `GuestPhoneTest`.
 - **Still not covered:** CJK, Thai, Indic and emoji names on a printed pass (they print as `?`), shaped Arabic/Hebrew, internationalised email addresses
  are refused by `email:rfc`; event names and other tables still allow 255 characters against a 191 column
 
+### Deleting guests
+
+What happens to a guest's answer, link, queued mail and re-sign-up when the host removes them. Plan and phases:
+`plans/guest-deletion-gaps.md` — all seven phases are built. Tests: `GuestDeletionEdgeCasesTest`, `GuestRemovalHostSideTest`,
+`GuestRemovalReentryTest`, plus removed-guest cases in `WhatsAppInboundRsvpTest` and `LegalPagesTest`.
+
+- **One delete path: `App\Services\GuestDeleter`** (`delete()`, `deleteMany()`), called by the web and API single deletes and by the `delete` action
+ of both bulk controllers. Never `$guest->delete()` or a query-builder delete elsewhere. It locks the event row, deletes each guest through the model, writes the
+ tombstone, and returns `{deleted, seats_freed, answered, invitation_sent}`. Cached pass PDFs and images for the token are removed **after commit**
+ (`invitation:prune-orphaned-files` stays as the safety net). Guests of another event are ignored
+- **Deletion is permanent.** `Guest` has no soft deletes: the RSVP, `rsvp_changes` and `guest_edits` cascade, `notification_logs.guest_id` and
+ `event_contributions.guest_id` are nulled. There is no undo; the confirm text (`Guest::removalWarning()`) says what is lost
+- **The tombstone: `guest_removals` / `GuestRemoval`**, written in the delete's own transaction. Holds the event, who removed them (`nullOnDelete`), a SHA-256 of
+ the personal link (the link itself is never stored), name, lower-cased email, `GuestPhone::key()`, last RSVP status, seats freed, invitation-sent flag, `removed_at`
+ and `notified_at`. It goes with the event (cascade, so with a purge). `GuestRemoval::forToken()` / `forTokenInEvent()` are the lookups. A link the host
+ *replaced* (`regenerate-link`) is not tombstoned: that guest still exists. **Privacy §3 and §7 describe it** and are always on: keep them in step
+- **Queued guest mail survives a deletion.** `$deleteWhenMissingModels` on a notification does nothing (Laravel reads it from `SendQueuedNotifications`), so
+ the nine guest/RSVP notifications use `Notifications\Concerns\SkipsWhenGuestDeleted`: a missing `Guest` or `Rsvp` is restored as an empty stand-in and
+ `shouldSend()` refuses it, so the job ends with no mail and no `failed_jobs` row. **A new notification that holds a `Guest` must use the trait.** A missing
+ Event still fails. The `notification_logs` row stays `sent` (it records the hand-off to the queue)
+- **What a removed guest sees.** The guest-link 404 handler in `bootstrap/app.php` checks the tombstone first, only after the link failed to match: web
+ pages (`show`, `thanks`, `pass`, `pass-download`, a POST to `store`) answer **410** with `rsvp/guest-removed.blade.php` (the event, the host number, never the
+ guest's name). Unknown links keep `rsvp/link-not-found` (404); the image routes stay a plain 404; the API keeps its 404 and adds `code: invitation_removed`.
+ Door scanners (`GuestRemoval::scanResponse()`, all three check-in controllers) say "removed from the event" with `code: guest_removed`, only for a removal in that
+ same event. A removed guest's WhatsApp reply to their invitation gets one "no longer on the guest list" text (matched through the replied-to message's event and
+ the sender's number); anyone else stays silent
+- **What the host sees.** The confirm text on each Remove button, the seats freed and any pool left after a single delete (`guest_removed` flash), a seats-freed line
+ after a bulk delete (`bulk_removed`; API bulk gains `seats_freed`), and a collapsed "Removed guests" list (last `GuestRemoval::LIST_LIMIT` = 30). **"Tell them" is never
+ automatic** (`POST events/{event}/guests/removed/{removal}/notify`, owner only): one `GuestRemovedNotification`, once ever per removal (`notified_at` + the
+ `guest-removed:{id}` log key), refused with no email or when the guest was never invited and never answered (`GuestRemoval::canBeTold()`). It carries the name as a
+ string, not a `Guest`
+- **Re-sign-up is held, not refused.** `OpenRsvpService` and `GroupRsvpService` set `guests.previously_removed_at` on a **new** guest whose email or phone key matches
+ a tombstone of that event (`GuestRemoval::matchesContact()`); `RsvpSubmissionService` then holds an acceptance for host approval whatever `require_rsvp_approval`
+ says, `Event::hasRsvpApprovalQueue()` turns the approval filter on, the list shows "Previously removed" and the API adds `previously_removed`. The host's own add
+ (`GuestCreator`), the import and the API add never set it. A decline or maybe is not a review. The flag is permanent
+- **Not covered:** undo; an event deleted while its guest mail is queued (a missing Event still fails the job); a bulk send racing a delete inside the request
+ (the loop reads its guests once); the bulk action's own confirm dialog is generic (the result flash carries the detail); a removed guest who returns by the
+ host's own re-adding them is not labelled
+
 ### Plus-ones
 
 A plus-one is `rsvps.attendee_count = 2`; an invitation RSVP is only ever 1 or 2. Plan and phases:

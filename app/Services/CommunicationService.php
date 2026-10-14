@@ -9,12 +9,14 @@ use App\Models\ContributionPayment;
 use App\Models\Event;
 use App\Models\EventContribution;
 use App\Models\Guest;
+use App\Models\GuestRemoval;
 use App\Models\NotificationLog;
 use App\Models\Rsvp;
 use App\Models\User;
 use App\Notifications\ContributionReceiptNotification;
 use App\Notifications\EventUpdatedNotification;
 use App\Notifications\GuestEventReminderNotification;
+use App\Notifications\GuestRemovedNotification;
 use App\Notifications\HostEventReminderNotification;
 use App\Notifications\HostPurgeWarningNotification;
 use App\Notifications\NewContributionReceivedNotification;
@@ -468,6 +470,35 @@ class CommunicationService
             $this->markFailed($log, $e);
             throw $e;
         }
+    }
+
+    /**
+     * The one "you were removed" email, sent from the host's "Tell them" button on a removed guest. The guest row is gone,
+     * so this works from the tombstone. Idempotent per removal: a second call is a no-op.
+     */
+    public function sendGuestRemoved(Event $event, GuestRemoval $removal): bool
+    {
+        if (! $removal->canBeTold()) {
+            return false;
+        }
+
+        $log = $this->startLog($event, null, 'email', 'guest_removed_notice', 'guest-removed:'.$removal->id, ['removal_id' => $removal->id]);
+        if ($log === null) {
+            return false;
+        }
+
+        try {
+            Notification::route('mail', $removal->email)
+                ->notify(new GuestRemovedNotification($event, $removal->name));
+            $this->markSent($log);
+        } catch (\Throwable $e) {
+            $this->markFailed($log, $e);
+            throw $e;
+        }
+
+        $removal->forceFill(['notified_at' => now()])->save();
+
+        return true;
     }
 
     public function sendSmsUpdate(Event $event, Guest $guest, string $updateMessage): void

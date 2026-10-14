@@ -13,9 +13,11 @@ use App\Models\Event;
 use App\Models\Guest;
 use App\Models\GuestEdit;
 use App\Models\GuestImport;
+use App\Models\GuestRemoval;
 use App\Models\NotificationLog;
 use App\Services\CommunicationService;
 use App\Services\GuestCreator;
+use App\Services\GuestDeleter;
 use App\Services\GuestUpdater;
 use App\Services\HostRsvpOverrideService;
 use App\Services\QrCodeService;
@@ -101,7 +103,10 @@ class GuestController extends Controller
         $unseenImport = $latestImport?->isFinished() && $latestImport->seen_at === null ? $latestImport : null;
         $unseenImport?->forceFill(['seen_at' => now()])->save();
 
-        return view('events.guests.index', compact('event', 'guests', 'filter', 'groups', 'tables', 'stats', 'whatsappSendEnabled', 'latestImport', 'unseenImport'));
+        // Who the host removed lately, with a way to tell them (plans/guest-deletion-gaps.md Phase 5).
+        $removedGuests = $event->guestRemovals()->orderByDesc('removed_at')->orderByDesc('id')->limit(GuestRemoval::LIST_LIMIT)->get();
+
+        return view('events.guests.index', compact('event', 'guests', 'filter', 'groups', 'tables', 'stats', 'whatsappSendEnabled', 'latestImport', 'unseenImport', 'removedGuests'));
     }
 
     public function export(Request $request, Event $event): StreamedResponse
@@ -352,6 +357,34 @@ class GuestController extends Controller
     }
 
     /**
+     * "Tell them": the one email telling a removed guest they were removed. Never automatic. Works from the tombstone because the
+     * guest row is gone; once sent it cannot be sent again. plans/guest-deletion-gaps.md Phase 5.
+     */
+    public function notifyRemoved(Event $event, GuestRemoval $removal, CommunicationService $communications): RedirectResponse
+    {
+        $this->authorizeInvitation($event);
+        abort_unless($removal->event_id === $event->id, 404);
+
+        $back = redirect()->route('events.guests.index', $event);
+
+        if ($removal->notified_at !== null) {
+            return $back->withErrors(['removed' => $removal->name.' was already told.']);
+        }
+
+        if (blank($removal->email)) {
+            return $back->withErrors(['removed' => $removal->name.' has no email address, so tell them yourself.']);
+        }
+
+        if (! $removal->canBeTold()) {
+            return $back->withErrors(['removed' => $removal->name.' was never sent an invitation or answered, so there is nothing to tell them.']);
+        }
+
+        $communications->sendGuestRemoved($event, $removal);
+
+        return $back->with('status', 'removed-guest-told')->with('removed_told', $removal->name);
+    }
+
+    /**
      * Replace one guest's personal link now (the one-click follow-up to an email change). The old link, and the QR on any pass already
      * sent or printed, stop working at once; the new link is shown for the host to send. plans/guest-editing-gaps.md Phase 2.
      */
@@ -570,17 +603,25 @@ class GuestController extends Controller
         return $pdf->download('guest-qr-codes-'.$event->slug.'.pdf');
     }
 
-    public function destroy(Event $event, Guest $guest): RedirectResponse
+    public function destroy(Event $event, Guest $guest, GuestDeleter $guestDeleter): RedirectResponse
     {
         $guest->loadMissing('event');
         $this->authorize('delete', $guest);
         abort_unless($event->isInvitation(), 404);
 
-        $guest->delete();
+        $group = $guest->group;
+        $result = $guestDeleter->delete($event, $guest, request()->user()?->id);
+        $removal = GuestRemoval::query()->where('event_id', $event->id)->where('token_hash', filled($guest->invitation_token) ? GuestRemoval::hashToken((string) $guest->invitation_token) : null)->latest('id')->first();
 
         return redirect()
             ->route('events.guests.index', $event)
-            ->with('status', 'guest-deleted');
+            ->with('status', 'guest-deleted')
+            ->with('guest_removed', $result['deleted'] === 0 ? null : [
+                'name' => $guest->name,
+                'seats_freed' => $result['seats_freed'],
+                'pool' => $group !== null && $group->hasSeatPool() ? ['group' => $group->name, 'left' => $group->seatsRemaining()] : null,
+                'tell_url' => $removal?->canBeTold() ? route('events.guests.removed.notify', ['event' => $event, 'removal' => $removal]) : null,
+            ]);
     }
 
     private function authorizeInvitation(Event $event): void

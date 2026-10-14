@@ -56,6 +56,8 @@ class GuestResource extends JsonResource
             'table_label' => $this->tableLabel(),
             'plus_one_allowed' => $this->plus_one_allowed,
             // Additive: whether a plus-one can actually be taken (the event's switch AND this guest's flag).
+            // Additive: a self sign-up from someone the host had removed, so the host knows why it waits for approval.
+            'previously_removed' => $this->previously_removed_at !== null,
             'plus_one_effective' => (bool) ($this->event->allow_plus_one && $this->plus_one_allowed),
             'invitation_sent' => $this->invitation_sent,
             'invitation_sent_at' => $this->invitation_sent_at?->toIso8601String(),

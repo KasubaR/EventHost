@@ -7,6 +7,7 @@ use App\Http\Requests\Api\V1\GuestBulkActionApiRequest;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Services\CommunicationService;
+use App\Services\GuestDeleter;
 use App\Services\GuestUpdater;
 use App\Support\GuestPhone;
 use Illuminate\Http\JsonResponse;
@@ -54,8 +55,9 @@ class GuestBulkActionController extends Controller
         // Guests the action could not reach: no email for the two email actions, no usable phone for the WhatsApp share.
         $skippedCount = 0;
         $skipReason = null;
+        $removedSummary = null;
 
-        DB::transaction(function () use ($request, $event, $ids, $action, $validated, $communicationService, &$bulkCount, &$skippedCount, &$skipReason): void {
+        DB::transaction(function () use ($request, $event, $ids, $action, $validated, $communicationService, &$removedSummary, &$bulkCount, &$skippedCount, &$skipReason): void {
             $builder = Guest::query()
                 ->where('event_id', $event->id)
                 ->whereIn('id', $ids)
@@ -102,7 +104,8 @@ class GuestBulkActionController extends Controller
             }
 
             if ($action === 'delete') {
-                $bulkCount = $builder->delete();
+                $removedSummary = app(GuestDeleter::class)->deleteMany($event, $ids, $request->user()?->id);
+                $bulkCount = $removedSummary['deleted'];
 
                 return;
             }
@@ -179,6 +182,8 @@ class GuestBulkActionController extends Controller
             'skipped_count' => $skippedCount,
             // Additive: why the first guest was skipped (a group move that would overfill the seat pool); null otherwise.
             'skipped_reason' => $skipReason,
+            // Additive, delete only: seats the removed guests held, null for every other action.
+            'seats_freed' => $removedSummary['seats_freed'] ?? null,
         ]);
     }
 }

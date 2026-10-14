@@ -360,6 +360,9 @@ Route::middleware(['auth', 'account.active', 'verified'])->group(function () {
 
     Route::post('/events/{event}/guests/{guest}/notify-plus-one', [GuestController::class, 'notifyPlusOne'])
         ->name('events.guests.notify-plus-one');
+    Route::post('/events/{event}/guests/removed/{removal}/notify', [GuestController::class, 'notifyRemoved'])
+        ->whereNumber('removal')
+        ->name('events.guests.removed.notify');
     Route::post('/events/{event}/guests/{guest}/regenerate-link', [GuestController::class, 'regenerateLink'])
         ->name('events.guests.regenerate-link');
     Route::patch('/events/{event}/guests/{guest}/invitation-sent', [GuestController::class, 'markInvitationSent'])

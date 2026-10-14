@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Exceptions\CheckInClosedException;
 use App\Models\EventStaffLink;
 use App\Models\Guest;
+use App\Models\GuestRemoval;
 use App\Services\CheckInService;
 use App\Support\CheckInLookup;
 use Illuminate\Http\JsonResponse;
@@ -48,7 +49,9 @@ class PublicCheckInController extends Controller
             ->where('invitation_token', $token)
             ->first();
 
-        abort_if($guest === null, 404, 'No matching invitation for this event.');
+        if ($guest === null) {
+            return GuestRemoval::scanResponse($link->event_id, $token);
+        }
 
         return $this->confirmResponse($checkInService, $guest, $link);
     }

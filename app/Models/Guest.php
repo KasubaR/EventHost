@@ -45,6 +45,7 @@ class Guest extends Model
         'event_id',
         'guest_group_id',
         'group_link_joined_at',
+        'previously_removed_at',
         'event_table_id',
         'name',
         'email',
@@ -397,6 +398,30 @@ class Guest extends Model
         return 'guest-'.$this->id.($slug !== '' ? '-'.$slug : '').'-qr.png';
     }
 
+    /**
+     * What the host is about to lose by removing this guest, for the confirm dialog (plans/guest-deletion-gaps.md Phase 5).
+     * Reads the RSVP and the sent flag only, so it is cheap on every row of the guest list.
+     */
+    public function removalWarning(): string
+    {
+        $seats = $this->rsvp?->heldSeats() ?? 0;
+        $lines = ['Remove '.$this->name.'?'];
+
+        if ($seats > 0) {
+            $lines[] = 'They have '.$seats.' '.($seats === 1 ? 'seat' : 'seats').' confirmed; '.($seats === 1 ? 'it' : 'they').' will be freed.';
+        } elseif ($this->rsvp !== null) {
+            $lines[] = 'Their answer will be deleted.';
+        }
+
+        if ($this->invitation_sent || $this->rsvp !== null) {
+            $lines[] = 'Their link and any pass already sent will stop working.';
+        }
+
+        $lines[] = $this->rsvp !== null ? 'Their RSVP history is deleted too.' : 'This cannot be undone.';
+
+        return implode(' ', $lines);
+    }
+
     /** True when the host has no email and no phone for this guest, so only a copied link reaches them. */
     public function hasNoContactDetails(): bool
     {
@@ -495,6 +520,7 @@ class Guest extends Model
             'invitation_sent' => 'boolean',
             'invitation_sent_at' => 'datetime',
             'group_link_joined_at' => 'datetime',
+            'previously_removed_at' => 'datetime',
             'rsvp_reminders_sent' => AsRsvpRemindersSent::class,
             'whatsapp_event_reminders_sent' => AsWhatsAppEventRemindersSent::class,
             'email_reminders_stopped_at' => 'datetime',

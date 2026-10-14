@@ -7,6 +7,7 @@ use App\Models\Guest;
 use App\Models\Rsvp;
 use App\Models\RsvpChange;
 use App\Notifications\Channels\FcmChannel;
+use App\Notifications\Concerns\SkipsWhenGuestDeleted;
 use App\Support\ShortText;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -16,6 +17,7 @@ use Illuminate\Notifications\Notification;
 class NewRsvpReceivedNotification extends Notification implements ShouldQueue
 {
     use Queueable;
+    use SkipsWhenGuestDeleted;
 
     public function __construct(
         public Event $event,

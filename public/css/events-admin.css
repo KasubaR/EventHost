@@ -2600,3 +2600,31 @@ nav.evt-kind-filter {
         margin-left: 54px;
     }
 }
+
+/* Removed guests list under the guest list (plans/guest-deletion-gaps.md Phase 5). */
+.evt-removed-guests {
+  margin: 24px 0;
+  padding: 12px 16px;
+  border: 1px solid var(--gray-light);
+  border-radius: 10px;
+}
+.evt-removed-guests summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.evt-removed-guests ul {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+}
+.evt-removed-guests li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 6px 0;
+}
+.evt-removed-meta {
+  color: var(--gray-mid);
+  font-size: 0.875rem;
+}

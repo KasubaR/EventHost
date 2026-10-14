@@ -5,6 +5,7 @@ namespace App\Notifications;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Models\Rsvp;
+use App\Notifications\Concerns\SkipsWhenGuestDeleted;
 use App\Services\GuestPassImageService;
 use App\Services\GuestPassPdfService;
 use App\Services\QrCodeService;
@@ -19,6 +20,7 @@ use Illuminate\Support\Str;
 class RsvpConfirmationNotification extends Notification implements ShouldQueue
 {
     use Queueable;
+    use SkipsWhenGuestDeleted;
 
     public function __construct(
         public Event $event,

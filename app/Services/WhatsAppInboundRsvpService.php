@@ -7,9 +7,11 @@ use App\Exceptions\RsvpCheckedInException;
 use App\Exceptions\RsvpClosedException;
 use App\Models\Event;
 use App\Models\Guest;
+use App\Models\GuestRemoval;
 use App\Models\NotificationLog;
 use App\Models\Rsvp;
 use App\Models\RsvpChange;
+use App\Support\GuestPhone;
 use App\Support\ZambianPhone;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -59,6 +61,8 @@ class WhatsAppInboundRsvpService
 
         $guest = $this->resolveGuest($payload);
         if ($guest === null) {
+            $this->replyToRemovedGuest($payload, $messageSid);
+
             return;
         }
 
@@ -234,6 +238,53 @@ class WhatsAppInboundRsvpService
         }
 
         return null;
+    }
+
+    /**
+     * A reply to an invitation whose guest the host has since removed (plans/guest-deletion-gaps.md Phase 4). The
+     * invitation's log row keeps its event but loses the guest, so the replied-to message names the event and the
+     * sender's number is matched to that event's tombstones. Anyone else, and a reply that names no message, stays
+     * silent as before. One reply per inbound message: the log row below is what `alreadyProcessed()` finds on a retry.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private function replyToRemovedGuest(array $payload, string $messageSid): void
+    {
+        $repliedSid = isset($payload['OriginalRepliedMessageSid']) ? trim((string) $payload['OriginalRepliedMessageSid']) : '';
+        $e164 = $this->fromE164($payload);
+        if ($repliedSid === '' || $e164 === null) {
+            return;
+        }
+
+        $eventId = NotificationLog::query()
+            ->where('provider_message_id', $repliedSid)
+            ->where('type', self::TYPE_INVITATION)
+            ->whereNull('guest_id')
+            ->latest('id')
+            ->value('event_id');
+        $key = GuestPhone::key($e164);
+        if ($eventId === null || $key === null) {
+            return;
+        }
+
+        $removed = GuestRemoval::query()->where('event_id', $eventId)->where('phone_key', $key)->exists();
+        $event = $removed ? Event::withTrashed()->find($eventId) : null;
+        if ($event === null) {
+            return;
+        }
+
+        NotificationLog::query()->create([
+            'event_id' => $eventId,
+            'guest_id' => null,
+            'channel' => 'whatsapp',
+            'type' => self::TYPE_INBOUND,
+            'status' => NotificationLog::STATUS_SENT,
+            'provider_message_id' => $messageSid,
+            'sent_at' => now(),
+            'meta' => ['outcome' => 'ignored_removed'],
+        ]);
+
+        $this->whatsApp->sendText($e164, 'You are no longer on the guest list for '.$event->name.'. If you think this is a mistake, contact the host.');
     }
 
     /**

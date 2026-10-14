@@ -5,6 +5,7 @@ namespace App\Notifications;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Notifications\Concerns\OffersReminderOptOut;
+use App\Notifications\Concerns\SkipsWhenGuestDeleted;
 use App\Support\EventReminderBuckets;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -24,6 +25,7 @@ class GuestEventReminderNotification extends Notification implements ShouldQueue
 {
     use OffersReminderOptOut;
     use Queueable;
+    use SkipsWhenGuestDeleted;
 
     public int $tries = 3;
 

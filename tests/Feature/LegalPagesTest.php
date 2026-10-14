@@ -216,4 +216,14 @@ class LegalPagesTest extends TestCase
             ->assertSee('https://instagram.com/eventhost', escape: false)
             ->assertSee('rel="noopener noreferrer"', escape: false);
     }
+
+    // plans/guest-deletion-gaps.md Phase 7: removing a guest keeps a short record, so the privacy page has to say so.
+    public function test_privacy_describes_the_record_kept_when_a_guest_is_removed(): void
+    {
+        $this->get('/privacy')
+            ->assertOk()
+            ->assertSee('When you remove a guest')
+            ->assertSee('Records of removed guests')
+            ->assertSee('permanently deleted');
+    }
 }

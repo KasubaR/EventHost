@@ -6,6 +6,7 @@ use App\Http\Requests\GuestBulkActionRequest;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Services\CommunicationService;
+use App\Services\GuestDeleter;
 use App\Services\GuestUpdater;
 use App\Support\GuestPhone;
 use Illuminate\Http\RedirectResponse;
@@ -35,6 +36,7 @@ class GuestBulkActionController extends Controller
         Event $event,
         CommunicationService $communicationService,
         GuestUpdater $guestUpdater,
+        GuestDeleter $guestDeleter,
     ): RedirectResponse {
         abort_unless($event->isInvitation(), 404);
 
@@ -63,8 +65,9 @@ class GuestBulkActionController extends Controller
         // Guests the action could not reach: no email for the two email actions, no usable phone for the WhatsApp share.
         $skippedCount = 0;
         $skipReason = null;
+        $removedSummary = null;
 
-        DB::transaction(function () use ($request, $event, $ids, $action, $validated, $communicationService, $guestUpdater, &$bulkCount, &$skippedCount, &$skipReason): void {
+        DB::transaction(function () use ($request, $event, $ids, $action, $validated, $communicationService, $guestUpdater, $guestDeleter, &$removedSummary, &$bulkCount, &$skippedCount, &$skipReason): void {
             $builder = Guest::query()
                 ->where('event_id', $event->id)
                 ->whereIn('id', $ids)
@@ -112,7 +115,8 @@ class GuestBulkActionController extends Controller
             }
 
             if ($action === 'delete') {
-                $bulkCount = $builder->delete();
+                $removedSummary = $guestDeleter->deleteMany($event, $ids, $request->user()?->id);
+                $bulkCount = $removedSummary['deleted'];
 
                 return;
             }
@@ -197,6 +201,7 @@ class GuestBulkActionController extends Controller
             ->with('bulk_count', $bulkCount)
             ->with('bulk_skipped', $skippedCount)
             ->with('bulk_skip_reason', $skipReason)
+            ->with('bulk_removed', $removedSummary)
             ->with('status', match ($action) {
                 'assign_group' => 'guests-bulk-group',
                 'assign_table' => 'guests-bulk-table',

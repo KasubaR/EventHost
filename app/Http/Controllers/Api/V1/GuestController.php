@@ -15,6 +15,7 @@ use App\Models\Guest;
 use App\Models\GuestEdit;
 use App\Services\CommunicationService;
 use App\Services\GuestCreator;
+use App\Services\GuestDeleter;
 use App\Services\GuestUpdater;
 use App\Services\HostRsvpOverrideService;
 use App\Services\QrCodeService;
@@ -230,14 +231,14 @@ class GuestController extends Controller
         return response()->json(new GuestResource($guest->fresh(), $event));
     }
 
-    public function destroy(Event $event, Guest $guest): JsonResponse
+    public function destroy(Event $event, Guest $guest, GuestDeleter $guestDeleter): JsonResponse
     {
         $guest->loadMissing('event');
         $this->authorize('delete', $guest);
         abort_unless($guest->event_id === $event->id, 404);
         abort_unless($event->isInvitation(), 404);
 
-        $guest->delete();
+        $guestDeleter->delete($event, $guest, request()->user()?->id);
 
         return response()->json(null, 204);
     }

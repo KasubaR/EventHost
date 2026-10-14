@@ -7,6 +7,7 @@ use App\Exceptions\CheckInNotAllowedException;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\Guest;
+use App\Models\GuestRemoval;
 use App\Services\CheckInService;
 use App\Support\CheckInLookup;
 use Illuminate\Http\JsonResponse;
@@ -37,7 +38,7 @@ class EventCheckInController extends Controller
             ->first();
 
         if ($guest === null) {
-            return response()->json(['message' => 'No matching invitation for this event.'], 404);
+            return GuestRemoval::scanResponse($event->id, $token);
         }
 
         return $this->confirmResponse($checkInService, $guest);

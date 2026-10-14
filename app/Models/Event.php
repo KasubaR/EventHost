@@ -348,6 +348,16 @@ class Event extends Model
     }
 
     /**
+     * Tombstones of deleted guests (plans/guest-deletion-gaps.md Phase 3).
+     *
+     * @return HasMany<GuestRemoval, $this>
+     */
+    public function guestRemovals(): HasMany
+    {
+        return $this->hasMany(GuestRemoval::class);
+    }
+
+    /**
      * @return HasMany<GuestGroup, $this>
      */
     public function guestGroups(): HasMany
@@ -1313,7 +1323,8 @@ class Event extends Model
     public function hasRsvpApprovalQueue(): bool
     {
         return $this->require_rsvp_approval
-            || $this->guestGroups()->whereNotNull('rsvp_token')->exists();
+            || $this->guestGroups()->whereNotNull('rsvp_token')->exists()
+            || $this->guests()->whereNotNull('previously_removed_at')->exists();
     }
 
     /**

@@ -126,6 +126,27 @@
         <div class="evt-admin-flash">Told <bdi>{{ session('plus_one_told') }}</bdi> they can bring a plus-one.</div>
     @elseif (session('status') === 'guest-deleted')
         <div class="evt-admin-flash">{{ $isRegistrations ? 'Registration removed.' : 'Guest removed.' }}</div>
+        @if (session('guest_removed'))
+            @php $gr = session('guest_removed'); @endphp
+            @if ($gr['seats_freed'] > 0)
+                <div class="evt-admin-flash"><bdi>{{ $gr['name'] }}</bdi> held {{ $gr['seats_freed'] }} {{ Str::plural('seat', $gr['seats_freed']) }}, now free again.
+                    @if ($gr['pool'])
+                        <bdi>{{ $gr['pool']['group'] }}</bdi> has {{ $gr['pool']['left'] }} {{ Str::plural('seat', $gr['pool']['left']) }} left.
+                    @endif
+                </div>
+            @endif
+            @if ($gr['tell_url'])
+                <div class="evt-admin-flash">
+                    <bdi>{{ $gr['name'] }}</bdi> still has their link and may not know they were removed.
+                    <form method="POST" action="{{ $gr['tell_url'] }}" style="display:inline">
+                        @csrf
+                        <button type="submit" class="evt-btn-outline evt-btn-tiny">Tell them</button>
+                    </form>
+                </div>
+            @endif
+        @endif
+    @elseif (session('status') === 'removed-guest-told')
+        <div class="evt-admin-flash">Told <bdi>{{ session('removed_told') }}</bdi> they were removed.</div>
     @elseif (session('status') === 'guest-invitation-marked-sent')
         <div class="evt-admin-flash">Invitation marked as sent.</div>
     @elseif (session('status') === 'guest-whatsapp-sent')
@@ -167,6 +188,9 @@
         <div class="evt-admin-flash">Invitation marked sent for selected guests.</div>
     @elseif (session('status') === 'guests-bulk-deleted')
         <div class="evt-admin-flash">Selected guests removed.</div>
+        @if (session('bulk_removed') && session('bulk_removed')['seats_freed'] > 0)
+            <div class="evt-admin-flash">{{ session('bulk_removed')['seats_freed'] }} {{ Str::plural('seat', session('bulk_removed')['seats_freed']) }} freed.</div>
+        @endif
     @elseif (session('status') === 'guests-bulk-reminder')
         <div class="evt-admin-flash">
             Reminder emails queued for {{ session('bulk_count', 0) }} guest(s).
@@ -432,6 +456,9 @@
                                             @if ($approvalPillClass)
                                                 <span class="evt-pill evt-pill--{{ $approvalPillClass }}">{{ $rsvpRow->host_approval_status->label() }}</span>
                                             @endif
+                                            @if ($guestRow->previously_removed_at)
+                                                <span class="evt-pill evt-pill--pending" title="The host removed this person earlier and they signed up again.">Previously removed</span>
+                                            @endif
                                         @else
                                             <span class="evt-pill evt-pill--pending">Pending</span>
                                         @endif
@@ -540,7 +567,7 @@
                                                     <i class="fa-solid fa-pen" aria-hidden="true"></i>
                                                     <span>Edit</span>
                                                 </a>
-                                                <form method="post" action="{{ route('events.guests.destroy', ['event' => $event, 'guest' => $guestRow->id]) }}" class="evt-inline-form evt-confirm-form" data-evt-confirm="Remove this guest? Their RSVP will be deleted too.">
+                                                <form method="post" action="{{ route('events.guests.destroy', ['event' => $event, 'guest' => $guestRow->id]) }}" class="evt-inline-form evt-confirm-form" data-evt-confirm="{{ $guestRow->removalWarning() }}">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="evt-more-item evt-more-item--danger" role="menuitem">
@@ -561,6 +588,29 @@
             </div>
         </div>
     </div>
+
+    @if ($removedGuests->isNotEmpty())
+        <details class="evt-removed-guests">
+            <summary>Removed guests ({{ $removedGuests->count() }})</summary>
+            <ul>
+                @foreach ($removedGuests as $removal)
+                    <li>
+                        <bdi>{{ $removal->name }}</bdi>
+                        <span class="evt-removed-meta">{{ $removal->summary() }}, removed {{ $removal->removed_at->diffForHumans() }}</span>
+                        @if ($removal->notified_at)
+                            <span class="evt-removed-meta">Told</span>
+                        @elseif ($removal->canBeTold())
+                            <form method="POST" action="{{ route('events.guests.removed.notify', ['event' => $event, 'removal' => $removal]) }}" style="display:inline">
+                                @csrf
+                                <button type="submit" class="evt-btn-outline evt-btn-tiny">Tell them</button>
+                            </form>
+                        @endif
+                    </li>
+                @endforeach
+            </ul>
+            <p class="evt-removed-meta">Removed guests are listed for your reference. Their links no longer work.</p>
+        </details>
+    @endif
 
     <div class="evt-qr-lightbox" data-evt-qr-lightbox hidden>
         <div class="evt-qr-lightbox-backdrop" data-evt-qr-close tabindex="-1"></div>

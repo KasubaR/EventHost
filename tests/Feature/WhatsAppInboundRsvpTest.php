@@ -8,6 +8,7 @@ use App\Models\Guest;
 use App\Models\NotificationLog;
 use App\Models\Rsvp;
 use App\Models\User;
+use App\Services\GuestDeleter;
 use App\Services\WhatsAppService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -473,5 +474,57 @@ class WhatsAppInboundRsvpTest extends TestCase
         return $this->post($url, $params, [
             'X-Twilio-Signature' => $signature,
         ]);
+    }
+
+    public function test_a_removed_guest_who_replies_is_told_once(): void
+    {
+        $fake = $this->bindWhatsAppFake();
+        [$event, $guest] = $this->seedInvite('SM_OUT_GONE');
+        app(GuestDeleter::class)->delete($event, $guest);
+        $payload = [
+            'MessageSid' => 'SM_IN_GONE',
+            'From' => 'whatsapp:+260971234567',
+            'ButtonPayload' => 'rsvp_accepted',
+            'OriginalRepliedMessageSid' => 'SM_OUT_GONE',
+        ];
+
+        $this->postSignedWebhook($payload)->assertOk();
+        $this->postSignedWebhook($payload)->assertOk(); // Twilio retry
+
+        $this->assertSame(1, $fake->textCalls);
+        $this->assertStringContainsString('no longer on the guest list', $fake->texts[0]);
+        $this->assertStringContainsString($event->name, $fake->texts[0]);
+        $this->assertDatabaseCount('rsvps', 0);
+    }
+
+    public function test_someone_else_replying_to_a_removed_guests_message_gets_no_reply(): void
+    {
+        $fake = $this->bindWhatsAppFake();
+        [$event, $guest] = $this->seedInvite('SM_OUT_GONE2');
+        app(GuestDeleter::class)->delete($event, $guest);
+
+        $this->postSignedWebhook([
+            'MessageSid' => 'SM_IN_GONE2',
+            'From' => 'whatsapp:+260977999888',
+            'ButtonPayload' => 'rsvp_accepted',
+            'OriginalRepliedMessageSid' => 'SM_OUT_GONE2',
+        ])->assertOk();
+
+        $this->assertSame(0, $fake->textCalls);
+    }
+
+    public function test_a_removed_guest_replying_without_naming_a_message_gets_no_reply(): void
+    {
+        $fake = $this->bindWhatsAppFake();
+        [$event, $guest] = $this->seedInvite('SM_OUT_GONE3');
+        app(GuestDeleter::class)->delete($event, $guest);
+
+        $this->postSignedWebhook([
+            'MessageSid' => 'SM_IN_GONE3',
+            'From' => 'whatsapp:+260971234567',
+            'ButtonPayload' => 'rsvp_accepted',
+        ])->assertOk();
+
+        $this->assertSame(0, $fake->textCalls);
     }
 }

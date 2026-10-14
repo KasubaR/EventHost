@@ -233,7 +233,9 @@ class RsvpSubmissionService
             // Guests who signed up through the group link are always held for the host, whatever
             // the event-wide toggle says. A guest the host added by hand is not.
             $requiresApproval = $locked->require_rsvp_approval
-                || ($hasSeatPool && $guest->group_link_joined_at !== null);
+                || ($hasSeatPool && $guest->group_link_joined_at !== null)
+                // Someone the host removed who signed themselves up again (plans/guest-deletion-gaps.md Phase 6).
+                || $guest->previously_removed_at !== null;
 
             // Approval follows SEATS, not answers (plans/rsvp-status-changes.md Phase 3). `approved_seats` is how many
             // the host has approved, and it survives a Declined/Maybe round trip:
