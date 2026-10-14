@@ -481,7 +481,7 @@ combination never reaches `Event::save()` at all.
   when a test needs the public page, discover or open RSVP
 
 **Private event types always include the seven static types.** Each template carries **one category** for
-now (Wedding: Classic, Wedding Standard, Ivory & Gold, Noir & Gold, Modern Minimal, Midnight Gold, Dusty Blue,
+now (Wedding: Classic, Wedding Standard, Ivory & Gold, Noir & Gold, Modern Minimal, Midnight Gold, Dusty Blue, Royal Blue,
 Pro Magazine; Graduation:
 Blush Celebration Card, Botanical; Church: Beauty for Ashes), so most types have no template of their own.
 `Event::privateEventTypes()` therefore returns every `INVITATION_EVENT_TYPES` entry, plus any further category
