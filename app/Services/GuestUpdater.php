@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Event;
 use App\Models\Guest;
+use App\Models\GuestEdit;
 use App\Models\GuestGroup;
 use App\Models\NotificationLog;
 use App\Support\GuestPhone;
@@ -45,15 +46,22 @@ class GuestUpdater
      *     plus_one_switched_on: bool,
      * }
      */
-    public function update(Event $event, Guest $guest, array $validated): array
+    public function update(Event $event, Guest $guest, array $validated, ?int $actorUserId = null): array
     {
-        return DB::transaction(function () use ($event, $guest, $validated): array {
+        return DB::transaction(function () use ($event, $guest, $validated, $actorUserId): array {
             // The lock every RSVP write takes, then the guest row, so an edit and a guest's own submit serialise.
             Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
 
             /** @var Guest $current */
             $current = Guest::query()->whereKey($guest->id)->lockForUpdate()->firstOrFail();
 
+            // Someone saved this guest after the form was opened: refuse, with the host's edits still on screen. The form request
+            // checked this before field rules; this repeats it under the lock. No version sent (an API client, an old tab) means last write wins.
+            if (isset($validated['guest_version']) && $validated['guest_version'] !== $current->editVersion()) {
+                throw ValidationException::withMessages(['guest_version' => [self::STALE_MESSAGE]]);
+            }
+
+            $before = self::snapshot($current);
             $oldEmail = $current->email;
             $oldPhone = $current->phone;
             $hadHistory = $current->invitation_sent || $current->rsvp()->exists();
@@ -79,15 +87,20 @@ class GuestUpdater
             $plusOneSwitchedOn = ! $current->plus_one_allowed && $data['plus_one_allowed'];
 
             // A move to another group: check the target's seat pool, and the guest is no longer "a link joiner".
+            $overPool = false;
             $newGroupId = $data['guest_group_id'] !== null ? (int) $data['guest_group_id'] : null;
 
             if ($newGroupId !== ($current->guest_group_id !== null ? (int) $current->guest_group_id : null)) {
-                if ($newGroupId !== null && ! ($validated['allow_over_pool'] ?? false)) {
+                if ($newGroupId !== null) {
                     $target = GuestGroup::query()->where('event_id', $event->id)->find($newGroupId);
                     $refusal = $target !== null ? self::poolRefusal($target, $current) : null;
 
                     if ($refusal !== null) {
-                        throw ValidationException::withMessages(['guest_group_id' => [$refusal]]);
+                        if (! ($validated['allow_over_pool'] ?? false)) {
+                            throw ValidationException::withMessages(['guest_group_id' => [$refusal]]);
+                        }
+
+                        $overPool = true;
                     }
                 }
 
@@ -124,6 +137,25 @@ class GuestUpdater
             }
 
             $current->save();
+
+            // What the host changed, for the guest's edit history.
+            $current->unsetRelation('group')->unsetRelation('eventTable');
+            $changes = [];
+            foreach (self::snapshot($current->refresh()) as $field => $value) {
+                if ($value !== $before[$field]) {
+                    $changes[$field] = [$before[$field], $value];
+                }
+            }
+            if ($linkReplaced) {
+                $changes['link_replaced'] = true;
+            }
+            if ($invitationReset) {
+                $changes['invitation_reset'] = true;
+            }
+            if ($overPool && isset($changes['group'])) {
+                $changes['over_pool'] = true;
+            }
+            GuestEdit::record($current, $actorUserId, $changes);
 
             if ($emailChanged) {
                 self::releaseLogKeys($current, ['email']);
@@ -192,9 +224,9 @@ class GuestUpdater
      * @param  list<int>  $guestIds
      * @return array{moved: int, skipped: int, reason: string|null}
      */
-    public function moveManyToGroup(Event $event, array $guestIds, ?int $groupId): array
+    public function moveManyToGroup(Event $event, array $guestIds, ?int $groupId, ?int $actorUserId = null): array
     {
-        return DB::transaction(function () use ($event, $guestIds, $groupId): array {
+        return DB::transaction(function () use ($event, $guestIds, $groupId, $actorUserId): array {
             Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
 
             $group = $groupId !== null ? GuestGroup::query()->where('event_id', $event->id)->find($groupId) : null;
@@ -206,10 +238,10 @@ class GuestUpdater
             Guest::query()
                 ->where('event_id', $event->id)
                 ->whereIn('id', $guestIds)
-                ->with('rsvp')
+                ->with(['rsvp', 'group'])
                 ->lockForUpdate()
                 ->get()
-                ->each(function (Guest $guest) use ($group, $groupId, &$moved, &$skipped, &$reason): void {
+                ->each(function (Guest $guest) use ($group, $groupId, $actorUserId, &$moved, &$skipped, &$reason): void {
                     if (($guest->guest_group_id !== null ? (int) $guest->guest_group_id : null) !== $groupId) {
                         $refusal = $group !== null ? self::poolRefusal($group, $guest) : null;
 
@@ -220,7 +252,10 @@ class GuestUpdater
                             return;
                         }
 
+                        $was = $guest->group?->name;
                         $guest->forceFill(['guest_group_id' => $groupId, 'group_link_joined_at' => null])->save();
+                        $guest->unsetRelation('group');
+                        GuestEdit::record($guest, $actorUserId, ['group' => [$was, $guest->load('group')->group?->name]]);
                     }
 
                     $moved++;
@@ -228,6 +263,27 @@ class GuestUpdater
 
             return ['moved' => $moved, 'skipped' => $skipped, 'reason' => $reason];
         });
+    }
+
+    public const STALE_MESSAGE = 'This guest was changed somewhere else since you opened this page, so your edits were not saved. Open the latest version and make them again.';
+
+    /**
+     * The fields the edit history tracks, as the host sees them (group and table by name).
+     *
+     * @return array{name: string, email: string|null, phone: string|null, group: string|null, table: string|null, plus_one: bool}
+     */
+    public static function snapshot(Guest $guest): array
+    {
+        $guest->loadMissing(['group', 'eventTable']);
+
+        return [
+            'name' => (string) $guest->name,
+            'email' => $guest->email,
+            'phone' => $guest->phone,
+            'group' => $guest->group?->name,
+            'table' => $guest->eventTable?->label,
+            'plus_one' => (bool) $guest->plus_one_allowed,
+        ];
     }
 
     /** A different email, with an address on both sides. Case and padding do not count. */

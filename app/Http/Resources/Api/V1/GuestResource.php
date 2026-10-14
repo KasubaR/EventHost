@@ -41,6 +41,8 @@ class GuestResource extends JsonResource
 
         return [
             'id' => $this->id,
+            // Additive: send it back as `guest_version` on PATCH to refuse a save over someone else's change; omit it for last write wins.
+            'version' => $this->editVersion(),
             'name' => $this->name,
             'email' => $this->email,
             'phone' => $this->phone,

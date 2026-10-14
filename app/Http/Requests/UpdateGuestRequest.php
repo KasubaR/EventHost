@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Rules\GuestPhoneNumber;
+use App\Services\GuestUpdater;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -59,7 +60,17 @@ class UpdateGuestRequest extends FormRequest
         /** @var Guest $guest */
         $guest = $this->route('guest');
 
+        // Changed elsewhere since the form was opened: say so and nothing else, so a field error caused by the newer state does not hide
+        // the real reason. Absent (an API client, an old tab) means last write wins. plans/guest-editing-gaps.md Phase 5.
+        $sent = $this->input('guest_version');
+        if (is_string($sent) && $sent !== '' && $sent !== $guest->editVersion()) {
+            return ['guest_version' => [function (string $attribute, mixed $value, Closure $fail): void {
+                $fail(GuestUpdater::STALE_MESSAGE);
+            }]];
+        }
+
         return [
+            'guest_version' => ['nullable', 'string', 'max:64'],
             'name' => ['required', 'string', 'max:'.Guest::NAME_MAX],
             'email' => [
                 'nullable',

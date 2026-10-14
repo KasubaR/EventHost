@@ -11,6 +11,7 @@ use App\Http\Requests\StoreGuestRequest;
 use App\Http\Requests\UpdateGuestRequest;
 use App\Models\Event;
 use App\Models\Guest;
+use App\Models\GuestEdit;
 use App\Models\NotificationLog;
 use App\Services\CommunicationService;
 use App\Services\GuestCreator;
@@ -247,11 +248,12 @@ class GuestController extends Controller
         $groups = $event->guestGroups()->get();
         $tables = $event->tables()->orderBy('sort_order')->orderBy('label')->get();
         $changes = $guest->rsvpChanges()->with('actor')->latest('id')->limit(30)->get();
+        $edits = $guest->edits()->with('user')->latest('id')->limit(20)->get();
 
         // Another guest on the same number (a household), shown on the edit page so the host sees why.
         $sharedWith = Guest::matchingPhone($event, $guest->phone, ignoreGuestId: $guest->id);
 
-        return view('events.guests.edit', compact('event', 'guest', 'groups', 'tables', 'changes', 'sharedWith'));
+        return view('events.guests.edit', compact('event', 'guest', 'groups', 'tables', 'changes', 'edits', 'sharedWith'));
     }
 
     public function update(UpdateGuestRequest $request, Event $event, Guest $guest, GuestUpdater $updater): RedirectResponse
@@ -259,7 +261,7 @@ class GuestController extends Controller
         $guest->loadMissing('event');
         abort_unless($event->isInvitation(), 404);
 
-        $result = $updater->update($event, $guest, $request->validated());
+        $result = $updater->update($event, $guest, $request->validated(), $request->user()?->id);
         $guest = $result['guest'];
 
         // Their confirmed plus-one stays; say so, since the checkbox suggests otherwise.
@@ -357,6 +359,7 @@ class GuestController extends Controller
             Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
             Guest::query()->whereKey($guest->id)->lockForUpdate()->firstOrFail()
                 ->forceFill(['invitation_token' => Str::random(48)])->save();
+            GuestEdit::record($guest, request()->user()?->id, ['link_replaced' => true]);
         });
 
         $guest->refresh();

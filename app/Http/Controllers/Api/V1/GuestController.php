@@ -12,6 +12,7 @@ use App\Http\Resources\Api\V1\GuestResource;
 use App\Http\Resources\Api\V1\TableResource;
 use App\Models\Event;
 use App\Models\Guest;
+use App\Models\GuestEdit;
 use App\Services\CommunicationService;
 use App\Services\GuestCreator;
 use App\Services\GuestUpdater;
@@ -193,7 +194,7 @@ class GuestController extends Controller
         abort_unless($guest->event_id === $event->id, 404);
         abort_unless($event->isInvitation(), 404);
 
-        $result = $updater->update($event, $guest, $request->validated());
+        $result = $updater->update($event, $guest, $request->validated(), $request->user()?->id);
 
         // Additive flags beside the guest: what the edit did beyond saving it. `personal_rsvp_url` (already in the resource) is the new
         // link when `link_replaced` is true.
@@ -223,6 +224,7 @@ class GuestController extends Controller
             Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
             Guest::query()->whereKey($guest->id)->lockForUpdate()->firstOrFail()
                 ->forceFill(['invitation_token' => Str::random(48)])->save();
+            GuestEdit::record($guest, request()->user()?->id, ['link_replaced' => true]);
         });
 
         return response()->json(new GuestResource($guest->fresh(), $event));

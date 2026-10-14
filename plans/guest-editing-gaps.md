@@ -1,6 +1,6 @@
 # Editing guests: gaps and plan
 
-**Status: Phases 1 to 4 are BUILT** (tests: `GuestContactChangeTest`, `GuestGroupMoveTest`, `GuestPlusOneChangeTest`). Two changes while building: the API also got `POST .../regenerate-link` (the resource already carried `personal_rsvp_url`, so no new link field), and `GuestUpdater` already takes the event lock and re-reads the guest under it, which Phase 5 builds on.
+**Status: Phases 1 to 5 are BUILT; Phase 6 (docs) was written alongside each phase** (tests: `GuestContactChangeTest`, `GuestGroupMoveTest`, `GuestPlusOneChangeTest`, `GuestEditVersionAndHistoryTest`). Two changes from the plan: the version is a content hash of the edited fields (not `updated_at`, which is second precision), and bulk group moves are recorded in the history too. Two changes while building: the API also got `POST .../regenerate-link` (the resource already carried `personal_rsvp_url`, so no new link field), and `GuestUpdater` already takes the event lock and re-reads the guest under it, which Phase 5 builds on.
 
 Scope: the "Guest Management / Editing Guests" edge-case list.
 

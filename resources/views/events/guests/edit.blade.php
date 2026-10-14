@@ -56,6 +56,11 @@
                 <form method="post" action="{{ route('events.guests.update', ['event' => $event, 'guest' => $guest->id]) }}" class="profile-fields">
                     @csrf
                     @method('PATCH')
+                    {{-- Stays at the version the page was opened at even after a refused save, so a stale tab keeps being refused until it is reloaded. --}}
+                    <input type="hidden" name="guest_version" value="{{ old('guest_version', $guest->editVersion()) }}">
+                    @error('guest_version')
+                        <div class="evt-admin-flash">{{ $message }} <a href="{{ route('events.guests.edit', ['event' => $event, 'guest' => $guest->id]) }}" target="_blank" rel="noopener">Open the latest version</a></div>
+                    @enderror
                     <div class="profile-field">
                         <label for="guest_name" class="profile-label">Name</label>
                         <input id="guest_name" type="text" name="name" class="profile-input {{ $errors->has('name') ? 'profile-input--error' : '' }}" value="{{ old('name', $guest->name) }}" required maxlength="191">
@@ -240,6 +245,23 @@
                     </p>
                 @empty
                     <p class="evt-muted">No changes to this guest's answer have been recorded.</p>
+                @endforelse
+            </div>
+        </div>
+
+        <div class="evt-section">
+            <div class="evt-section-body">
+                <h2 class="evt-section-title">Edit history</h2>
+                @forelse ($edits as $edit)
+                    <p class="evt-muted">
+                        <strong>{{ $edit->created_at->timezone(config('events.timezone'))->format('M j, Y \a\t g:i A') }}</strong>
+                        by {{ $edit->user?->name ?? 'someone' }}:
+                        @foreach ($edit->lines() as $line)
+                            <bdi>{{ $line }}</bdi>@unless ($loop->last); @endunless
+                        @endforeach
+                    </p>
+                @empty
+                    <p class="evt-muted">No edits to this guest's details have been recorded.</p>
                 @endforelse
             </div>
         </div>

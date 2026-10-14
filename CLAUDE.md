@@ -714,6 +714,14 @@ badly written details. Tests: `GuestAddEdgeCasesTest`, `GuestPhoneTest`.
  that guest is under an hour old (the log type is its own, so a bulk update email does not count). Ticking it while the **event's own switch is off** flashes `plus_one_inactive`, and the edit page says the tick has no
  effect until plus-ones are switched on. Switching it **off** while they hold 2 seats still keeps the seat (`plus_one_kept` on the web). API, all additive: `GuestResource::plus_one_effective` (event switch AND guest flag)
  and `plus_one_kept` on the update response
+- **Two tabs on one guest, and the edit history** (plan `plans/guest-editing-gaps.md` Phase 5): the edit form carries `guest_version` = `Guest::editVersion()`, a hash of what that form edits (name, email, phone, group,
+ table, plus-one flag, personal token, sent flag), not `updated_at` (second precision). `UpdateGuestRequest::rules()` returns **only** the version rule when it no longer matches, so a field error caused by the newer
+ state never hides the real reason ("changed somewhere else"), and `GuestUpdater` repeats the check under the lock. The page keeps the **old** version in the hidden field after a refusal
+ (`old('guest_version', ...)`), so a stale tab stays refused until reloaded, and its edits stay on screen. Reminder state, RSVP answers and check-in are not part of the version. No version sent (an API client,
+ a tab from before the deploy) means last write wins; the API returns `version` on every guest and accepts it as `guest_version`. Every saved edit writes a `guest_edits` row (`GuestEdit::record()`: `user_id`,
+ `changes` = `{name|email|phone|group|table|plus_one: [old, new], link_replaced, invitation_reset, over_pool: true}`; the token itself is never stored; group and table are stored by name) from the single edit, the
+ bulk group move and both link-replacement endpoints; a no-op save writes nothing. Shown under "Edit history" on the guest's edit page (last 20); cascades with the guest. **Inside a model, `$this->changes` is
+ Eloquent's own record of the last save, not the `changes` attribute**: `GuestEdit::lines()` reads `getAttribute('changes')`
 - **Still not covered:** CJK, Thai, Indic and emoji names on a printed pass (they print as `?`), shaped Arabic/Hebrew, internationalised email addresses
  are refused by `email:rfc`; event names and other tables still allow 255 characters against a 191 column
 

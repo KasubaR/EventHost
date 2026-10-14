@@ -111,6 +111,27 @@ class Guest extends Model
     }
 
     /**
+     * @return HasMany<GuestEdit, $this>
+     */
+    public function edits(): HasMany
+    {
+        return $this->hasMany(GuestEdit::class);
+    }
+
+    /**
+     * A fingerprint of what the guest edit form changes: the host's own details. The form carries it as `guest_version`; a save whose version
+     * no longer matches means someone (another tab, a bulk action) changed the guest since the page was opened. Content-based rather than
+     * `updated_at`, which only has second precision, and it ignores what the form does not edit (RSVP answers, reminder state).
+     */
+    public function editVersion(): string
+    {
+        return substr(sha1((string) json_encode([
+            $this->name, $this->email, $this->phone, $this->guest_group_id, $this->event_table_id,
+            (bool) $this->plus_one_allowed, $this->invitation_token, (bool) $this->invitation_sent,
+        ])), 0, 16);
+    }
+
+    /**
      * @return HasMany<NotificationLog, $this>
      */
     public function notificationLogs(): HasMany

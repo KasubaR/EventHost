@@ -55,7 +55,7 @@ class GuestBulkActionController extends Controller
         $skippedCount = 0;
         $skipReason = null;
 
-        DB::transaction(function () use ($event, $ids, $action, $validated, $communicationService, &$bulkCount, &$skippedCount, &$skipReason): void {
+        DB::transaction(function () use ($request, $event, $ids, $action, $validated, $communicationService, &$bulkCount, &$skippedCount, &$skipReason): void {
             $builder = Guest::query()
                 ->where('event_id', $event->id)
                 ->whereIn('id', $ids)
@@ -66,6 +66,7 @@ class GuestBulkActionController extends Controller
                     $event,
                     array_map('intval', $ids),
                     isset($validated['guest_group_id']) && $validated['guest_group_id'] !== null ? (int) $validated['guest_group_id'] : null,
+                    $request->user()?->id,
                 );
                 $bulkCount = $result['moved'];
                 $skippedCount = $result['skipped'];
