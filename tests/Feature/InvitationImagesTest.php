@@ -140,6 +140,7 @@ class InvitationImagesTest extends TestCase
             'modern minimal' => [InvitationLayoutVariant::MODERN_MINIMAL],
             'midnight gold' => [InvitationLayoutVariant::WEDDING_MIDNIGHT_GOLD],
             'dusty blue' => [InvitationLayoutVariant::WEDDING_DUSTY_BLUE],
+            'royal blue' => [InvitationLayoutVariant::WEDDING_ROYAL_BLUE],
             'botanical' => [InvitationLayoutVariant::BOTANICAL_GRADUATION],
         ];
     }

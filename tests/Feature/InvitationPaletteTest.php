@@ -360,6 +360,7 @@ class InvitationPaletteTest extends TestCase
         return [
             'midnight gold' => ['wedding-midnight-gold'],
             'dusty blue' => ['wedding-dusty-blue'],
+            'royal blue' => ['wedding-royal-blue'],
             'wedding standard' => ['base-wedding'],
         ];
     }

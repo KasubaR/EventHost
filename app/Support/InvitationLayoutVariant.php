@@ -24,6 +24,8 @@ final class InvitationLayoutVariant
 
     public const WEDDING_DUSTY_BLUE = 'wedding_dusty_blue';
 
+    public const WEDDING_ROYAL_BLUE = 'wedding_royal_blue';
+
     /** Base-plan wedding standard: same sections as the Pro weddings, but text only — no images of any kind. */
     public const BASE_WEDDING = 'base_wedding';
 
@@ -32,7 +34,7 @@ final class InvitationLayoutVariant
      */
     public static function keys(): array
     {
-        return [self::STANDARD, self::PRO_MAGAZINE, self::BOTANICAL_GRADUATION, self::BEAUTY_FOR_ASHES, self::EVENT_INVITE, self::WEDDING_INVITATION, self::WEDDING_INVITATION_NOIR, self::MODERN_MINIMAL, self::WEDDING_MIDNIGHT_GOLD, self::WEDDING_DUSTY_BLUE, self::BASE_WEDDING];
+        return [self::STANDARD, self::PRO_MAGAZINE, self::BOTANICAL_GRADUATION, self::BEAUTY_FOR_ASHES, self::EVENT_INVITE, self::WEDDING_INVITATION, self::WEDDING_INVITATION_NOIR, self::MODERN_MINIMAL, self::WEDDING_MIDNIGHT_GOLD, self::WEDDING_DUSTY_BLUE, self::WEDDING_ROYAL_BLUE, self::BASE_WEDDING];
     }
 
     /**
@@ -44,7 +46,7 @@ final class InvitationLayoutVariant
      */
     public static function proWeddingLayouts(): array
     {
-        return [self::WEDDING_INVITATION, self::WEDDING_INVITATION_NOIR, self::MODERN_MINIMAL, self::WEDDING_MIDNIGHT_GOLD, self::WEDDING_DUSTY_BLUE];
+        return [self::WEDDING_INVITATION, self::WEDDING_INVITATION_NOIR, self::MODERN_MINIMAL, self::WEDDING_MIDNIGHT_GOLD, self::WEDDING_DUSTY_BLUE, self::WEDDING_ROYAL_BLUE];
     }
 
     public static function isProWedding(?string $variant): bool
@@ -126,6 +128,7 @@ final class InvitationLayoutVariant
             self::MODERN_MINIMAL => 'events-invitation-layout-modern-minimal.css',
             self::WEDDING_MIDNIGHT_GOLD => 'events-invitation-layout-wedding-midnight-gold.css',
             self::WEDDING_DUSTY_BLUE => 'events-invitation-layout-wedding-dusty-blue.css',
+            self::WEDDING_ROYAL_BLUE => 'events-invitation-layout-wedding-royal-blue.css',
             self::BASE_WEDDING => 'events-invitation-layout-base-wedding.css',
             default => null,
         };
@@ -139,7 +142,7 @@ final class InvitationLayoutVariant
     public static function pinnedFirst(string $variant): ?string
     {
         return match ($variant) {
-            self::PRO_MAGAZINE, self::BOTANICAL_GRADUATION, self::BEAUTY_FOR_ASHES, self::EVENT_INVITE, self::WEDDING_INVITATION, self::WEDDING_INVITATION_NOIR, self::MODERN_MINIMAL, self::WEDDING_MIDNIGHT_GOLD, self::WEDDING_DUSTY_BLUE, self::BASE_WEDDING => 'hero',
+            self::PRO_MAGAZINE, self::BOTANICAL_GRADUATION, self::BEAUTY_FOR_ASHES, self::EVENT_INVITE, self::WEDDING_INVITATION, self::WEDDING_INVITATION_NOIR, self::MODERN_MINIMAL, self::WEDDING_MIDNIGHT_GOLD, self::WEDDING_DUSTY_BLUE, self::WEDDING_ROYAL_BLUE, self::BASE_WEDDING => 'hero',
             default => null,
         };
     }

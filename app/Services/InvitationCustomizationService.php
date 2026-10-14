@@ -465,6 +465,15 @@ class InvitationCustomizationService
                 }
             }
         }
+        if ($layoutVariant === InvitationLayoutVariant::WEDDING_ROYAL_BLUE) {
+            // Script "cordially invited" line, italic serif eyebrows, and the light Poppins the names are set in.
+            foreach (['cormorant_garamond', 'pinyon_script', 'poppins'] as $fontKey) {
+                $spec = InvitationFonts::MAP[$fontKey]['google_family'] ?? null;
+                if (is_string($spec) && $spec !== '' && ! in_array($spec, $googleFonts, true)) {
+                    $googleFonts[] = $spec;
+                }
+            }
+        }
 
         $rsvpFormDefaults = self::defaultRsvpForm($layoutVariant);
         $rsvpForm = [];

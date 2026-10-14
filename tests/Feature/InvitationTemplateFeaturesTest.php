@@ -80,7 +80,7 @@ class InvitationTemplateFeaturesTest extends TestCase
             ->get();
 
         $this->assertEqualsCanonicalizing(
-            ['wedding-invitation', 'wedding-invitation-2', 'modern-minimal', 'wedding-midnight-gold', 'wedding-dusty-blue'],
+            ['wedding-invitation', 'wedding-invitation-2', 'modern-minimal', 'wedding-midnight-gold', 'wedding-dusty-blue', 'wedding-royal-blue'],
             $proWeddings->pluck('slug')->all()
         );
 
@@ -129,6 +129,7 @@ class InvitationTemplateFeaturesTest extends TestCase
             'modern-minimal' => 'wedding',
             'wedding-midnight-gold' => 'wedding',
             'wedding-dusty-blue' => 'wedding',
+            'wedding-royal-blue' => 'wedding',
             'pro-magazine' => 'wedding',
             'graduation-template-2-botanical-blush' => 'graduation',
             'beauty-for-ashes' => 'church',
@@ -186,6 +187,31 @@ class InvitationTemplateFeaturesTest extends TestCase
         $response->assertSee('mg-gallery--count-6', escape: false);
         $response->assertSee('data-rsvp-preview', escape: false);
         $response->assertSee('mg-footer', escape: false);
+    }
+
+    public function test_preview_royal_blue_renders_its_markup(): void
+    {
+        $user = User::factory()->pro()->create();
+        $tpl = InvitationTemplate::query()->where('slug', 'wedding-royal-blue')->firstOrFail();
+
+        $response = $this->actingAs($user)->get(route('templates.preview', $tpl));
+
+        $response->assertOk();
+        $response->assertSee('evt-layout-wedding-royal-blue', escape: false);
+        $response->assertSee('events-invitation-layout-wedding-royal-blue.css', escape: false);
+        $response->assertSee('Pinyon+Script', escape: false);
+        $response->assertSee('rb-hero-veil', escape: false);
+        $response->assertSee('You are cordially invited', escape: false);
+        $response->assertSee('Chanda', escape: false);
+        $response->assertSee('Mwila', escape: false);
+        $response->assertSee('data-inv-countdown', escape: false);
+        $this->assertSame(3, substr_count($response->getContent(), 'class="rb-story-card"'));
+        $response->assertSee('Ndola Garden Chapel', escape: false);
+        $response->assertSee('Dress Code', escape: false);
+        $response->assertSee('rb-timeline', escape: false);
+        $response->assertSee('rb-gallery--count-6', escape: false);
+        $response->assertSee('data-rsvp-preview', escape: false);
+        $response->assertSee('rb-footer', escape: false);
     }
 
     public function test_preview_dusty_blue_renders_its_markup_in_its_own_section_order(): void

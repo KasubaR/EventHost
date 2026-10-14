@@ -50,7 +50,7 @@ final class InvitationFonts
         ],
         'poppins' => [
             'font_stack' => 'Poppins, system-ui, sans-serif',
-            'google_family' => 'Poppins:wght@400;600;700',
+            'google_family' => 'Poppins:wght@200;300;400;600;700',
         ],
         'nunito' => [
             'font_stack' => 'Nunito, system-ui, sans-serif',
@@ -75,6 +75,10 @@ final class InvitationFonts
         'mrs_saint_delafield' => [
             'font_stack' => '"Mrs Saint Delafield", "Snell Roundhand", cursive',
             'google_family' => 'Mrs+Saint+Delafield',
+        ],
+        'pinyon_script' => [
+            'font_stack' => '"Pinyon Script", "Snell Roundhand", cursive',
+            'google_family' => 'Pinyon+Script',
         ],
         'bodoni_moda' => [
             'font_stack' => '"Bodoni Moda", Georgia, serif',

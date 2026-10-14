@@ -50,6 +50,11 @@ final class InvitationImageSizes
             'couple' => self::PORTRAIT_SQUARE,
             'gallery' => self::GALLERY_SQUARE,
         ],
+        InvitationLayoutVariant::WEDDING_ROYAL_BLUE => [
+            'cover' => self::COVER,
+            'couple' => self::PORTRAIT_3_4,
+            'gallery' => self::GALLERY_4_3,
+        ],
         InvitationLayoutVariant::PRO_MAGAZINE => [
             'cover' => self::COVER,
             'gallery' => self::GALLERY_4_3,

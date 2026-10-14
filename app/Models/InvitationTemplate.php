@@ -375,6 +375,43 @@ class InvitationTemplate extends Model
                     'wi_couple_caption' => 'Formal: soft blues and neutrals',
                 ],
             ];
+        } elseif ($this->slug === 'wedding-royal-blue') {
+            $event->name = 'Chanda & Mwila';
+            $event->event_type = 'wedding';
+            $event->description = 'Together with their families, Chanda and Mwila cordially invite you to celebrate their union. Join us for a blessing, a garden reception and an evening of dancing.';
+            $event->venue = 'Ndola Garden Chapel';
+            $event->location_name = 'Ndola, Zambia';
+            $event->event_date = now()->addMonths(4)->next('Saturday')->startOfDay();
+            $event->event_time = '10:00:00';
+            $event->rsvp_deadline = now()->addMonths(3);
+            $event->preview_cover_image_url = self::unsplash('1519741497674-611481863552');
+            $event->invitation_customization = [
+                'schema_version' => InvitationCustomizationService::CURRENT_SCHEMA_VERSION,
+                'media' => [
+                    'couple_photos' => [
+                        self::unsplash('1591604466107-ec97de577aff', 1000),
+                        self::unsplash('1583939003579-730e3918a45a', 1000),
+                        self::unsplash('1606216794074-735e91aa2c92', 1000),
+                    ],
+                    'gallery' => [
+                        self::unsplash('1519167758481-83f550bb49b3', 1000),
+                        self::unsplash('1606216794074-735e91aa2c92', 1000),
+                        self::unsplash('1465495976277-4387d4b0b4c6', 1000),
+                        self::unsplash('1519657337289-077653f724ed', 1000),
+                        self::unsplash('1523438885200-e635ba2c371e', 1000),
+                        self::unsplash('1520854221256-17451cc331bf', 1000),
+                    ],
+                ],
+                'content' => [
+                    'story' => "We met at a friend's wedding, where we were both seated at the table nobody wanted.\n\nA year of long phone calls and weekend road trips later, we knew.\n\nThis season we make it official, and we would love you there.",
+                    'schedule' => [
+                        ['time' => '10:00', 'title' => 'Marriage blessing', 'detail' => 'Ndola Garden Chapel'],
+                        ['time' => '12:00', 'title' => 'Photo session', 'detail' => 'The chapel gardens'],
+                        ['time' => '13:00', 'title' => 'Reception', 'detail' => 'Lunch, speeches and dancing'],
+                    ],
+                    'wi_couple_caption' => 'Black tie',
+                ],
+            ];
         } elseif ($this->slug === 'wedding-invitation') {
             $event->name = 'Kasuba Mulenga & Tamara Muzwindi';
             $event->event_type = 'wedding';

@@ -316,6 +316,7 @@
         '.wi2-gallery-lightbox',
         '.mm-gallery-lightbox',
         '.mg-gallery-item',
+        '.rb-gallery-item',
         '.db-gallery .glightbox',
         '.evt-bg-gallery-lightbox',
     ];

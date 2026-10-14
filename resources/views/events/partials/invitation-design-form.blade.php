@@ -85,6 +85,11 @@
         $sectionLabels['description'] = 'Invitation wording';
         $sectionLabels['story'] = 'Love story & couple portraits';
     }
+    if ($layoutVariant === InvitationLayoutVariant::WEDDING_ROYAL_BLUE) {
+        $sectionLabels['hero'] = 'Names & date over your cover';
+        $sectionLabels['description'] = 'Invitation wording';
+        $sectionLabels['story'] = 'Couple portraits & story';
+    }
     if ($layoutVariant === InvitationLayoutVariant::WEDDING_DUSTY_BLUE) {
         $sectionLabels['hero'] = 'Save the date, photo strip & date/place panel';
         $sectionLabels['description'] = 'Invitation wording';
@@ -556,7 +561,7 @@
                 </fieldset>
             @endif
 
-            @if (in_array($layoutVariant, [InvitationLayoutVariant::WEDDING_MIDNIGHT_GOLD, InvitationLayoutVariant::WEDDING_DUSTY_BLUE], true))
+            @if (in_array($layoutVariant, [InvitationLayoutVariant::WEDDING_MIDNIGHT_GOLD, InvitationLayoutVariant::WEDDING_DUSTY_BLUE, InvitationLayoutVariant::WEDDING_ROYAL_BLUE], true))
                 <fieldset class="evt-design-fieldset">
                     <legend class="profile-label">Dress code (optional)</legend>
                     <p class="evt-muted evt-design-hint">Shown as a Dress Code card beside the date and venue under Details. Leave it empty to show no card.</p>
@@ -809,6 +814,7 @@
                     InvitationLayoutVariant::WEDDING_INVITATION,
                     InvitationLayoutVariant::WEDDING_MIDNIGHT_GOLD,
                     InvitationLayoutVariant::WEDDING_DUSTY_BLUE,
+                    InvitationLayoutVariant::WEDDING_ROYAL_BLUE,
                 ], true)
             )
                 <p class="evt-muted evt-design-hint">The invitation hero image uses your <strong>event cover photo</strong> (edit under Event details).</p>
@@ -828,6 +834,8 @@
                     <p class="evt-muted evt-design-hint">
                         @if ($layoutVariant === InvitationLayoutVariant::WEDDING_MIDNIGHT_GOLD)
                             Upload three photos. Each sits in a round frame beside one paragraph of your story. Separate paragraphs with a blank line. When fewer than three are uploaded, the last image repeats.
+                        @elseif ($layoutVariant === InvitationLayoutVariant::WEDDING_ROYAL_BLUE)
+                            Upload three photos. Each sits in a rounded frame beside one paragraph of your story. Separate paragraphs with a blank line. When fewer than three are uploaded, the last image repeats.
                         @elseif ($layoutVariant === InvitationLayoutVariant::WEDDING_DUSTY_BLUE)
                             Upload three photos for the tilted photo strip in the opening screen. The same photos sit in round frames beside each paragraph of your story. Separate paragraphs with a blank line. When fewer than three are uploaded, the last image repeats.
                         @elseif ($isWeddingLayout)
@@ -963,6 +971,8 @@
                         Up to {{ $galleryMaxWord }} photos. Six fill two rows of three. Stored as WebP after upload (converted from JPG/PNG).
                     @elseif ($layoutVariant === InvitationLayoutVariant::WEDDING_MIDNIGHT_GOLD)
                         Up to {{ $galleryMaxWord }} photos in a mosaic. Six zigzag wide and square tiles across three rows. Stored as WebP after upload.
+                    @elseif ($layoutVariant === InvitationLayoutVariant::WEDDING_ROYAL_BLUE)
+                        Up to {{ $galleryMaxWord }} photos in a grid of rounded tiles. Stored as WebP after upload.
                     @elseif ($layoutVariant === InvitationLayoutVariant::WEDDING_DUSTY_BLUE)
                         Up to {{ $galleryMaxWord }} photos shown as tilted white-bordered prints. Six zigzag across three rows. Stored as WebP after upload.
                     @elseif ($layoutVariant === InvitationLayoutVariant::WEDDING_INVITATION)

@@ -327,6 +327,7 @@ class EventPreviewTest extends TestCase
             'modern minimal' => ['modern-minimal', 'glightbox mm-gallery-lightbox'],
             'midnight gold' => ['wedding-midnight-gold', 'glightbox mg-gallery-item'],
             'dusty blue' => ['wedding-dusty-blue', 'glightbox db-print'],
+            'royal blue' => ['wedding-royal-blue', 'glightbox rb-gallery-item'],
             'botanical' => ['graduation-template-2-botanical-blush', 'glightbox evt-bg-gallery-lightbox'],
         ];
     }
