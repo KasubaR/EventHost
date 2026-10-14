@@ -51,6 +51,7 @@ use App\Http\Controllers\Settings\NotificationController as SettingsNotification
 use App\Http\Controllers\Settings\ProfileController as SettingsProfileController;
 use App\Http\Controllers\Settings\SecurityController as SettingsSecurityController;
 use App\Http\Controllers\TableUploadController;
+use App\Http\Controllers\TemplateGalleryController;
 use App\Http\Controllers\TemplateLibraryController;
 use App\Http\Controllers\TicketCheckInController;
 use App\Http\Controllers\TicketController;
@@ -126,6 +127,9 @@ Route::post('/report-audio/{event}', [AudioReportController::class, 'store'])->w
 
 // Public browse listing. Note /events is taken by the authenticated events.index.
 Route::get('/discover', [PublicEventController::class, 'index'])->name('events.discover');
+
+// Public gallery of every active template, grouped into Base and Pro. /templates is the signed-in library.
+Route::get('/invitation-templates', [TemplateGalleryController::class, 'index'])->name('templates.gallery');
 
 // Public so the homepage's featured templates can be viewed before signing up.
 // It renders an in-memory sample event only — no stored user or event data.

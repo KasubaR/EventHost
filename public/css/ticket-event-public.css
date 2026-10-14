@@ -37,7 +37,7 @@
 }
 
 .tev-hero--fallback {
-    background: linear-gradient(135deg, var(--navy) 0%, var(--indigo) 40%, var(--purple) 80%, var(--purple-mid) 100%);
+    background: var(--hero-gradient);
 }
 
 .tev-hero-img {

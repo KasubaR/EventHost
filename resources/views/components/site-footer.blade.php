@@ -53,6 +53,7 @@
                 <a href="{{ url('/#how') }}">How It Works</a>
                 <a href="{{ url('/#pricing') }}">Pricing</a>
                 <a href="{{ route('events.discover') }}">Discover Events</a>
+                <a href="{{ route('templates.gallery') }}">Templates</a>
                 <a href="{{ route('register') }}">Create an Event</a>
             </nav>
 

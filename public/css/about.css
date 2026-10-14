@@ -2,18 +2,11 @@
 
 /* Hero */
 .about-hero {
-  background: var(--navy);
+  background: var(--hero-gradient);
   padding: 96px 40px 80px;
   text-align: center;
   position: relative;
   overflow: hidden;
-}
-.about-hero::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse 70% 60% at 50% 0%, rgba(79,62,200,0.35) 0%, transparent 70%);
-  pointer-events: none;
 }
 .about-hero-inner {
   position: relative;
@@ -284,18 +277,11 @@
 
 /* CTA */
 .about-cta {
-  background: linear-gradient(135deg, var(--navy) 0%, var(--indigo) 50%, #2a1a80 100%);
+  background: var(--hero-gradient);
   text-align: center;
   padding: 96px 40px;
   position: relative;
   overflow: hidden;
-}
-.about-cta::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse 60% 80% at 50% 100%, rgba(224,14,79,0.18) 0%, transparent 70%);
-  pointer-events: none;
 }
 .about-cta-inner {
   position: relative;

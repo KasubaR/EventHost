@@ -32,6 +32,7 @@
   --green: #27ae60;
   --orange: #f39c12;
   --pink: #e00e4f;
+  --hero-gradient: linear-gradient(135deg, var(--navy) 0%, var(--indigo) 40%, var(--purple) 80%, var(--purple-mid) 100%);
 }
 
 /* Accent pill for event categories (home, dashboard, etc.) */

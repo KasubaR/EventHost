@@ -44,7 +44,7 @@ Laravel 12 application. Auth via Laravel Breeze (Blade stack). No Alpine.js — 
 
 | File | Purpose |
 |---|---|
-| `public/css/global.css` | Design tokens (`:root`), resets, `body`, site `nav {}`, footer, shared buttons (including `.btn-hero-*` for reuse) |
+| `public/css/global.css` | Design tokens (`:root`, including `--hero-gradient`, the one navy-to-purple gradient every public hero and dark banner uses), resets, `body`, site `nav {}`, footer, shared buttons (including `.btn-hero-*` for reuse) |
 | `public/css/account-components.css` | Breeze/guest control styles (`eh-*`), site header nav extras, legacy account shell |
 | `public/css/dashboard-shell.css` | Authenticated chrome only: `.dash-*` sidebar and layout |
 | `public/css/forms-app.css` | Profile and shared app form/card patterns (`.profile-*`, modals — also used by event forms) |
@@ -60,6 +60,7 @@ Laravel 12 application. Auth via Laravel Breeze (Blade stack). No Alpine.js — 
 | `public/css/events-public.css` | `events/public.blade.php` — public invitation page |
 | `public/css/events-invitation-section-nav.css` | Section nav above Pro invitation layouts (`nav.evt-inv-nav`) — pushed by `events/invitations/renderer.blade.php` when `InvitationSectionNav::items()` returns links. Not sticky: resets `global.css`'s `nav {}`. Links come from the sections that actually rendered markup, and each section is wrapped in `<div id="inv-{type}" class="evt-inv-anchor">`, so a sibling selector between bare sections (e.g. Modern Minimal's `.mm-section + .mm-section`) needs a wrapper-form twin in this file |
 | `public/css/event-cards.css` | Public event cards (`.event-card-*`) + `/discover` page — pushed by `home.blade.php` and `events/discover.blade.php` |
+| `public/css/templates-gallery.css` | Public template gallery (`.tplg-*`) at `/invitation-templates` — hero, category chips (`nav.tplg-chips`, same `nav {}` escape as `.dash-nav`), Base and Pro groups, cards and the closing band; pushed by `templates/gallery.blade.php` |
 | `public/css/reviews.css` | Host review portal (`.rev-*`) — star picker and status pills; pair with `events-admin.css` |
 | `public/css/settings.css` | Account settings tab strip (`.set-*`) — pushed by `components/settings-layout.blade.php`; the cards inside each tab reuse `forms-app.css` |
 | `public/css/legal.css` | Policy pages (`.legal-*`) — sticky contents rail + prose, pushed by `legal/*.blade.php` |
@@ -1310,6 +1311,12 @@ The homepage "Invitation Templates" strip is curated from the admin panel, not h
 - `HomeController` reads `InvitationTemplate::featuredForHomepage()` limited to `HOMEPAGE_FEATURED_LIMIT` (4); the whole section is hidden when nothing qualifies
 - A template cannot be featured without an image — enforced in `UpdateInvitationTemplateRequest` and again in the scope
 - `templates.preview` is **public** (sample data only) so visitors can preview before signing up; `templates.index` still requires auth
+- **Public gallery:** `GET /invitation-templates` (`templates.gallery`, `TemplateGalleryController`) lists every active template, featured or not, in two groups:
+ **Base** (tier `none` and `base`) and **Pro** (Pro and every tier above, so a Pro+ template is never orphaned), each with its plan's price from
+ `BillingPlan::listAmountForTier()`. Category chips are plain `?category=` links (an unknown slug shows everything). "Use template" goes to
+ `register` for a guest, `events.create?template=` when the host's tier covers it, otherwise the upgrade checkout. It is linked from the site
+ header (desktop and mobile), the footer's Product column and the homepage strip's "See all templates", and a guest's preview back link returns to
+ it. `templates.index` stays the signed-in library with search and plan tabs. Tests: `TemplateGalleryTest`
 
 ### FAQs (homepage + contact page)
 

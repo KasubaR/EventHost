@@ -163,6 +163,7 @@
   <div class="section">
     <div class="section-row">
       <h2>Invitation Templates</h2>
+      <a href="{{ route('templates.gallery') }}" class="see-all">See all templates <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
     </div>
     <div class="templates-grid">
       @foreach ($featuredTemplates as $tpl)

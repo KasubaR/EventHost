@@ -6,7 +6,7 @@
 
 /* ── HERO ── */
 #hero {
-  background: linear-gradient(135deg, var(--navy) 0%, var(--indigo) 40%, var(--purple) 80%, var(--purple-mid) 100%);
+  background: var(--hero-gradient);
   padding: 56px 40px 64px;
   position: relative;
   overflow: hidden;
@@ -830,7 +830,7 @@
    A dark gradient banner (echoes #hero) rather than another white card grid —
    the 1-2-3 flow tells the ticketing story instead of just listing features. */
 .tix-banner {
-  background: linear-gradient(135deg, var(--navy) 0%, var(--indigo) 40%, var(--purple) 80%, var(--purple-mid) 100%);
+  background: var(--hero-gradient);
   border-radius: 20px;
   padding: 56px 40px;
   text-align: center;

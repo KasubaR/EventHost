@@ -29,8 +29,8 @@
                 <span>Back to layouts</span>
             </a>
         @else
-            {{-- The library listing needs an account, so send guests back to the homepage strip. --}}
-            <a href="{{ auth()->check() ? route('templates.index') : route('home').'#templates' }}" class="tpl-preview-bar-back">
+            {{-- The library listing needs an account, so guests go back to the public gallery. --}}
+            <a href="{{ auth()->check() ? route('templates.index') : route('templates.gallery') }}" class="tpl-preview-bar-back">
                 <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
                 <span>Templates</span>
             </a>

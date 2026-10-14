@@ -2,18 +2,11 @@
 
 /* Hero */
 .contact-hero {
-  background: var(--navy);
+  background: var(--hero-gradient);
   padding: 96px 40px 80px;
   text-align: center;
   position: relative;
   overflow: hidden;
-}
-.contact-hero::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse 70% 60% at 50% 0%, rgba(30,71,187,0.35) 0%, transparent 70%);
-  pointer-events: none;
 }
 .contact-hero-inner {
   position: relative;

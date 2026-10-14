@@ -21,6 +21,7 @@
     <div class="nav-links">
         <a href="{{ url('/#hero') }}" class="{{ request()->routeIs('home') ? 'is-active' : '' }}">Home</a>
         <a href="{{ route('events.discover') }}" class="{{ request()->routeIs('events.discover') ? 'is-active' : '' }}">Discover Events</a>
+        <a href="{{ route('templates.gallery') }}" class="{{ request()->routeIs('templates.gallery') ? 'is-active' : '' }}">Templates</a>
         <a href="{{ route('about') }}" class="{{ request()->routeIs('about') ? 'is-active' : '' }}">About Us</a>
         <a href="{{ route('contact') }}" class="{{ request()->routeIs('contact') ? 'is-active' : '' }}">Contact Us</a>
     </div>
@@ -57,6 +58,7 @@
         <div class="nav-mobile-links">
             <a href="{{ url('/#hero') }}" class="{{ request()->routeIs('home') ? 'is-active' : '' }}">Home</a>
             <a href="{{ route('events.discover') }}" class="{{ request()->routeIs('events.discover') ? 'is-active' : '' }}">Discover Events</a>
+            <a href="{{ route('templates.gallery') }}" class="{{ request()->routeIs('templates.gallery') ? 'is-active' : '' }}">Templates</a>
             <a href="{{ route('about') }}" class="{{ request()->routeIs('about') ? 'is-active' : '' }}">About Us</a>
             <a href="{{ route('contact') }}" class="{{ request()->routeIs('contact') ? 'is-active' : '' }}">Contact Us</a>
         </div>

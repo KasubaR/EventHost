@@ -58,7 +58,7 @@
 
 /* HERO — identical gradient + pattern to home page hero */
 .auth-hero {
-  background: linear-gradient(135deg, var(--navy) 0%, var(--indigo) 40%, var(--purple) 80%, var(--purple-mid) 100%);
+  background: var(--hero-gradient);
   padding: 52px 40px 60px;
   position: relative;
   overflow: hidden;
