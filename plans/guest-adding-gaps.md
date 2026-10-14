@@ -1,6 +1,6 @@
 # Adding guests: remaining gaps
 
-**Status: Phases 1 and 2 are BUILT** (tests: `GuestExportAndPhoneTest`). Phases 3 to 5 are not started. Two notes from building Phase 2: international numbers display as `+447700900123` (no country table to space them), and `GuestPhone::display()` is also used by the CSV, the PDF and the API's additive `phone_display`.
+**Status: Phases 1 to 4 are BUILT** (tests: `GuestExportAndPhoneTest`, `GuestNamesAndEmailTypoTest`, `GuestPrintableAndLandlineTest`); Phase 5 (docs) was done alongside each phase. **Phase 4 changed from the plan:** no Noto font was bundled. DejaVu already draws Latin, Greek, Cyrillic, Armenian, Georgian, Hebrew and Arabic letters, so Noto Sans would have added almost nothing; the real gap is CJK, Thai, Indic and emoji, which need a ~10 MB font each. Those now print as `?` (`PrintableText`) and the guest list flags the name. Two notes from building Phase 2: international numbers display as `+447700900123` (no country table to space them), and `GuestPhone::display()` is also used by the CSV, the PDF and the API's additive `phone_display`.
 
 Scope: the "Guest Management / Adding Guests" edge-case list.
 

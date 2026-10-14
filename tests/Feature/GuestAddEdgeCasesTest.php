@@ -226,7 +226,7 @@ class GuestAddEdgeCasesTest extends TestCase
         $this->actingAs($owner)
             ->get(route('events.guests.index', $event))
             ->assertOk()
-            ->assertSee('<td class="evt-guest-name-cell" dir="auto">سارة أحمد</td>', escape: false);
+            ->assertSee('<td class="evt-guest-name-cell" dir="auto">سارة أحمد', escape: false);
     }
 
     public function test_non_latin_names_are_stored_as_typed_and_normalised(): void

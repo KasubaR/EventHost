@@ -70,6 +70,9 @@ class GuestPassImageService
 
     private function generate(Guest $guest, GuestPassCard $card): string
     {
+        // DejaVu cannot draw every script; a run it can't draw prints as "?" instead of a box (the cache key used the original card).
+        $card = $card->forPrint();
+
         if (! function_exists('imagettftext')) {
             throw new RuntimeException('GD was built without FreeType; cannot draw the pass image.');
         }

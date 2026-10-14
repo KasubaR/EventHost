@@ -65,7 +65,7 @@
                     </div>
                     <div class="profile-field">
                         <label for="guest_email" class="profile-label">Email <span class="profile-optional">optional</span></label>
-                        <input id="guest_email" type="email" name="email" class="profile-input {{ $errors->has('email') ? 'profile-input--error' : '' }}" value="{{ old('email', $guest->email) }}" maxlength="191" autocomplete="email">
+                        <input id="guest_email" type="email" name="email" class="profile-input {{ $errors->has('email') ? 'profile-input--error' : '' }}" value="{{ old('email', request()->query('email', $guest->email)) }}" maxlength="191" autocomplete="email">
                         @error('email')
                             <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                         @enderror

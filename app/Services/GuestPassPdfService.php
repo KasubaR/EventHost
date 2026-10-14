@@ -46,7 +46,7 @@ class GuestPassPdfService
             : null;
 
         return (string) Pdf::loadView('rsvp.pass-pdf', [
-            'card' => $card,
+            'card' => $card->forPrint(),
             'qrDataUri' => $qrDataUri,
             'logoDataUri' => $logoDataUri,
         ])

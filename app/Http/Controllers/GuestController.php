@@ -17,6 +17,7 @@ use App\Services\HostRsvpOverrideService;
 use App\Services\QrCodeService;
 use App\Services\RsvpApprovalService;
 use App\Services\RsvpSubmissionService;
+use App\Support\EmailTypo;
 use App\Support\GuestPhone;
 use App\Support\SpreadsheetCell;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -208,7 +209,30 @@ class GuestController extends Controller
             ->with('status', 'guest-created')
             ->with('guest_unreachable', $guest->hasNoContactDetails() ? $guest->name : null)
             ->with('guest_same_name', Guest::sameNameCount($event, $guest->name, ignoreGuestId: $guest->id) > 0 ? $guest->name : null)
-            ->with('guest_shared_phone', Guest::matchingPhone($event, $guest->phone, ignoreGuestId: $guest->id)?->name);
+            ->with('guest_shared_phone', Guest::matchingPhone($event, $guest->phone, ignoreGuestId: $guest->id)?->name)
+            ->with('email_typo', self::emailTypoFlash($event, $guest));
+    }
+
+    /**
+     * What the list shows when a saved address looks like a typo of a common provider: the address, the fix, and the guest's edit page
+     * with the fix pre-filled. Null when there is nothing to say. The address is saved as typed either way.
+     *
+     * @return array{guest: string, email: string, suggestion: string, url: string}|null
+     */
+    private static function emailTypoFlash(Event $event, Guest $guest): ?array
+    {
+        $suggestion = EmailTypo::suggest($guest->email);
+
+        if ($suggestion === null) {
+            return null;
+        }
+
+        return [
+            'guest' => $guest->name,
+            'email' => (string) $guest->email,
+            'suggestion' => $suggestion,
+            'url' => route('events.guests.edit', ['event' => $event, 'guest' => $guest, 'email' => $suggestion]),
+        ];
     }
 
     public function edit(Event $event, Guest $guest): View
@@ -262,7 +286,8 @@ class GuestController extends Controller
 
         return redirect()
             ->route('events.guests.index', $event)
-            ->with('status', 'guest-updated');
+            ->with('status', 'guest-updated')
+            ->with('email_typo', self::emailTypoFlash($event, $guest));
     }
 
     public function markInvitationSent(Event $event, Guest $guest): RedirectResponse

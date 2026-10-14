@@ -4,6 +4,7 @@ namespace App\Http\Resources\Api\V1;
 
 use App\Models\Event;
 use App\Models\Guest;
+use App\Support\EmailTypo;
 use App\Support\GuestPhone;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -43,6 +44,8 @@ class GuestResource extends JsonResource
             'name' => $this->name,
             'email' => $this->email,
             'phone' => $this->phone,
+            // Additive: a likely fix when the address looks like a typo of a common provider (gmial.com), else null.
+            'email_suggestion' => EmailTypo::suggest($this->email),
             // Additive: the number as the list shows it (0971234567 reads "097 123 4567"); `phone` stays as stored.
             'phone_display' => GuestPhone::display($this->phone),
             'guest_group_id' => $this->guest_group_id,

@@ -90,6 +90,28 @@ final class GuestPassCard
     }
 
     /**
+     * The same card with every text field made drawable by the PDF and PNG renderers (see PrintableText). The web card uses the
+     * original; the cache fingerprint is taken from the original too, so this never changes a file's name.
+     */
+    public function forPrint(): self
+    {
+        return new self(
+            eventName: (string) PrintableText::forPrint($this->eventName),
+            eventTypeLabel: (string) PrintableText::forPrint($this->eventTypeLabel),
+            dateLine: $this->dateLine,
+            timeLine: $this->timeLine,
+            venue: PrintableText::forPrint($this->venue),
+            guestName: (string) PrintableText::forPrint($this->guestName),
+            admits: $this->admits,
+            table: PrintableText::forPrint($this->table),
+            state: $this->state,
+            checkedInLine: $this->checkedInLine,
+            coverUrl: $this->coverUrl,
+            theme: $this->theme,
+        );
+    }
+
+    /**
      * What the party size means at the door. An invitation RSVP is 1 (just the
      * guest) or 2 (guest plus their one guest), so a bare "Admits: 1" tells the
      * door nothing. Null for a solo guest — renderers omit the row, as they do

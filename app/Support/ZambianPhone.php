@@ -14,13 +14,14 @@ namespace App\Support;
 final class ZambianPhone
 {
     /**
-     * True when $phone has exactly 9 local digits once country/trunk prefixes are stripped — the
-     * shape every Zambian mobile number normalizes to. Numbers that don't fit (a mistyped number, a
+     * True when $phone is a Zambian mobile number: 9 local digits starting 7 or 9, once country/trunk prefixes are stripped.
+     * (It used to accept any nine digits, which let a landline through to Twilio.) Numbers that don't fit (a mistyped number, a
      * non-Zambian one) should disable WhatsApp-send UI rather than pass a malformed value to Twilio.
      */
     public static function isValid(?string $phone): bool
     {
-        return is_string($phone) && strlen(self::localDigits($phone)) === 9;
+        // Mobile prefixes only (7x and 9x): WhatsApp cannot reach a landline (2x), and no other 9-digit start is a Zambian number.
+        return is_string($phone) && preg_match('/^[79]\d{8}$/', self::localDigits($phone)) === 1;
     }
 
     /**

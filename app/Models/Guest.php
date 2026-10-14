@@ -339,7 +339,14 @@ class Guest extends Model
             return null;
         }
 
+        // Characters that take up no room but make a name look empty or reorder the text around it: zero-width spaces and joiners,
+        // the word joiner, the byte-order mark, and the bidirectional embedding / override / isolate controls. A joiner inside a
+        // script that needs one (Persian, Indic) is rare in a guest list and a blank-looking name is worse.
+        $name = (string) preg_replace('/[\x{200B}-\x{200D}\x{2060}\x{FEFF}\x{202A}-\x{202E}\x{2066}-\x{2069}]/u', '', $name);
+
+        // Whitespace collapses to one space, and any other control character (NUL, ESC...) goes.
         $clean = trim((string) preg_replace('/\s+/u', ' ', $name));
+        $clean = (string) preg_replace('/[\p{Cc}]/u', '', $clean);
 
         if ($clean !== '' && class_exists(\Normalizer::class)) {
             $clean = \Normalizer::normalize($clean, \Normalizer::FORM_C) ?: $clean;

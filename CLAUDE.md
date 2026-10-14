@@ -675,7 +675,23 @@ badly written details. Tests: `GuestAddEdgeCasesTest`, `GuestPhoneTest`.
 - **A household may share one number, on the host's say-so only.** `allow_shared_phone` (checkbox on the host add and edit forms, and in the API body) skips the phone-duplicate refusal in
  `StoreGuestRequest`, `UpdateGuestRequest` and `GuestCreator`; the add flashes `guest_shared_phone` (the other guest's name) and the edit page says "Shares this number with …". An
  **unchanged** phone is never re-checked on edit, so a guest saved as sharing stays editable. The open RSVP, group link and import keep the hard rule: a stranger cannot claim a number
-- **Not covered:** the PDF and PNG pass fonts (DejaVu) cannot draw CJK, Arabic or emoji; internationalised email addresses
+- **Invisible characters never reach a name.** `Guest::cleanName()` also removes zero-width spaces and joiners (U+200B to U+200D), the word joiner, the BOM, the bidi
+ embedding / override / isolate controls (U+202A to U+202E, U+2066 to U+2069) and any other control character, so a name of only those is "required" again. The left-to-right and
+ right-to-left marks stay (they are legitimate in mixed-script names)
+- **A likely email typo is flagged, never blocked.** `App\Support\EmailTypo::suggest()` returns the corrected address when the domain is one or two edits from gmail.com, yahoo.com,
+ outlook.com, hotmail.com or icloud.com (or is a provider name with no ending, `john@gmail`); known real domains (`yahoo.co.uk`, `live.com`, `hotmail.co.uk`...) are never
+ "corrected". The address is saved as typed. The web add and edit flash `email_typo` (guest, address, suggestion, edit URL) and the list says "Did you mean … Use that address"; the link opens
+ the guest's edit page with `?email=` pre-filled (escaped, saved only when the host presses Save). `GuestResource::email_suggestion` is additive (null when fine). Imports do not suggest
+- **What the PDFs and the pass image can draw** (`App\Support\PrintableText`): they use DejaVu Sans, which has Latin (every accent), Greek, Cyrillic, Armenian, Georgian, Hebrew and
+ Arabic letters but **nothing for Chinese, Japanese, Korean, Thai, the Indic scripts or emoji**. `PrintableText::forPrint()` replaces each undrawable run with one `?` (so a printed pass says
+ plainly that it could not draw the name, instead of an empty box); `GuestPassCard::forPrint()` is the copy both pass renderers draw (the cache fingerprint still comes from the original),
+ and the printed guest list wraps names and groups the same way. The web pages are untouched. `mayNotPrint()` also flags **Hebrew and Arabic**: they are drawn but not shaped or reordered
+ (GD and DomPDF have no bidirectional engine). The guest list marks such a name "(may not print correctly)". **No new font was bundled**: DejaVu already covers more than the plan assumed,
+ and Chinese/Japanese/Korean needs a ~10 MB font and an Arabic shaper is not available in either renderer — add one only if hosts ask. Ticket PDFs (buyer names) are not covered
+- **A landline cannot be WhatsApp'd.** `GuestPhone::isZambianLandline()` (subscriber number starting 2); `whatsAppDigits()` returns null for it (so `wa.me` links and the bulk "prepare
+ WhatsApp share" skip it and report `bulk_skipped`), and `ZambianPhone::isValid()` / `toE164()` now accept only mobile numbers (7x and 9x; it used to accept any nine digits, which could send
+ a landline to Twilio). The guest list tags the number "(landline: no WhatsApp)". A landline is still a valid saved phone
+- **Still not covered:** CJK, Thai, Indic and emoji names on a printed pass (they print as `?`), shaped Arabic/Hebrew, internationalised email addresses
  are refused by `email:rfc`; event names and other tables still allow 255 characters against a 191 column
 
 ### Plus-ones

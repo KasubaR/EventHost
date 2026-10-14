@@ -72,7 +72,19 @@ final class GuestPhone
         return self::internationalDigits($phone) ?? $digits;
     }
 
-    /** Country code + number for wa.me, or null when the number cannot be dialled from anywhere. */
+    /** A Zambian fixed line (subscriber number starting 2). It can be called but WhatsApp cannot reach it. */
+    public static function isZambianLandline(?string $phone): bool
+    {
+        if (! is_string($phone) || self::kind($phone) !== 'zambian') {
+            return false;
+        }
+
+        $local = self::zambianLocal(self::digits($phone));
+
+        return $local !== null && $local[0] === '2';
+    }
+
+    /** Country code + number for wa.me, or null when the number cannot be dialled from anywhere (or is a landline). */
     public static function whatsAppDigits(?string $phone): ?string
     {
         if (! is_string($phone) || trim($phone) === '') {
@@ -84,7 +96,7 @@ final class GuestPhone
         if (self::kind($phone) === 'zambian') {
             $local = self::zambianLocal($digits);
 
-            return $local !== null ? '260'.$local : null;
+            return $local !== null && $local[0] !== '2' ? '260'.$local : null;
         }
 
         return self::internationalDigits($phone);

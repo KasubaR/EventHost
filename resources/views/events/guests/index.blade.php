@@ -44,6 +44,13 @@
 
     <x-rsvp-closed-banner :event="$event" />
 
+    @if (session('email_typo'))
+        @php $typo = session('email_typo'); @endphp
+        <div class="evt-admin-flash">
+            Saved <bdi>{{ $typo['guest'] }}</bdi> with <bdi>{{ $typo['email'] }}</bdi>. Did you mean <bdi>{{ $typo['suggestion'] }}</bdi>?
+            <a href="{{ $typo['url'] }}">Use that address</a>. Emails to a wrong address never arrive.
+        </div>
+    @endif
     @if (session('status') === 'guest-created')
         <div class="evt-admin-flash">{{ $isRegistrations ? 'Registration added.' : 'Guest added.' }}</div>
         @if (session('guest_unreachable'))
@@ -335,13 +342,17 @@
                                     <td>
                                         <input type="checkbox" name="guest_ids[]" value="{{ $guestRow->id }}" form="guest-bulk-form" data-evt-guest-select aria-label="Select {{ $guestRow->name }}">
                                     </td>
-                                    <td class="evt-guest-name-cell" dir="auto">{{ $guestRow->name }}</td>
+                                    <td class="evt-guest-name-cell" dir="auto">{{ $guestRow->name }}@if (\App\Support\PrintableText::mayNotPrint($guestRow->name))
+                                        <span class="evt-muted" dir="ltr" title="The pass PDF, pass image and printed list cannot draw every character of this name.">(may not print correctly)</span>
+                                    @endif</td>
                                     <td class="evt-guest-contact-cell">
                                         @if ($guestRow->email)
                                             <span class="evt-guest-contact-line">{{ $guestRow->email }}</span>
                                         @endif
                                         @if ($guestRow->phone)
-                                            <span class="evt-guest-contact-line evt-guest-phone" dir="ltr">{{ \App\Support\GuestPhone::display($guestRow->phone) }}</span>
+                                            <span class="evt-guest-contact-line evt-guest-phone" dir="ltr">{{ \App\Support\GuestPhone::display($guestRow->phone) }}@if (\App\Support\GuestPhone::isZambianLandline($guestRow->phone))
+                                                <span class="evt-muted">(landline: no WhatsApp)</span>
+                                            @endif</span>
                                         @endif
                                         @if ($guestRow->hasNoContactDetails())
                                             <span class="evt-muted">No contact details. Share their link yourself.</span>

@@ -57,10 +57,10 @@
                 @php $rsvp = $guest->rsvp; @endphp
                 <tr>
                     <td>{{ $i + 1 }}</td>
-                    <td>{{ $guest->name }}</td>
+                    <td>{{ \App\Support\PrintableText::forPrint($guest->name) }}</td>
                     <td>{{ $guest->email ?? '-' }}</td>
                     <td>{{ \App\Support\GuestPhone::display($guest->phone) ?? '-' }}</td>
-                    <td>{{ $guest->group?->name ?? '-' }}</td>
+                    <td>{{ \App\Support\PrintableText::forPrint($guest->group?->name) ?? '-' }}</td>
                     <td>
                         @if ($rsvp)
                             <span class="pill pill-{{ $rsvp->status->value }}">{{ ucfirst($rsvp->status->value) }}</span>
