@@ -150,16 +150,6 @@ class RsvpClosedHandlingTest extends TestCase
 
     // ── G3: cancel or reduce after the deadline, never increase ──────────────
 
-    public function test_a_guest_who_accepted_can_cancel_after_the_deadline(): void
-    {
-        $guest = $this->guest(RsvpStatus::Accepted);
-        $this->afterDeadline();
-
-        $this->submit($guest, 'declined', 0)->assertRedirect()->assertSessionMissing('rsvp_closed');
-
-        $this->assertSame(RsvpStatus::Declined, $guest->fresh()->rsvp->status);
-    }
-
     public function test_a_plus_one_can_be_dropped_but_not_added_after_the_deadline(): void
     {
         $guest = $this->guest(RsvpStatus::Accepted, count: 2, plusOne: true);
@@ -172,37 +162,6 @@ class RsvpClosedHandlingTest extends TestCase
             ->assertRedirect(route('rsvp.token.show', $guest->invitation_token))
             ->assertSessionHas('rsvp_closed', fn ($m) => str_contains($m, 'cancel your RSVP or reduce'));
         $this->assertSame(1, $guest->fresh()->rsvp->attendee_count, 'no increase after the deadline');
-    }
-
-    public function test_an_accepted_guest_can_switch_to_maybe_after_the_deadline(): void
-    {
-        $guest = $this->guest(RsvpStatus::Accepted);
-        $this->afterDeadline();
-
-        $this->submit($guest, 'maybe', 0)->assertSessionMissing('rsvp_closed');
-
-        $this->assertSame(RsvpStatus::Maybe, $guest->fresh()->rsvp->status);
-    }
-
-    public function test_a_guest_who_declined_cannot_come_back_after_the_deadline(): void
-    {
-        $guest = $this->guest(RsvpStatus::Declined);
-        $this->afterDeadline();
-
-        $this->submit($guest, 'accepted', 1)->assertSessionHas('rsvp_closed');
-        $this->assertSame(RsvpStatus::Declined, $guest->fresh()->rsvp->status);
-
-        $this->submit($guest, 'maybe', 0)->assertSessionHas('rsvp_closed');
-        $this->assertSame(RsvpStatus::Declined, $guest->fresh()->rsvp->status);
-    }
-
-    public function test_a_maybe_cannot_become_an_accept_after_the_deadline(): void
-    {
-        $guest = $this->guest(RsvpStatus::Maybe);
-        $this->afterDeadline();
-
-        $this->submit($guest, 'accepted', 1)->assertSessionHas('rsvp_closed');
-        $this->assertSame(RsvpStatus::Maybe, $guest->fresh()->rsvp->status);
     }
 
     public function test_changes_stop_when_the_event_starts(): void

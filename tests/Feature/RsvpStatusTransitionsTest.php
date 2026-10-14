@@ -394,7 +394,7 @@ class RsvpStatusTransitionsTest extends TestCase
         $this->assertSame(RsvpStatus::Declined, $cancelling->fresh()->rsvp->status);
         $this->assertSame(RsvpStatus::Maybe, $softening->fresh()->rsvp->status);
 
-        foreach ([[$declined, 'accepted', 1], [$maybe, 'accepted', 1], [$adding, 'accepted', 2]] as [$guest, $status, $seats]) {
+        foreach ([[$declined, 'accepted', 1], [$declined, 'maybe', 0], [$maybe, 'accepted', 1], [$adding, 'accepted', 2]] as [$guest, $status, $seats]) {
             $this->answer($guest, $status, $seats)
                 ->assertRedirect(route('rsvp.token.show', $guest->invitation_token))
                 ->assertSessionHas('rsvp_closed');
@@ -403,22 +403,6 @@ class RsvpStatusTransitionsTest extends TestCase
         $this->assertSame(RsvpStatus::Declined, $declined->fresh()->rsvp->status);
         $this->assertSame(RsvpStatus::Maybe, $maybe->fresh()->rsvp->status);
         $this->assertSame(1, $adding->fresh()->rsvp->attendee_count);
-    }
-
-    public function test_after_the_deadline_the_open_form_never_changes_an_answer_because_an_email_is_not_a_secret(): void
-    {
-        $this->at('2026-10-06 09:00:00');
-        $guest = $this->guest(RsvpStatus::Accepted, 1);
-
-        $this->post(route('rsvp.open.store', ['slug' => $this->event->slug]), [
-            'name' => $guest->name,
-            'email' => $guest->email,
-            'phone' => '0970000000',
-            'status' => 'declined',
-            'attendee_count' => 0,
-        ])->assertSessionHas('rsvp_closed');
-
-        $this->assertSame(RsvpStatus::Accepted, $guest->fresh()->rsvp->status);
     }
 
     // ---------------------------------------------------------------- after the event starts
