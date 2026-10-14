@@ -355,52 +355,65 @@
 
 .evt-layout-wedding-invitation .wi-date-badge {
     display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    padding: 0.5rem 0;
+    color: var(--wi-charcoal);
+}
+
+.evt-layout-wedding-invitation .wi-date-badge-rule {
+    align-self: stretch;
+    width: 1px;
+    min-height: 3.5rem;
+    background: var(--wi-charcoal);
+    opacity: 0.55;
+}
+
+.evt-layout-wedding-invitation .wi-date-badge-core {
+    display: inline-flex;
     flex-direction: column;
     align-items: center;
-    border: 1px solid var(--wi-gold-pale);
-    padding: 1.375rem 2.75rem;
     gap: 0.25rem;
-    position: relative;
 }
 
-.evt-layout-wedding-invitation .wi-date-badge::before,
-.evt-layout-wedding-invitation .wi-date-badge::after {
-    content: '◆';
-    position: absolute;
-    font-size: 0.5rem;
-    color: var(--wi-gold);
-}
-
-.evt-layout-wedding-invitation .wi-date-badge::before {
-    top: -6px;
-    left: -6px;
-}
-
-.evt-layout-wedding-invitation .wi-date-badge::after {
-    bottom: -6px;
-    right: -6px;
+.evt-layout-wedding-invitation .wi-date-badge-weekday,
+.evt-layout-wedding-invitation .wi-date-badge-month,
+.evt-layout-wedding-invitation .wi-date-badge-time {
+    font-family: var(--evt-font-heading, "Playfair Display", Georgia, serif);
+    font-size: 0.9375rem;
+    font-style: normal;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--wi-charcoal);
 }
 
 .evt-layout-wedding-invitation .wi-date-badge-day {
     font-family: var(--evt-font-heading, "Playfair Display", Georgia, serif);
-    font-size: 3.5rem;
-    font-weight: 400;
+    font-size: 2.5rem;
+    font-weight: 600;
     line-height: 1;
     color: var(--wi-charcoal);
 }
 
-.evt-layout-wedding-invitation .wi-date-badge-month {
-    font-size: 0.6875rem;
-    letter-spacing: 0.3125em;
-    text-transform: uppercase;
-    color: var(--wi-gold);
+.evt-layout-wedding-invitation .wi-date-badge-year {
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    color: var(--wi-taupe);
 }
 
-.evt-layout-wedding-invitation .wi-date-badge-weekday {
-    font-family: "Cormorant Garamond", Georgia, serif;
-    font-size: 1rem;
-    font-style: italic;
-    color: var(--wi-taupe);
+@media (max-width: 480px) {
+    .evt-layout-wedding-invitation .wi-date-badge {
+        gap: 0.875rem;
+    }
+
+    .evt-layout-wedding-invitation .wi-date-badge-weekday,
+    .evt-layout-wedding-invitation .wi-date-badge-month,
+    .evt-layout-wedding-invitation .wi-date-badge-time {
+        font-size: 0.75rem;
+        letter-spacing: 0.12em;
+    }
 }
 
 /* Couple grid */

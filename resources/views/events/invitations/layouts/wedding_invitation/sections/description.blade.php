@@ -10,6 +10,9 @@
         }
     }
 
+    $badgeMonth = $event->event_date->format('M') === 'Sep' ? 'Sept' : $event->event_date->format('M');
+    $badgeTime = $w->timeLine() === null ? null : preg_replace('/:00 /', ' ', $w->timeLine());
+
     $couplePhotos = $w->couplePhotos();
 
     $caption = trim((string) ($invitation['content']['wi_couple_caption'] ?? ''));
@@ -25,8 +28,16 @@
     <p class="wi-section-body">{{ $intro }}</p>
     <div class="wi-date-badge">
         <span class="wi-date-badge-weekday">{{ $event->event_date->format('l') }}</span>
-        <span class="wi-date-badge-day">{{ $event->event_date->format('j') }}</span>
-        <span class="wi-date-badge-month">{{ $event->event_date->format('F Y') }}</span>
+        <span class="wi-date-badge-rule" aria-hidden="true"></span>
+        <span class="wi-date-badge-core">
+            <span class="wi-date-badge-month">{{ $badgeMonth }}</span>
+            <span class="wi-date-badge-day">{{ $event->event_date->format('j') }}</span>
+            <span class="wi-date-badge-year">{{ $event->event_date->format('Y') }}</span>
+        </span>
+        @if ($badgeTime !== null)
+            <span class="wi-date-badge-rule" aria-hidden="true"></span>
+            <span class="wi-date-badge-time">at {{ $badgeTime }}</span>
+        @endif
     </div>
 </section>
 
