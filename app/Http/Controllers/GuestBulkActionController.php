@@ -6,6 +6,7 @@ use App\Http\Requests\GuestBulkActionRequest;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Services\CommunicationService;
+use App\Services\GuestUpdater;
 use App\Support\GuestPhone;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -32,7 +33,8 @@ class GuestBulkActionController extends Controller
     public function store(
         GuestBulkActionRequest $request,
         Event $event,
-        CommunicationService $communicationService
+        CommunicationService $communicationService,
+        GuestUpdater $guestUpdater,
     ): RedirectResponse {
         abort_unless($event->isInvitation(), 404);
 
@@ -60,19 +62,24 @@ class GuestBulkActionController extends Controller
 
         // Guests the action could not reach: no email for the two email actions, no usable phone for the WhatsApp share.
         $skippedCount = 0;
+        $skipReason = null;
 
-        DB::transaction(function () use ($event, $ids, $action, $validated, $communicationService, &$bulkCount, &$skippedCount): void {
+        DB::transaction(function () use ($event, $ids, $action, $validated, $communicationService, $guestUpdater, &$bulkCount, &$skippedCount, &$skipReason): void {
             $builder = Guest::query()
                 ->where('event_id', $event->id)
                 ->whereIn('id', $ids)
                 ->lockForUpdate();
 
+            // Checked against each group's seat pool in turn; a guest who would overfill it is skipped and reported.
             if ($action === 'assign_group') {
-                $bulkCount = $builder->update([
-                    'guest_group_id' => isset($validated['guest_group_id']) && $validated['guest_group_id'] !== null
-                        ? (int) $validated['guest_group_id']
-                        : null,
-                ]);
+                $result = $guestUpdater->moveManyToGroup(
+                    $event,
+                    array_map('intval', $ids),
+                    isset($validated['guest_group_id']) && $validated['guest_group_id'] !== null ? (int) $validated['guest_group_id'] : null,
+                );
+                $bulkCount = $result['moved'];
+                $skippedCount = $result['skipped'];
+                $skipReason = $result['reason'];
 
                 return;
             }
@@ -188,6 +195,7 @@ class GuestBulkActionController extends Controller
             ->route('events.guests.index', array_merge(['event' => $event], $filters))
             ->with('bulk_count', $bulkCount)
             ->with('bulk_skipped', $skippedCount)
+            ->with('bulk_skip_reason', $skipReason)
             ->with('status', match ($action) {
                 'assign_group' => 'guests-bulk-group',
                 'assign_table' => 'guests-bulk-table',

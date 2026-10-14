@@ -701,6 +701,13 @@ badly written details. Tests: `GuestAddEdgeCasesTest`, `GuestPhoneTest`.
  sent or printed; that is why it is never automatic. The edit page pre-ticks "Generate a new personal RSVP link" (JS only) when the email changes on a guest who has answered or been sent an invitation, and
  the warning says what stops working. An email change saved without it flashes `old_link_still_works` with a "Replace link now" button (`POST events/{event}/guests/{guest}/regenerate-link`, owner only; API
  `POST .../regenerate-link`, `link_replaced` / `old_link_still_works` on the update response). The new link is flashed as `guest_link_replaced`
+- **Moving a guest to another group** (`GuestUpdater`, plan `plans/guest-editing-gaps.md` Phase 3): into a group with a **seat pool** the move counts the seats the guest holds (`Rsvp::heldSeats()`:
+ accepted and not rejected, a pending request included) against `GuestGroup::seatsRemaining($guest->id)` and is refused with "Only N seats are left in X, and G holds M seats" (a validation error on
+ `guest_group_id`, so the web form and the API 422 the same way) unless the host ticks **"Allow over the pool"** (`allow_over_pool`, shown on the edit page after a refusal; API body field). A guest
+ who holds no seats (no answer, declined, maybe, rejected) always fits; a move out of a pool, or into a group with none, needs no check; saving a guest without changing their group is never
+ checked. **Any hand move clears `group_link_joined_at`** (it marks "signed up through the group link", which a host-moved guest is not, and `RsvpSubmissionService` forces those into review).
+ The bulk "Assign group" (web and API) goes through `GuestUpdater::moveManyToGroup()`: each guest is checked in turn against the live pool under the event lock, so the first ones fill it and the rest
+ are skipped, never over-filled (`bulk_skipped` / API `skipped_count`, plus `bulk_skip_reason` / `skipped_reason`); bulk has no override, a host goes over the pool from the guest's own page
 - **Still not covered:** CJK, Thai, Indic and emoji names on a printed pass (they print as `?`), shaped Arabic/Hebrew, internationalised email addresses
  are refused by `email:rfc`; event names and other tables still allow 255 characters against a 191 column
 

@@ -96,6 +96,12 @@
                         @error('guest_group_id')
                             <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                         @enderror
+                        @if ($errors->has('guest_group_id'))
+                            <label class="evt-check-label">
+                                <input type="checkbox" name="allow_over_pool" value="1" class="evt-check-input" @checked(old('allow_over_pool'))>
+                                <span>Allow this to go over the group's seat pool</span>
+                            </label>
+                        @endif
                         <a href="{{ route('events.guest-groups.index', $event) }}" class="evt-btn-outline evt-btn-tiny"><i class="fa-solid fa-people-group"></i> Manage groups</a>
                     </div>
                     <div class="profile-field">

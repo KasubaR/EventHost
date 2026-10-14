@@ -122,7 +122,12 @@
             @endif
         </div>
     @elseif (session('status') === 'guests-bulk-group')
-        <div class="evt-admin-flash">Selected guests updated.</div>
+        <div class="evt-admin-flash">
+            {{ session('bulk_count', 0) }} {{ Str::plural('guest', session('bulk_count', 0)) }} updated.
+            @if (session('bulk_skipped', 0) > 0)
+                {{ session('bulk_skipped') }} not moved: {{ session('bulk_skip_reason') }}
+            @endif
+        </div>
     @elseif (session('status') === 'guests-bulk-table')
         <div class="evt-admin-flash">Selected guests updated.</div>
     @elseif (session('status') === 'guests-bulk-sent')

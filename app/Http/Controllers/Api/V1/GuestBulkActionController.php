@@ -7,6 +7,7 @@ use App\Http\Requests\Api\V1\GuestBulkActionApiRequest;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Services\CommunicationService;
+use App\Services\GuestUpdater;
 use App\Support\GuestPhone;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -52,19 +53,23 @@ class GuestBulkActionController extends Controller
 
         // Guests the action could not reach: no email for the two email actions, no usable phone for the WhatsApp share.
         $skippedCount = 0;
+        $skipReason = null;
 
-        DB::transaction(function () use ($event, $ids, $action, $validated, $communicationService, &$bulkCount, &$skippedCount): void {
+        DB::transaction(function () use ($event, $ids, $action, $validated, $communicationService, &$bulkCount, &$skippedCount, &$skipReason): void {
             $builder = Guest::query()
                 ->where('event_id', $event->id)
                 ->whereIn('id', $ids)
                 ->lockForUpdate();
 
             if ($action === 'assign_group') {
-                $bulkCount = $builder->update([
-                    'guest_group_id' => isset($validated['guest_group_id']) && $validated['guest_group_id'] !== null
-                        ? (int) $validated['guest_group_id']
-                        : null,
-                ]);
+                $result = app(GuestUpdater::class)->moveManyToGroup(
+                    $event,
+                    array_map('intval', $ids),
+                    isset($validated['guest_group_id']) && $validated['guest_group_id'] !== null ? (int) $validated['guest_group_id'] : null,
+                );
+                $bulkCount = $result['moved'];
+                $skippedCount = $result['skipped'];
+                $skipReason = $result['reason'];
 
                 return;
             }
@@ -171,6 +176,8 @@ class GuestBulkActionController extends Controller
             'action' => $action,
             'affected_count' => $bulkCount,
             'skipped_count' => $skippedCount,
+            // Additive: why the first guest was skipped (a group move that would overfill the seat pool); null otherwise.
+            'skipped_reason' => $skipReason,
         ]);
     }
 }

@@ -4,10 +4,12 @@ namespace App\Services;
 
 use App\Models\Event;
 use App\Models\Guest;
+use App\Models\GuestGroup;
 use App\Models\NotificationLog;
 use App\Support\GuestPhone;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 /**
  * A host editing a guest (web form and API). One place that saves the edit under the event's row lock and knows what a change of
@@ -20,6 +22,11 @@ use Illuminate\Support\Str;
  * - **New phone** (different number by `GuestPhone::key()`): the WhatsApp event-reminder markers and the WhatsApp/SMS log keys are cleared.
  * - Either one marks the invitation **not sent** (it has not been sent to the new contact), unless the host says they already told them.
  * - Clearing a contact, or adding one where there was none, resets nothing: there was nothing to reach, or nothing new is reached.
+ *
+ * - **A group move** into a group with a seat pool counts the seats the guest holds (an accepted answer the host has not rejected, pending
+ *   included) against the pool and refuses an overshoot unless the host ticks "allow over the pool". A move out of a pool, or into a group
+ *   with none, needs no check. The host's move also clears `group_link_joined_at`: it marks someone who signed up through a group link, and a
+ *   guest the host moved by hand is not one (plans/guest-editing-gaps.md Phase 3).
  *
  * The log rows are kept for audit; only their unique idempotency key is released (a `sent` row with a key blocks a repeat send).
  */
@@ -68,6 +75,22 @@ class GuestUpdater
             }
 
             $plusOneSwitchedOff = $current->plus_one_allowed && ! $data['plus_one_allowed'];
+
+            // A move to another group: check the target's seat pool, and the guest is no longer "a link joiner".
+            $newGroupId = $data['guest_group_id'] !== null ? (int) $data['guest_group_id'] : null;
+
+            if ($newGroupId !== ($current->guest_group_id !== null ? (int) $current->guest_group_id : null)) {
+                if ($newGroupId !== null && ! ($validated['allow_over_pool'] ?? false)) {
+                    $target = GuestGroup::query()->where('event_id', $event->id)->find($newGroupId);
+                    $refusal = $target !== null ? self::poolRefusal($target, $current) : null;
+
+                    if ($refusal !== null) {
+                        throw ValidationException::withMessages(['guest_group_id' => [$refusal]]);
+                    }
+                }
+
+                $data['group_link_joined_at'] = null;
+            }
 
             $current->fill($data);
 
@@ -125,6 +148,82 @@ class GuestUpdater
                 'old_link_still_works' => $oldLinkStillWorks,
                 'plus_one_switched_off' => $plusOneSwitchedOff,
             ];
+        });
+    }
+
+    /**
+     * Why $guest cannot join $group's seat pool, or null when they can (the group has no pool, the guest holds no seats, or it fits).
+     * Counted live: the seats everyone else in the group holds, plus the ones this guest holds. Pending requests hold seats.
+     */
+    public static function poolRefusal(GuestGroup $group, Guest $guest): ?string
+    {
+        if (! $group->hasSeatPool()) {
+            return null;
+        }
+
+        $guest->loadMissing('rsvp');
+        $held = $guest->rsvp?->heldSeats() ?? 0;
+
+        if ($held === 0) {
+            return null;
+        }
+
+        $left = $group->seatsRemaining($guest->id);
+
+        if ($held <= $left) {
+            return null;
+        }
+
+        $holds = $held === 1 ? '1 seat' : "{$held} seats";
+
+        return $left === 0
+            ? "{$group->name} has no seats left, and {$guest->name} holds {$holds}. Tick \"Allow over the pool\" to move them anyway."
+            : "Only {$left} ".($left === 1 ? 'seat is' : 'seats are')." left in {$group->name}, and {$guest->name} holds {$holds}. Tick \"Allow over the pool\" to move them anyway.";
+    }
+
+    /**
+     * The bulk move behind "Assign group" (web and API): every selected guest is checked in turn against the live pool, so the first ones
+     * in can fill it and the rest are skipped, never over-filled. A move that takes no seats, or goes to a group with no pool, always
+     * happens. Returns how many were assigned, how many were skipped and the first reason.
+     *
+     * @param  list<int>  $guestIds
+     * @return array{moved: int, skipped: int, reason: string|null}
+     */
+    public function moveManyToGroup(Event $event, array $guestIds, ?int $groupId): array
+    {
+        return DB::transaction(function () use ($event, $guestIds, $groupId): array {
+            Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
+
+            $group = $groupId !== null ? GuestGroup::query()->where('event_id', $event->id)->find($groupId) : null;
+
+            $moved = 0;
+            $skipped = 0;
+            $reason = null;
+
+            Guest::query()
+                ->where('event_id', $event->id)
+                ->whereIn('id', $guestIds)
+                ->with('rsvp')
+                ->lockForUpdate()
+                ->get()
+                ->each(function (Guest $guest) use ($group, $groupId, &$moved, &$skipped, &$reason): void {
+                    if (($guest->guest_group_id !== null ? (int) $guest->guest_group_id : null) !== $groupId) {
+                        $refusal = $group !== null ? self::poolRefusal($group, $guest) : null;
+
+                        if ($refusal !== null) {
+                            $skipped++;
+                            $reason ??= str_replace(' Tick "Allow over the pool" to move them anyway.', ' Move them from their own page to go over the pool.', $refusal);
+
+                            return;
+                        }
+
+                        $guest->forceFill(['guest_group_id' => $groupId, 'group_link_joined_at' => null])->save();
+                    }
+
+                    $moved++;
+                });
+
+            return ['moved' => $moved, 'skipped' => $skipped, 'reason' => $reason];
         });
     }
 

@@ -45,6 +45,7 @@ class UpdateGuestRequest extends FormRequest
             'mark_invitation_sent' => $this->boolean('mark_invitation_sent'),
             'allow_shared_phone' => $this->boolean('allow_shared_phone'),
             'keep_invitation_sent' => $this->boolean('keep_invitation_sent'),
+            'allow_over_pool' => $this->boolean('allow_over_pool'),
         ]);
     }
 
@@ -100,6 +101,7 @@ class UpdateGuestRequest extends FormRequest
             'mark_invitation_sent' => ['sometimes', 'boolean'],
             'allow_shared_phone' => ['sometimes', 'boolean'],
             'keep_invitation_sent' => ['sometimes', 'boolean'],
+            'allow_over_pool' => ['sometimes', 'boolean'],
         ];
     }
 }
