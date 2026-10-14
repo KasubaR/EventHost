@@ -11,6 +11,7 @@ use App\Http\Requests\StoreGuestRequest;
 use App\Http\Requests\UpdateGuestRequest;
 use App\Models\Event;
 use App\Models\Guest;
+use App\Models\NotificationLog;
 use App\Services\CommunicationService;
 use App\Services\GuestCreator;
 use App\Services\GuestUpdater;
@@ -272,6 +273,14 @@ class GuestController extends Controller
             ->with('email_typo', self::emailTypoFlash($event, $guest))
             // The new contact has had no invitation: the list no longer says "Sent".
             ->with('guest_contact_reset', $result['invitation_reset'] ? $guest->name : null)
+            // Plus-one switched on: nothing changes for the guest until they reopen the form, so offer to tell them. Or, when the event's
+            // own switch is off, say the tick does nothing yet.
+            ->with('plus_one_offered', $result['plus_one_switched_on'] && $event->allow_plus_one && $this->canBePromptedAboutPlusOne($guest) ? [
+                'guest' => $guest->name,
+                'url' => route('events.guests.notify-plus-one', ['event' => $event, 'guest' => $guest]),
+                'has_email' => filled($guest->email),
+            ] : null)
+            ->with('plus_one_inactive', $result['plus_one_switched_on'] && ! $event->allow_plus_one ? $guest->name : null)
             // The old address can still open the link; offer to replace it (a QR already delivered stops working, so never automatic).
             ->with('old_link_still_works', $result['old_link_still_works'] ? [
                 'guest' => $guest->name,
@@ -281,6 +290,57 @@ class GuestController extends Controller
                 'guest' => $guest->name,
                 'link' => (string) $guest->personalRsvpUrl(),
             ] : null);
+    }
+
+    /** A guest the plus-one news matters to: they have said yes with one seat, so they may not know they could bring someone. */
+    private function canBePromptedAboutPlusOne(Guest $guest): bool
+    {
+        return $guest->rsvp !== null && $guest->rsvp->heldSeats() === 1;
+    }
+
+    /**
+     * "Tell them": one email saying this guest can now bring a plus-one, with their link. Never automatic. Refused with no email on file,
+     * while RSVP is closed (the link would lead to a closed form), when the plus-one is not actually available to them, and when they were
+     * already told in the last hour. plans/guest-editing-gaps.md Phase 4.
+     */
+    public function notifyPlusOne(Event $event, Guest $guest, CommunicationService $communications): RedirectResponse
+    {
+        $guest->loadMissing('event');
+        $this->authorize('update', $guest);
+        abort_unless($event->isInvitation(), 404);
+
+        $back = redirect()->route('events.guests.index', $event);
+
+        if (! $event->allow_plus_one || ! $guest->plus_one_allowed) {
+            return $back->withErrors(['plus_one' => $guest->name.' cannot bring a plus-one yet: switch plus-ones on for the event and for this guest first.']);
+        }
+
+        if (! filled($guest->email)) {
+            return $back->withErrors(['plus_one' => $guest->name.' has no email address, so tell them yourself.']);
+        }
+
+        if (($reason = $event->rsvpClosedReason()) !== null) {
+            return $back->withErrors(['plus_one' => $reason.' Their link would lead to a closed form, so nothing was sent.']);
+        }
+
+        $recently = NotificationLog::query()
+            ->where('guest_id', $guest->id)
+            ->where('type', 'plus_one_offer')
+            ->where('created_at', '>=', now()->subHour())
+            ->exists();
+
+        if ($recently) {
+            return $back->withErrors(['plus_one' => $guest->name.' was already told in the last hour.']);
+        }
+
+        $communications->sendEventUpdate(
+            $event,
+            $guest,
+            'You can now bring one guest. Open your invitation and update your RSVP to add them.',
+            'plus_one_offer',
+        );
+
+        return $back->with('status', 'plus-one-offer-sent')->with('plus_one_told', $guest->name);
     }
 
     /**

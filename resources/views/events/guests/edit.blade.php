@@ -122,6 +122,9 @@
                         <label class="profile-label evt-check-label">
                             <input type="checkbox" name="plus_one_allowed" value="1" class="profile-input evt-check-input" @checked(old('plus_one_allowed', $guest->plus_one_allowed))>
                             <span>Allow plus-one for this guest</span>
+                            @unless ($event->allow_plus_one)
+                                <span class="evt-muted">Plus-ones are switched off for this event, so this has no effect until you turn them on in the event's details.</span>
+                            @endunless
                         </label>
                         @error('plus_one_allowed')
                             <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>

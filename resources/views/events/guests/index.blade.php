@@ -85,6 +85,25 @@
         @if (session('plus_one_kept'))
             <div class="evt-admin-flash">{{ session('plus_one_kept') }} has already confirmed a plus-one, so it stays. Open their edit page to remove it.</div>
         @endif
+        @if (session('plus_one_inactive'))
+            <div class="evt-admin-flash"><bdi>{{ session('plus_one_inactive') }}</bdi> is allowed a plus-one, but plus-ones are switched off for this event, so it has no effect yet. Turn them on in the event's details.</div>
+        @endif
+        @if (session('plus_one_offered'))
+            @php $offer = session('plus_one_offered'); @endphp
+            <div class="evt-admin-flash">
+                <bdi>{{ $offer['guest'] }}</bdi> has said yes for one seat and can now bring a plus-one, but they will only see it if they reopen their invitation.
+                @if ($offer['has_email'])
+                    <form method="POST" action="{{ $offer['url'] }}" style="display:inline">
+                        @csrf
+                        <button type="submit" class="evt-btn-outline evt-btn-tiny">Tell them</button>
+                    </form>
+                @else
+                    They have no email address, so let them know yourself.
+                @endif
+            </div>
+        @endif
+    @elseif (session('status') === 'plus-one-offer-sent')
+        <div class="evt-admin-flash">Told <bdi>{{ session('plus_one_told') }}</bdi> they can bring a plus-one.</div>
     @elseif (session('status') === 'guest-deleted')
         <div class="evt-admin-flash">{{ $isRegistrations ? 'Registration removed.' : 'Guest removed.' }}</div>
     @elseif (session('status') === 'guest-invitation-marked-sent')

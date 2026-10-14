@@ -352,6 +352,8 @@ Route::middleware(['auth', 'account.active', 'verified'])->group(function () {
     Route::get('/events/{event}/guests/export-pdf', [GuestController::class, 'exportPdf'])
         ->name('events.guests.export-pdf');
 
+    Route::post('/events/{event}/guests/{guest}/notify-plus-one', [GuestController::class, 'notifyPlusOne'])
+        ->name('events.guests.notify-plus-one');
     Route::post('/events/{event}/guests/{guest}/regenerate-link', [GuestController::class, 'regenerateLink'])
         ->name('events.guests.regenerate-link');
     Route::patch('/events/{event}/guests/{guest}/invitation-sent', [GuestController::class, 'markInvitationSent'])

@@ -42,6 +42,7 @@ class GuestUpdater
      *     link_replaced: bool,
      *     old_link_still_works: bool,
      *     plus_one_switched_off: bool,
+     *     plus_one_switched_on: bool,
      * }
      */
     public function update(Event $event, Guest $guest, array $validated): array
@@ -75,6 +76,7 @@ class GuestUpdater
             }
 
             $plusOneSwitchedOff = $current->plus_one_allowed && ! $data['plus_one_allowed'];
+            $plusOneSwitchedOn = ! $current->plus_one_allowed && $data['plus_one_allowed'];
 
             // A move to another group: check the target's seat pool, and the guest is no longer "a link joiner".
             $newGroupId = $data['guest_group_id'] !== null ? (int) $data['guest_group_id'] : null;
@@ -147,6 +149,7 @@ class GuestUpdater
                 'link_replaced' => $linkReplaced,
                 'old_link_still_works' => $oldLinkStillWorks,
                 'plus_one_switched_off' => $plusOneSwitchedOff,
+                'plus_one_switched_on' => $plusOneSwitchedOn,
             ];
         });
     }

@@ -449,13 +449,13 @@ class CommunicationService
         }
     }
 
-    public function sendEventUpdate(Event $event, Guest $guest, string $updateMessage): void
+    public function sendEventUpdate(Event $event, Guest $guest, string $updateMessage, string $logType = 'event_update'): void
     {
         if (! is_string($guest->email) || $guest->email === '') {
             return;
         }
 
-        $log = $this->startLog($event, $guest, 'email', 'event_update', null, null);
+        $log = $this->startLog($event, $guest, 'email', $logType, null, null);
         if ($log === null) {
             return;
         }

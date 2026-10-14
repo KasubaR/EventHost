@@ -53,6 +53,8 @@ class GuestResource extends JsonResource
             'event_table_id' => $this->event_table_id,
             'table_label' => $this->tableLabel(),
             'plus_one_allowed' => $this->plus_one_allowed,
+            // Additive: whether a plus-one can actually be taken (the event's switch AND this guest's flag).
+            'plus_one_effective' => (bool) ($this->event->allow_plus_one && $this->plus_one_allowed),
             'invitation_sent' => $this->invitation_sent,
             'invitation_sent_at' => $this->invitation_sent_at?->toIso8601String(),
             'checked_in_at' => $this->checked_in_at?->toIso8601String(),

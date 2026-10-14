@@ -708,6 +708,12 @@ badly written details. Tests: `GuestAddEdgeCasesTest`, `GuestPhoneTest`.
  checked. **Any hand move clears `group_link_joined_at`** (it marks "signed up through the group link", which a host-moved guest is not, and `RsvpSubmissionService` forces those into review).
  The bulk "Assign group" (web and API) goes through `GuestUpdater::moveManyToGroup()`: each guest is checked in turn against the live pool under the event lock, so the first ones fill it and the rest
  are skipped, never over-filled (`bulk_skipped` / API `skipped_count`, plus `bulk_skip_reason` / `skipped_reason`); bulk has no override, a host goes over the pool from the guest's own page
+- **Changing a guest's plus-one permission** (plan `plans/guest-editing-gaps.md` Phase 4): switching it **on** for a guest who has said yes for one seat (and the event allows plus-ones) flashes `plus_one_offered` with a
+ **"Tell them"** button (`POST events/{event}/guests/{guest}/notify-plus-one`, `GuestController::notifyPlusOne`): one `EventUpdatedNotification` through `CommunicationService::sendEventUpdate(..., 'plus_one_offer')` with their
+ link. **Never automatic.** Refused with no email, while RSVP is closed (`rsvpClosedReason()`), when the plus-one is not available to them (event switch AND guest flag), and when a `plus_one_offer` log row for
+ that guest is under an hour old (the log type is its own, so a bulk update email does not count). Ticking it while the **event's own switch is off** flashes `plus_one_inactive`, and the edit page says the tick has no
+ effect until plus-ones are switched on. Switching it **off** while they hold 2 seats still keeps the seat (`plus_one_kept` on the web). API, all additive: `GuestResource::plus_one_effective` (event switch AND guest flag)
+ and `plus_one_kept` on the update response
 - **Still not covered:** CJK, Thai, Indic and emoji names on a printed pass (they print as `?`), shaped Arabic/Hebrew, internationalised email addresses
  are refused by `email:rfc`; event names and other tables still allow 255 characters against a 191 column
 

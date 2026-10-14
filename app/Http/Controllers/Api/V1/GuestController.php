@@ -203,6 +203,8 @@ class GuestController extends Controller
                 'invitation_reset' => $result['invitation_reset'],
                 'link_replaced' => $result['link_replaced'],
                 'old_link_still_works' => $result['old_link_still_works'],
+                // Switched off while they hold a plus-one: it stays (remove it explicitly on the web).
+                'plus_one_kept' => $result['plus_one_switched_off'] && ($result['guest']->rsvp?->heldSeats() ?? 0) >= 2,
             ],
         ))->setStatusCode(200);
     }
