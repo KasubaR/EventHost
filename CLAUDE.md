@@ -664,6 +664,17 @@ badly written details. Tests: `GuestAddEdgeCasesTest`, `GuestPhoneTest`.
 - **Import reports bad rows** instead of dropping them silently: each row is checked (name length, `email:rfc`, `GuestPhone`), and
  the first `EventGuestsImport::PROBLEMS_SHOWN` (10) problems are flashed with their spreadsheet row number (`import_invalid`,
  `import_problems`; API: additive `invalid`, `problems`). A group named in the file is created only when a row is imported
+- **Exports are safe to open in Excel** (`App\Support\SpreadsheetCell`, plan `plans/guest-adding-gaps.md`, Phases 1 and 2 built): every CSV row from the guest, ticket-buyer
+ and contribution exports goes through `SpreadsheetCell::row()`, which prefixes `'` to a cell starting `=`, `+`, `-`, `@`, tab, CR or newline (a guest types their own name and message,
+ so `=HYPERLINK(...)` would otherwise run on the host's machine). A phone ("+44 7700 900123") or plain negative number holds only digits and `. ( ) -`, cannot call anything, and is left
+ as written. Each CSV starts with a UTF-8 BOM so Excel reads non-Latin names correctly. The import template is not escaped. Any new CSV export must use both
+- **A phone is shown, searched and compared by its digits, never rewritten.** `GuestPhone::display()` formats a stored value for the list, PDF, CSV and the API's additive `phone_display`
+ (`097 123 4567`, `+447700900123`; a legacy value is shown as stored; `phone` stays as saved). `GuestPhone::key()` ignores a bracketed trunk `(0)`. `Guest::scopeSearch` also matches
+ a phone-looking term against `GuestPhone::sqlDigits('phone')` (spaces, `+`, dashes, brackets, dots and slashes stripped in SQL), so `0971234567` finds `+260 97 123 4567`.
+ `matchingPhone()` narrows by the key's last 7 digits in SQL, then compares keys exactly
+- **A household may share one number, on the host's say-so only.** `allow_shared_phone` (checkbox on the host add and edit forms, and in the API body) skips the phone-duplicate refusal in
+ `StoreGuestRequest`, `UpdateGuestRequest` and `GuestCreator`; the add flashes `guest_shared_phone` (the other guest's name) and the edit page says "Shares this number with …". An
+ **unchanged** phone is never re-checked on edit, so a guest saved as sharing stays editable. The open RSVP, group link and import keep the hard rule: a stranger cannot claim a number
 - **Not covered:** the PDF and PNG pass fonts (DejaVu) cannot draw CJK, Arabic or emoji; internationalised email addresses
  are refused by `email:rfc`; event names and other tables still allow 255 characters against a 191 column
 

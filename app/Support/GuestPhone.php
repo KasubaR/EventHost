@@ -140,8 +140,85 @@ final class GuestPhone
         return $length >= 8 && $length <= 15 && ! str_starts_with($digits, '0') ? $digits : null;
     }
 
+    /**
+     * `+44 (0) 7700 900123` is written with a trunk "0" that nobody dials from abroad; reading it as a digit would make the
+     * number differ from `+447700900123`, so a bracketed lone 0 is dropped before the digits are taken.
+     */
     private static function digits(string $phone): string
     {
+        $phone = preg_replace('/\(\s*0\s*\)/', '', $phone) ?? $phone;
+
         return preg_replace('/\D+/', '', $phone) ?? '';
+    }
+
+    /**
+     * A stored phone as the list, exports and API show it: `097 123 4567` for a Zambian number, `+447700900123` for an
+     * international one. Nothing is rewritten in the database; a value that cannot be read (a legacy row) is returned as
+     * stored. Null for no phone.
+     */
+    public static function display(?string $phone): ?string
+    {
+        if (! is_string($phone) || trim($phone) === '') {
+            return null;
+        }
+
+        $digits = self::digits($phone);
+
+        if (self::kind($phone) === 'zambian' && ($local = self::zambianLocal($digits)) !== null) {
+            return '0'.substr($local, 0, 2).' '.substr($local, 2, 3).' '.substr($local, 5);
+        }
+
+        if (($international = self::internationalDigits($phone)) !== null) {
+            return '+'.$international;
+        }
+
+        return trim($phone);
+    }
+
+    /**
+     * SQL that reads `$column` as bare digits (spaces, dashes, brackets, dots and slashes removed), so a LIKE on digits finds
+     * a phone however it was written. REPLACE exists on both MySQL and SQLite.
+     */
+    public static function sqlDigits(string $column = 'phone'): string
+    {
+        $expression = $column;
+
+        foreach ([' ', '-', '+', '(', ')', '.', '/', ','] as $char) {
+            $expression = "REPLACE({$expression}, '{$char}', '')";
+        }
+
+        return $expression;
+    }
+
+    /** The digits to search stored phones for: the subscriber number without a leading 0 or 260. Null when too short to search. */
+    public static function searchNeedle(string $term): ?string
+    {
+        if (preg_match('/^[\d\s+().\-]+$/', trim($term)) !== 1) {
+            return null;
+        }
+
+        $digits = self::digits($term);
+
+        if (strlen($digits) < 5) {
+            return null;
+        }
+
+        if (str_starts_with($digits, '260') && strlen($digits) > 6) {
+            $digits = substr($digits, 3);
+        } elseif (str_starts_with($digits, '00')) {
+            $digits = ltrim($digits, '0');
+        } elseif (str_starts_with($digits, '0')) {
+            $digits = substr($digits, 1);
+        }
+
+        return strlen($digits) >= 4 ? $digits : null;
+    }
+
+    /** The last digits of a phone's key: a cheap SQL pre-filter for duplicate checks. */
+    public static function keyTail(?string $phone): ?string
+    {
+        $key = self::key($phone);
+
+        return $key === null ? null : substr($key, -7);
     }
 }

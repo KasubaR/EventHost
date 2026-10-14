@@ -16,6 +16,8 @@ use App\Services\CommunicationService;
 use App\Services\GuestCreator;
 use App\Services\HostRsvpOverrideService;
 use App\Services\QrCodeService;
+use App\Support\GuestPhone;
+use App\Support\SpreadsheetCell;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -278,6 +280,7 @@ class GuestController extends Controller
 
         return response()->streamDownload(function () use ($guestsQuery) {
             $handle = fopen('php://output', 'w');
+            fwrite($handle, SpreadsheetCell::BOM);
 
             fputcsv($handle, [
                 'Name', 'Email', 'Phone', 'Group',
@@ -289,10 +292,10 @@ class GuestController extends Controller
             $guestsQuery->chunk(200, function ($chunk) use ($handle) {
                 foreach ($chunk as $guest) {
                     $rsvp = $guest->rsvp;
-                    fputcsv($handle, [
+                    fputcsv($handle, SpreadsheetCell::row([
                         $guest->name,
                         $guest->email ?? '',
-                        $guest->phone ?? '',
+                        GuestPhone::display($guest->phone) ?? '',
                         $guest->group?->name ?? '',
                         $rsvp ? $rsvp->status->value : 'pending',
                         $rsvp && $rsvp->status->countsTowardGuestLimit() ? $rsvp->attendee_count : '',
@@ -302,7 +305,7 @@ class GuestController extends Controller
                         $guest->checked_in_at?->timezone(config('app.timezone'))->format('Y-m-d H:i') ?? '',
                         $guest->checkedInByLabel() ?? '',
                         $guest->last_rsvp_change_at ? Carbon::parse($guest->last_rsvp_change_at)->timezone(config('app.timezone'))->format('Y-m-d H:i') : '',
-                    ]);
+                    ]));
                 }
             });
 

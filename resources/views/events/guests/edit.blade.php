@@ -76,7 +76,14 @@
                         @error('phone')
                             <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                         @enderror
+                        @if ($sharedWith)
+                            <p class="evt-field-hint"><i class="fa-solid fa-people-roof"></i> Shares this number with <bdi>{{ $sharedWith->name }}</bdi>.</p>
+                        @endif
                         <p id="guest_phone_hint" class="evt-field-hint">One number, for example 0971234567. For a number outside Zambia, start with + and the country code.</p>
+                        <label class="evt-check-label evt-shared-phone">
+                            <input type="checkbox" name="allow_shared_phone" value="1" class="evt-check-input" @checked(old('allow_shared_phone'))>
+                            <span>This number is shared with another guest (for example a household)</span>
+                        </label>
                     </div>
                     <div class="profile-field">
                         <label for="guest_group_id" class="profile-label">Group <span class="profile-optional">optional</span></label>

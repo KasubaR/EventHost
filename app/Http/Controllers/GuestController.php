@@ -17,6 +17,8 @@ use App\Services\HostRsvpOverrideService;
 use App\Services\QrCodeService;
 use App\Services\RsvpApprovalService;
 use App\Services\RsvpSubmissionService;
+use App\Support\GuestPhone;
+use App\Support\SpreadsheetCell;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -104,6 +106,7 @@ class GuestController extends Controller
 
         return response()->streamDownload(function () use ($guestsQuery) {
             $handle = fopen('php://output', 'w');
+            fwrite($handle, SpreadsheetCell::BOM);
 
             fputcsv($handle, [
                 'Name', 'Email', 'Phone', 'Group',
@@ -115,10 +118,10 @@ class GuestController extends Controller
             $guestsQuery->chunk(200, function ($chunk) use ($handle) {
                 foreach ($chunk as $guest) {
                     $rsvp = $guest->rsvp;
-                    fputcsv($handle, [
+                    fputcsv($handle, SpreadsheetCell::row([
                         $guest->name,
                         $guest->email ?? '',
-                        $guest->phone ?? '',
+                        GuestPhone::display($guest->phone) ?? '',
                         $guest->group?->name ?? '',
                         $rsvp ? $rsvp->status->value : 'pending',
                         $rsvp && $rsvp->status->countsTowardGuestLimit() ? $rsvp->attendee_count : '',
@@ -133,7 +136,7 @@ class GuestController extends Controller
                         // before links were recorded.
                         $guest->checkedInByLabel() ?? '',
                         $guest->last_rsvp_change_at ? Carbon::parse($guest->last_rsvp_change_at)->timezone(config('app.timezone'))->format('Y-m-d H:i') : '',
-                    ]);
+                    ]));
                 }
             });
 
@@ -204,7 +207,8 @@ class GuestController extends Controller
             ->route('events.guests.index', $event)
             ->with('status', 'guest-created')
             ->with('guest_unreachable', $guest->hasNoContactDetails() ? $guest->name : null)
-            ->with('guest_same_name', Guest::sameNameCount($event, $guest->name, ignoreGuestId: $guest->id) > 0 ? $guest->name : null);
+            ->with('guest_same_name', Guest::sameNameCount($event, $guest->name, ignoreGuestId: $guest->id) > 0 ? $guest->name : null)
+            ->with('guest_shared_phone', Guest::matchingPhone($event, $guest->phone, ignoreGuestId: $guest->id)?->name);
     }
 
     public function edit(Event $event, Guest $guest): View
@@ -217,7 +221,10 @@ class GuestController extends Controller
         $tables = $event->tables()->orderBy('sort_order')->orderBy('label')->get();
         $changes = $guest->rsvpChanges()->with('actor')->latest('id')->limit(30)->get();
 
-        return view('events.guests.edit', compact('event', 'guest', 'groups', 'tables', 'changes'));
+        // Another guest on the same number (a household), shown on the edit page so the host sees why.
+        $sharedWith = Guest::matchingPhone($event, $guest->phone, ignoreGuestId: $guest->id);
+
+        return view('events.guests.edit', compact('event', 'guest', 'groups', 'tables', 'changes', 'sharedWith'));
     }
 
     public function update(UpdateGuestRequest $request, Event $event, Guest $guest): RedirectResponse

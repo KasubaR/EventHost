@@ -11,6 +11,7 @@ use App\Models\Event;
 use App\Services\ContributionPayoutService;
 use App\Services\ContributionRevenueAnalyticsService;
 use App\Support\AdminActivity;
+use App\Support\SpreadsheetCell;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Carbon;
 use Illuminate\View\View;
@@ -65,6 +66,7 @@ class ContributionRevenueController extends Controller
 
         return response()->streamDownload(function () use ($paymentsQuery) {
             $handle = fopen('php://output', 'w');
+            fwrite($handle, SpreadsheetCell::BOM);
 
             fputcsv($handle, [
                 'Date',
@@ -80,7 +82,7 @@ class ContributionRevenueController extends Controller
                 foreach ($chunk as $payment) {
                     $contribution = $payment->contribution;
 
-                    fputcsv($handle, [
+                    fputcsv($handle, SpreadsheetCell::row([
                         $payment->completed_at?->format('Y-m-d H:i') ?? '',
                         $contribution?->contributor_name ?? '',
                         $contribution?->contributor_phone ?? '',
@@ -88,7 +90,7 @@ class ContributionRevenueController extends Controller
                         number_format((float) $payment->amount, 2, '.', ''),
                         $payment->payment_method,
                         $payment->payment_reference,
-                    ]);
+                    ]));
                 }
             });
 

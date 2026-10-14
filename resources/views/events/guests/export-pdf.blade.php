@@ -59,7 +59,7 @@
                     <td>{{ $i + 1 }}</td>
                     <td>{{ $guest->name }}</td>
                     <td>{{ $guest->email ?? '-' }}</td>
-                    <td>{{ $guest->phone ?? '-' }}</td>
+                    <td>{{ \App\Support\GuestPhone::display($guest->phone) ?? '-' }}</td>
                     <td>{{ $guest->group?->name ?? '-' }}</td>
                     <td>
                         @if ($rsvp)

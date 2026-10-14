@@ -33,7 +33,8 @@ class GuestCreator
                 throw ValidationException::withMessages(['email' => 'The email has already been taken.']);
             }
 
-            if (Guest::phoneAlreadyUsed($event, $validated['phone'] ?? null)) {
+            // "This number is shared" is the host's explicit call (a household on one phone); only the host form and API offer it.
+            if (! ($validated['allow_shared_phone'] ?? false) && Guest::phoneAlreadyUsed($event, $validated['phone'] ?? null)) {
                 throw ValidationException::withMessages(['phone' => 'This phone number is already used by another guest for this event.']);
             }
 

@@ -11,6 +11,7 @@ use App\Models\Ticket;
 use App\Notifications\TicketOrderConfirmationNotification;
 use App\Services\TicketCheckInService;
 use App\Services\TicketPdfService;
+use App\Support\SpreadsheetCell;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -64,6 +65,7 @@ class EventTicketManagementController extends Controller
 
         return response()->streamDownload(function () use ($ticketsQuery) {
             $handle = fopen('php://output', 'w');
+            fwrite($handle, SpreadsheetCell::BOM);
 
             fputcsv($handle, [
                 'Ticket Number', 'Name', 'Email', 'Phone', 'Ticket Type',
@@ -81,7 +83,7 @@ class EventTicketManagementController extends Controller
                         ? ''
                         : ($ticket->isCheckedIn() ? 'Yes' : 'No');
 
-                    fputcsv($handle, [
+                    fputcsv($handle, SpreadsheetCell::row([
                         'EH-'.str_pad((string) $ordinal, 3, '0', STR_PAD_LEFT),
                         $ticket->attendee_name ?: ($order?->buyer_name ?? ''),
                         $ticket->attendee_email ?: ($order?->buyer_email ?? ''),
@@ -91,7 +93,7 @@ class EventTicketManagementController extends Controller
                         $ticket->status->label(),
                         $checkedIn,
                         $ticket->checkedInByLabel() ?? '',
-                    ]);
+                    ]));
                 }
             });
 

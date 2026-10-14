@@ -43,6 +43,7 @@ class UpdateGuestRequest extends FormRequest
             'plus_one_allowed' => $this->boolean('plus_one_allowed'),
             'regenerate_invitation_token' => $this->boolean('regenerate_invitation_token'),
             'mark_invitation_sent' => $this->boolean('mark_invitation_sent'),
+            'allow_shared_phone' => $this->boolean('allow_shared_phone'),
         ]);
     }
 
@@ -76,7 +77,9 @@ class UpdateGuestRequest extends FormRequest
                     }
                 },
                 function (string $attribute, mixed $value, Closure $fail) use ($event, $guest): void {
-                    if (Guest::phoneAlreadyUsed($event, (string) $value, ignoreGuestId: $guest->id)) {
+                    // A number the guest already has is not re-checked (a guest saved as sharing a number stays editable), and the
+                    // host can tick "this number is shared" to give a household's number to a second guest.
+                    if ($value !== $guest->phone && ! $this->boolean('allow_shared_phone') && Guest::phoneAlreadyUsed($event, (string) $value, ignoreGuestId: $guest->id)) {
                         $fail('This phone number is already used by another guest for this event.');
                     }
                 },
@@ -94,6 +97,7 @@ class UpdateGuestRequest extends FormRequest
             'plus_one_allowed' => ['sometimes', 'boolean'],
             'regenerate_invitation_token' => ['sometimes', 'boolean'],
             'mark_invitation_sent' => ['sometimes', 'boolean'],
+            'allow_shared_phone' => ['sometimes', 'boolean'],
         ];
     }
 }

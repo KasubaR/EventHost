@@ -40,6 +40,7 @@ class StoreGuestRequest extends FormRequest
         $this->merge([
             'plus_one_allowed' => $this->boolean('plus_one_allowed'),
             'mark_invitation_sent' => $this->boolean('mark_invitation_sent'),
+            'allow_shared_phone' => $this->boolean('allow_shared_phone'),
         ]);
     }
 
@@ -62,7 +63,8 @@ class StoreGuestRequest extends FormRequest
             'phone' => [
                 'bail', 'nullable', 'string', 'max:50', new GuestPhoneNumber,
                 function (string $attribute, mixed $value, Closure $fail) use ($event): void {
-                    if (Guest::phoneAlreadyUsed($event, (string) $value)) {
+                    // The host ticked "this number is shared": a household on one phone. Never offered on public forms.
+                    if (! $this->boolean('allow_shared_phone') && Guest::phoneAlreadyUsed($event, (string) $value)) {
                         $fail('This phone number is already used by another guest for this event.');
                     }
                 },
@@ -79,6 +81,7 @@ class StoreGuestRequest extends FormRequest
             ],
             'plus_one_allowed' => ['sometimes', 'boolean'],
             'mark_invitation_sent' => ['sometimes', 'boolean'],
+            'allow_shared_phone' => ['sometimes', 'boolean'],
         ];
     }
 }

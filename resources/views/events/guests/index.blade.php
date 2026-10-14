@@ -49,6 +49,9 @@
         @if (session('guest_unreachable'))
             <div class="evt-admin-flash"><bdi>{{ session('guest_unreachable') }}</bdi> has no email or phone, so we can't send them anything. Copy their link from the row menu and share it yourself, or add a contact detail.</div>
         @endif
+        @if (session('guest_shared_phone'))
+            <div class="evt-admin-flash">This number is shared with <bdi>{{ session('guest_shared_phone') }}</bdi>. WhatsApp messages for either of them go to the same phone.</div>
+        @endif
         @if (session('guest_same_name'))
             <div class="evt-admin-flash">Another guest on this list is also called <bdi>{{ session('guest_same_name') }}</bdi>. If they're different people, an email or phone helps you tell them apart. If not, remove the extra one.</div>
         @endif
@@ -338,7 +341,7 @@
                                             <span class="evt-guest-contact-line">{{ $guestRow->email }}</span>
                                         @endif
                                         @if ($guestRow->phone)
-                                            <span class="evt-guest-contact-line evt-guest-phone" dir="ltr">{{ $guestRow->phone }}</span>
+                                            <span class="evt-guest-contact-line evt-guest-phone" dir="ltr">{{ \App\Support\GuestPhone::display($guestRow->phone) }}</span>
                                         @endif
                                         @if ($guestRow->hasNoContactDetails())
                                             <span class="evt-muted">No contact details. Share their link yourself.</span>

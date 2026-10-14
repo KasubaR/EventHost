@@ -318,9 +318,12 @@ class Guest extends Model
             return null;
         }
 
+        // Narrowed in SQL on the number's last digits, then compared exactly by key: one add no longer reads every phone
+        // on the event (an import of thousands did it per row).
         return static::query()
             ->where('event_id', $event->id)
             ->whereNotNull('phone')
+            ->whereRaw(GuestPhone::sqlDigits('phone').' LIKE ?', ['%'.GuestPhone::keyTail($phone).'%'])
             ->when($ignoreGuestId !== null, fn (Builder $q) => $q->where('id', '!=', $ignoreGuestId))
             ->get(['id', 'phone', 'email', 'name'])
             ->first(fn (Guest $g): bool => GuestPhone::key($g->phone) === $key);
@@ -384,11 +387,17 @@ class Guest extends Model
         }
 
         $like = '%'.addcslashes($term, '%_\\').'%';
+        // A phone is also found by its digits, however it was typed or stored (0971234567 finds +260 97 123 4567).
+        $needle = GuestPhone::searchNeedle($term);
 
-        return $query->where(function (Builder $q) use ($like) {
+        return $query->where(function (Builder $q) use ($like, $needle) {
             $q->where('name', 'like', $like)
                 ->orWhere('email', 'like', $like)
                 ->orWhere('phone', 'like', $like);
+
+            if ($needle !== null) {
+                $q->orWhereRaw(GuestPhone::sqlDigits('phone').' LIKE ?', ['%'.$needle.'%']);
+            }
         });
     }
 
