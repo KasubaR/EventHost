@@ -327,6 +327,12 @@ Route::middleware(['auth', 'account.active', 'verified'])->group(function () {
     Route::post('/events/{event}/guests/import', [GuestImportController::class, 'store'])
         ->name('events.guests.import.store')
         ->middleware('throttle:10,1');
+    Route::get('/events/{event}/guests/imports/{guestImport}', [GuestImportController::class, 'show'])
+        ->whereNumber('guestImport')
+        ->name('events.guests.import.show');
+    Route::get('/events/{event}/guests/imports/{guestImport}/progress', [GuestImportController::class, 'progress'])
+        ->whereNumber('guestImport')
+        ->name('events.guests.import.progress');
 
     Route::post('/events/{event}/guests/allow-plus-one', [GuestBulkActionController::class, 'allowPlusOneForAll'])
         ->name('events.guests.allow-plus-one');

@@ -1745,6 +1745,50 @@ body > .evt-more-menu .evt-more-item--danger:hover {
     overflow-wrap: anywhere;
 }
 
+.evt-import-list-head {
+    margin: 10px 0 0;
+}
+
+.evt-import-status-line {
+    margin: 0 0 10px;
+    font-weight: 600;
+}
+
+.evt-import-progress {
+    display: block;
+    width: 100%;
+    height: 12px;
+    margin: 0 0 12px;
+    border: 0;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.evt-import-progress::-webkit-progress-bar {
+    background: rgba(0, 0, 0, 0.08);
+    border-radius: 6px;
+}
+
+.evt-import-progress::-webkit-progress-value {
+    background: var(--green, #27ae60);
+    border-radius: 6px;
+}
+
+.evt-import-progress::-moz-progress-bar {
+    background: var(--green, #27ae60);
+    border-radius: 6px;
+}
+
+.evt-import-status-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 16px 0 0;
+}
+
 .evt-guest-contact-line {
     display: block;
 }

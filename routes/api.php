@@ -277,6 +277,9 @@ Route::prefix('v1/host')->middleware(['auth:sanctum', 'sanctum.active'])->group(
             Route::post('/import', [GuestImportController::class, 'store'])
                 ->middleware('throttle:10,1')
                 ->name('import.store');
+            Route::get('/imports/{guestImport}', [GuestImportController::class, 'show'])
+                ->whereNumber('guestImport')
+                ->name('import.show');
             Route::post('/bulk', [GuestBulkActionController::class, 'store'])
                 ->middleware('throttle:guest-bulk-send')
                 ->name('bulk');

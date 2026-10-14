@@ -661,9 +661,33 @@ badly written details. Tests: `GuestAddEdgeCasesTest`, `GuestPhoneTest`.
 - **Names are cleaned the same way everywhere** (`Guest::cleanName()`: trim, collapse whitespace, Unicode NFC) so a name typed on
  a phone and a name pasted from a spreadsheet compare equal. The list and pass card render names with `dir="auto"` / `<bdi>`
  for right-to-left scripts; the phone column is `dir="ltr"` and never wraps
-- **Import reports bad rows** instead of dropping them silently: each row is checked (name length, `email:rfc`, `GuestPhone`), and
- the first `EventGuestsImport::PROBLEMS_SHOWN` (10) problems are flashed with their spreadsheet row number (`import_invalid`,
- `import_problems`; API: additive `invalid`, `problems`). A group named in the file is created only when a row is imported
+- **Import reports bad rows** instead of dropping them silently: each row is checked (empty name, name length, `email:rfc`, `GuestPhone`), and
+ the first `EventGuestsImport::PROBLEMS_SHOWN` (50) problems are flashed with their spreadsheet row number (`import_invalid`,
+ `import_problems`; API: additive `invalid`, `problems`). A group named in the file is created only when a row is imported.
+ Skipped rows carry their reason the same way (`import_skipped_rows`; API `skipped_rows`): same email or phone as an earlier row, already
+ on the list, or an **exact repeat** (same name, email and phone, which only matters for rows with neither contact). A blank line is ignored silently
+- **Guest import: the file is checked before anything is written** (`GuestImportFile::inspect()`, run from `StoreGuestImportRequest::after()`, so web
+ and API share it). Refused up front: an empty or 0-byte file, a heading row with nobody under it, no `name` column (the error names the headings
+ it found), more than `events.guest_import.max_rows` (20,000) rows, a file that is not CSV/xlsx/xls by content, an unreadable one, and an xlsx
+ whose contents unzip past `max_unzipped_mb` (64; zip-bomb guard, summed from the zip directory without extracting). Headings are slugged
+ (`Email Address` is not `email`, `EMAIL` is). Only the **first sheet** is read and **formulas are stored as typed**, never calculated. CSV
+ encoding is guessed (UTF-8 with or without BOM, Windows-1252 fallback) and the delimiter inferred. Every read passes an explicit reader type:
+ the package cannot detect `.txt`
+- **Up to `sync_max_rows` (500) rows import in the request; more is queued.** `GuestImporter::start()` stores the file under
+ `storage/app/private/guest-imports/{event}`, creates a `guest_imports` row (`GuestImport`: queued → processing → completed | failed, counts,
+ `problems`, `skipped_rows`, `failure_message`) and dispatches `ImportEventGuests`. One import per event at a time (`BUSY_MESSAGE`, checked under the
+ event lock; an import untouched for `GuestImport::STALE_AFTER_MINUTES` (30) no longer blocks and reads as failed). The job reads
+ `read_chunk_rows` (5000) at a time (`ChunkedEventGuestsImport`; each read re-parses the file, so small read chunks are quadratic) and writes
+ `chunk_rows` (200) per transaction under the event lock, with one multi-row insert per batch; a unique collision the checks missed rolls that
+ batch back and retries it row by row, skipping only the colliding row. The package's own per-chunk transaction is switched off for the job
+ (`excel.transactions.handler = null`) so the lock is held per batch, not per read chunk. Progress is saved after every batch; a failure keeps
+ what was added and says how far it got. The file is deleted when the job finishes either way
+- **The result is shown once.** `GET events/{event}/guests/imports/{id}` is the status page (no-JS refresh link, `js/guest-import-status.js`
+ polls `.../progress` and reloads when finished); the guest list shows a running import, or the summary of a finished one until it has been seen
+ (`seen_at`). API: a queued import returns **202** with `import_id` and `status_url` (`GET /api/v1/host/events/{event}/guests/imports/{id}`);
+ a small one returns 200 with the existing body. The job has `tries = 1` and a 30-minute timeout, longer than the database queue's
+ `retry_after` (90 s): a second pickup of a still-running import is ignored in `failed()` rather than marking it failed, but raise
+ `DB_QUEUE_RETRY_AFTER` above the longest import if a worker runs more than one process. Tests: `GuestImportEdgeCasesTest`
 - **Exports are safe to open in Excel** (`App\Support\SpreadsheetCell`, plan `plans/guest-adding-gaps.md`, Phases 1 and 2 built): every CSV row from the guest, ticket-buyer
  and contribution exports goes through `SpreadsheetCell::row()`, which prefixes `'` to a cell starting `=`, `+`, `-`, `@`, tab, CR or newline (a guest types their own name and message,
  so `=HYPERLINK(...)` would otherwise run on the host's machine). A phone ("+44 7700 900123") or plain negative number holds only digits and `. ( ) -`, cannot call anything, and is left

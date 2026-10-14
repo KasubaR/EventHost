@@ -110,4 +110,26 @@ return [
         'hours' => env('SUPPORT_HOURS', '08:00–20:00 CAT'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Guest list import
+    |--------------------------------------------------------------------------
+    |
+    | A file with up to `sync_max_rows` guests is imported while the host waits. A bigger one is stored
+    | and imported by the ImportEventGuests job, `chunk_rows` at a time, each batch its own short
+    | transaction under the event lock. The reader parses the whole file again for every slice it hands
+    | over, so it reads `read_chunk_rows` at a time: smaller slices cost time quadratically, bigger ones
+    | cost worker memory. `max_rows` is refused outright. `max_unzipped_mb` caps what an .xlsx (a zip)
+    | may expand to before it is parsed.
+    |
+    */
+
+    'guest_import' => [
+        'sync_max_rows' => (int) env('GUEST_IMPORT_SYNC_MAX_ROWS', 500),
+        'max_rows' => (int) env('GUEST_IMPORT_MAX_ROWS', 20000),
+        'chunk_rows' => (int) env('GUEST_IMPORT_CHUNK_ROWS', 200),
+        'read_chunk_rows' => (int) env('GUEST_IMPORT_READ_CHUNK_ROWS', 5000),
+        'max_unzipped_mb' => (int) env('GUEST_IMPORT_MAX_UNZIPPED_MB', 64),
+    ],
+
 ];

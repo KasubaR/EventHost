@@ -44,6 +44,26 @@
 
     <x-rsvp-closed-banner :event="$event" />
 
+    @if ($latestImport && ! $latestImport->isFinished())
+        <div class="evt-admin-flash">
+            @if ($latestImport->isStale())
+                The import of <bdi>{{ $latestImport->original_name }}</bdi> stopped responding.
+            @else
+                Importing guests from <bdi>{{ $latestImport->original_name }}</bdi>: {{ number_format($latestImport->processed_rows) }} of {{ number_format($latestImport->total_rows) }} rows checked so far.
+            @endif
+            <a href="{{ route('events.guests.import.show', ['event' => $event, 'guestImport' => $latestImport]) }}">View the import</a>
+        </div>
+    @elseif ($unseenImport)
+        <div class="evt-admin-flash">
+            @if ($unseenImport->status === \App\Models\GuestImport::STATUS_FAILED)
+                {{ $unseenImport->failure_message }}
+            @else
+                Import of <bdi>{{ $unseenImport->original_name }}</bdi> finished.
+            @endif
+            @include('events.guests.partials.import-summary', ['summary' => $unseenImport->summary()])
+        </div>
+    @endif
+
     @if (session('email_typo'))
         @php $typo = session('email_typo'); @endphp
         <div class="evt-admin-flash">
@@ -124,21 +144,15 @@
         <div class="evt-admin-flash">Couldn't send the WhatsApp invitation. Try again in a moment.</div>
     @elseif (session('status') === 'guests-imported')
         <div class="evt-admin-flash">
-            Import finished. Added {{ session('import_created', 0) }}, skipped {{ session('import_skipped', 0) }}.
-            @if (session('import_capped', 0) > 0)
-                {{ session('import_capped') }} more {{ Str::plural('guest', session('import_capped')) }} weren't added. This event is at its plan's guest limit.
-            @endif
-            @if (session('import_invalid', 0) > 0)
-                {{ session('import_invalid') }} {{ Str::plural('row', session('import_invalid')) }} couldn't be imported. Fix {{ session('import_invalid') === 1 ? 'it' : 'them' }} in the file and import again:
-                <ul class="evt-import-problems">
-                    @foreach (session('import_problems', []) as $problem)
-                        <li>Row {{ $problem['row'] }}: {{ $problem['message'] }}</li>
-                    @endforeach
-                    @if (session('import_invalid') > count(session('import_problems', [])))
-                        <li>And {{ session('import_invalid') - count(session('import_problems', [])) }} more.</li>
-                    @endif
-                </ul>
-            @endif
+            Import finished.
+            @include('events.guests.partials.import-summary', ['summary' => [
+                'created' => (int) session('import_created', 0),
+                'skipped' => (int) session('import_skipped', 0),
+                'capped' => (int) session('import_capped', 0),
+                'invalid' => (int) session('import_invalid', 0),
+                'problems' => session('import_problems', []),
+                'skipped_rows' => session('import_skipped_rows', []),
+            ]])
         </div>
     @elseif (session('status') === 'guests-bulk-group')
         <div class="evt-admin-flash">

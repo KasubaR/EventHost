@@ -12,6 +12,7 @@ use App\Http\Requests\UpdateGuestRequest;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Models\GuestEdit;
+use App\Models\GuestImport;
 use App\Models\NotificationLog;
 use App\Services\CommunicationService;
 use App\Services\GuestCreator;
@@ -95,7 +96,12 @@ class GuestController extends Controller
 
         $whatsappSendEnabled = (bool) config('communications.whatsapp.enabled', false);
 
-        return view('events.guests.index', compact('event', 'guests', 'filter', 'groups', 'tables', 'stats', 'whatsappSendEnabled'));
+        // A background import shows here while it runs, and its result once, the first time the list is opened after it finished.
+        $latestImport = GuestImport::query()->where('event_id', $event->id)->latest('id')->first();
+        $unseenImport = $latestImport?->isFinished() && $latestImport->seen_at === null ? $latestImport : null;
+        $unseenImport?->forceFill(['seen_at' => now()])->save();
+
+        return view('events.guests.index', compact('event', 'guests', 'filter', 'groups', 'tables', 'stats', 'whatsappSendEnabled', 'latestImport', 'unseenImport'));
     }
 
     public function export(Request $request, Event $event): StreamedResponse

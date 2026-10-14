@@ -19,11 +19,17 @@
     </x-slot>
 
     <div class="evt-stack">
+        @if ($runningImport)
+            <div class="evt-admin-flash">
+                Guests from <bdi>{{ $runningImport->original_name }}</bdi> are still being imported. Wait for that import to finish before uploading another file.
+                <a href="{{ route('events.guests.import.show', ['event' => $event, 'guestImport' => $runningImport]) }}">View the import</a>
+            </div>
+        @endif
         <div class="evt-section">
             <div class="evt-section-head">
                 <h2>Upload spreadsheet</h2>
-                <p>Required column: <strong>name</strong>. Optional: email, phone, group (creates groups automatically),
-                    table (must match an existing table's name exactly; mismatched values are left unassigned rather than creating a new table).</p>
+                <p>The first row holds the column headings. Required column: <strong>name</strong>. Optional: email, phone, group (creates groups automatically),
+                    table (must match an existing table's name exactly; mismatched values are left unassigned rather than creating a new table), plus_one (yes or no).</p>
             </div>
             <div class="evt-section-body profile-card-like">
                 <form method="post" action="{{ route('events.guests.import.store', $event) }}" enctype="multipart/form-data" class="profile-form-stack">
@@ -32,11 +38,12 @@
                         <label for="guest_import_file" class="profile-label">CSV or Excel file</label>
                         <input id="guest_import_file" type="file" name="file" class="profile-input {{ $errors->has('file') ? 'profile-input--error' : '' }}" accept=".csv,.txt,.xlsx,.xls" required>
                         @error('file')
-                            <p class="profile-error">{{ $message }}</p>
+                            <p class="profile-field-error">{{ $message }}</p>
                         @enderror
                     </div>
-                    <p class="evt-muted">Duplicates are skipped when the same email exists for this event, or when another guest shares the same phone number.</p>
+                    <p class="evt-muted">Duplicates are skipped when the same email exists for this event, when another guest shares the same phone number, or when a row repeats an earlier one exactly.</p>
                     <p class="evt-muted">Each row is checked like the Add guest form: a name up to 191 characters, a valid email, and one phone number per guest (for example 0971234567, or +44 7700 900123 outside Zambia). Rows that fail are listed after the import so you can fix them, and the rest are still added.</p>
+                    <p class="evt-muted">Up to 5 MB and {{ number_format($maxRows) }} guests per file. Only the first sheet of an Excel workbook is read. A file with more than {{ number_format($syncMaxRows) }} guests is imported in the background: you can follow its progress, and the guest list shows the result when it is done.</p>
                     <div class="profile-actions">
                         <button type="submit" class="btn-primary">Import guests</button>
                     </div>
