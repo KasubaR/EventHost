@@ -14,6 +14,7 @@ use App\Models\Event;
 use App\Models\Guest;
 use App\Services\CommunicationService;
 use App\Services\GuestCreator;
+use App\Services\GuestUpdater;
 use App\Services\HostRsvpOverrideService;
 use App\Services\QrCodeService;
 use App\Support\GuestPhone;
@@ -26,6 +27,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -184,36 +186,44 @@ class GuestController extends Controller
         return response()->json(new GuestResource($guest, $event), 201);
     }
 
-    public function update(UpdateGuestApiRequest $request, Event $event, Guest $guest): JsonResponse
+    public function update(UpdateGuestApiRequest $request, Event $event, Guest $guest, GuestUpdater $updater): JsonResponse
     {
         $guest->loadMissing('event.user');
         $this->authorize('update', $guest);
         abort_unless($guest->event_id === $event->id, 404);
         abort_unless($event->isInvitation(), 404);
 
-        $validated = $request->validated();
+        $result = $updater->update($event, $guest, $request->validated());
 
-        $data = [
-            'guest_group_id' => $validated['guest_group_id'] ?? null,
-            'event_table_id' => $validated['event_table_id'] ?? null,
-            'name' => $validated['name'],
-            'email' => $validated['email'] ?? null,
-            'phone' => $validated['phone'] ?? null,
-            'plus_one_allowed' => $validated['plus_one_allowed'] ?? false,
-        ];
+        // Additive flags beside the guest: what the edit did beyond saving it. `personal_rsvp_url` (already in the resource) is the new
+        // link when `link_replaced` is true.
+        return response()->json(array_merge(
+            (new GuestResource($result['guest']->fresh(), $event))->resolve(),
+            [
+                'invitation_reset' => $result['invitation_reset'],
+                'link_replaced' => $result['link_replaced'],
+                'old_link_still_works' => $result['old_link_still_works'],
+            ],
+        ))->setStatusCode(200);
+    }
 
-        if (($validated['mark_invitation_sent'] ?? false) === true) {
-            $data['invitation_sent'] = true;
-            $data['invitation_sent_at'] = now();
-        }
+    /**
+     * Replace one guest's personal link (twin of the web action). The old link and any pass QR already sent stop working.
+     */
+    public function regenerateLink(Event $event, Guest $guest): JsonResponse
+    {
+        $guest->loadMissing('event.user');
+        $this->authorize('update', $guest);
+        abort_unless($guest->event_id === $event->id, 404);
+        abort_unless($event->isInvitation(), 404);
 
-        if (($validated['regenerate_invitation_token'] ?? false) === true) {
-            $data['invitation_token'] = Str::random(48);
-        }
+        DB::transaction(function () use ($event, $guest): void {
+            Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
+            Guest::query()->whereKey($guest->id)->lockForUpdate()->firstOrFail()
+                ->forceFill(['invitation_token' => Str::random(48)])->save();
+        });
 
-        $guest->fill($data)->save();
-
-        return response()->json(new GuestResource($guest->fresh(), $event))->setStatusCode(200);
+        return response()->json(new GuestResource($guest->fresh(), $event));
     }
 
     public function destroy(Event $event, Guest $guest): JsonResponse

@@ -691,6 +691,16 @@ badly written details. Tests: `GuestAddEdgeCasesTest`, `GuestPhoneTest`.
 - **A landline cannot be WhatsApp'd.** `GuestPhone::isZambianLandline()` (subscriber number starting 2); `whatsAppDigits()` returns null for it (so `wa.me` links and the bulk "prepare
  WhatsApp share" skip it and report `bulk_skipped`), and `ZambianPhone::isValid()` / `toE164()` now accept only mobile numbers (7x and 9x; it used to accept any nine digits, which could send
  a landline to Twilio). The guest list tags the number "(landline: no WhatsApp)". A landline is still a valid saved phone
+- **Editing a guest: what a contact change resets** (`App\Services\GuestUpdater`, plan `plans/guest-editing-gaps.md`, Phases 1 and 2 built). The web edit and the API edit both save through it, under the
+ event's row lock then the guest's. Reminder state, the "invitation sent" flag and the unsubscribe belong to the address or number a message went to, so a **different email** (neither side empty,
+ case and padding ignored) clears `rsvp_reminders_sent` and `email_reminders_stopped_at` and releases the idempotency keys of the guest's `email` log rows; a **different number**
+ (`GuestPhone::key()` differs) clears `whatsapp_event_reminders_sent` and releases the `whatsapp`/`sms` keys. Releasing sets the key to null and `meta.superseded = contact_change`: the row stays as the
+ audit record, but a `sent` row holding a key would otherwise block the next send. Either change also marks the invitation **not sent** (`guest_contact_reset` flash; API `invitation_reset`) unless
+ the host ticks "Keep it marked as sent" (`keep_invitation_sent`); "Mark invitation as sent now" in the same save wins. Adding a contact where there was none, or clearing one, resets nothing
+- **The old address keeps the link until it is replaced.** The personal token is also the check-in QR (`Guest::checkInQrUrl()`), so replacing it stops the link **and** any pass PDF/image already
+ sent or printed; that is why it is never automatic. The edit page pre-ticks "Generate a new personal RSVP link" (JS only) when the email changes on a guest who has answered or been sent an invitation, and
+ the warning says what stops working. An email change saved without it flashes `old_link_still_works` with a "Replace link now" button (`POST events/{event}/guests/{guest}/regenerate-link`, owner only; API
+ `POST .../regenerate-link`, `link_replaced` / `old_link_still_works` on the update response). The new link is flashed as `guest_link_replaced`
 - **Still not covered:** CJK, Thai, Indic and emoji names on a printed pass (they print as `?`), shaped Arabic/Hebrew, internationalised email addresses
  are refused by `email:rfc`; event names and other tables still allow 255 characters against a 191 column
 

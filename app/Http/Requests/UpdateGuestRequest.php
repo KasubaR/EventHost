@@ -44,6 +44,7 @@ class UpdateGuestRequest extends FormRequest
             'regenerate_invitation_token' => $this->boolean('regenerate_invitation_token'),
             'mark_invitation_sent' => $this->boolean('mark_invitation_sent'),
             'allow_shared_phone' => $this->boolean('allow_shared_phone'),
+            'keep_invitation_sent' => $this->boolean('keep_invitation_sent'),
         ]);
     }
 
@@ -98,6 +99,7 @@ class UpdateGuestRequest extends FormRequest
             'regenerate_invitation_token' => ['sometimes', 'boolean'],
             'mark_invitation_sent' => ['sometimes', 'boolean'],
             'allow_shared_phone' => ['sometimes', 'boolean'],
+            'keep_invitation_sent' => ['sometimes', 'boolean'],
         ];
     }
 }

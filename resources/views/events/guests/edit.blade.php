@@ -65,7 +65,7 @@
                     </div>
                     <div class="profile-field">
                         <label for="guest_email" class="profile-label">Email <span class="profile-optional">optional</span></label>
-                        <input id="guest_email" type="email" name="email" class="profile-input {{ $errors->has('email') ? 'profile-input--error' : '' }}" value="{{ old('email', request()->query('email', $guest->email)) }}" maxlength="191" autocomplete="email">
+                        <input id="guest_email" type="email" name="email" data-original="{{ $guest->email }}" data-has-history="{{ ($guest->invitation_sent || $guest->rsvp) ? '1' : '0' }}" class="profile-input {{ $errors->has('email') ? 'profile-input--error' : '' }}" value="{{ old('email', request()->query('email', $guest->email)) }}" maxlength="191" autocomplete="email">
                         @error('email')
                             <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                         @enderror
@@ -124,10 +124,11 @@
                     <div class="profile-field">
                         <input type="hidden" name="regenerate_invitation_token" value="0">
                         <label class="profile-label evt-check-label">
-                            <input type="checkbox" name="regenerate_invitation_token" value="1" class="profile-input evt-check-input" @checked(old('regenerate_invitation_token'))>
+                            <input id="regenerate_invitation_token" type="checkbox" name="regenerate_invitation_token" value="1" class="profile-input evt-check-input" @checked(old('regenerate_invitation_token'))>
                             <span>Generate a new personal RSVP link (invalidates the old link)</span>
                         </label>
-                        <p class="evt-muted">The old link stops working at once. Send the guest the new one, or they will see "We couldn't find this invitation".</p>
+                        <p class="evt-muted">The old link stops working at once, and so does the QR on any pass PDF or image already sent or printed (the door scans the same code). Send the guest the new link, or they will see "We couldn't find this invitation".</p>
+                        <p id="regenerate_hint" class="evt-muted" hidden>You changed the email. Replace the link if the old address was wrong or belongs to someone else: it can still open this guest's link and pass.</p>
                         @error('regenerate_invitation_token')
                             <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                         @enderror
@@ -146,6 +147,14 @@
                         @error('mark_invitation_sent')
                             <span class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</span>
                         @enderror
+                    </div>
+                    <div class="profile-field">
+                        <input type="hidden" name="keep_invitation_sent" value="0">
+                        <label class="profile-label evt-check-label">
+                            <input type="checkbox" name="keep_invitation_sent" value="1" class="profile-input evt-check-input" @checked(old('keep_invitation_sent'))>
+                            <span>Keep it marked as sent if I change their email or phone</span>
+                        </label>
+                        <p class="evt-muted">Otherwise a new email or phone marks the invitation as not sent, because the new contact has not received it.</p>
                     </div>
                     <div class="profile-form-actions">
                         <button type="submit" class="btn-primary">Save changes</button>
@@ -226,4 +235,25 @@
             </div>
         </div>
     </div>
+    <script>
+        // A changed email on a guest who has answered or been sent an invitation pre-ticks "new link": the old address could still open
+        // theirs. Plain progressive enhancement; the host can untick it, and the server decides nothing from this.
+        (function () {
+            var email = document.getElementById('guest_email');
+            var box = document.getElementById('regenerate_invitation_token');
+            var hint = document.getElementById('regenerate_hint');
+            if (!email || !box || !hint || email.getAttribute('data-has-history') !== '1') { return; }
+            function sync() {
+                var was = (email.getAttribute('data-original') || '').toLowerCase().replace(/^\s+|\s+$/g, '');
+                var now = (email.value || '').toLowerCase().replace(/^\s+|\s+$/g, '');
+                var changed = was !== '' && now !== was;
+                hint.hidden = !changed;
+                if (changed && !box.checked && !box.getAttribute('data-touched')) { box.checked = true; }
+            }
+            box.addEventListener('click', function () { box.setAttribute('data-touched', '1'); });
+            email.addEventListener('input', sync);
+            email.addEventListener('change', sync);
+            sync();
+        })();
+    </script>
 </x-app-layout>

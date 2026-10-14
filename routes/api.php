@@ -283,6 +283,7 @@ Route::prefix('v1/host')->middleware(['auth:sanctum', 'sanctum.active'])->group(
             Route::get('/{guest}', [GuestController::class, 'show'])->name('show');
             Route::patch('/{guest}', [GuestController::class, 'update'])->name('update');
             Route::delete('/{guest}', [GuestController::class, 'destroy'])->name('destroy');
+            Route::post('/{guest}/regenerate-link', [GuestController::class, 'regenerateLink'])->name('regenerate-link');
             Route::patch('/{guest}/invitation-sent', [GuestController::class, 'markInvitationSent'])->name('mark-sent');
             Route::patch('/{guest}/rsvp', [GuestController::class, 'setRsvp'])->name('rsvp.set');
             Route::get('/{guest}/qr.png', [GuestController::class, 'qr'])->name('qr');

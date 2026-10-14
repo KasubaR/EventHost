@@ -51,6 +51,24 @@
             <a href="{{ $typo['url'] }}">Use that address</a>. Emails to a wrong address never arrive.
         </div>
     @endif
+    @if (session('guest_contact_reset'))
+        <div class="evt-admin-flash">Marked not sent: <bdi>{{ session('guest_contact_reset') }}</bdi>'s new email or phone has not received an invitation yet. Send it again, or tick "Keep it marked as sent" when you edit a guest you have already told.</div>
+    @endif
+    @if (session('old_link_still_works'))
+        @php $olw = session('old_link_still_works'); @endphp
+        <div class="evt-admin-flash">
+            <bdi>{{ $olw['guest'] }}</bdi>'s old email address can still open their link and pass. If it was wrong or belongs to someone else, replace the link.
+            Any pass PDF or image already sent, and any printed QR, stops working.
+            <form method="POST" action="{{ $olw['url'] }}" style="display:inline" onsubmit="return confirm('Replace this guest\'s link? The old link and any pass already sent stop working.');">
+                @csrf
+                <button type="submit" class="evt-btn-outline evt-btn-tiny">Replace link now</button>
+            </form>
+        </div>
+    @endif
+    @if (session('guest_link_replaced'))
+        @php $glr = session('guest_link_replaced'); @endphp
+        <div class="evt-admin-flash">New link for <bdi>{{ $glr['guest'] }}</bdi>. Send it to them; the old one no longer works: <span class="evt-word-break" dir="ltr">{{ $glr['link'] }}</span></div>
+    @endif
     @if (session('status') === 'guest-created')
         <div class="evt-admin-flash">{{ $isRegistrations ? 'Registration added.' : 'Guest added.' }}</div>
         @if (session('guest_unreachable'))

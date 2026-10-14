@@ -13,6 +13,7 @@ use App\Models\Event;
 use App\Models\Guest;
 use App\Services\CommunicationService;
 use App\Services\GuestCreator;
+use App\Services\GuestUpdater;
 use App\Services\HostRsvpOverrideService;
 use App\Services\QrCodeService;
 use App\Services\RsvpApprovalService;
@@ -27,6 +28,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -251,43 +253,57 @@ class GuestController extends Controller
         return view('events.guests.edit', compact('event', 'guest', 'groups', 'tables', 'changes', 'sharedWith'));
     }
 
-    public function update(UpdateGuestRequest $request, Event $event, Guest $guest): RedirectResponse
+    public function update(UpdateGuestRequest $request, Event $event, Guest $guest, GuestUpdater $updater): RedirectResponse
     {
         $guest->loadMissing('event');
         abort_unless($event->isInvitation(), 404);
-        $validated = $request->validated();
 
-        $data = [
-            'guest_group_id' => $validated['guest_group_id'] ?? null,
-            'event_table_id' => $validated['event_table_id'] ?? null,
-            'name' => $validated['name'],
-            'email' => $validated['email'] ?? null,
-            'phone' => $validated['phone'] ?? null,
-            'plus_one_allowed' => $validated['plus_one_allowed'] ?? false,
-        ];
-
-        if (($validated['mark_invitation_sent'] ?? false) === true) {
-            $data['invitation_sent'] = true;
-            $data['invitation_sent_at'] = now();
-        }
-
-        if (($validated['regenerate_invitation_token'] ?? false) === true) {
-            $data['invitation_token'] = Str::random(48);
-        }
-
-        $plusOneSwitchedOff = $guest->plus_one_allowed && ! $data['plus_one_allowed'];
-
-        $guest->fill($data)->save();
+        $result = $updater->update($event, $guest, $request->validated());
+        $guest = $result['guest'];
 
         // Their confirmed plus-one stays; say so, since the checkbox suggests otherwise.
-        if ($plusOneSwitchedOff && $guest->rsvp?->heldSeats() >= 2) {
+        if ($result['plus_one_switched_off'] && $guest->rsvp?->heldSeats() >= 2) {
             session()->flash('plus_one_kept', $guest->name);
         }
 
         return redirect()
             ->route('events.guests.index', $event)
             ->with('status', 'guest-updated')
-            ->with('email_typo', self::emailTypoFlash($event, $guest));
+            ->with('email_typo', self::emailTypoFlash($event, $guest))
+            // The new contact has had no invitation: the list no longer says "Sent".
+            ->with('guest_contact_reset', $result['invitation_reset'] ? $guest->name : null)
+            // The old address can still open the link; offer to replace it (a QR already delivered stops working, so never automatic).
+            ->with('old_link_still_works', $result['old_link_still_works'] ? [
+                'guest' => $guest->name,
+                'url' => route('events.guests.regenerate-link', ['event' => $event, 'guest' => $guest]),
+            ] : null)
+            ->with('guest_link_replaced', $result['link_replaced'] ? [
+                'guest' => $guest->name,
+                'link' => (string) $guest->personalRsvpUrl(),
+            ] : null);
+    }
+
+    /**
+     * Replace one guest's personal link now (the one-click follow-up to an email change). The old link, and the QR on any pass already
+     * sent or printed, stop working at once; the new link is shown for the host to send. plans/guest-editing-gaps.md Phase 2.
+     */
+    public function regenerateLink(Event $event, Guest $guest): RedirectResponse
+    {
+        $guest->loadMissing('event');
+        $this->authorize('update', $guest);
+        abort_unless($event->isInvitation(), 404);
+
+        DB::transaction(function () use ($event, $guest): void {
+            Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
+            Guest::query()->whereKey($guest->id)->lockForUpdate()->firstOrFail()
+                ->forceFill(['invitation_token' => Str::random(48)])->save();
+        });
+
+        $guest->refresh();
+
+        return redirect()
+            ->route('events.guests.index', $event)
+            ->with('guest_link_replaced', ['guest' => $guest->name, 'link' => (string) $guest->personalRsvpUrl()]);
     }
 
     public function markInvitationSent(Event $event, Guest $guest): RedirectResponse
