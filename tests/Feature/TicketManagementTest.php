@@ -305,7 +305,10 @@ class TicketManagementTest extends TestCase
         $response->assertOk();
         $response->assertHeader('content-type', 'text/csv; charset=UTF-8');
 
-        $rows = array_map('str_getcsv', array_filter(explode("\n", trim($response->streamedContent()))));
+        $csv = $response->streamedContent();
+        $this->assertStringStartsWith("\xEF\xBB\xBF", $csv); // UTF-8 BOM so Excel reads non-Latin names
+
+        $rows = array_map('str_getcsv', array_filter(explode("\n", trim(substr($csv, 3)))));
 
         $this->assertSame(
             ['Ticket Number', 'Name', 'Email', 'Phone', 'Ticket Type', 'Order Reference', 'Status', 'Checked In', 'Checked In By'],
