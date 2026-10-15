@@ -100,6 +100,10 @@ class GuestEdit extends Model
             $lines[] = 'Invitation marked not sent (new contact)';
         }
 
+        if (($changes['link_closed'] ?? false) === true) {
+            $lines[] = 'Group link closed (they signed up through it)';
+        }
+
         if (($changes['over_pool'] ?? false) === true) {
             $lines[] = 'Moved past the group\'s seat pool';
         }

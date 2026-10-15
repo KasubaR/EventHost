@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\RsvpApprovalStatus;
 use App\Http\Requests\StoreGuestGroupRequest;
 use App\Http\Requests\UpdateGuestGroupRequest;
 use App\Models\Event;
 use App\Models\GuestGroup;
+use App\Services\GuestGroupDeleter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
@@ -15,7 +17,13 @@ class GuestGroupController extends Controller
     {
         $this->authorizeInvitation($event);
 
-        $groups = $event->guestGroups()->withCount('guests')->get();
+        $groups = $event->guestGroups()
+            ->withCount([
+                'guests',
+                'guests as joiners_count' => fn ($q) => $q->whereNotNull('group_link_joined_at'),
+                'guests as pending_count' => fn ($q) => $q->whereHas('rsvp', fn ($r) => $r->where('host_approval_status', RsvpApprovalStatus::Pending)),
+            ])
+            ->get();
 
         return view('events.guest-groups.index', compact('event', 'groups'));
     }
@@ -47,18 +55,19 @@ class GuestGroupController extends Controller
             ->with('status', 'guest-group-updated');
     }
 
-    public function destroy(Event $event, GuestGroup $guest_group): RedirectResponse
+    public function destroy(Event $event, GuestGroup $guest_group, GuestGroupDeleter $deleter): RedirectResponse
     {
         abort_unless($guest_group->event_id === $event->id, 404);
         abort_unless($event->isInvitation(), 404);
 
         $this->authorize('delete', $guest_group);
 
-        $guest_group->delete();
+        $removed = $deleter->delete($event, $guest_group, request()->user()?->id);
 
         return redirect()
             ->route('events.guest-groups.index', $event)
-            ->with('status', 'guest-group-deleted');
+            ->with('status', 'guest-group-deleted')
+            ->with('group_removed', $removed + ['kind' => 'deleted']);
     }
 
     private function authorizeInvitation(Event $event): void

@@ -619,7 +619,7 @@ say, a 100-person committee that gets 10 seats. Plan: `plans/group-rsvp-links.md
   pooled group, including guests the host added by hand
 - Sign-ups through the link are **always held for host approval**, whatever `events.require_rsvp_approval` says — keyed on
   `guests.group_link_joined_at`, so a guest the host added to the group by hand is *not* forced into review, but a
-  link joiner who declines then re-accepts still is. The link form only offers "request seats" (no decline), so a bot
+  link joiner who declines then re-accepts still is, **and stays held after the group is deleted or its link turned off** (the flag alone decides; `Event::hasRsvpApprovalQueue()` stays true while any joiner exists). The link form only offers "request seats" (no decline), so a bot
   cannot mint unlimited zero-seat guests
 - Each person becomes an ordinary `Guest` (own token, pass, QR) via `GroupRsvpService::request()`. An email or phone already
   on the list is refused, never moved between groups. Plus-ones follow the event's `allow_plus_one` (max 2 seats)
@@ -629,6 +629,10 @@ say, a 100-person committee that gets 10 seats. Plan: `plans/group-rsvp-links.md
 - Host controls are `GuestGroupLinkController` (`PUT` seat count / create, `PATCH` close-reopen, `DELETE` turn off) on the
   groups page; the API adds `seat_limit` / `rsvp_link_closed` to the group endpoints and the `seat_limit`, `seats_taken`,
   `seats_pending`, `rsvp_link`, `rsvp_link_closed` fields to `GuestGroupResource` (all null when there is no link)
+- **Deleting a group or turning its link off goes through `App\Services\GuestGroupDeleter`** (web and API; never `$group->delete()` / `disableLink()` directly). It locks the
+  event row, counts members / joiners / pending requests, writes one `guest_edits` row per affected guest in chunks (a delete records `group: [name, null]`; a link-off only the
+  joiners, as `link_closed`), then acts. `GuestGroup::removalWarning()` / `linkOffWarning()` are the confirm texts, and the page flashes the counts (`group_removed`).
+  Plan: `plans/guest-groups-gaps.md` (Phases 0 and 1 built; the closed-link page, name cleaning, scale limits and the 403/404 fix are still planned)
 
 **Host contact number.** `events.host_contact_phone` is entered on the create/edit form and **required for web invitation
 events** (`StoreEventRequest` / `UpdateEventRequest`), optional for the Android API so its contract stays additive.

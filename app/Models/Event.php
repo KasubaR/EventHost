@@ -1324,6 +1324,8 @@ class Event extends Model
     {
         return $this->require_rsvp_approval
             || $this->guestGroups()->whereNotNull('rsvp_token')->exists()
+            // Joiners stay under review after their group or link is gone.
+            || $this->guests()->whereNotNull('group_link_joined_at')->exists()
             || $this->guests()->whereNotNull('previously_removed_at')->exists();
     }
 

@@ -46,6 +46,54 @@ class GuestGroup extends Model
     /**
      * Has a shared RSVP link with a seat pool (plans/group-rsvp-links.md).
      */
+    /** @return array{members: int, joiners: int, pending: int} counts for the confirm text; uses preloaded withCount values when present */
+    public function affectedCounts(): array
+    {
+        return [
+            'members' => (int) ($this->guests_count ?? $this->guests()->count()),
+            'joiners' => (int) ($this->joiners_count ?? $this->guests()->whereNotNull('group_link_joined_at')->count()),
+            'pending' => (int) ($this->pending_count ?? $this->guests()
+                ->whereHas('rsvp', fn ($q) => $q->where('host_approval_status', RsvpApprovalStatus::Pending))->count()),
+        ];
+    }
+
+    /** What deleting this group does, for the confirm dialog (plans/guest-groups-gaps.md Phase 1). */
+    public function removalWarning(): string
+    {
+        ['members' => $members, 'joiners' => $joiners, 'pending' => $pending] = $this->affectedCounts();
+
+        $text = 'Remove '.$this->name.'?';
+        $text .= $members === 0
+            ? ' It has no guests.'
+            : ' '.$members.' '.Str::plural('guest', $members).' stay on the list without a group.';
+        $text .= $this->reviewSentence($joiners, $pending);
+        if ($this->rsvp_token !== null) {
+            $text .= ' Its shared RSVP link stops working.';
+        }
+
+        return $text;
+    }
+
+    /** What turning the shared link off does, for the confirm dialog. */
+    public function linkOffWarning(): string
+    {
+        ['members' => $members, 'joiners' => $joiners, 'pending' => $pending] = $this->affectedCounts();
+
+        return 'Turn off this link? The address stops working; '.$members.' '.Str::plural('member', $members).' and their RSVPs stay.'
+            .$this->reviewSentence($joiners, $pending);
+    }
+
+    private function reviewSentence(int $joiners, int $pending): string
+    {
+        if ($joiners === 0) {
+            return '';
+        }
+
+        $text = ' '.$joiners.' signed up through the link and stay under your review';
+
+        return $text.($pending > 0 ? ', and '.$pending.' '.($pending === 1 ? 'is' : 'are').' waiting for you.' : '.');
+    }
+
     public function hasSeatPool(): bool
     {
         return $this->seat_limit !== null && $this->rsvp_token !== null;

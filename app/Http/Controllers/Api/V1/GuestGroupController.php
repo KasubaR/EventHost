@@ -8,6 +8,7 @@ use App\Http\Requests\Api\V1\UpdateGuestGroupApiRequest;
 use App\Http\Resources\Api\V1\GuestGroupResource;
 use App\Models\Event;
 use App\Models\GuestGroup;
+use App\Services\GuestGroupDeleter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
@@ -56,7 +57,7 @@ class GuestGroupController extends Controller
 
         if (array_key_exists('seat_limit', $validated)) {
             $validated['seat_limit'] === null
-                ? $guest_group->disableLink()
+                ? app(GuestGroupDeleter::class)->turnOffLink($event, $guest_group, $request->user()?->id)
                 : $guest_group->enableLink((int) $validated['seat_limit']);
         }
 
@@ -69,7 +70,7 @@ class GuestGroupController extends Controller
         return response()->json(new GuestGroupResource($guest_group->fresh()))->setStatusCode(200);
     }
 
-    public function destroy(Event $event, GuestGroup $guest_group): JsonResponse
+    public function destroy(Event $event, GuestGroup $guest_group, GuestGroupDeleter $deleter): JsonResponse
     {
         $guest_group->loadMissing('event');
         abort_unless($guest_group->event_id === $event->id, 404);
@@ -77,7 +78,7 @@ class GuestGroupController extends Controller
 
         $this->authorize('delete', $guest_group);
 
-        $guest_group->delete();
+        $deleter->delete($event, $guest_group, request()->user()?->id);
 
         return response()->json(null, 204);
     }

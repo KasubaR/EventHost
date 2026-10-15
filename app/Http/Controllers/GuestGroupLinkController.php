@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Models\GuestGroup;
+use App\Services\GuestGroupDeleter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -38,13 +39,13 @@ class GuestGroupLinkController extends Controller
         return $this->back($event, $guest_group->rsvp_link_closed_at === null ? 'guest-group-link-reopened' : 'guest-group-link-closed');
     }
 
-    public function destroy(Event $event, GuestGroup $guest_group): RedirectResponse
+    public function destroy(Event $event, GuestGroup $guest_group, GuestGroupDeleter $deleter): RedirectResponse
     {
         $this->guard($event, $guest_group);
 
-        $guest_group->disableLink();
+        $removed = $deleter->turnOffLink($event, $guest_group, request()->user()?->id);
 
-        return $this->back($event, 'guest-group-link-removed');
+        return $this->back($event, 'guest-group-link-removed')->with('group_removed', $removed + ['kind' => 'link_off']);
     }
 
     private function guard(Event $event, GuestGroup $group): void

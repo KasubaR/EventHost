@@ -233,7 +233,9 @@ class RsvpSubmissionService
             // Guests who signed up through the group link are always held for the host, whatever
             // the event-wide toggle says. A guest the host added by hand is not.
             $requiresApproval = $locked->require_rsvp_approval
-                || ($hasSeatPool && $guest->group_link_joined_at !== null)
+                // The flag alone: deleting the group or turning its link off must not release anyone from review
+                // (plans/guest-groups-gaps.md Phase 1).
+                || $guest->group_link_joined_at !== null
                 // Someone the host removed who signed themselves up again (plans/guest-deletion-gaps.md Phase 6).
                 || $guest->previously_removed_at !== null;
 

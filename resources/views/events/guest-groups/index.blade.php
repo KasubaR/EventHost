@@ -24,6 +24,7 @@
         <div class="evt-admin-flash">Group updated.</div>
     @elseif (session('status') === 'guest-group-deleted')
         <div class="evt-admin-flash">Group removed.</div>
+        @include('events.guest-groups.partials.removed-note')
     @elseif (session('status') === 'guest-group-link-saved')
         <div class="evt-admin-flash">Group link saved.</div>
     @elseif (session('status') === 'guest-group-link-closed')
@@ -32,6 +33,7 @@
         <div class="evt-admin-flash">Group link reopened.</div>
     @elseif (session('status') === 'guest-group-link-removed')
         <div class="evt-admin-flash">Group link turned off. Its old address no longer works.</div>
+        @include('events.guest-groups.partials.removed-note')
     @endif
 
     <div class="evt-stack">
@@ -86,7 +88,7 @@
                                     </td>
                                     <td>{{ $group->guests_count }}</td>
                                     <td class="evt-table-actions">
-                                        <form method="post" action="{{ route('events.guest-groups.destroy', ['event' => $event, 'guest_group' => $group->id]) }}" class="evt-inline-form evt-confirm-form" data-evt-confirm="Remove this group? Guests stay on the list; only the label is removed.">
+                                        <form method="post" action="{{ route('events.guest-groups.destroy', ['event' => $event, 'guest_group' => $group->id]) }}" class="evt-inline-form evt-confirm-form" data-evt-confirm="{{ $group->removalWarning() }}">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="evt-btn-danger-outline evt-btn-tiny">Remove</button>
@@ -130,7 +132,7 @@
                                                         @method('PATCH')
                                                         <button type="submit" class="evt-btn-outline evt-btn-tiny">{{ $group->rsvp_link_closed_at ? 'Reopen link' : 'Close link' }}</button>
                                                     </form>
-                                                    <form method="post" action="{{ route('events.guest-groups.link.destroy', ['event' => $event, 'guest_group' => $group->id]) }}" class="evt-inline-form evt-confirm-form" data-evt-confirm="Turn off this link? The address stops working; members and their RSVPs stay.">
+                                                    <form method="post" action="{{ route('events.guest-groups.link.destroy', ['event' => $event, 'guest_group' => $group->id]) }}" class="evt-inline-form evt-confirm-form" data-evt-confirm="{{ $group->linkOffWarning() }}">
                                                         @csrf
                                                         @method('DELETE')
                                                         <button type="submit" class="evt-btn-danger-outline evt-btn-tiny">Turn off link</button>
