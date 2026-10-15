@@ -1402,6 +1402,20 @@
     pointer-events: none;
 }
 
+/* A disabled item that explains itself keeps hover so its title (the reason) can show. */
+.evt-more-item--disabled[title] {
+    pointer-events: auto;
+    cursor: not-allowed;
+}
+
+.evt-more-item-meta {
+    margin-left: auto;
+    padding-left: 8px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--gray-mid, #8e8ea8);
+}
+
 /* Portalled overlay — guests-admin.js moves the menu to body so .evt-section's
    overflow: hidden cannot clip it. */
 body > .evt-more-menu {
@@ -1541,6 +1555,88 @@ body > .evt-more-menu .evt-more-item--danger:hover {
     font-weight: 600;
     background: rgba(39, 174, 96, 0.1);
     color: var(--green, #27ae60);
+}
+
+.evt-admin-flash--error {
+    background: rgba(224, 14, 79, 0.08);
+    color: var(--pink, #e00e4f);
+}
+
+/* WhatsApp share queue (events/guests/whatsapp-queue.blade.php) */
+.evt-waq-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.evt-waq-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-soft, rgba(26, 42, 74, 0.08));
+}
+
+.evt-waq-row:last-child {
+    border-bottom: 0;
+}
+
+.evt-waq-row.is-opened .evt-waq-name {
+    color: var(--gray-mid, #8e8ea8);
+}
+
+.evt-waq-who {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+}
+
+.evt-waq-name {
+    font-weight: 600;
+    color: var(--navy, #1a2a4a);
+    overflow-wrap: anywhere;
+}
+
+.evt-waq-phone,
+.evt-waq-reason {
+    font-size: 13px;
+    color: var(--gray-mid, #8e8ea8);
+}
+
+.evt-waq-phone {
+    white-space: nowrap;
+}
+
+.evt-waq-open {
+    white-space: nowrap;
+}
+
+.evt-waq-open .fa-whatsapp {
+    color: #25d366;
+}
+
+.evt-waq-refresh {
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--gray-mid, #8e8ea8);
+}
+
+.evt-waq-refresh a {
+    color: var(--blue, #2f45c5);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.evt-waq-refresh a:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 560px) {
+    .evt-waq-row {
+        flex-wrap: wrap;
+    }
 }
 
 /* Step indicator */
@@ -1801,6 +1897,16 @@ body > .evt-more-menu .evt-more-item--danger:hover {
     display: block;
     font-size: 11px;
     margin-top: 4px;
+}
+
+.evt-guest-wa-failed {
+    display: block;
+    min-width: 160px;
+    max-width: 200px;
+    margin-top: 4px;
+    font-size: 11px;
+    line-height: 1.35;
+    color: var(--pink, #e00e4f);
 }
 
 .evt-copy-row {

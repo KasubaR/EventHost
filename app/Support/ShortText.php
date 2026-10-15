@@ -27,7 +27,32 @@ final class ShortText
         }
 
         // The ellipsis counts toward the limit, so the result is never longer than $max.
-        return rtrim(mb_substr($oneLine, 0, $max - 1)).'…';
+        return rtrim(self::cutWhole($oneLine, $max - 1)).'…';
+    }
+
+    /**
+     * The longest start of $text that is at most $max code points and ends between two whole characters as a reader sees them
+     * (PCRE's \X grapheme cluster), so a flag, a skin-toned emoji or a family emoji is kept or dropped whole, never split into
+     * the stray pieces mb_substr would leave.
+     */
+    private static function cutWhole(string $text, int $max): string
+    {
+        if ($max <= 0 || preg_match_all('/\X/u', $text, $matches) === false) {
+            return mb_substr($text, 0, max(0, $max));
+        }
+
+        $kept = '';
+        $length = 0;
+
+        foreach ($matches[0] as $grapheme) {
+            $length += mb_strlen($grapheme);
+            if ($length > $max) {
+                break;
+            }
+            $kept .= $grapheme;
+        }
+
+        return $kept;
     }
 
     public static function subject(?string $text): string

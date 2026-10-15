@@ -5,8 +5,12 @@ namespace App\Support;
 final class WhatsAppInviteLink
 {
     /**
-     * Build a WhatsApp chat deeplink. wa.me needs the country code, so a local Zambian number is dialled as +260 and
+     * Build a WhatsApp chat deeplink. It needs the country code, so a local Zambian number is dialled as +260 and
      * anything that is not one dialable number (too short, two numbers run together) returns null.
+     *
+     * api.whatsapp.com/send, not wa.me: wa.me answers by redirecting to this same address and, on the way, turns every
+     * 4-byte character (🎉, flags, family emoji) into U+FFFD, so an event name with an emoji arrived as "�". Both open the
+     * app on a phone that has it.
      */
     public static function url(?string $phone, string $message): ?string
     {
@@ -16,7 +20,7 @@ final class WhatsAppInviteLink
             return null;
         }
 
-        return 'https://wa.me/'.$digits.'?text='.rawurlencode($message);
+        return 'https://api.whatsapp.com/send?phone='.$digits.'&text='.rawurlencode($message);
     }
 
     public static function invitationMessage(string $guestName, string $eventName, string $rsvpUrl): string

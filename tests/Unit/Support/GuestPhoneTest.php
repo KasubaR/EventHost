@@ -85,8 +85,8 @@ class GuestPhoneTest extends TestCase
 
     public function test_whatsapp_links_dial_the_country_code_or_nothing(): void
     {
-        $this->assertStringStartsWith('https://wa.me/260971234567?', (string) WhatsAppInviteLink::url('0971234567', 'Hi'));
-        $this->assertStringStartsWith('https://wa.me/447700900123?', (string) WhatsAppInviteLink::url('+44 7700 900123', 'Hi'));
+        $this->assertStringStartsWith('https://api.whatsapp.com/send?phone=260971234567&', (string) WhatsAppInviteLink::url('0971234567', 'Hi'));
+        $this->assertStringStartsWith('https://api.whatsapp.com/send?phone=447700900123&', (string) WhatsAppInviteLink::url('+44 7700 900123', 'Hi'));
         $this->assertNull(WhatsAppInviteLink::url('0971111111 / 0972222222', 'Hi'));
         $this->assertNull(WhatsAppInviteLink::url('097123456', 'Hi'));
         $this->assertNull(WhatsAppInviteLink::url(null, 'Hi'));

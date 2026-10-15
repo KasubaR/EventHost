@@ -276,6 +276,25 @@ Guest matching:
 1. Prefer `OriginalRepliedMessageSid` → outbound invite `NotificationLog.provider_message_id`
 2. Else unique recent invite by phone (E.164). Ambiguous matches are ignored (no write).
 
+### 5a. Delivery status callback
+
+Nothing to set in the Twilio Console: every outbound send passes `statusCallback`, so Twilio posts
+each status change (`queued`, `sent`, `delivered`, `read`, `failed`, `undelivered`) to
+`POST /webhooks/twilio/whatsapp/status` (`TwilioWhatsAppStatusController`, CSRF-exempt,
+signature-verified with `TWILIO_AUTH_TOKEN` like the inbound webhook). The callback URL is only
+passed while `TWILIO_AUTH_TOKEN` is set, since an unsigned callback would be refused anyway.
+
+- It defaults to `APP_URL` + the route. Set `TWILIO_STATUS_CALLBACK_URL` only when Twilio must
+  reach the app on a different public host than `APP_URL` (the signature is computed on that exact URL)
+- `WhatsAppDeliveryStatusService` stores `delivery_status` and `error_code` on the matching
+  `notification_logs` row (by `provider_message_id`). A status never moves a row backwards
+- A `failed`/`undelivered` invitation un-marks the guest's `invitation_sent`, but only if that send
+  is what marked them (`invitation_sent_at` equals the log's `sent_at`). The guest list shows
+  "WhatsApp not delivered: {reason}" (63003 "This number isn't on WhatsApp", 63024 "Message blocked
+  by recipient", otherwise "Couldn't deliver"), and the 24-hour "already sent" guard ignores it
+- The body also carries the guest's number; only `MessageSid`, `MessageStatus` and `ErrorCode` are
+  read, and nothing is logged
+
 ---
 
 ## 5b. Event reminders (Accepted guests)
@@ -339,7 +358,12 @@ TWILIO_EVENT_REMINDER_CONTENT_SID=HXxxxxxxxx
 TWILIO_RSVP_CONFIRMATION_CONTENT_SID=HXxxxxxxxx
 ```
 
-Optional: `COMM_WHATSAPP_HOURLY_CAP_PER_EVENT=100` (app default applies if unset).
+Optional: `COMM_WHATSAPP_HOURLY_CAP_PER_EVENT=100` (app default applies if unset; counted per
+message type, so 100 invitations and 100 confirmations an hour), and
+`TWILIO_STATUS_CALLBACK_URL` (see §5a; blank uses `APP_URL`).
+
+After deploying the delivery-status change run `php artisan migrate` (adds `delivery_status`,
+`error_code` and an index on `provider_message_id` to `notification_logs`).
 
 ```bash
 php artisan config:clear
@@ -402,8 +426,11 @@ Base / none hosts can still use the manual `wa.me` link.
 | Symptom | Likely cause |
 |---|---|
 | No “Send WhatsApp Invitation” in UI | Flag off or Twilio outbound keys incomplete |
-| Flash invalid phone | Phone not Zambian E.164, or no `invitation_token` |
-| Flash rate limited | Hit hourly cap for that event |
+| Flash invalid phone | Not a Zambian mobile (international numbers and landlines use the free Share on WhatsApp link instead), or no `invitation_token` |
+| Flash rate limited | Hit the hourly cap for that event. Each message type has its own count (invitations, RSVP confirmations, reminders), so invitations never hold back confirmations |
+| Flash "already sent … Send again" | The guest was sent an invitation in the last 24 hours. "Send again" posts `resend=1`; a send still in flight from the last 2 minutes blocks even that (double click). API: 409 `already_sent`, body field `resend` |
+| Guest row "WhatsApp not delivered: …" | The status callback reported `failed`/`undelivered` (63003 not on WhatsApp, 63024 blocked, else generic). The guest is un-marked sent if that send was what marked them, and the host can send again at once |
+| Status callback 403 | Same as the inbound webhook: `TWILIO_AUTH_TOKEN` missing or the URL Twilio signed is not the one the app sees (set `TWILIO_STATUS_CALLBACK_URL` behind a proxy) |
 | 403 on send | Host is not Pro+ |
 | Webhook 403 | Bad/missing `TWILIO_AUTH_TOKEN` or signature URL mismatch (must be exact public URL) |
 | Tap does nothing in DB | Wrong button IDs (must be `rsvp_*`), or ambiguous phone without `OriginalRepliedMessageSid` |
@@ -417,8 +444,7 @@ Base / none hosts can still use the manual `wa.me` link.
 
 ## 10. What is intentionally not done yet
 
-- Bulk “Send WhatsApp Invitations” (queued jobs)
-- Delivery / read status webhooks from Twilio
+- Bulk “Send WhatsApp Invitations” (queued jobs). The bulk action is the free share queue instead
 - Email versions of post-RSVP event-day reminders
 - Host UI to manually fire event reminders
 

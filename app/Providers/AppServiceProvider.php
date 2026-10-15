@@ -56,7 +56,12 @@ class AppServiceProvider extends ServiceProvider
 
             $client = new TwilioClient($twilio['api_key_sid'], $twilio['api_key_secret'], $twilio['account_sid']);
 
-            return new TwilioWhatsAppService($client, $twilio['whatsapp_from']);
+            // The callback is signature-checked with the auth token, so without one every callback would be refused.
+            $statusCallback = filled($twilio['auth_token'] ?? null)
+                ? ((string) ($twilio['status_callback_url'] ?? '') ?: route('webhooks.twilio.whatsapp.status'))
+                : null;
+
+            return new TwilioWhatsAppService($client, $twilio['whatsapp_from'], $statusCallback);
         });
     }
 

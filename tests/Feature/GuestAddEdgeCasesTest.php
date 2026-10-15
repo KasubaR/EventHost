@@ -99,10 +99,10 @@ class GuestAddEdgeCasesTest extends TestCase
             ->assertSessionHas('bulk_skipped', 1);
     }
 
-    public function test_prepare_whatsapp_share_only_marks_guests_with_a_usable_phone(): void
+    public function test_the_whatsapp_share_queue_lists_only_guests_with_a_usable_phone(): void
     {
         $owner = User::factory()->create();
-        $event = Event::factory()->for($owner)->create();
+        $event = Event::factory()->for($owner)->published()->create();
         $withPhone = Guest::factory()->for($event)->create(['phone' => '0971234567']);
         $noPhone = Guest::factory()->for($event)->create(['phone' => null]);
         $legacyBadPhone = Guest::factory()->for($event)->create(['phone' => '12345']);
@@ -112,12 +112,17 @@ class GuestAddEdgeCasesTest extends TestCase
                 'action' => 'prepare_whatsapp_share',
                 'guest_ids' => [$withPhone->id, $noPhone->id, $legacyBadPhone->id],
             ])
-            ->assertSessionHas('bulk_count', 1)
-            ->assertSessionHas('bulk_skipped', 2);
+            ->assertRedirect(route('events.guests.whatsapp-queue', $event));
 
-        $this->assertTrue($withPhone->fresh()->invitation_sent);
-        $this->assertFalse($noPhone->fresh()->invitation_sent);
-        $this->assertFalse($legacyBadPhone->fresh()->invitation_sent);
+        $this->actingAs($owner)->get(route('events.guests.whatsapp-queue', $event))
+            ->assertOk()
+            ->assertSeeText('0 of 1 chat opened')
+            ->assertSee(route('events.guests.whatsapp-share', [$event, $withPhone]), false)
+            ->assertDontSee(route('events.guests.whatsapp-share', [$event, $noPhone]), false)
+            ->assertSee('No phone number.')
+            ->assertSee('This number cannot be opened in WhatsApp.');
+
+        $this->assertFalse($withPhone->fresh()->invitation_sent, 'preparing the queue sends nothing');
     }
 
     public function test_the_api_bulk_action_reports_skipped_guests(): void

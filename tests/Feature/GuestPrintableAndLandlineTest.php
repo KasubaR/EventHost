@@ -196,7 +196,7 @@ class GuestPrintableAndLandlineTest extends TestCase
     public function test_the_share_action_skips_a_landline_guest_and_the_list_says_why(): void
     {
         $owner = User::factory()->pro()->create();
-        $event = Event::factory()->for($owner)->create();
+        $event = Event::factory()->for($owner)->published()->create();
         $mobile = Guest::factory()->for($event)->create(['phone' => '0971234567']);
         $landline = Guest::factory()->for($event)->create(['phone' => '0211123456']);
 
@@ -205,10 +205,16 @@ class GuestPrintableAndLandlineTest extends TestCase
                 'action' => 'prepare_whatsapp_share',
                 'guest_ids' => [$mobile->id, $landline->id],
             ])
-            ->assertSessionHas('bulk_count', 1)
-            ->assertSessionHas('bulk_skipped', 1);
+            ->assertRedirect(route('events.guests.whatsapp-queue', $event));
 
-        $this->assertTrue($mobile->fresh()->invitation_sent);
+        $this->actingAs($owner)->get(route('events.guests.whatsapp-queue', $event))
+            ->assertOk()
+            ->assertSee(route('events.guests.whatsapp-share', [$event, $mobile]), false)
+            ->assertDontSee(route('events.guests.whatsapp-share', [$event, $landline]), false)
+            ->assertSee('Landline: WhatsApp cannot reach it.');
+
+        $this->get(route('events.guests.whatsapp-share', [$event, $landline]))
+            ->assertRedirect(route('events.guests.index', $event));
         $this->assertFalse($landline->fresh()->invitation_sent);
 
         $html = $this->actingAs($owner)->get(route('events.guests.index', $event))->assertOk()->getContent();

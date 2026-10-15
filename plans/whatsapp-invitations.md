@@ -4,7 +4,8 @@ Status: **built** (single-guest outbound send with cover image header + inbound 
 RSVP + Accepted entry-pass QR confirmation + post-RSVP event-day reminders + web/API RSVP
 confirmation). The web/API RSVP confirmation's Content Template is submitted for Meta approval
 but not yet approved as of 2026-09-28 — code is live behind it (see that section below). Bulk
-Twilio send and delivery-status webhooks are still future work.
+Twilio send is still future work; the delivery-status webhook is built
+([plans/whatsapp-sharing-gaps.md](whatsapp-sharing-gaps.md)).
 
 Ops checklist: [docs/twilio.md](../docs/twilio.md).
 
@@ -146,5 +147,11 @@ entries for this path. Content SID submitted 2026-09-28
 
 ## Still future
 
-- Bulk Twilio send
-- Delivery/read status webhook
+- Bulk Twilio send (deliberately not built: the bulk action is the free share queue, see
+  [plans/whatsapp-sharing-gaps.md](whatsapp-sharing-gaps.md))
+- A per-plan message allowance, and planning around Meta's messaging tier (250 business-initiated
+  conversations a day before business verification)
+
+Built since: the delivery status callback (`POST /webhooks/twilio/whatsapp/status`), the 24-hour
+"already sent" guard and the per-type hourly cap — all in
+[plans/whatsapp-sharing-gaps.md](whatsapp-sharing-gaps.md) Phase 2.

@@ -19,7 +19,24 @@ class TwilioWhatsAppService implements WhatsAppService
     public function __construct(
         private readonly Client $client,
         private readonly string $from,
+        private readonly ?string $statusCallbackUrl = null,
     ) {}
+
+    /**
+     * Every send asks Twilio to report delivery to TwilioWhatsAppStatusController, which is how a number that is not on
+     * WhatsApp (63003) reaches the guest list instead of reading as "sent".
+     *
+     * @param  array<string, mixed>  $params
+     * @return array<string, mixed>
+     */
+    private function withStatusCallback(array $params): array
+    {
+        if (is_string($this->statusCallbackUrl) && $this->statusCallbackUrl !== '') {
+            $params['statusCallback'] = $this->statusCallbackUrl;
+        }
+
+        return $params;
+    }
 
     /**
      * @param  array<string, string>  $templateVariables
@@ -30,11 +47,11 @@ class TwilioWhatsAppService implements WhatsAppService
         try {
             $message = $this->client->messages->create(
                 'whatsapp:'.$toE164Phone,
-                [
+                $this->withStatusCallback([
                     'from' => $this->from,
                     'contentSid' => $contentSid,
                     'contentVariables' => json_encode($templateVariables),
-                ]
+                ])
             );
         } catch (TwilioException $e) {
             // Covers auth failures, bad content SID, network errors, etc. — anything Twilio's
@@ -57,10 +74,10 @@ class TwilioWhatsAppService implements WhatsAppService
         try {
             $message = $this->client->messages->create(
                 'whatsapp:'.$toE164Phone,
-                [
+                $this->withStatusCallback([
                     'from' => $this->from,
                     'body' => $body,
-                ]
+                ])
             );
         } catch (TwilioException $e) {
             return [
@@ -89,7 +106,7 @@ class TwilioWhatsAppService implements WhatsAppService
 
             $message = $this->client->messages->create(
                 'whatsapp:'.$toE164Phone,
-                $params
+                $this->withStatusCallback($params)
             );
         } catch (TwilioException $e) {
             return [
@@ -104,8 +121,8 @@ class TwilioWhatsAppService implements WhatsAppService
 
     /**
      * create()'s response reflects the send's *initial* queueing state (queued/accepted/sending),
-     * not final delivery — that only arrives later via a Twilio status-callback webhook
-     * (plans/whatsapp-invitations.md, phase 2, not built yet). 'failed'/'undelivered' can
+     * not final delivery — that arrives later at TwilioWhatsAppStatusController, which records it as
+     * NotificationLog::delivery_status (plans/whatsapp-sharing-gaps.md item 7). 'failed'/'undelivered' can
      * already be known synchronously in some rejection cases; anything else means Twilio
      * accepted the message for delivery.
      *

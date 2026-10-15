@@ -95,6 +95,9 @@ return [
         // Approved whatsapp/card Content Template SID for the web/API RSVP confirmation (image
         // header = guest's own pass; see plans/whatsapp-invitations.md "Web/API RSVP confirmation").
         'rsvp_confirmation_content_sid' => env('TWILIO_RSVP_CONFIRMATION_CONTENT_SID'),
+        // Where Twilio reports delivery (delivered / failed with 63003 ...). Blank means this app's own
+        // POST /webhooks/twilio/whatsapp/status on APP_URL; set it only when Twilio must reach the app on another host.
+        'status_callback_url' => env('TWILIO_STATUS_CALLBACK_URL'),
     ],
 
 ];

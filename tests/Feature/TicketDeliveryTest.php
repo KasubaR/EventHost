@@ -119,7 +119,7 @@ class TicketDeliveryTest extends TestCase
 
         $this->get(route('tickets.show', $ticket->public_token))
             ->assertOk()
-            ->assertSee('https://wa.me/', escape: false)
+            ->assertSee('https://api.whatsapp.com/send?phone=260961234567', escape: false)
             ->assertSee('Send to WhatsApp');
     }
 

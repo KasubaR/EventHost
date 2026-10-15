@@ -717,9 +717,9 @@ badly written details. Tests: `GuestAddEdgeCasesTest`, `GuestPhoneTest`.
  and the printed guest list wraps names and groups the same way. The web pages are untouched. `mayNotPrint()` also flags **Hebrew and Arabic**: they are drawn but not shaped or reordered
  (GD and DomPDF have no bidirectional engine). The guest list marks such a name "(may not print correctly)". **No new font was bundled**: DejaVu already covers more than the plan assumed,
  and Chinese/Japanese/Korean needs a ~10 MB font and an Arabic shaper is not available in either renderer — add one only if hosts ask. Ticket PDFs (buyer names) are not covered
-- **A landline cannot be WhatsApp'd.** `GuestPhone::isZambianLandline()` (subscriber number starting 2); `whatsAppDigits()` returns null for it (so `wa.me` links and the bulk "prepare
- WhatsApp share" skip it and report `bulk_skipped`), and `ZambianPhone::isValid()` / `toE164()` now accept only mobile numbers (7x and 9x; it used to accept any nine digits, which could send
- a landline to Twilio). The guest list tags the number "(landline: no WhatsApp)". A landline is still a valid saved phone
+- **A landline cannot be WhatsApp'd.** `GuestPhone::isZambianLandline()` (subscriber number starting 2); `whatsAppDigits()` returns null for it (so `wa.me` links and the WhatsApp share
+ queue list it as unreachable), and `ZambianPhone::isValid()` / `toE164()` read through `whatsAppDigits()` and accept only Zambian mobiles (7x and 9x). The guest list tags the number
+ "(landline: no WhatsApp)". A landline is still a valid saved phone
 - **Editing a guest: what a contact change resets** (`App\Services\GuestUpdater`, plan `plans/guest-editing-gaps.md`, Phases 1 and 2 built). The web edit and the API edit both save through it, under the
  event's row lock then the guest's. Reminder state, the "invitation sent" flag and the unsubscribe belong to the address or number a message went to, so a **different email** (neither side empty,
  case and padding ignored) clears `rsvp_reminders_sent` and `email_reminders_stopped_at` and releases the idempotency keys of the guest's `email` log rows; a **different number**
@@ -830,6 +830,34 @@ A plus-one is `rsvps.attendee_count = 2`; an invitation RSVP is only ever 1 or 2
   (`phpunit.mysql.xml`); locally it is skipped
 - Not built: a waitlist for freed seats; "Remove plus-one" and a disallow bulk action on the API
 
+### WhatsApp: share link vs automated send
+
+Two separate paths with different cost and guarantees; keep them apart. Plan: `plans/whatsapp-sharing-gaps.md` (both phases built). Tests:
+`WhatsAppShareLinkTest`, `WhatsAppAutomatedSendTest`, `tests/Unit/ShortTextTest`.
+
+- **Share link (free, every plan, any dialable number).** The row item and the queue link to `GET events/{event}/guests/{guest}/whatsapp-share`
+ (`GuestWhatsAppShareController::open`), which marks the guest sent, logs `channel = whatsapp_link` and redirects to `wa.me`. Never link straight to
+ `wa.me` from the guest list, or opening stops being recorded. Disabled (tooltip) and refused when the event is unpublished or RSVP is closed, and per
+ guest with a reason (`WhatsAppShareService::guestProblem()`). "Copy invitation message" covers desktop, no WhatsApp, SMS. "Opened" is all the app
+ can know; whether the host pressed send is invisible
+- **Bulk = the share queue**, never a mass mark-sent: `prepare_whatsapp_share` stores the ids in the session and redirects to
+ `events/{event}/guests/whatsapp-queue` (one "Open WhatsApp" per guest, "N of M chats opened", unreachable guests with reasons). The API returns
+ `share_links` / `skipped` and marks nobody sent
+- **Automated send (Twilio, paid, Pro+, Zambian mobiles only).** `ZambianPhone` reads through `GuestPhone::whatsAppDigits()`, so both paths agree on how a
+ number is written; an international number gets "Use Share on WhatsApp instead". `sendWhatsAppInvitation($event, $guest, $resend)` refuses a repeat
+ inside 24 h (`already_sent`; web flash with "Send again" posting `resend=1`, API 409) and always refuses a send still pending from the last 2 minutes. The
+ checks and the pending row share the event row lock; the Twilio call runs after commit
+- **Delivery is tracked.** Every Twilio send passes `statusCallback` → `POST /webhooks/twilio/whatsapp/status` (signature-checked; only the SID, status and
+ error code are read, the body is never logged). `notification_logs.delivery_status` / `error_code`; a status never moves backwards. A failed invitation
+ un-marks the guest only if that send set the mark (`invitation_sent_at` equals the log's `sent_at`), shows "WhatsApp not delivered: {reason}", and does not
+ count as already sent. `status = sent` on a log still only means Twilio accepted it
+- **The hourly cap is per message type** (`whatsAppSentLastHour($event, $type)`), so invitations never rate-limit RSVP confirmations or reminders. A new
+ WhatsApp message type counts its own type
+- **Chat links are `api.whatsapp.com/send?phone=…&text=…`, never `wa.me`** (`WhatsAppInviteLink::url()`, the ticket landing share): wa.me
+ redirects to that address and turns every emoji outside the basic plane (🎉, flags) into "�" on the way
+- **Text going into a template** goes through `ShortText`, which cuts on whole grapheme clusters (PCRE `\X`), so emoji are never split
+- Not built: bulk Twilio send, a per-plan message allowance, Meta's messaging tier, automated sends to international numbers
+
 ### Guest Event Reminders
 
 Accepted guests are reminded 7 days before, 1 day before and on the day of a private (invitation-kind) event, by WhatsApp
@@ -903,7 +931,8 @@ When RSVP closes, who may still change an answer, and how the deadline reminders
   not sent into a closed form: `CommunicationService::sendWhatsAppInvitation()` returns `closed`, and the bulk
   `send_reminder_email` / `prepare_whatsapp_share` actions are refused (web error, API 422 `rsvp_closed`). Marking sent and update
   emails are unaffected. A save that reopens a closed RSVP flashes `rsvp_reopened` (a "remind them from the guest list" prompt,
-  deliberately **no automatic broadcast**, web only). The free per-guest wa.me share link is client-side and cannot be blocked
+  deliberately **no automatic broadcast**, web only). The free per-guest wa.me share link goes through a server route, so it is
+  disabled and refused too (see "WhatsApp: share link vs automated send")
 - **API.** `EventResource::rsvp_deadline` is now a real ISO instant with the venue offset (`+02:00`, it used to carry the typed
   value labelled `+00:00`), and `rsvp_closes_at` is new. Both are additive; no Android client is shipped
 - **Four ways RSVP closes, one gate.** `isRsvpOpen()` covers all of them: the deadline (or the event start with none), the **host closing by hand**

@@ -32,10 +32,19 @@ use App\Support\ShortText;
 use App\Support\WhatsAppEventReminderBuckets;
 use App\Support\ZambianPhone;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 
 class CommunicationService
 {
+    public const WHATSAPP_INVITATION_TYPE = 'guest_invitation_whatsapp';
+
+    /** A second automated invitation inside this window needs the host's "Send again". */
+    public const WHATSAPP_INVITATION_RESEND_HOURS = 24;
+
+    /** A send still pending this recently is a double click, and is refused even with "Send again". */
+    public const WHATSAPP_INVITATION_DOUBLE_SUBMIT_MINUTES = 2;
+
     public function __construct(
         private readonly SmsService $smsService,
         private readonly WhatsAppService $whatsAppService,
@@ -540,9 +549,13 @@ class CommunicationService
      * methods above) because this is a direct, user-triggered button click that needs an immediate
      * flash message, not a background/scheduled send GuestController never inspects the result of.
      *
-     * @return 'sent'|'disabled'|'invalid_phone'|'rate_limited'|'failed'
+     * Each send is billed, so a second one inside WHATSAPP_INVITATION_RESEND_HOURS answers 'already_sent' unless $resend
+     * (the host pressed "Send again"). A send still in flight from the last WHATSAPP_INVITATION_DOUBLE_SUBMIT_MINUTES always
+     * blocks, resend or not: that is a double click. A send Twilio later reported undelivered does not count.
+     *
+     * @return 'sent'|'already_sent'|'disabled'|'unpublished'|'closed'|'invalid_phone'|'rate_limited'|'failed'
      */
-    public function sendWhatsAppInvitation(Event $event, Guest $guest): string
+    public function sendWhatsAppInvitation(Event $event, Guest $guest, bool $resend = false): string
     {
         if (! (bool) config('communications.whatsapp.enabled', false)) {
             return 'disabled';
@@ -564,25 +577,39 @@ class CommunicationService
             return 'invalid_phone';
         }
 
-        // Event-scoped guard on top of the per-user 'guest-whatsapp-send' route throttle — each
-        // send costs real money, so one event can't blow through Twilio's/Meta's own rate limits
-        // via many individual clicks even though no single click is throttled.
-        $cap = max(1, (int) config('communications.whatsapp.hourly_cap_per_event', 100));
-        $sentLastHour = NotificationLog::query()
-            ->where('event_id', $event->id)
-            ->where('channel', 'whatsapp')
-            ->where('status', NotificationLog::STATUS_SENT)
-            ->where('created_at', '>=', now()->subHour())
-            ->count();
-        if ($sentLastHour >= $cap) {
-            return 'rate_limited';
-        }
+        // The checks and the pending row share the event's row lock, so two clicks (or two tabs) cannot both pass the
+        // "already sent" check before either has written its row. The Twilio call itself runs after the commit.
+        $log = DB::transaction(function () use ($event, $guest, $resend): NotificationLog|string {
+            Event::query()->whereKey($event->id)->lockForUpdate()->first();
 
-        // No idempotency key is passed here, so this never actually returns null — same posture
-        // as sendSmsUpdate() above; kept for parity with startLog()'s shared signature.
-        $log = $this->startLog($event, $guest, 'whatsapp', 'guest_invitation_whatsapp', null, null);
-        if ($log === null) {
-            return 'failed';
+            $previous = $this->lastWhatsAppInvitation($event, $guest);
+            if ($previous !== null) {
+                $inFlight = $previous->status === NotificationLog::STATUS_PENDING
+                    && $previous->created_at->gt(now()->subMinutes(self::WHATSAPP_INVITATION_DOUBLE_SUBMIT_MINUTES));
+
+                if ($inFlight || ! $resend) {
+                    return 'already_sent';
+                }
+            }
+
+            // Event-scoped guard on top of the per-user 'guest-whatsapp-send' route throttle: each send costs real money.
+            // Only invitations count, so a burst of invitations never holds back the confirmation a replying guest is owed.
+            if ($this->whatsAppSentLastHour($event, self::WHATSAPP_INVITATION_TYPE, includePending: true) >= $this->whatsAppHourlyCap()) {
+                return 'rate_limited';
+            }
+
+            return NotificationLog::query()->create([
+                'event_id' => $event->id,
+                'guest_id' => $guest->id,
+                'channel' => 'whatsapp',
+                'type' => self::WHATSAPP_INVITATION_TYPE,
+                'status' => NotificationLog::STATUS_PENDING,
+                'meta' => $resend ? ['resend' => true] : null,
+            ]);
+        });
+
+        if (is_string($log)) {
+            return $log;
         }
 
         try {
@@ -605,17 +632,19 @@ class CommunicationService
                 ]
             );
             $status = $result['status'] === 'sent' ? NotificationLog::STATUS_SENT : NotificationLog::STATUS_FAILED;
+            // One instant for both rows: the status callback un-marks the guest only when this send is what marked them.
+            $sentAt = now()->startOfSecond();
             $log->forceFill([
                 'status' => $status,
                 'provider_message_id' => $result['provider_message_id'],
                 'response' => $result['response'],
-                'sent_at' => $status === NotificationLog::STATUS_SENT ? now() : null,
+                'sent_at' => $status === NotificationLog::STATUS_SENT ? $sentAt : null,
             ])->save();
 
             if ($status === NotificationLog::STATUS_SENT) {
                 $guest->forceFill([
                     'invitation_sent' => true,
-                    'invitation_sent_at' => now(),
+                    'invitation_sent_at' => $sentAt,
                 ])->save();
 
                 return 'sent';
@@ -669,14 +698,7 @@ class CommunicationService
             return 'disabled';
         }
 
-        $cap = max(1, (int) config('communications.whatsapp.hourly_cap_per_event', 100));
-        $sentLastHour = NotificationLog::query()
-            ->where('event_id', $event->id)
-            ->where('channel', 'whatsapp')
-            ->where('status', NotificationLog::STATUS_SENT)
-            ->where('created_at', '>=', now()->subHour())
-            ->count();
-        if ($sentLastHour >= $cap) {
+        if ($this->whatsAppSentLastHour($event, 'guest_rsvp_confirmation_whatsapp') >= $this->whatsAppHourlyCap()) {
             return 'rate_limited';
         }
 
@@ -765,14 +787,7 @@ class CommunicationService
             return 'disabled';
         }
 
-        $cap = max(1, (int) config('communications.whatsapp.hourly_cap_per_event', 100));
-        $sentLastHour = NotificationLog::query()
-            ->where('event_id', $event->id)
-            ->where('channel', 'whatsapp')
-            ->where('status', NotificationLog::STATUS_SENT)
-            ->where('created_at', '>=', now()->subHour())
-            ->count();
-        if ($sentLastHour >= $cap) {
+        if ($this->whatsAppSentLastHour($event, 'guest_event_reminder_whatsapp') >= $this->whatsAppHourlyCap()) {
             return 'rate_limited';
         }
 
@@ -926,6 +941,44 @@ class CommunicationService
     /**
      * @param  array<string, mixed>|null  $meta
      */
+    /**
+     * The latest automated WhatsApp invitation to this guest that still counts as sent: sent or in flight within
+     * WHATSAPP_INVITATION_RESEND_HOURS, and not reported undelivered by Twilio afterwards.
+     */
+    public function lastWhatsAppInvitation(Event $event, Guest $guest): ?NotificationLog
+    {
+        return NotificationLog::query()
+            ->where('event_id', $event->id)
+            ->where('guest_id', $guest->id)
+            ->where('type', self::WHATSAPP_INVITATION_TYPE)
+            ->whereIn('status', [NotificationLog::STATUS_PENDING, NotificationLog::STATUS_SENT])
+            ->where(function ($query): void {
+                $query->whereNull('delivery_status')->orWhereNotIn('delivery_status', NotificationLog::UNDELIVERED_STATUSES);
+            })
+            ->where('created_at', '>=', now()->subHours(self::WHATSAPP_INVITATION_RESEND_HOURS))
+            ->latest('id')
+            ->first();
+    }
+
+    private function whatsAppHourlyCap(): int
+    {
+        return max(1, (int) config('communications.whatsapp.hourly_cap_per_event', 100));
+    }
+
+    /** One type's WhatsApp sends for this event in the last hour; each kind of message has its own allowance. */
+    private function whatsAppSentLastHour(Event $event, string $type, bool $includePending = false): int
+    {
+        return NotificationLog::query()
+            ->where('event_id', $event->id)
+            ->where('channel', 'whatsapp')
+            ->where('type', $type)
+            ->whereIn('status', $includePending
+                ? [NotificationLog::STATUS_SENT, NotificationLog::STATUS_PENDING]
+                : [NotificationLog::STATUS_SENT])
+            ->where('created_at', '>=', now()->subHour())
+            ->count();
+    }
+
     private function startLog(
         Event $event,
         ?Guest $guest,

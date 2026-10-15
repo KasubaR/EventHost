@@ -13,6 +13,7 @@ use App\Http\Resources\Api\V1\TableResource;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Models\GuestEdit;
+use App\Models\NotificationLog;
 use App\Services\CommunicationService;
 use App\Services\GuestCreator;
 use App\Services\GuestDeleter;
@@ -151,9 +152,10 @@ class GuestController extends Controller
 
     /**
      * Server-initiated WhatsApp invitation — JSON twin of the web action, returning
-     * the CommunicationService outcome instead of a flash key.
+     * the CommunicationService outcome instead of a flash key. An optional `resend` body field sends again inside the
+     * 24-hour window; without it a repeat answers 409 `already_sent` and nothing is billed.
      */
-    public function sendWhatsAppInvitation(Event $event, Guest $guest, CommunicationService $communicationService): JsonResponse
+    public function sendWhatsAppInvitation(Request $request, Event $event, Guest $guest, CommunicationService $communicationService): JsonResponse
     {
         $guest->loadMissing('event.user');
         $this->authorize('update', $guest);
@@ -164,9 +166,21 @@ class GuestController extends Controller
             return response()->json(['error' => 'premium_required', 'required_tier' => 'pro'], 403);
         }
 
-        return response()->json([
-            'outcome' => $communicationService->sendWhatsAppInvitation($event, $guest),
-        ]);
+        $outcome = $communicationService->sendWhatsAppInvitation($event, $guest, $request->boolean('resend'));
+
+        if ($outcome === 'already_sent') {
+            $previous = $communicationService->lastWhatsAppInvitation($event, $guest);
+
+            return response()->json([
+                'outcome' => $outcome,
+                'error' => 'already_sent',
+                'message' => 'This guest was already sent a WhatsApp invitation. Send again with resend=true.',
+                'sent_at' => ($previous?->sent_at ?? $previous?->created_at)?->toIso8601String(),
+                'in_flight' => $previous?->status === NotificationLog::STATUS_PENDING,
+            ], 409);
+        }
+
+        return response()->json(['outcome' => $outcome]);
     }
 
     public function store(StoreGuestApiRequest $request, Event $event, GuestCreator $guestCreator): JsonResponse

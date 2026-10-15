@@ -44,6 +44,32 @@
 
     <x-rsvp-closed-banner :event="$event" />
 
+    @foreach (['action', 'whatsapp_share'] as $errorKey)
+        @if ($errors->has($errorKey))
+            <div class="evt-admin-flash evt-admin-flash--error" role="alert">{{ $errors->first($errorKey) }}</div>
+        @endif
+    @endforeach
+
+    @if (is_array($waAgain = session('whatsapp_already_sent')))
+        @php
+            $waAgainAt = filled($waAgain['sent_at'] ?? null)
+                ? \Illuminate\Support\Carbon::parse($waAgain['sent_at'])->timezone(config('events.timezone'))
+                : null;
+        @endphp
+        <div class="evt-admin-flash">
+            @if ($waAgain['in_flight'] ?? false)
+                The WhatsApp invitation to <bdi>{{ $waAgain['name'] }}</bdi> is still sending. Nothing more was sent.
+            @else
+                <bdi>{{ $waAgain['name'] }}</bdi> was already sent a WhatsApp invitation{{ $waAgainAt ? ' on '.$waAgainAt->format('M j \a\t H:i') : '' }}. Nothing more was sent, and nothing was charged.
+                <form method="post" action="{{ route('events.guests.whatsapp-invite', ['event' => $event, 'guest' => $waAgain['guest_id']]) }}" class="evt-inline-form">
+                    @csrf
+                    <input type="hidden" name="resend" value="1">
+                    <button type="submit" class="evt-btn-outline evt-btn-tiny">Send again</button>
+                </form>
+            @endif
+        </div>
+    @endif
+
     @if ($latestImport && ! $latestImport->isFinished())
         <div class="evt-admin-flash">
             @if ($latestImport->isStale())
@@ -152,7 +178,7 @@
     @elseif (session('status') === 'guest-whatsapp-sent')
         <div class="evt-admin-flash">WhatsApp invitation sent.</div>
     @elseif (session('status') === 'guest-whatsapp-invalid-phone')
-        <div class="evt-admin-flash">Couldn't send. This guest needs a valid Zambian phone number.</div>
+        <div class="evt-admin-flash evt-admin-flash--error">Couldn't send. Automated WhatsApp needs a Zambian mobile number. For any other number, use Share on WhatsApp.</div>
     @elseif (session('status') === 'guest-whatsapp-rate-limited')
         <div class="evt-admin-flash">This event has hit its hourly WhatsApp sending limit. Try again shortly.</div>
     @elseif (session('status') === 'guest-whatsapp-disabled')
@@ -207,13 +233,6 @@
         </div>
     @elseif (session('status') === 'guests-bulk-plus-one')
         <div class="evt-admin-flash">{{ session('bulk_count', 0) }} {{ Str::plural('guest', session('bulk_count', 0)) }} can now bring a plus-one.</div>
-    @elseif (session('status') === 'guests-bulk-whatsapp')
-        <div class="evt-admin-flash">
-            {{ session('bulk_count', 0) }} {{ Str::plural('guest', session('bulk_count', 0)) }} prepared for WhatsApp sharing.
-            @if (session('bulk_skipped', 0) > 0)
-                {{ session('bulk_skipped') }} skipped because they have no phone number WhatsApp can open.
-            @endif
-        </div>
     @endif
 
     <div class="evt-stack">
@@ -350,7 +369,7 @@
                 @endif
                 <option value="send_reminder_email">Send reminder email{{ $canSendReminders ? '' : ' (Pro+)' }}</option>
                 <option value="send_update_email">Send event update email</option>
-                <option value="prepare_whatsapp_share">Prepare WhatsApp share</option>
+                <option value="prepare_whatsapp_share">Share on WhatsApp (one chat at a time)</option>
                 <option value="delete">Remove guests</option>
             </select>
 
@@ -411,12 +430,9 @@
                                 @php
                                     $rsvpRow = $guestRow->rsvp;
                                     $rsvpUrl = $guestRow->personalRsvpUrl();
-                                    $waUrl = $rsvpUrl && $guestRow->phone
-                                        ? \App\Support\WhatsAppInviteLink::url(
-                                            $guestRow->phone,
-                                            \App\Support\WhatsAppInviteLink::invitationMessage($guestRow->name, $event->name, $rsvpUrl)
-                                        )
-                                        : null;
+                                    $shareProblem = $shareBlockedReason ?? $whatsAppShare->guestProblem($guestRow);
+                                    $shareMessage = $whatsAppShare->message($event, $guestRow);
+                                    $sharedAt = $lastShared[$guestRow->id] ?? null;
                                 @endphp
                                 <tr>
                                     <td>
@@ -478,6 +494,9 @@
                                         @else
                                             <span class="evt-pill evt-pill--pending">Not marked</span>
                                         @endif
+                                        @if ($undeliveredLog = $undeliveredWhatsApp[$guestRow->id] ?? null)
+                                            <span class="evt-guest-wa-failed">WhatsApp not delivered: {{ $undeliveredLog->undeliveredReason() }}</span>
+                                        @endif
                                     </td>
                                     <td class="evt-table-actions">
                                         <div class="evt-more" data-evt-more>
@@ -490,15 +509,26 @@
                                                         <i class="fa-solid fa-link" aria-hidden="true"></i>
                                                         <span data-copy-label-text>Copy link</span>
                                                     </button>
-                                                    @if ($waUrl)
-                                                        <a href="{{ $waUrl }}" class="evt-more-item" role="menuitem" target="_blank" rel="noopener noreferrer">
+                                                    @if ($shareMessage)
+                                                        <button type="button" class="evt-more-item" role="menuitem" data-copy-text="{{ $shareMessage }}" data-copy-label="Copy invitation message">
+                                                            <i class="fa-regular fa-copy" aria-hidden="true"></i>
+                                                            <span data-copy-label-text>Copy invitation message</span>
+                                                        </button>
+                                                    @endif
+                                                    {{-- The free wa.me link, opened on the host's own phone. It goes through our route so opening it marks
+                                                         the invitation sent; the paid Twilio send is the separate item below. --}}
+                                                    @if ($shareProblem === null)
+                                                        <a href="{{ route('events.guests.whatsapp-share', ['event' => $event, 'guest' => $guestRow->id]) }}" class="evt-more-item" role="menuitem" target="_blank" rel="noopener noreferrer">
                                                             <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
-                                                            <span>WhatsApp</span>
+                                                            <span>{{ $sharedAt ? 'Share again on WhatsApp' : 'Share on WhatsApp' }}</span>
+                                                            @if ($sharedAt)
+                                                                <span class="evt-more-item-meta">opened {{ $sharedAt->timezone(config('app.timezone'))->format('M j') }}</span>
+                                                            @endif
                                                         </a>
                                                     @else
-                                                        <span class="evt-more-item evt-more-item--disabled" role="menuitem" aria-disabled="true" title="{{ $guestRow->phone ? 'This phone number cannot be opened in WhatsApp. Edit the guest to fix it.' : 'Add a phone number for WhatsApp sharing' }}">
+                                                        <span class="evt-more-item evt-more-item--disabled" role="menuitem" aria-disabled="true" title="{{ $shareProblem }}">
                                                             <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
-                                                            <span>WhatsApp</span>
+                                                            <span>Share on WhatsApp</span>
                                                         </span>
                                                     @endif
                                                     @if ($event->ownerHasPremiumEventTools())
@@ -522,7 +552,7 @@
                                                                     </button>
                                                                 </form>
                                                             @else
-                                                                <span class="evt-more-item evt-more-item--disabled" role="menuitem" aria-disabled="true" title="Add a valid Zambian phone number to send a WhatsApp invitation">
+                                                                <span class="evt-more-item evt-more-item--disabled" role="menuitem" aria-disabled="true" title="{{ \App\Support\ZambianPhone::isInternationalForShare($guestRow->phone) ? 'Automated WhatsApp is for Zambian mobile numbers. Use Share on WhatsApp instead.' : 'Add a valid Zambian mobile number to send a WhatsApp invitation' }}">
                                                                     <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
                                                                     <span>Send WhatsApp Invitation</span>
                                                                 </span>

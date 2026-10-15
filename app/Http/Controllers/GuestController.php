@@ -23,6 +23,8 @@ use App\Services\HostRsvpOverrideService;
 use App\Services\QrCodeService;
 use App\Services\RsvpApprovalService;
 use App\Services\RsvpSubmissionService;
+use App\Services\WhatsAppDeliveryStatusService;
+use App\Services\WhatsAppShareService;
 use App\Support\EmailTypo;
 use App\Support\GuestPhone;
 use App\Support\SpreadsheetCell;
@@ -98,6 +100,12 @@ class GuestController extends Controller
 
         $whatsappSendEnabled = (bool) config('communications.whatsapp.enabled', false);
 
+        $whatsAppShare = app(WhatsAppShareService::class);
+        $shareBlockedReason = $whatsAppShare->eventBlockedReason($event);
+        $pageGuestIds = $guests->getCollection()->pluck('id')->all();
+        $lastShared = $whatsAppShare->lastOpened($event, $pageGuestIds);
+        $undeliveredWhatsApp = app(WhatsAppDeliveryStatusService::class)->undeliveredInvitations($event, $pageGuestIds);
+
         // A background import shows here while it runs, and its result once, the first time the list is opened after it finished.
         $latestImport = GuestImport::query()->where('event_id', $event->id)->latest('id')->first();
         $unseenImport = $latestImport?->isFinished() && $latestImport->seen_at === null ? $latestImport : null;
@@ -106,7 +114,7 @@ class GuestController extends Controller
         // Who the host removed lately, with a way to tell them (plans/guest-deletion-gaps.md Phase 5).
         $removedGuests = $event->guestRemovals()->orderByDesc('removed_at')->orderByDesc('id')->limit(GuestRemoval::LIST_LIMIT)->get();
 
-        return view('events.guests.index', compact('event', 'guests', 'filter', 'groups', 'tables', 'stats', 'whatsappSendEnabled', 'latestImport', 'unseenImport', 'removedGuests'));
+        return view('events.guests.index', compact('event', 'guests', 'filter', 'groups', 'tables', 'stats', 'whatsappSendEnabled', 'latestImport', 'unseenImport', 'removedGuests', 'whatsAppShare', 'shareBlockedReason', 'lastShared', 'undeliveredWhatsApp'));
     }
 
     public function export(Request $request, Event $event): StreamedResponse
@@ -535,7 +543,7 @@ class GuestController extends Controller
      * (Event::ownerHasPremiumEventTools()), since each send has a real per-message cost unlike the
      * free wa.me link the "WhatsApp" menu item next to this one still offers regardless of tier.
      */
-    public function sendWhatsAppInvitation(Event $event, Guest $guest, CommunicationService $communicationService): RedirectResponse
+    public function sendWhatsAppInvitation(Request $request, Event $event, Guest $guest, CommunicationService $communicationService): RedirectResponse
     {
         $guest->loadMissing('event');
         $this->authorize('update', $guest);
@@ -544,7 +552,18 @@ class GuestController extends Controller
         abort_unless($event->isInvitation(), 404);
         abort_unless($event->ownerHasPremiumEventTools(), 403);
 
-        $outcome = $communicationService->sendWhatsAppInvitation($event, $guest);
+        $outcome = $communicationService->sendWhatsAppInvitation($event, $guest, $request->boolean('resend'));
+
+        if ($outcome === 'already_sent') {
+            $previous = $communicationService->lastWhatsAppInvitation($event, $guest);
+
+            return back()->with('whatsapp_already_sent', [
+                'guest_id' => $guest->id,
+                'name' => $guest->name,
+                'sent_at' => ($previous?->sent_at ?? $previous?->created_at)?->toIso8601String(),
+                'in_flight' => $previous?->status === NotificationLog::STATUS_PENDING,
+            ]);
+        }
 
         return back()->with('status', match ($outcome) {
             'sent' => 'guest-whatsapp-sent',

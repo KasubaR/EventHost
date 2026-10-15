@@ -300,7 +300,7 @@ class GuestManagementTest extends TestCase
         $url = WhatsAppInviteLink::url('+260 97 111 2233', 'Hello');
 
         $this->assertNotNull($url);
-        $this->assertStringStartsWith('https://wa.me/260971112233', $url);
+        $this->assertStringStartsWith('https://api.whatsapp.com/send?phone=260971112233&', $url);
         $this->assertStringContainsString(rawurlencode('Hello'), $url);
     }
 }

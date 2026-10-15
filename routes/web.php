@@ -35,6 +35,7 @@ use App\Http\Controllers\GuestEmailReminderPreferenceController;
 use App\Http\Controllers\GuestGroupController;
 use App\Http\Controllers\GuestGroupLinkController;
 use App\Http\Controllers\GuestImportController;
+use App\Http\Controllers\GuestWhatsAppShareController;
 use App\Http\Controllers\HelpRequestController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MapLinkController;
@@ -55,6 +56,7 @@ use App\Http\Controllers\TemplateGalleryController;
 use App\Http\Controllers\TemplateLibraryController;
 use App\Http\Controllers\TicketCheckInController;
 use App\Http\Controllers\TicketController;
+use App\Http\Controllers\TwilioWhatsAppStatusController;
 use App\Http\Controllers\TwilioWhatsAppWebhookController;
 use App\Models\Event;
 use App\Models\InvitationTemplate;
@@ -73,6 +75,11 @@ Route::post('/webhooks/twilio/whatsapp', TwilioWhatsAppWebhookController::class)
     ->withoutMiddleware([VerifyCsrfToken::class])
     ->middleware('throttle:120,1')
     ->name('webhooks.twilio.whatsapp');
+
+Route::post('/webhooks/twilio/whatsapp/status', TwilioWhatsAppStatusController::class)
+    ->withoutMiddleware([VerifyCsrfToken::class])
+    ->middleware('throttle:600,1')
+    ->name('webhooks.twilio.whatsapp.status');
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
@@ -387,6 +394,14 @@ Route::middleware(['auth', 'account.active', 'verified'])->group(function () {
     Route::post('/events/{event}/guests/{guest}/whatsapp-invite', [GuestController::class, 'sendWhatsAppInvitation'])
         ->middleware('throttle:guest-whatsapp-send')
         ->name('events.guests.whatsapp-invite');
+
+    // The free wa.me share link (plans/whatsapp-sharing-gaps.md). A GET because it is opened as a link in a new tab and
+    // redirects to WhatsApp; it only records that the host opened the chat.
+    Route::get('/events/{event}/guests/{guest}/whatsapp-share', [GuestWhatsAppShareController::class, 'open'])
+        ->whereNumber('guest')
+        ->name('events.guests.whatsapp-share');
+    Route::get('/events/{event}/guests/whatsapp-queue', [GuestWhatsAppShareController::class, 'queue'])
+        ->name('events.guests.whatsapp-queue');
 
     Route::get('/events/{event}/guests/{guest}/qr.svg', [GuestController::class, 'qr'])
         ->name('events.guests.qr');

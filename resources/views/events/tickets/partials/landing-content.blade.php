@@ -33,7 +33,7 @@
         : null;
 
     $shareUrl = route('events.public', $event->slug);
-    $waShareUrl = 'https://wa.me/?text='.rawurlencode('Check out '.$event->name.': '.$shareUrl);
+    $waShareUrl = 'https://api.whatsapp.com/send?text='.rawurlencode('Check out '.$event->name.': '.$shareUrl);
 @endphp
 
 @if (! empty($isPreview))

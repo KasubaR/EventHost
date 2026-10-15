@@ -264,7 +264,11 @@ class RsvpDeadlineHostSideTest extends TestCase
         $this->update(['rsvp_deadline' => '2026-10-30T18:00'])->assertSessionHasNoErrors();
 
         $this->post(route('events.guests.bulk', $this->event), ['action' => 'prepare_whatsapp_share', 'guest_ids' => [$guest->id]])
-            ->assertSessionHasNoErrors();
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('events.guests.whatsapp-queue', $this->event));
+
+        $this->get(route('events.guests.whatsapp-share', [$this->event, $guest]))
+            ->assertRedirectContains('https://api.whatsapp.com/send?phone=260971234567');
         $this->assertTrue((bool) $guest->fresh()->invitation_sent);
     }
 

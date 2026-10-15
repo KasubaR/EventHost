@@ -9,7 +9,7 @@ use App\Models\Guest;
 use App\Services\CommunicationService;
 use App\Services\GuestDeleter;
 use App\Services\GuestUpdater;
-use App\Support\GuestPhone;
+use App\Services\WhatsAppShareService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 
@@ -52,7 +52,13 @@ class GuestBulkActionController extends Controller
             ], 422);
         }
 
-        // Guests the action could not reach: no email for the two email actions, no usable phone for the WhatsApp share.
+        // Nothing is sent and nobody is marked sent: the client opens each wa.me link on the host's phone and marks the guest
+        // with mark_sent (or the single mark-sent endpoint) once it has (plans/whatsapp-sharing-gaps.md).
+        if ($action === 'prepare_whatsapp_share') {
+            return $this->whatsAppShareLinks($event, $ids);
+        }
+
+        // Guests the action could not reach: no email for the two email actions.
         $skippedCount = 0;
         $skipReason = null;
         $removedSummary = null;
@@ -112,22 +118,6 @@ class GuestBulkActionController extends Controller
 
             $guests = $builder->get();
             foreach ($guests as $guest) {
-                if ($action === 'prepare_whatsapp_share') {
-                    // Only a guest the share link can actually reach is marked sent; anyone else would read "Sent" forever.
-                    if ($guest->invitation_token === null || GuestPhone::whatsAppDigits($guest->phone) === null) {
-                        $skippedCount++;
-
-                        continue;
-                    }
-                    $guest->forceFill([
-                        'invitation_sent' => true,
-                        'invitation_sent_at' => $guest->invitation_sent_at ?? now(),
-                    ])->save();
-                    $bulkCount++;
-
-                    continue;
-                }
-
                 if ($action === 'send_reminder_email') {
                     if ($guest->rsvp()->exists()) {
                         continue;
@@ -184,6 +174,40 @@ class GuestBulkActionController extends Controller
             'skipped_reason' => $skipReason,
             // Additive, delete only: seats the removed guests held, null for every other action.
             'seats_freed' => $removedSummary['seats_freed'] ?? null,
+        ]);
+    }
+
+    /**
+     * @param  list<int|string>  $ids
+     */
+    private function whatsAppShareLinks(Event $event, array $ids): JsonResponse
+    {
+        $share = app(WhatsAppShareService::class);
+
+        if (! $event->is_published) {
+            return response()->json(['error' => 'unpublished', 'message' => $share->eventBlockedReason($event)], 422);
+        }
+
+        $links = [];
+        $skipped = [];
+        foreach ($event->guests()->whereIn('id', $ids)->orderBy('name')->get() as $guest) {
+            $problem = $share->guestProblem($guest);
+            if ($problem === null) {
+                $links[] = ['guest_id' => $guest->id, 'name' => $guest->name, 'url' => $share->url($event, $guest)];
+            } else {
+                $skipped[] = ['guest_id' => $guest->id, 'name' => $guest->name, 'reason' => $problem];
+            }
+        }
+
+        return response()->json([
+            'action' => 'prepare_whatsapp_share',
+            // Nobody is marked sent by this action any more; affected_count is the number of links returned.
+            'affected_count' => count($links),
+            'skipped_count' => count($skipped),
+            'skipped_reason' => $skipped[0]['reason'] ?? null,
+            'seats_freed' => null,
+            'share_links' => $links,
+            'skipped' => $skipped,
         ]);
     }
 }

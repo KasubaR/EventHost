@@ -16,6 +16,12 @@ class NotificationLog extends Model
 
     public const STATUS_FAILED = 'failed';
 
+    /** Twilio delivery statuses (from the status callback) that mean the message never reached the guest. */
+    public const UNDELIVERED_STATUSES = ['failed', 'undelivered'];
+
+    /** Twilio's delivery statuses in the order a message moves through them; a late callback never moves a row back. */
+    public const DELIVERY_ORDER = ['queued' => 1, 'sent' => 2, 'delivered' => 3, 'read' => 4, 'failed' => 5, 'undelivered' => 5];
+
     /**
      * @var list<string>
      */
@@ -25,6 +31,8 @@ class NotificationLog extends Model
         'channel',
         'type',
         'status',
+        'delivery_status',
+        'error_code',
         'idempotency_key',
         'provider_message_id',
         'sent_at',
@@ -41,6 +49,21 @@ class NotificationLog extends Model
             'sent_at' => 'datetime',
             'meta' => 'array',
         ];
+    }
+
+    public function wasUndelivered(): bool
+    {
+        return in_array($this->delivery_status, self::UNDELIVERED_STATUSES, true);
+    }
+
+    /** The host-facing reason a WhatsApp message did not arrive, from Twilio's error code. */
+    public function undeliveredReason(): string
+    {
+        return match ((string) $this->error_code) {
+            '63003' => "This number isn't on WhatsApp",
+            '63024' => 'Message blocked by recipient',
+            default => "Couldn't deliver",
+        };
     }
 
     /**

@@ -8,7 +8,7 @@ use App\Models\Guest;
 use App\Services\CommunicationService;
 use App\Services\GuestDeleter;
 use App\Services\GuestUpdater;
-use App\Support\GuestPhone;
+use App\Services\WhatsAppShareService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 
@@ -62,7 +62,22 @@ class GuestBulkActionController extends Controller
             return back()->withErrors(['action' => $reason.' Extend the RSVP deadline first, then try again.']);
         }
 
-        // Guests the action could not reach: no email for the two email actions, no usable phone for the WhatsApp share.
+        // Nothing is sent from here: the queue page opens each guest's chat on the host's own phone, one at a time, and a guest
+        // is marked sent only when their chat is opened (plans/whatsapp-sharing-gaps.md).
+        if ($action === 'prepare_whatsapp_share') {
+            if (! $event->is_published) {
+                return back()->withErrors(['action' => 'Publish the event first. Until then, guest links show "Invitation unavailable".']);
+            }
+
+            $request->session()->put(WhatsAppShareService::QUEUE_SESSION_KEY.'.'.$event->id, [
+                'guest_ids' => array_values(array_map('intval', $ids)),
+                'started_at' => now()->toIso8601String(),
+            ]);
+
+            return redirect()->route('events.guests.whatsapp-queue', $event);
+        }
+
+        // Guests the action could not reach: no email for the two email actions.
         $skippedCount = 0;
         $skipReason = null;
         $removedSummary = null;
@@ -123,22 +138,6 @@ class GuestBulkActionController extends Controller
 
             $guests = $builder->get();
             foreach ($guests as $guest) {
-                if ($action === 'prepare_whatsapp_share') {
-                    // Only a guest the share link can actually reach is marked sent; anyone else would read "Sent" forever.
-                    if ($guest->invitation_token === null || GuestPhone::whatsAppDigits($guest->phone) === null) {
-                        $skippedCount++;
-
-                        continue;
-                    }
-                    $guest->forceFill([
-                        'invitation_sent' => true,
-                        'invitation_sent_at' => $guest->invitation_sent_at ?? now(),
-                    ])->save();
-                    $bulkCount++;
-
-                    continue;
-                }
-
                 if ($action === 'send_reminder_email') {
                     if ($guest->rsvp()->exists()) {
                         continue;
@@ -209,7 +208,6 @@ class GuestBulkActionController extends Controller
                 'delete' => 'guests-bulk-deleted',
                 'send_reminder_email' => 'guests-bulk-reminder',
                 'send_update_email' => 'guests-bulk-update',
-                'prepare_whatsapp_share' => 'guests-bulk-whatsapp',
                 'allow_plus_one' => 'guests-bulk-plus-one',
                 default => 'guests-bulk-done',
             });
