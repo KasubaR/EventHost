@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\RsvpApprovalStatus;
 use App\Models\Event;
+use App\Models\GroupLinkRemoval;
 use App\Models\Guest;
 use App\Models\GuestEdit;
 use App\Models\GuestGroup;
@@ -351,5 +352,125 @@ class GuestGroupEdgeCasesTest extends TestCase
         $this->assertSame(1200, $result['members']);
         $this->assertSame(1200, GuestEdit::query()->count());
         $this->assertLessThan(30, $queries, "a group delete used {$queries} queries");
+    }
+
+    // ---------------------------------------------------------------- Phase 2: a closed link says so
+
+    private function joinToken(GuestGroup $group): string
+    {
+        return (string) $group->fresh()->rsvp_token;
+    }
+
+    public function test_the_old_link_of_a_deleted_group_says_it_was_closed(): void
+    {
+        $group = $this->group('Committee');
+        $token = $this->joinToken($group);
+        app(GuestGroupDeleter::class)->delete($this->event, $group);
+
+        $this->get(route('group-rsvp.show', ['token' => $token]))
+            ->assertStatus(410)
+            ->assertSee('This RSVP link was closed')
+            ->assertSee($this->event->name)
+            ->assertSee('0977123456')
+            ->assertDontSee('Committee');
+    }
+
+    public function test_the_old_link_of_a_group_whose_link_was_turned_off_says_it_was_closed(): void
+    {
+        $group = $this->group('Committee');
+        $token = $this->joinToken($group);
+        app(GuestGroupDeleter::class)->turnOffLink($this->event, $group);
+
+        $this->get(route('group-rsvp.show', ['token' => $token]))->assertStatus(410)->assertSee('This RSVP link was closed');
+    }
+
+    public function test_a_request_posted_to_a_closed_link_gets_the_same_page_and_creates_nobody(): void
+    {
+        $group = $this->group('Committee');
+        $token = $this->joinToken($group);
+        app(GuestGroupDeleter::class)->delete($this->event, $group);
+
+        $this->post(route('group-rsvp.store', ['token' => $token]), [
+            'name' => 'Late Person',
+            'email' => 'late@example.test',
+            'phone' => '0965000999',
+            'attendee_count' => 1,
+        ])->assertStatus(410)->assertSee('closed');
+
+        $this->assertDatabaseMissing('guests', ['email' => 'late@example.test']);
+    }
+
+    public function test_an_unknown_group_link_keeps_the_ordinary_not_found_page(): void
+    {
+        $this->get(route('group-rsvp.show', ['token' => str_repeat('z', 48)]))
+            ->assertNotFound()
+            ->assertDontSee('was closed');
+    }
+
+    public function test_a_link_that_is_only_closed_by_the_host_is_not_treated_as_removed(): void
+    {
+        $group = $this->group('Committee');
+        $this->actingAs($this->host)
+            ->patch(route('events.guest-groups.link.toggle', ['event' => $this->event, 'guest_group' => $group->id]));
+
+        $this->get(route('group-rsvp.show', ['token' => $this->joinToken($group)]))
+            ->assertOk()
+            ->assertDontSee('This RSVP link was closed');
+    }
+
+    public function test_turning_a_link_back_on_gives_a_new_address_and_the_old_one_stays_closed(): void
+    {
+        $group = $this->group('Committee');
+        $old = $this->joinToken($group);
+        app(GuestGroupDeleter::class)->turnOffLink($this->event, $group);
+
+        $group->fresh()->enableLink(5);
+        $new = $this->joinToken($group);
+
+        $this->assertNotSame($old, $new);
+        $this->get(route('group-rsvp.show', ['token' => $new]))->assertOk();
+        $this->get(route('group-rsvp.show', ['token' => $old]))->assertStatus(410);
+    }
+
+    public function test_a_group_that_never_had_a_link_leaves_nothing_behind(): void
+    {
+        $group = $this->group('Plain', null, null);
+
+        app(GuestGroupDeleter::class)->delete($this->event, $group);
+
+        $this->assertSame(0, GroupLinkRemoval::query()->count());
+    }
+
+    public function test_the_record_holds_a_hash_not_the_token_and_goes_with_the_event(): void
+    {
+        $group = $this->group('Committee');
+        $token = $this->joinToken($group);
+        app(GuestGroupDeleter::class)->delete($this->event, $group);
+
+        $this->assertDatabaseMissing('group_link_removals', ['token_hash' => $token]);
+        $record = GroupLinkRemoval::query()->sole();
+        $this->assertSame(GroupLinkRemoval::REASON_GROUP_DELETED, $record->reason);
+        $this->assertSame(64, strlen($record->token_hash));
+
+        $this->event->forceDelete();
+
+        $this->assertSame(0, GroupLinkRemoval::query()->count());
+    }
+
+    public function test_another_events_link_is_not_reported_closed_by_this_events_delete(): void
+    {
+        $other = Event::factory()->for($this->host)->published()->create(['is_public' => false]);
+        $foreign = $this->group('Foreign', $other);
+        $token = $this->joinToken($foreign);
+
+        app(GuestGroupDeleter::class)->delete($this->event, $foreign);
+
+        $this->get(route('group-rsvp.show', ['token' => $token]))->assertOk();
+        $this->assertSame(0, GroupLinkRemoval::query()->count());
+    }
+
+    public function test_privacy_mentions_the_closed_link_record(): void
+    {
+        $this->get('/privacy')->assertOk()->assertSee('Closed group links')->assertSee('turn off its shared RSVP link');
     }
 }

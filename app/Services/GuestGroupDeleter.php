@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\RsvpApprovalStatus;
 use App\Models\Event;
+use App\Models\GroupLinkRemoval;
 use App\Models\GuestGroup;
 use Illuminate\Support\Facades\DB;
 
@@ -13,6 +14,8 @@ use Illuminate\Support\Facades\DB;
  * Runs under the event's row lock, the lock every group sign-up takes, so a request that is mid-way through joining cannot hit
  * the foreign key of a group that has just gone. It counts who is affected first, writes one `guest_edits` row per affected
  * guest in chunked multi-row inserts (a group of thousands is a handful of queries, not thousands), then changes the group.
+ *
+ * Before the link goes, a hash of its address is kept (GroupLinkRemoval) so the old address can say it was closed.
  *
  * Nobody is released from review: a guest who signed up through the link keeps `group_link_joined_at`, and
  * RsvpSubmissionService holds them for the host on that flag alone (it no longer needs the group to still have its link).
@@ -61,6 +64,9 @@ class GuestGroupDeleter
             ];
 
             $this->writeHistory($event, $locked, $userId, $deleteGroup);
+
+            // So the old address can say "closed" instead of "not found" (plans/guest-groups-gaps.md Phase 2).
+            GroupLinkRemoval::recordFor($locked, $deleteGroup ? GroupLinkRemoval::REASON_GROUP_DELETED : GroupLinkRemoval::REASON_LINK_OFF);
 
             if ($deleteGroup) {
                 $locked->delete();

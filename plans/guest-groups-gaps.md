@@ -47,12 +47,17 @@ rows for joiners only), then deletes the group or calls `disableLink()`. It retu
 `withCount` on the groups page, no extra queries), and `partials/removed-note` shows the result. `GuestEdit::lines()` reads the new flag. Tests:
 `GuestGroupEdgeCasesTest` (20, including a 1,200-guest delete in under 30 queries). The API's DELETE still returns 204.
 
-## Phase 2: a closed link says so
+## Phase 2: a closed link says so (BUILT)
 
-- A small `group_link_removals` table (`event_id`, SHA-256 of the token, group name, removed_at), written by the deleter, so `/g/{token}` of a deleted group or
-  a link turned off reads "This link was closed" (410, with the host number) instead of the generic not-found. Same handler hook as the removed-guest page
-  in `bootstrap/app.php`. The API's group-link responses keep their 404 and add `code: link_closed`. Cascades with the event; Privacy §3 / §7 mention it
-- Turning a link off and on again mints a new token, so the old tombstone stays correct
+- `group_link_removals` (migration `2026_10_15_110000`; `event_id`, SHA-256 of the token, `reason` = `group_deleted` | `link_off`, `removed_at`) and
+  `App\Models\GroupLinkRemoval`, written by `GuestGroupDeleter` just before the group or link goes (`recordFor()`; a group with no link writes nothing). No
+  group name is stored, so the page can never name one. Cascades with the event
+- The guest-link 404 handler in `bootstrap/app.php` looks `group-rsvp.show` / `group-rsvp.store` tokens up here once the link failed to match, and renders
+  `rsvp/group-link-closed.blade.php` with **410**: names the event, says a request already sent is still with the host, shows the host number. A POST gets the same
+  page and creates nobody. An unknown token keeps `link-not-found` (404). A link the host only *closed* (`rsvp_link_closed_at`) is a different state and
+  unchanged. **Changed from the plan:** there is no API for group links, so no `link_closed` code was added
+- Turning the link off and on again mints a new token, so the old address stays closed. Privacy §3 and §7 describe the fingerprint (the hash only)
+- `GroupRsvpLinkTest` now expects 410 (not 404) for the old address after "turn off link". Tests: 10 more in `GuestGroupEdgeCasesTest`
 
 ## Phase 3: names
 

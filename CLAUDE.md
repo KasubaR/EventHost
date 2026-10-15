@@ -632,7 +632,9 @@ say, a 100-person committee that gets 10 seats. Plan: `plans/group-rsvp-links.md
 - **Deleting a group or turning its link off goes through `App\Services\GuestGroupDeleter`** (web and API; never `$group->delete()` / `disableLink()` directly). It locks the
   event row, counts members / joiners / pending requests, writes one `guest_edits` row per affected guest in chunks (a delete records `group: [name, null]`; a link-off only the
   joiners, as `link_closed`), then acts. `GuestGroup::removalWarning()` / `linkOffWarning()` are the confirm texts, and the page flashes the counts (`group_removed`).
-  Plan: `plans/guest-groups-gaps.md` (Phases 0 and 1 built; the closed-link page, name cleaning, scale limits and the 403/404 fix are still planned)
+  The deleter also records a SHA-256 of the old link in `group_link_removals` (`GroupLinkRemoval`), so `/g/{old token}` answers **410** "This RSVP link was closed"
+  (`rsvp/group-link-closed.blade.php`, same handler as the removed-guest page) instead of the generic not-found; Privacy §3 / §7 describe it.
+  Plan: `plans/guest-groups-gaps.md` (Phases 0 to 2 built; name cleaning, scale limits and the 403/404 fix are still planned)
 
 **Host contact number.** `events.host_contact_phone` is entered on the create/edit form and **required for web invitation
 events** (`StoreEventRequest` / `UpdateEventRequest`), optional for the Android API so its contract stays additive.

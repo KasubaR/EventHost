@@ -13,6 +13,7 @@ use App\Http\Middleware\EnsureEventAudience;
 use App\Http\Middleware\EnsureSanctumAccountIsActive;
 use App\Http\Middleware\NormalizeGuestToken;
 use App\Models\Event;
+use App\Models\GroupLinkRemoval;
 use App\Models\GuestRemoval;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
@@ -218,6 +219,17 @@ return Application::configure(basePath: dirname(__DIR__))
 
             if ($request->expectsJson() || $request->is('api/*')) {
                 return null;
+            }
+
+            // A group's shared link the host deleted or turned off says so, the same way (plans/guest-groups-gaps.md Phase 2).
+            $closedGroupLink = is_string($token) && in_array($name, ['group-rsvp.show', 'group-rsvp.store'], true)
+                ? GroupLinkRemoval::forToken($token)
+                : null;
+
+            if ($closedGroupLink !== null) {
+                return response()->view('rsvp.group-link-closed', [
+                    'event' => Event::withTrashed()->with('user')->find($closedGroupLink->event_id),
+                ], 410);
             }
 
             $isGuestLinkPage = in_array($name, [

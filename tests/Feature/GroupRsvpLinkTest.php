@@ -256,7 +256,8 @@ class GroupRsvpLinkTest extends TestCase
 
         $this->actingAs($host)->delete(route('events.guest-groups.link.destroy', ['event' => $event, 'guest_group' => $group->id]));
         $this->assertNull($group->fresh()->rsvp_token);
-        $this->get(route('group-rsvp.show', ['token' => $token]))->assertNotFound();
+        // plans/guest-groups-gaps.md Phase 2: the old address says it was closed (410), not "not found".
+        $this->get(route('group-rsvp.show', ['token' => $token]))->assertStatus(410);
 
         $this->actingAs($host)->get(route('events.guest-groups.index', $event))->assertOk();
     }

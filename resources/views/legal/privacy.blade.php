@@ -114,6 +114,11 @@
                     approval a new sign-up from someone you removed. If you ask us to email them that they were removed, that
                     email is the only use of their address. The record is deleted when the event is permanently deleted.
                 </p>
+                <p>
+                    <strong>When you delete a group or turn off its shared RSVP link</strong>, we keep a fingerprint of the old link
+                    address (not the address itself, and no names) so that anyone who opens it is told it was closed. It is deleted
+                    with the event.
+                </p>
             </section>
 
             <section>
@@ -207,6 +212,7 @@
                 @php $retentionDays = \App\Models\Event::retentionDays(); @endphp
                 <ul>
                     <li><strong>Account data</strong>: until you delete your account</li>
+                    <li><strong>Closed group links</strong>: a fingerprint of the old address, until the event is permanently deleted</li>
                     <li><strong>Records of removed guests</strong>: until the event they belonged to is permanently deleted. A guest's RSVP and answer history are deleted at once when you remove them; only the short removal record described in section 3 is kept</li>
                     @if ($retentionDays > 0)
                         <li>
