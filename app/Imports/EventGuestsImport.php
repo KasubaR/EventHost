@@ -333,10 +333,24 @@ class EventGuestsImport implements ToCollection, WithHeadingRow, WithMultipleShe
             return null;
         }
 
-        return $this->groupIds[$label] ??= GuestGroup::query()->firstOrCreate([
-            'event_id' => $this->event->id,
-            'name' => $label,
-        ])->id;
+        // The same cleaning and comparison as the host's own form, so "Family ", "family" and "Fam\u{200B}ily" in one file are one group.
+        $clean = GuestGroup::cleanName($label);
+        if ($clean === null) {
+            return null;
+        }
+
+        $key = GuestGroup::nameKey($clean);
+
+        return $this->groupIds[$key] ??= $this->findOrCreateGroup($clean, $key);
+    }
+
+    private function findOrCreateGroup(string $clean, string $key): int
+    {
+        $existing = GuestGroup::query()->where('event_id', $this->event->id)->get(['id', 'name'])
+            ->first(fn (GuestGroup $group) => GuestGroup::nameKey($group->name) === $key);
+
+        // createOrFirst: a second writer creating the same name between the look-up and the insert returns theirs, and is never mistaken for a duplicate guest.
+        return ($existing ?? GuestGroup::query()->createOrFirst(['event_id' => $this->event->id, 'name' => $clean]))->id;
     }
 
     /**

@@ -47,7 +47,7 @@
                     @csrf
                     <div class="profile-field evt-guest-group-inline-field">
                         <label for="new_group_name" class="profile-label">Group name</label>
-                        <input id="new_group_name" type="text" name="name" class="profile-input {{ $errors->has('name') ? 'profile-input--error' : '' }}" value="{{ old('name') }}" required maxlength="255" autocomplete="off">
+                        <input id="new_group_name" type="text" name="name" class="profile-input {{ $errors->has('name') ? 'profile-input--error' : '' }}" value="{{ old('name') }}" required maxlength="{{ \App\Models\GuestGroup::NAME_MAX }}" autocomplete="off">
                         @error('name')
                             <p class="profile-error">{{ $message }}</p>
                         @enderror
@@ -82,7 +82,7 @@
                                         <form method="post" action="{{ route('events.guest-groups.update', ['event' => $event, 'guest_group' => $group->id]) }}" class="evt-guest-group-rename">
                                             @csrf
                                             @method('PATCH')
-                                            <input type="text" name="name" class="profile-input evt-guest-group-rename-input" value="{{ $group->name }}" required maxlength="255" aria-label="Group name">
+                                            <input type="text" name="name" class="profile-input evt-guest-group-rename-input" value="{{ $group->name }}" required maxlength="{{ \App\Models\GuestGroup::NAME_MAX }}" aria-label="Group name">
                                             <button type="submit" class="evt-btn-outline evt-btn-tiny">Save</button>
                                         </form>
                                     </td>

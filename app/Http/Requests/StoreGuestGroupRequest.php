@@ -3,8 +3,9 @@
 namespace App\Http\Requests;
 
 use App\Models\Event;
+use App\Models\GuestGroup;
+use App\Rules\GuestGroupNameAvailable;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class StoreGuestGroupRequest extends FormRequest
 {
@@ -20,8 +21,7 @@ class StoreGuestGroupRequest extends FormRequest
     {
         $name = $this->input('name');
         if (is_string($name)) {
-            $t = trim($name);
-            $this->merge(['name' => $t === '' ? null : $t]);
+            $this->merge(['name' => GuestGroup::cleanName($name)]);
         }
     }
 
@@ -37,8 +37,8 @@ class StoreGuestGroupRequest extends FormRequest
             'name' => [
                 'required',
                 'string',
-                'max:255',
-                Rule::unique('guest_groups', 'name')->where(fn ($q) => $q->where('event_id', $event->id)),
+                'max:'.GuestGroup::NAME_MAX,
+                new GuestGroupNameAvailable($event),
             ],
         ];
     }

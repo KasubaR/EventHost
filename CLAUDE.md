@@ -634,7 +634,10 @@ say, a 100-person committee that gets 10 seats. Plan: `plans/group-rsvp-links.md
   joiners, as `link_closed`), then acts. `GuestGroup::removalWarning()` / `linkOffWarning()` are the confirm texts, and the page flashes the counts (`group_removed`).
   The deleter also records a SHA-256 of the old link in `group_link_removals` (`GroupLinkRemoval`), so `/g/{old token}` answers **410** "This RSVP link was closed"
   (`rsvp/group-link-closed.blade.php`, same handler as the removed-guest page) instead of the generic not-found; Privacy §3 / §7 describe it.
-  Plan: `plans/guest-groups-gaps.md` (Phases 0 to 2 built; name cleaning, scale limits and the 403/404 fix are still planned)
+  **Group names** are created and renamed only through `App\Services\GuestGroupNamer` (web, API): cleaned like guest names (`GuestGroup::cleanName()`), capped at
+  `GuestGroup::NAME_MAX` (191, the column), and compared by `GuestGroup::nameKey()` (cleaned, lower-cased) under the event lock, so spacing, case and invisible characters never make a
+  second group and a simultaneous create is a validation error, not a 500. The import uses the same cleaning and key.
+  Plan: `plans/guest-groups-gaps.md` (Phases 0 to 3 built; the scale limits and the 403/404 fix are still planned)
 
 **Host contact number.** `events.host_contact_phone` is entered on the create/edit form and **required for web invitation
 events** (`StoreEventRequest` / `UpdateEventRequest`), optional for the Android API so its contract stays additive.

@@ -9,6 +9,7 @@ use App\Http\Resources\Api\V1\GuestGroupResource;
 use App\Models\Event;
 use App\Models\GuestGroup;
 use App\Services\GuestGroupDeleter;
+use App\Services\GuestGroupNamer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
@@ -26,14 +27,12 @@ class GuestGroupController extends Controller
         return GuestGroupResource::collection($event->guestGroups()->withCount('guests')->get());
     }
 
-    public function store(StoreGuestGroupApiRequest $request, Event $event): JsonResponse
+    public function store(StoreGuestGroupApiRequest $request, Event $event, GuestGroupNamer $namer): JsonResponse
     {
         $this->authorize('update', $event);
         abort_unless($event->isInvitation(), 404);
 
-        $group = $event->guestGroups()->create([
-            'name' => $request->validated()['name'],
-        ]);
+        $group = $namer->create($event, $request->validated()['name']);
 
         if (isset($request->validated()['seat_limit'])) {
             $group->enableLink((int) $request->validated()['seat_limit']);
@@ -42,16 +41,14 @@ class GuestGroupController extends Controller
         return response()->json(new GuestGroupResource($group), 201);
     }
 
-    public function update(UpdateGuestGroupApiRequest $request, Event $event, GuestGroup $guest_group): JsonResponse
+    public function update(UpdateGuestGroupApiRequest $request, Event $event, GuestGroup $guest_group, GuestGroupNamer $namer): JsonResponse
     {
         $guest_group->loadMissing('event');
         $this->authorize('update', $guest_group);
         abort_unless($guest_group->event_id === $event->id, 404);
         abort_unless($event->isInvitation(), 404);
 
-        $guest_group->update([
-            'name' => $request->validated()['name'],
-        ]);
+        $namer->rename($event, $guest_group, $request->validated()['name']);
 
         $validated = $request->validated();
 

@@ -10,9 +10,12 @@ use App\Models\GuestEdit;
 use App\Models\GuestGroup;
 use App\Models\User;
 use App\Services\GuestGroupDeleter;
+use App\Services\GuestGroupNamer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -472,5 +475,130 @@ class GuestGroupEdgeCasesTest extends TestCase
     public function test_privacy_mentions_the_closed_link_record(): void
     {
         $this->get('/privacy')->assertOk()->assertSee('Closed group links')->assertSee('turn off its shared RSVP link');
+    }
+
+    // ---------------------------------------------------------------- Phase 3: names
+
+    private function createGroupByForm(string $name)
+    {
+        return $this->actingAs($this->host)->post(route('events.guest-groups.store', $this->event), ['name' => $name]);
+    }
+
+    public function test_a_group_name_is_stored_cleaned(): void
+    {
+        $this->createGroupByForm("  Family \u{200B}  Friends\t")->assertSessionHasNoErrors();
+
+        $this->assertSame('Family Friends', GuestGroup::query()->where('event_id', $this->event->id)->sole()->name);
+    }
+
+    public function test_spacing_case_and_invisible_characters_never_make_a_second_group(): void
+    {
+        $this->createGroupByForm('Family Friends')->assertSessionHasNoErrors();
+
+        foreach (['Family  Friends', 'FAMILY FRIENDS', "Family\u{200B} Friends", ' family friends '] as $variant) {
+            $this->createGroupByForm($variant)->assertSessionHasErrors('name');
+        }
+
+        $this->assertSame(1, GuestGroup::query()->where('event_id', $this->event->id)->count());
+    }
+
+    public function test_a_composed_and_a_decomposed_accent_are_the_same_name(): void
+    {
+        $this->createGroupByForm("Caf\u{00E9}")->assertSessionHasNoErrors();
+
+        $this->createGroupByForm("Cafe\u{0301}")->assertSessionHasErrors('name');
+    }
+
+    public function test_a_name_that_is_only_invisible_characters_is_empty(): void
+    {
+        $this->createGroupByForm("\u{200B}\u{200D}\u{FEFF}")->assertSessionHasErrors('name');
+
+        $this->assertSame(0, GuestGroup::query()->where('event_id', $this->event->id)->count());
+    }
+
+    public function test_a_legacy_name_with_odd_spacing_still_blocks_its_clean_twin(): void
+    {
+        GuestGroup::query()->create(['event_id' => $this->event->id, 'name' => 'Old  Crowd']);
+
+        $this->createGroupByForm('old crowd')->assertSessionHasErrors('name');
+    }
+
+    public function test_the_length_limit_is_the_column_not_255(): void
+    {
+        $this->createGroupByForm(str_repeat('a', GuestGroup::NAME_MAX))->assertSessionHasNoErrors();
+        $this->createGroupByForm(str_repeat('b', GuestGroup::NAME_MAX + 1))->assertSessionHasErrors('name');
+        $this->createGroupByForm(str_repeat('c', 255))->assertSessionHasErrors('name');
+
+        $this->assertSame(1, GuestGroup::query()->where('event_id', $this->event->id)->count());
+    }
+
+    public function test_a_rename_is_cleaned_checked_and_may_change_only_case(): void
+    {
+        $family = $this->group('family', null, null);
+        $this->group('Friends', null, null);
+        $url = route('events.guest-groups.update', ['event' => $this->event, 'guest_group' => $family->id]);
+
+        $this->actingAs($this->host)->put($url, ['name' => 'FRIENDS'])->assertSessionHasErrors('name');
+        $this->actingAs($this->host)->put($url, ['name' => str_repeat('x', 200)])->assertSessionHasErrors('name');
+        $this->actingAs($this->host)->put($url, ['name' => "  Family\u{200B}  "])->assertSessionHasNoErrors();
+
+        $this->assertSame('Family', $family->fresh()->name);
+    }
+
+    public function test_the_api_applies_the_same_rules(): void
+    {
+        Sanctum::actingAs($this->host);
+        $base = "/api/v1/host/events/{$this->event->id}/guest-groups";
+
+        $this->postJson($base, ['name' => 'Family  Friends'])->assertCreated()->assertJsonPath('name', 'Family Friends');
+        $this->postJson($base, ['name' => 'family friends'])->assertUnprocessable()->assertJsonValidationErrors('name');
+        $this->postJson($base, ['name' => str_repeat('z', 192)])->assertUnprocessable()->assertJsonValidationErrors('name');
+        $this->postJson($base, ['name' => "\u{200B}"])->assertUnprocessable()->assertJsonValidationErrors('name');
+
+        $other = $this->postJson($base, ['name' => 'Other'])->assertCreated()->json('id');
+        $this->patchJson("$base/$other", ['name' => 'FAMILY FRIENDS'])->assertUnprocessable()->assertJsonValidationErrors('name');
+    }
+
+    public function test_two_requests_passing_the_check_together_get_a_validation_error_not_a_500(): void
+    {
+        // Stands in for "both requests read the names before either wrote": the in-PHP check sees nothing, so only the unique index can refuse.
+        $blind = new class extends GuestGroupNamer
+        {
+            protected function takenKeys(Event $event, ?int $ignoreGroupId): array
+            {
+                return [];
+            }
+        };
+        $blind->create($this->event, 'Racers');
+
+        try {
+            $blind->create($this->event, 'Racers');
+            $this->fail('the second create should have been refused');
+        } catch (ValidationException $e) {
+            $this->assertSame(['The name has already been taken.'], $e->errors()['name']);
+        }
+
+        $this->assertSame(1, GuestGroup::query()->where('event_id', $this->event->id)->count());
+    }
+
+    public function test_the_import_names_a_group_once_however_it_is_written(): void
+    {
+        $existing = $this->group('Family', null, null);
+        $csv = "name,email,group\n"
+            ."Ann,ann@example.test,family\n"
+            ."Ben,ben@example.test,\"Fam\u{200B}ily \"\n"
+            ."Cat,cat@example.test,Family  Friends\n"
+            ."Dan,dan@example.test,family friends\n"
+            ."Eve,eve@example.test,\n";
+
+        $this->actingAs($this->host)->post(route('events.guests.import.store', $this->event), [
+            'file' => UploadedFile::fake()->createWithContent('guests.csv', $csv),
+        ]);
+
+        $this->assertEqualsCanonicalizing(['Family', 'Family Friends'], GuestGroup::query()->where('event_id', $this->event->id)->pluck('name')->all());
+        $friends = GuestGroup::query()->where('name', 'Family Friends')->sole();
+        $this->assertSame(2, Guest::query()->where('guest_group_id', $existing->id)->count());
+        $this->assertSame(2, Guest::query()->where('guest_group_id', $friends->id)->count());
+        $this->assertNull(Guest::query()->where('email', 'eve@example.test')->sole()->guest_group_id);
     }
 }

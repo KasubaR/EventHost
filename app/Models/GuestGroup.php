@@ -16,6 +16,9 @@ class GuestGroup extends Model
     /** @use HasFactory<GuestGroupFactory> */
     use HasFactory;
 
+    /** The longest group name: the column is VARCHAR(191) on MySQL (see Guest::NAME_MAX). */
+    public const NAME_MAX = Guest::NAME_MAX;
+
     /**
      * @var list<string>
      */
@@ -46,6 +49,18 @@ class GuestGroup extends Model
     /**
      * Has a shared RSVP link with a seat pool (plans/group-rsvp-links.md).
      */
+    /** A typed group name as it is stored: the same cleaning guest names get (plans/guest-groups-gaps.md Phase 3). Null when nothing is left. */
+    public static function cleanName(?string $name): ?string
+    {
+        return Guest::cleanName($name);
+    }
+
+    /** What "the same name" means: cleaned and lower-cased, so spacing, case and invisible characters never make a second group. */
+    public static function nameKey(string $name): string
+    {
+        return mb_strtolower(self::cleanName($name) ?? '');
+    }
+
     /** @return array{members: int, joiners: int, pending: int} counts for the confirm text; uses preloaded withCount values when present */
     public function affectedCounts(): array
     {

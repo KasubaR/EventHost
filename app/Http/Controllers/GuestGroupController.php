@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateGuestGroupRequest;
 use App\Models\Event;
 use App\Models\GuestGroup;
 use App\Services\GuestGroupDeleter;
+use App\Services\GuestGroupNamer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
@@ -28,27 +29,23 @@ class GuestGroupController extends Controller
         return view('events.guest-groups.index', compact('event', 'groups'));
     }
 
-    public function store(StoreGuestGroupRequest $request, Event $event): RedirectResponse
+    public function store(StoreGuestGroupRequest $request, Event $event, GuestGroupNamer $namer): RedirectResponse
     {
         abort_unless($event->isInvitation(), 404);
 
-        $event->guestGroups()->create([
-            'name' => $request->validated()['name'],
-        ]);
+        $namer->create($event, $request->validated()['name']);
 
         return redirect()
             ->route('events.guest-groups.index', $event)
             ->with('status', 'guest-group-created');
     }
 
-    public function update(UpdateGuestGroupRequest $request, Event $event, GuestGroup $guest_group): RedirectResponse
+    public function update(UpdateGuestGroupRequest $request, Event $event, GuestGroup $guest_group, GuestGroupNamer $namer): RedirectResponse
     {
         abort_unless($guest_group->event_id === $event->id, 404);
         abort_unless($event->isInvitation(), 404);
 
-        $guest_group->update([
-            'name' => $request->validated()['name'],
-        ]);
+        $namer->rename($event, $guest_group, $request->validated()['name']);
 
         return redirect()
             ->route('events.guest-groups.index', $event)

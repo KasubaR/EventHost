@@ -59,14 +59,20 @@ rows for joiners only), then deletes the group or calls `disableLink()`. It retu
 - Turning the link off and on again mints a new token, so the old address stays closed. Privacy §3 and §7 describe the fingerprint (the hash only)
 - `GroupRsvpLinkTest` now expects 410 (not 404) for the old address after "turn off link". Tests: 10 more in `GuestGroupEdgeCasesTest`
 
-## Phase 3: names
+## Phase 3: names (BUILT)
 
 - `GuestGroup::cleanName()` reuses `Guest::cleanName()` (trim, collapse whitespace, Unicode NFC, invisible characters removed) and is used by the web form, API,
-  rename and the import, so all four compare equal. `GuestGroup::NAME_MAX = 191`, used by every request, the import and `maxlength`
+  rename and the import, so all four compare equal. `GuestGroup::NAME_MAX = Guest::NAME_MAX` (191), used by every request, the import and the form `maxlength`
 - Empty after cleaning is "required" again, so an invisible-only name is refused
-- **Duplicates under the lock.** A `GuestGroupCreator` (twin of `GuestCreator`) re-checks the name under the event row lock and turns a final unique-index
-  violation into the same validation error ("already taken"), web and API. The import's `firstOrCreate` keeps its savepoint and uses the cleaned name
-- Case: the check compares lower-cased names in PHP as well, so SQLite and MySQL agree
+- **Duplicates under the lock.** `App\Services\GuestGroupNamer` (`create()`, `rename()`; named for what it does rather than "Creator") re-checks the name under the event
+  row lock and turns a final unique-index violation into the same validation error ("The name has already been taken."), web and API. Both controllers use it
+- **One meaning of "same name":** `GuestGroup::nameKey()` (cleaned, lower-cased), used by the namer, the new `App\Rules\GuestGroupNameAvailable` rule (which replaces
+  `Rule::unique`, and ignores the group being renamed) and the import, so SQLite and MySQL agree and a legacy name with odd spacing still blocks its clean twin. A
+  rename that only changes case is allowed. Accents the MySQL collation treats as equal are still caught by the unique index and reported the same way
+- **Import:** `EventGuestsImport::groupId()` cleans the label, finds an existing group by `nameKey()` and otherwise `createOrFirst()`s it, so "Family ", "family" and a name with a
+  zero-width character are one group, and a group-name collision is never mistaken for a duplicate guest
+- Tests: 10 more in `GuestGroupEdgeCasesTest` (cleaning, case and spacing, composed vs decomposed accents, invisible-only, 191 vs 192 and 255, rename, API, a simulated
+  simultaneous create, import)
 
 ## Phase 4: scale
 
