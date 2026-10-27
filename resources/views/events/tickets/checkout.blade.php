@@ -19,18 +19,16 @@
         $buyerTotal = $isPassThrough ? $faceValue + $commissionAmount : $faceValue;
         $earliestExpiry = $reservations->min('expires_at');
 
-        // The booking fee is shown folded into each line, not as its own row. Each line takes its
-        // share of the fee by face value; the last line absorbs rounding so the lines add up to the total.
+        // Lines use the same single price as the ticket page (fee folded in), not a separate fee row.
+        // The fee is charged on the whole order, so the last line absorbs any rounding and the lines
+        // always add up to the total.
         $lineTotals = [];
-        $feeLeft = $isPassThrough ? $commissionAmount : 0.0;
-        $count = $reservations->count();
-        foreach ($reservations->values() as $i => $reservation) {
-            $line = (float) $reservation->unit_price_snapshot * $reservation->quantity;
-            $share = ($i === $count - 1 || $faceValue <= 0)
-                ? $feeLeft
-                : round($commissionAmount * $line / $faceValue, 2);
-            $feeLeft = round($feeLeft - $share, 2);
-            $lineTotals[$reservation->getKey()] = $line + $share;
+        foreach ($reservations as $reservation) {
+            $lineTotals[$reservation->getKey()] = $event->buyerFacingPrice($reservation->unit_price_snapshot) * $reservation->quantity;
+        }
+        if ($lineTotals !== []) {
+            $lastKey = array_key_last($lineTotals);
+            $lineTotals[$lastKey] = round($lineTotals[$lastKey] + $buyerTotal - array_sum($lineTotals), 2);
         }
     @endphp
 

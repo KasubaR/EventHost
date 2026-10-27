@@ -65,7 +65,7 @@
                                     <p class="tkc-type-note">Only {{ $available }} left</p>
                                 @endif
                             </div>
-                            <div class="tkc-type-price">K{{ number_format((float) $ticketType->price, 2) }}</div>
+                            <div class="tkc-type-price">K{{ number_format($event->buyerFacingPrice($ticketType->price), 2) }}</div>
                             <div class="tkc-type-qty" @if ($purchasable) data-tkc-qty @endif>
                                 <span class="tkc-type-qty-label" id="qty-label-{{ $ticketType->id }}">Qty</span>
                                 <div class="tkc-type-qty-stepper">

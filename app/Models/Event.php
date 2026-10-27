@@ -960,6 +960,23 @@ class Event extends Model
             : TicketingSettings::commissionPercent();
     }
 
+    /**
+     * The one price a buyer sees for a ticket. When the buyer pays the commission the fee is
+     * folded into it, so the picker, the landing page and the order summary all agree; the order
+     * still stores face value and fee separately (TicketOrderMoney) and the host is paid the face value.
+     * Display only: never use it to work out what is charged.
+     */
+    public function buyerFacingPrice(float|int|string $price): float
+    {
+        $price = round((float) $price, 2);
+
+        if ($this->commission_mode !== CommissionMode::PassThrough) {
+            return $price;
+        }
+
+        return round($price + round($price * (float) $this->commissionPercent() / 100, 2), 2);
+    }
+
     public function hasCommissionOverride(): bool
     {
         return $this->commission_percent_override !== null;

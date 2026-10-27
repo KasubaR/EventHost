@@ -18,7 +18,7 @@
 
     $ticketTypes = $event->ticketTypes;
 
-    $prices = $ticketTypes->pluck('price')->map(fn ($p) => (float) $p);
+    $prices = $ticketTypes->pluck('price')->map(fn ($p) => $event->buyerFacingPrice($p));
     $priceHint = $prices->isEmpty()
         ? null
         : ($prices->unique()->count() === 1
@@ -109,7 +109,7 @@
                                         <p class="tkc-type-note">Only {{ $available }} left</p>
                                     @endif
                                 </div>
-                                <div class="tkc-type-price">K{{ number_format((float) $ticketType->price, 2) }}</div>
+                                <div class="tkc-type-price">K{{ number_format($event->buyerFacingPrice($ticketType->price), 2) }}</div>
                             </div>
                         @endforeach
                     </div>
