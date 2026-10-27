@@ -1,6 +1,13 @@
 <x-admin-layout>
     @push('styles')
         <link rel="stylesheet" href="{{ asset('css/events-admin.css') }}">
+        <style>
+            .admin-aud-tabs { display: flex; gap: 4px; border-bottom: 1px solid #e5e7eb; margin: 16px 0; overflow-x: auto; }
+            .admin-aud-tab { padding: 10px 16px; font-weight: 600; color: #6b7280; text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
+            .admin-aud-tab:hover { color: #111827; }
+            .admin-aud-tab.is-active { color: #4f46e5; border-bottom-color: #4f46e5; }
+            .admin-aud-count { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: #f3f4f6; font-size: 12px; color: #374151; }
+        </style>
     @endpush
 
     <x-slot name="title">Events</x-slot>
@@ -23,20 +30,31 @@
             <label class="evt-sr-only" for="admin-event-q">Search</label>
             <input id="admin-event-q" type="search" name="q" value="{{ $search }}" placeholder="Event name or owner">
         </div>
-        <div>
-            <label class="evt-sr-only" for="admin-event-audience">Audience</label>
-            <select id="admin-event-audience" name="audience">
-                <option value="">All audiences</option>
-                @foreach (\App\Enums\EventAudience::cases() as $audienceOption)
-                    <option value="{{ $audienceOption->value }}" @selected($audience === $audienceOption)>{{ $audienceOption->label() }}</option>
-                @endforeach
-            </select>
-        </div>
+        @if ($audience)
+            <input type="hidden" name="audience" value="{{ $audience->value }}">
+        @endif
         <label class="admin-muted" style="display:flex;align-items:center;gap:6px;">
             <input type="checkbox" name="created_by_admin" value="1" @checked($createdByAdmin)> Created by admin
         </label>
         <button type="submit" class="btn-primary">Search</button>
     </form>
+
+    @php
+        $tabQuery = array_filter(['q' => $search, 'created_by_admin' => $createdByAdmin ? 1 : null]);
+        $tabs = [['key' => null, 'label' => 'All', 'count' => $audienceCounts->sum()]];
+        foreach (\App\Enums\EventAudience::cases() as $case) {
+            $tabs[] = ['key' => $case, 'label' => $case->label(), 'count' => $audienceCounts[$case->value] ?? 0];
+        }
+    @endphp
+    <div class="admin-aud-tabs" role="tablist" aria-label="Event audience">
+        @foreach ($tabs as $tab)
+            <a href="{{ route('admin.events.index', $tabQuery + ($tab['key'] ? ['audience' => $tab['key']->value] : [])) }}"
+               role="tab" aria-selected="{{ $audience === $tab['key'] ? 'true' : 'false' }}"
+               class="admin-aud-tab {{ $audience === $tab['key'] ? 'is-active' : '' }}">
+                {{ $tab['label'] }} <span class="admin-aud-count">{{ $tab['count'] }}</span>
+            </a>
+        @endforeach
+    </div>
 
     <div class="admin-table-wrap">
         <table class="admin-table">

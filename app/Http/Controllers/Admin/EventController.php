@@ -27,10 +27,8 @@ class EventController extends Controller
         $audience = EventAudience::tryFrom((string) $request->query('audience', ''));
         $createdByAdmin = $request->boolean('created_by_admin');
 
-        $events = Event::withTrashed()
-            ->with(['user:id,name,email'])
-            ->withCount(['rsvps', 'guests'])
-            ->when($search !== '', function ($query) use ($search): void {
+        $matching = function ($query) use ($search, $createdByAdmin): void {
+            $query->when($search !== '', function ($query) use ($search): void {
                 $query->where(function ($q) use ($search): void {
                     $q->where('name', 'like', '%'.$search.'%')
                         ->orWhereHas('user', function ($uq) use ($search): void {
@@ -38,9 +36,21 @@ class EventController extends Controller
                                 ->orWhere('email', 'like', '%'.$search.'%');
                         });
                 });
-            })
+            })->when($createdByAdmin, fn ($q) => $q->whereNotNull('created_by_admin_id'));
+        };
+
+        $audienceCounts = Event::withTrashed()
+            ->tap($matching)
+            ->selectRaw('audience, count(*) as total')
+            ->groupBy('audience')
+            ->pluck('total', 'audience')
+            ->map(fn ($n) => (int) $n);
+
+        $events = Event::withTrashed()
+            ->with(['user:id,name,email'])
+            ->withCount(['rsvps', 'guests'])
+            ->tap($matching)
             ->when($audience !== null, fn ($query) => $query->where('audience', $audience))
-            ->when($createdByAdmin, fn ($query) => $query->whereNotNull('created_by_admin_id'))
             ->orderByDesc('created_at')
             ->paginate(20)
             ->withQueryString();
@@ -49,6 +59,7 @@ class EventController extends Controller
             'events' => $events,
             'search' => $search,
             'audience' => $audience,
+            'audienceCounts' => $audienceCounts,
             'createdByAdmin' => $createdByAdmin,
         ]);
     }
