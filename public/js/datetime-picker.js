@@ -841,6 +841,8 @@
         var rect = this.trigger.getBoundingClientRect();
         var panel = this.panel;
         panel.style.visibility = 'hidden';
+        panel.style.maxHeight = '';
+        panel.style.overflowY = '';
         panel.style.top = '0px';
         panel.style.left = '0px';
         var pw = panel.offsetWidth;
@@ -848,11 +850,24 @@
         panel.style.visibility = '';
 
         var gap = 6;
+        var edge = 8;
         var vh = window.innerHeight;
         var vw = window.innerWidth;
 
-        var above = rect.bottom + gap + ph > vh && rect.top - gap - ph > 0;
+        // Open on whichever side has more room. If even that side is too short for the whole
+        // panel (a short window or a zoomed page), cap its height and let it scroll rather
+        // than letting the Today / Done row fall off the screen.
+        var spaceBelow = vh - rect.bottom - gap - edge;
+        var spaceAbove = rect.top - gap - edge;
+        var above = ph > spaceBelow && spaceAbove > spaceBelow;
+        var room = above ? spaceAbove : spaceBelow;
+        if (ph > room) {
+            ph = Math.max(room, 160);
+            panel.style.maxHeight = ph + 'px';
+            panel.style.overflowY = 'auto';
+        }
         var top = above ? rect.top - gap - ph : rect.bottom + gap;
+        top = Math.max(edge, Math.min(top, vh - ph - edge));
         var left = Math.min(Math.max(8, rect.left), vw - pw - 8);
 
         panel.classList.toggle('is-above', above);

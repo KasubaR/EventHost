@@ -74,15 +74,22 @@ rows for joiners only), then deletes the group or calls `disableLink()`. It retu
 - Tests: 10 more in `GuestGroupEdgeCasesTest` (cleaning, case and spacing, composed vs decomposed accents, invisible-only, 191 vs 192 and 255, rename, API, a simulated
   simultaneous create, import)
 
-## Phase 4: scale
+## Phase 4: scale (BUILT)
 
-- **Groups page and pickers.** Page the groups page (50 a time) and compute `seatsTaken` / `seatsPending` for the groups on the page in one grouped query
-  instead of two per row. **Decision 2:** cap groups per event (suggest 200); the import reports a row it could not group rather than creating more
-- **Bulk move.** `GuestUpdater::moveManyToGroup()` reads the destination's pool once, walks the guests in memory and writes in chunks, so the event lock is held for
-  one short batch, not one query per guest. Result counts unchanged
-- **Bulk input.** `guest_ids` gets a ceiling (**decision 3**, suggest 500, matching a page of the list times a few) and the per-id `exists` becomes one
-  `whereIn` count; the error says to select fewer. API unchanged except the same ceiling
-- A "Members" count link on the groups page that opens the guest list filtered to the group (the filter already exists)
+- **Groups page.** `GuestGroupController::index` pages 50 at a time (`{{ $groups->links() }}`) and calls `GuestGroup::preloadSeatTotals()`, one grouped query for the page's pooled
+  groups; `seatsTaken()` / `seatsPending()` answer from that (a private property, never an attribute, so it can't be saved). 30 pooled groups load in under 60 queries in total
+- **Cap (decision 2): `GuestGroup::MAX_PER_EVENT = 200`.** `GuestGroupNamer::create()` refuses the 201st, under the lock, with "An event can have up to 200 groups. Remove one you no
+  longer need first." (web and API). Renaming and deleting are never blocked, and an event already over the cap keeps its groups. The **import refuses the row** (reported with its
+  spreadsheet row number, not imported) when its new group would pass the cap, rather than importing the guest ungrouped; a name the event already has, or one an earlier row of the
+  batch reserved, is always fine (`groupRefusal()` / `knownGroupKeys`)
+- **Bulk move.** `GuestUpdater::moveManyToGroup()` reads the pool once and counts it down in memory while walking the guests, then writes in chunks of 500: one `update` and one
+  `guest_edits` multi-row insert per chunk (`writeMoves()`), clearing `group_link_joined_at` as before. A 256-guest move is under 40 queries. The refusal sentence is shared with the
+  single move (`refusalMessage()`); counts and the "Move them from their own page" reason are unchanged
+- **Bulk input (decision 3): `GuestBulkActionRequest::MAX_GUESTS = 500`** ("Select up to 500 guests at a time."). The per-id `exists` rule is gone; `after()` checks that every id belongs to
+  the event with one count, so a bad id is a single `guest_ids` error. Web and API share it
+- **Members link:** the member count on the groups page opens the guest list filtered to that group
+- Tests: 10 more in `GuestGroupEdgeCasesTest` (cap on web, API, rename/delete at and over the cap, import at the cap, paging, seat totals and query count, members link, bulk move
+  fill and skip, bulk move history, the 500 ceiling, the other-event check)
 
 ## Phase 5: access
 

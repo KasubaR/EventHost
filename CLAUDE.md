@@ -657,7 +657,10 @@ say, a 100-person committee that gets 10 seats. Plan: `plans/group-rsvp-links.md
   **Group names** are created and renamed only through `App\Services\GuestGroupNamer` (web, API): cleaned like guest names (`GuestGroup::cleanName()`), capped at
   `GuestGroup::NAME_MAX` (191, the column), and compared by `GuestGroup::nameKey()` (cleaned, lower-cased) under the event lock, so spacing, case and invisible characters never make a
   second group and a simultaneous create is a validation error, not a 500. The import uses the same cleaning and key.
-  Plan: `plans/guest-groups-gaps.md` (Phases 0 to 3 built; the scale limits and the 403/404 fix are still planned)
+  **Limits:** an event has at most `GuestGroup::MAX_PER_EVENT` (200) groups (the namer refuses the 201st; the import refuses a row whose new group would pass it; renaming and deleting are
+  never blocked), the groups page pages 50 at a time with `GuestGroup::preloadSeatTotals()` instead of two queries per group, and a bulk action names at most
+  `GuestBulkActionRequest::MAX_GUESTS` (500) guests, membership checked with one count.
+  Plan: `plans/guest-groups-gaps.md` (Phases 0 to 4 built; the 403/404 fix is still planned)
 
 **Host contact number.** `events.host_contact_phone` is entered on the create/edit form and **required for web invitation
 events** (`StoreEventRequest` / `UpdateEventRequest`), optional for the Android API so its contract stays additive.
@@ -760,7 +763,7 @@ badly written details. Tests: `GuestAddEdgeCasesTest`, `GuestPhoneTest`.
  `guest_group_id`, so the web form and the API 422 the same way) unless the host ticks **"Allow over the pool"** (`allow_over_pool`, shown on the edit page after a refusal; API body field). A guest
  who holds no seats (no answer, declined, maybe, rejected) always fits; a move out of a pool, or into a group with none, needs no check; saving a guest without changing their group is never
  checked. **Any hand move clears `group_link_joined_at`** (it marks "signed up through the group link", which a host-moved guest is not, and `RsvpSubmissionService` forces those into review).
- The bulk "Assign group" (web and API) goes through `GuestUpdater::moveManyToGroup()`: each guest is checked in turn against the live pool under the event lock, so the first ones fill it and the rest
+ The bulk "Assign group" (web and API) goes through `GuestUpdater::moveManyToGroup()`: the pool is read once and counted down in memory under the event lock (writes then go in chunks of 500, one `update` and one `guest_edits` insert each), so the first ones fill it and the rest
  are skipped, never over-filled (`bulk_skipped` / API `skipped_count`, plus `bulk_skip_reason` / `skipped_reason`); bulk has no override, a host goes over the pool from the guest's own page
 - **Changing a guest's plus-one permission** (plan `plans/guest-editing-gaps.md` Phase 4): switching it **on** for a guest who has said yes for one seat (and the event allows plus-ones) flashes `plus_one_offered` with a
  **"Tell them"** button (`POST events/{event}/guests/{guest}/notify-plus-one`, `GuestController::notifyPlusOne`): one `EventUpdatedNotification` through `CommunicationService::sendEventUpdate(..., 'plus_one_offer')` with their

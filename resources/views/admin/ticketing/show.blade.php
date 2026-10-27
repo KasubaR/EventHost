@@ -309,7 +309,18 @@
                 </div>
             @endif
 
-            @if ($canActivate)
+            @if ($ev->ticketing_status === \App\Enums\TicketingStatus::Approved)
+                <p class="admin-muted admin-mt-md">
+                    <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+                    Ticket sales approved{{ $ev->ticketing_reviewed_at ? ' on '.$ev->ticketing_reviewed_at->format('j M Y') : '' }}.
+                    @if ($ev->isLocked())
+                        The event date has passed, so sales have ended.
+                    @endif
+                </p>
+            @endif
+
+            {{-- A passed date means nothing can be approved, so the form is not offered at all (the notice above says why). --}}
+            @if ($canActivate && ! $ev->isLocked())
                 <form method="post" action="{{ route('admin.ticketing.approve', $ev) }}" class="profile-form admin-mt-md">
                     @csrf
                     <label for="agreed_payout_on">Agreed payout date <span class="profile-optional">optional</span></label>
