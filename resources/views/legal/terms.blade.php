@@ -23,249 +23,226 @@
         <nav class="legal-toc" aria-label="On this page">
             <h2>On this page</h2>
             <ol>
-                <li><a href="#agreement">The agreement</a></li>
+                <li><a href="#agreement">Agreement and our role</a></li>
                 <li><a href="#accounts">Accounts</a></li>
                 <li><a href="#credits">Event credits</a></li>
-                <li><a href="#refunds">Refunds</a></li>
+                <li><a href="#credit-refunds">Event credit refunds</a></li>
                 <li><a href="#your-content">Your content</a></li>
-                <li><a href="#guest-lists">Guest lists</a></li>
+                <li><a href="#guest-lists">Guest and attendee information</a></li>
                 <li><a href="#acceptable-use">Acceptable use</a></li>
                 <li><a href="#reviews">Reviews</a></li>
-                <li><a href="#availability">Availability</a></li>
-                <li><a href="#suspension">Suspension and closure</a></li>
+                <li><a href="#availability">Service availability and support</a></li>
+                <li><a href="#ticket-sales">Ticket sales and organiser responsibilities</a></li>
+                <li><a href="#commission">Commission and payment charges</a></li>
+                <li><a href="#payouts">Payouts</a></li>
+                <li><a href="#ticket-refunds">Ticket refunds</a></li>
+                <li><a href="#chargebacks">Chargebacks and reconciliation</a></li>
+                <li><a href="#suspension">Suspension and account closure</a></li>
                 <li><a href="#liability">Liability</a></li>
-                <li><a href="#law">Governing law</a></li>
-                <li><a href="#changes">Changes</a></li>
+                <li><a href="#law">Complaints and governing law</a></li>
+                <li><a href="#changes">Changes to these terms</a></li>
+                <li><a href="#contact">Contact</a></li>
+                <li><a href="#refund-scenarios">Refund scenarios</a></li>
             </ol>
         </nav>
 
         <div class="legal-body">
 
             <section>
-                <h2 id="agreement">1. The agreement</h2>
-                <p>
-                    These terms are a contract between you and
-                    <strong><a href="https://kinpinarts.com/" target="_blank" rel="noopener noreferrer">Kinpin Arts Media</a></strong> ("Event Host", "we", "us"). By
-                    creating an account or using the service you accept them. If you are agreeing on behalf
-                    of a company, you confirm you are authorised to bind that company.
-                </p>
-                <p>
-                    Our <a href="{{ route('legal.privacy') }}">Privacy Policy</a> and
-                    <a href="{{ route('legal.cookies') }}">Cookie Policy</a> form part of this agreement.
-                </p>
+                <h2 id="agreement">1. Agreement and our role</h2>
+                <p>These terms govern your use of Event Host, operated by <strong><a href="https://kinpinarts.com/" target="_blank" rel="noopener noreferrer">Kinpin Arts Media</a></strong> ("Event Host", "we", "us").</p>
+                <p>By creating an account, publishing an event or purchasing through Event Host, you agree to these terms and the applicable terms disclosed before your transaction. Our <a href="{{ route('legal.privacy') }}">Privacy Policy</a> and <a href="{{ route('legal.cookies') }}">Cookie Policy</a> explain how we handle personal information and cookies.</p>
+                <p>If you act for an organisation, you confirm that you are authorised to bind it.</p>
+                <p>Event Host provides event-management, invitation and ticketing services. The organiser is responsible for delivering the advertised event, including its safety, permissions, venue and admission arrangements. Event Host remains responsible for its own services and obligations under applicable law.</p>
             </section>
 
             <section>
                 <h2 id="accounts">2. Accounts</h2>
-                <p>
-                    You must be at least 18 to hold an account,
-                    give accurate details, and verify your email address before you can use the dashboard.
-                </p>
-                <p>
-                    You are responsible for keeping your password secure and for everything done through
-                    your account. Tell us immediately if you think someone else has access to it. Do not
-                    share your account with other people, and do not create an account on someone else's
-                    behalf without their permission.
-                </p>
+                <p>Account holders must be at least 18 years old and provide accurate information. Email verification is required before accessing the organiser dashboard.</p>
+                <p>Keep your login details secure and notify us promptly of suspected unauthorised access. Do not share accounts or create an account for another person without permission.</p>
+                <p>Additional identity, business or payment verification may be required before ticket sales or payouts.</p>
             </section>
 
             <section>
                 <h2 id="credits">3. Event credits</h2>
-                <p>
-                    Event Host is paid for with <strong>event credits</strong>. Publishing an event costs one
-                    credit, which is deducted when the event is published. Saving a draft does not use a
-                    credit. Credits are bought through our
-                    payment providers (Lenco@if (\App\Services\AstragateService::cardEnabled()) and, for card payments, Astragate@endif),
-                    in the currency shown at checkout.
-                </p>
-                <ul>
-                    <li>Credits have no cash value and cannot be exchanged for money</li>
-                    <li>Credits are tied to your account and cannot be transferred to another user</li>
-                    <li>Credits do not expire</li>
-                    <li>Unused credits are forfeited if you delete your account</li>
-                    <li>Prices may change; a change never affects credits you have already bought</li>
-                </ul>
-                <p>
-                    We may also grant credits manually, for support cases or promotions. Granted credits
-                    work the same way but are not refundable in cash.
-                </p>
+                <p>Publishing an event uses one event credit. Creating a draft is free.</p>
+                <p>Credits are purchased through the payment methods offered at checkout, in the displayed currency. Prices and applicable charges are shown before payment.</p>
+                <p>Credits do not expire, have no cash value and cannot be transferred. Price changes do not affect credits already purchased. Promotional or support credits cannot be exchanged for cash.</p>
+                <p>Deleting an account forfeits unused credits, subject to applicable law.</p>
             </section>
 
             <section>
-                <h2 id="refunds">4. Refunds</h2>
-                <p>
-                    <strong>Event credit purchases are final and non-refundable.</strong> Once a payment
-                    has been completed, the credits are added to your account and we do not refund them,
-                    whether or not you go on to use them. Because credits do not expire, a credit you have
-                    not used remains available on your account for a future event.
-                </p>
-                <p>
-                    If you were charged in error, charged twice, or paid for credits that were never added
-                    to your account, that is not a refund request but a payment fault. Email
-                    <a href="mailto:info@eventhostzm.com">info@eventhostzm.com</a> and we will put it right.
-                </p>
-                <p>
-                    Nothing in this section limits any refund right you have under Zambian consumer law
-                    that cannot be excluded by contract.
-                </p>
+                <h2 id="credit-refunds">4. Event credit refunds</h2>
+                <p>This section applies only to event credit purchases, not event tickets.</p>
+                <p>Event-credit purchases are generally final, whether used or unused, subject to rights under applicable law. Unused credits remain available for future events while the account remains open.</p>
+                <p>If a payment is duplicated, charged incorrectly or completed without the purchased credits being supplied, contact us. We will investigate and correct the credit balance or arrange an appropriate refund.</p>
             </section>
 
             <section>
                 <h2 id="your-content">5. Your content</h2>
-                <p>
-                    You keep ownership of everything you upload: event details, cover images, gallery
-                    photos, guest lists and text. You grant us a non-exclusive, worldwide, royalty-free
-                    licence to store, reproduce and display that content, strictly for the purpose of
-                    operating the service: rendering your invitation page, sending your invitations and
-                    showing your event where you have chosen to make it public.
-                </p>
-                <p>
-                    You confirm you have the rights to what you upload, including any photographs, and the
-                    permission of anyone identifiable in them.
-                </p>
-                <p id="music">
-                    <strong>Music and other audio.</strong> You may upload background music or other audio
-                    only if you own it or hold a licence that allows you to copy it and play it to your
-                    guests on the internet. That usually means music you made yourself or royalty-free
-                    music with a licence that covers this use. A commercial song you merely bought or
-                    streamed is normally not enough.
-                </p>
-                <p>
-                    You are responsible for everything you upload. If someone brings a claim because of
-                    audio you uploaded, you will cover our reasonable costs and losses from it
-                    (including legal fees) and any amount we have to pay, to the extent the claim comes
-                    from your upload or your breach of these terms.
-                </p>
-                <p>
-                    If you believe audio on an invitation infringes your copyright, tell us using the
-                    &ldquo;Report this music&rdquo; link at the foot of that invitation, or through the
-                    <a href="{{ route('contact') }}">contact page</a>. We act on reports promptly: we may
-                    remove the audio without notice, and we may suspend accounts that repeatedly upload
-                    audio they have no right to use.
-                </p>
+                <p>You retain ownership of your content. You grant Event Host a worldwide, non-exclusive, royalty-free licence to use it only as necessary to provide and operate the service.</p>
+                <p>You must have permission to use uploaded text, images, audio and other materials.</p>
+                <p id="music"><strong>Music and other audio.</strong> Buying or streaming a song does not necessarily grant permission to upload or distribute it. Upload music only if you made it or hold a licence that lets you copy it and play it to your guests on the internet.</p>
+                <p>You are responsible for infringement caused by content you supply and, to the extent permitted by law, reasonable resulting claims and costs attributable to your breach.</p>
+                <p>We may remove infringing content and suspend repeat offenders. Copyright concerns may be reported through our copyright-reporting channel or support: use the &ldquo;Report this music&rdquo; link at the foot of an invitation, or the <a href="{{ route('contact') }}">contact page</a>.</p>
             </section>
 
             <section>
-                <h2 id="guest-lists">6. Guest lists</h2>
-                <p>
-                    You decide whose contact details go on your guest list and why. You confirm that you are
-                    entitled to hold those details and to provide them to us so we can send invitations on
-                    your behalf. We act on your instructions in relation to that data.
-                </p>
-                <p>
-                    You must not use Event Host to send unsolicited bulk messages. Invitations are for people
-                    who would reasonably expect to hear from you about your event.
-                </p>
-                <p>
-                    If a guest asks us to remove their details, we will normally refer them to you, and may
-                    remove the record ourselves where we are legally required to.
-                </p>
+                <h2 id="guest-lists">6. Guest and attendee information</h2>
+                <p>Organisers must have a lawful basis for collecting and using guest or attendee information and must explain its intended use.</p>
+                <p>Do not upload lists for unsolicited messages. Invitation recipients should reasonably expect to hear from you.</p>
+                <p>We handle information according to our Privacy Policy and, where applicable, the organiser's lawful instructions. We also process information necessary for payments, security, support and legal obligations.</p>
+                <p>Organisers must cooperate with requests concerning attendee information. Guest lists and ticket records must not be reused for unrelated marketing without an appropriate lawful basis.</p>
             </section>
 
             <section>
                 <h2 id="acceptable-use">7. Acceptable use</h2>
-                <p>You may not use Event Host to:</p>
+                <p>You must not:</p>
                 <ul>
-                    <li>Break the law, or promote an event that is itself unlawful</li>
-                    <li>Post content that is defamatory, hateful, harassing, sexually explicit, or that infringes someone else's rights</li>
-                    <li>Impersonate another person, business or organisation</li>
-                    <li>Send spam, run a scam, or advertise an event that will not take place</li>
-                    <li>Probe, scrape, overload or reverse-engineer the service, or bypass its rate limits, access controls or payment flow</li>
-                    <li>Upload malware, or anything designed to interfere with the service or its users</li>
-                    <li>Resell or white-label the service without our written agreement</li>
+                    <li>Publish unlawful, fraudulent, threatening, hateful, defamatory or infringing material.</li>
+                    <li>Promote fictitious events or misrepresent an event or your authority.</li>
+                    <li>Send spam, distribute malware or impersonate others.</li>
+                    <li>Bypass security, interfere with the service or collect data without authorisation.</li>
+                    <li>Resell or white-label Event Host without written agreement.</li>
                 </ul>
+                <p>We may investigate suspected misuse and take proportionate action.</p>
             </section>
 
             <section>
                 <h2 id="reviews">8. Reviews</h2>
-                <p>
-                    If you review an event you hosted, you confirm the review is your own genuine opinion.
-                    We review submissions before publishing and may decline or remove any of them. Editing
-                    an approved review returns it to pending and removes it from the homepage until it is
-                    approved again. Publishing a review is at our discretion, and we may unpublish one at
-                    any time.
-                </p>
+                <p>Reviews must reflect genuine experience and must not be misleading, abusive or fabricated.</p>
+                <p>Reviews may be moderated. Editing a published review may return it to moderation. We may decline or remove reviews that breach these terms.</p>
             </section>
 
             <section>
-                <h2 id="availability">9. Availability</h2>
-                <p>
-                    We work to keep Event Host available, but we do not promise uninterrupted service. We may
-                    take the platform down for maintenance, and features may change, be added or be removed.
-                </p>
-                <p>
-                    <strong>Delivery of email is not guaranteed.</strong> Invitations and notifications can be
-                    delayed, filtered or blocked by a recipient's mail provider. For an event that matters,
-                    confirm important guests have received their invitation by another route.
-                </p>
-                <p>
-                    Support is provided by email at
-                    <a href="mailto:info@eventhostzm.com">info@eventhostzm.com</a> during
-                    08:00–20:00 CAT, and we aim to reply within one
-                    business day. That is a target, not a contractual commitment.
-                </p>
+                <h2 id="availability">9. Service availability and support</h2>
+                <p>We aim to provide a reliable service but cannot guarantee uninterrupted availability or delivery of every email. Maintenance and service changes may occur.</p>
+                <p>Organisers should independently confirm essential communications and maintain suitable admission arrangements.</p>
+                <p>Support is available from 08:00 to 20:00 Central Africa Time at <a href="mailto:info@eventhostzm.com">info@eventhostzm.com</a>. We aim to respond within one business day; this is a service aim rather than a guaranteed resolution time.</p>
             </section>
 
             <section>
-                <h2 id="suspension">10. Suspension and closure</h2>
-                <p>
-                    You can delete your account at any time from account settings. Deletion is permanent and
-                    removes your events and guest lists. Records of payments are the exception: we keep those, and
-                    we cannot delete an account while one of its events has ticket sales, refunds or contribution
-                    payments on record. Contact support and we will wind the event down with you first.
-                </p>
-                <p>
-                    We may suspend or close an account that breaches these terms, that is being used
-                    fraudulently, or where we are required to by law. Where it is reasonable to do so we
-                    will warn you first and give you a chance to put things right. If we close your account
-                    for a breach, unused credits are forfeited.
-                </p>
+                <h2 id="ticket-sales">10. Ticket sales and organiser responsibilities</h2>
+                <p>Organisers must accurately disclose the event date, venue, ticket price, inclusions, restrictions and refund conditions before purchase.</p>
+                <p>All buyer charges must be visible before payment. Event-specific conditions cannot remove rights under these terms or applicable law.</p>
+                <p>Organisers must honour valid tickets and promptly notify Event Host and affected buyers of cancellations, postponements or material changes.</p>
+                <p>A confirmed purchase cannot be cancelled solely because the organiser later wishes to charge a higher price.</p>
             </section>
 
             <section>
-                <h2 id="liability">11. Liability</h2>
-                <p>
-                    The service is provided "as is". To the fullest extent the law allows, we exclude implied
-                    warranties, and we are not liable for indirect or consequential loss, lost profit, lost
-                    business, or loss of goodwill.
-                </p>
-                <p>
-                    Where we are liable, our total liability to you is limited to the total amount you
-                    paid us in the twelve months before the event giving rise to the claim. If you have
-                    not paid us anything in that period, our liability is limited to the price of one
-                    event credit.
-                </p>
-                <p>
-                    Nothing here limits liability that cannot lawfully be limited, including for death or
-                    personal injury caused by our negligence, or for fraud.
-                </p>
-                <p>
-                    <strong>We are not a party to your event.</strong> We do not organise it, vet your guests,
-                    or take responsibility for what happens at it.
-                </p>
+                <h2 id="commission">11. Commission and payment charges</h2>
+                <p>Commission is agreed with each organiser in writing before ticket sales begin.</p>
+                <p>The agreement must identify:</p>
+                <ul>
+                    <li>The commission rate or amount and how it is calculated.</li>
+                    <li>Whether payment-processing charges and applicable taxes are included.</li>
+                    <li>Any separately payable charges.</li>
+                    <li>Whether the organiser absorbs charges or passes permitted charges to buyers.</li>
+                </ul>
+                <p>Changes do not apply retrospectively to completed sales unless lawfully agreed by the affected parties.</p>
             </section>
 
             <section>
-                <h2 id="law">12. Governing law</h2>
-                <p>
-                    These terms are governed by the laws of Zambia, and the courts of Zambia have exclusive
-                    jurisdiction over any dispute arising from them.
-                    <span class="legal-token">[Confirm this, and add any dispute-resolution or arbitration
-                    step you want to require first.]</span>
-                </p>
+                <h2 id="payouts">12. Payouts</h2>
+                <h3>Standard payout</h3>
+                <p>Unless expressly agreed otherwise in writing, Event Host will initiate payment within 5 (five) business days after the event concludes, subject to cleared funds, verified payment details and any justified hold.</p>
+                <p>Net proceeds are cleared ticket receipts less agreed commission, disclosed charges, refunds, chargebacks and any justified reserve. Deductions must be identifiable in the payout statement.</p>
+                <p>The initiation date is different from the date funds arrive. Banks and payment providers may require additional processing time.</p>
+                <h3>Early payouts</h3>
+                <p>Early payouts are not allowed unless Event Host and the organiser explicitly agree in writing.</p>
+                <p>The agreement must specify the amount, timing, conditions, any reserve and responsibility for refunds or chargebacks. Approval for one event does not extend to another.</p>
+                <p>An early payout does not remove the organiser's obligation to deliver the event or fund refunds for which they are responsible.</p>
+                <h3>Holds and reserves</h3>
+                <p>Event Host may withhold a reasonable amount where necessary to address suspected fraud, disputed payments, cancellation risk, unresolved refunds, payment-provider restrictions or legal requirements.</p>
+                <p>Unless prohibited by law, we will explain the reason, amount affected, information required and next review date. Holds will be reviewed and released promptly when their grounds no longer apply. Unaffected funds will be paid where reasonably separable.</p>
             </section>
 
             <section>
-                <h2 id="changes">13. Changes</h2>
-                <p>
-                    We may update these terms as the service develops. The "last updated" date at the top of
-                    this page reflects the current version. For material changes we will give you notice by
-                    email or in the app before they take effect. Continuing to use Event Host after that
-                    means you accept the updated terms.
-                </p>
+                <h2 id="ticket-refunds">13. Ticket refunds</h2>
+                <p>This section applies to ticket purchases. It is separate from the event-credit policy.</p>
+                <h3>When refunds are allowed</h3>
+                <p><strong>Cancelled events:</strong> Buyers are entitled to a refund for an event that is cancelled and not delivered.</p>
+                <p><strong>Postponed or rescheduled events:</strong> Buyers may accept the replacement date or request a refund if they cannot or do not wish to attend it.</p>
+                <p><strong>Material changes:</strong> Buyers may request a refund when a substantial change means the event no longer substantially matches what they purchased. Examples include moving it to another city or removing the principal advertised attraction. Minor timetable or supporting-line-up changes do not automatically qualify.</p>
+                <p><strong>Payment or ticketing faults:</strong> Verified duplicate charges, incorrect charges and payments for which a valid ticket was not supplied will be corrected or refunded. A successfully supplied replacement ticket may resolve a delivery fault if the buyer can still use it.</p>
+                <p><strong>Wrongful refusal of entry:</strong> A buyer with a valid ticket who complies with the published admission conditions may request a refund if entry is refused because of an organiser error, overselling or failure to provide the purchased admission.</p>
+                <p><strong>Partial delivery or interruption:</strong> Where an event is abandoned or a significant purchased element is not delivered, the appropriate full or partial refund will depend on what was supplied and applicable law.</p>
+                <p>Other refunds may be offered under the organiser's disclosed policy or agreed voluntarily.</p>
+                <h3>When refunds are not normally required</h3>
+                <p>A refund is not normally due solely because a buyer changes their mind, does not attend, arrives late or fails to meet clearly disclosed admission conditions.</p>
+                <p>Subjective dissatisfaction does not automatically qualify. However, complaints about misleading descriptions, substantial non-delivery or legal rights will still be considered.</p>
+                <h3>Refund amounts and charges</h3>
+                <p>For cancellation or a qualifying material change affecting the whole purchase, the proposed policy is to refund the ticket price and mandatory charges paid for the affected ticket.</p>
+                <p>No refund-processing fee will be deducted from a buyer's refund for a verified platform fault or duplicate charge.</p>
+                <p>Any costs allocated between Event Host and the organiser must be agreed separately and cannot reduce a refund required under these terms or applicable law. These terms do not establish a fixed refund-processing percentage.</p>
+                <h3>Requests and processing</h3>
+                <p>Contact <a href="mailto:info@eventhostzm.com">info@eventhostzm.com</a> with the order reference, event and reason for the request. Submit requests promptly so that the relevant records can be checked.</p>
+                <p>We will acknowledge the request, explain any evidence needed and provide the expected processing timeframe. Approved refunds will normally return through the original payment method, subject to provider requirements.</p>
+                <p>Organisers must cooperate and fund refunds for which they are responsible, including returning previously paid proceeds where necessary. A mandatory refund does not become discretionary merely because an organiser has not authorised it.</p>
             </section>
 
-            @include('legal.partials.contact-card')
+            <section>
+                <h2 id="chargebacks">14. Chargebacks and reconciliation</h2>
+                <p>Organisers are responsible for documented chargebacks and associated charges attributable to their event or obligations, subject to applicable law and the agreed payment arrangements.</p>
+                <p>Event Host may deduct properly due amounts from organiser balances or request repayment. We will explain deductions and allow relevant supporting evidence to be submitted.</p>
+                <p>Buyers retain any lawful rights to dispute payments through their payment provider.</p>
+            </section>
+
+            <section>
+                <h2 id="suspension">15. Suspension and account closure</h2>
+                <p>We may restrict or suspend an account for material breaches, suspected fraud or legal requirements. Where reasonable, we will explain the issue and allow an opportunity to resolve it.</p>
+                <p>Account deletion removes events and guest information subject to lawful record retention. Records of payments are the exception: we keep those. Accounts with unresolved sales, refunds or other financial obligations must complete a wind-down process through support, and we cannot delete an account while one of its events has ticket sales, refunds or contribution payments on record.</p>
+                <p>Suspension or closure does not automatically forfeit ticket proceeds. Outstanding balances will be reconciled and paid after valid deductions and justified holds.</p>
+            </section>
+
+            <section>
+                <h2 id="liability">16. Liability</h2>
+                <p>Nothing in these terms excludes liability or consumer rights that cannot lawfully be excluded, including liability for fraud or death or personal injury caused by negligence.</p>
+                <p>To the extent permitted by law, Event Host excludes liability for indirect or consequential losses. For other service claims, liability is limited to fees paid to Event Host during the preceding 12 months, or the price of one event credit if no fees were paid.</p>
+                <p>This limit does not reduce our obligation to remit organiser funds properly due or provide refunds owed under these terms or applicable law.</p>
+                <p>Organisers remain responsible for their events. This does not excuse Event Host from responsibility for its own acts or omissions.</p>
+            </section>
+
+            <section>
+                <h2 id="law">17. Complaints and governing law</h2>
+                <p>Please contact support first with details of a complaint so we can attempt to resolve it.</p>
+                <p>These terms are governed by the laws of Zambia. Disputes may be brought before the competent courts of Zambia, subject to any mandatory rights concerning jurisdiction.</p>
+                <p>Nothing prevents a person from contacting a regulator or exercising a statutory remedy.</p>
+            </section>
+
+            <section>
+                <h2 id="changes">18. Changes to these terms</h2>
+                <p>We will give reasonable advance notice of material changes by email or through the platform and state their effective date.</p>
+                <p>Changes will not retrospectively reduce rights attached to completed purchases or alter an agreed organiser commission without lawful agreement.</p>
+            </section>
+
+            <section>
+                <h2 id="contact">19. Contact</h2>
+                <p><strong>Kinpin Arts Media - Event Host</strong><br>Email: <a href="mailto:info@eventhostzm.com">info@eventhostzm.com</a><br>Phone: +260 965 023 606 | +260 971 654 278<br>Address: Unit C11, Chamba Valley Shopping Plaza, Maposa Road, Lusaka, Zambia</p>
+            </section>
+
+            <section>
+                <h2 id="refund-scenarios">Refund scenarios</h2>
+                <p>These examples explain the proposed policy in section 13. Outcomes remain subject to the facts and applicable law.</p>
+                <div class="legal-table-wrap">
+                    <table class="legal-table">
+                        <thead><tr><th scope="col">Scenario</th><th scope="col">Proposed outcome</th></tr></thead>
+                        <tbody>
+                            <tr><td>Organiser cancels the concert</td><td>Full refund of affected tickets and mandatory buyer charges.</td></tr>
+                            <tr><td>Event moves to the following month</td><td>Buyer can accept the new date or request a refund.</td></tr>
+                            <tr><td>Event moves to another city</td><td>Qualifying material change; refund available.</td></tr>
+                            <tr><td>Supporting performer changes</td><td>No automatic refund if the advertised event substantially proceeds. Assess the advertised promise and circumstances.</td></tr>
+                            <tr><td>Buyer is charged twice</td><td>Refund the duplicate charge without a refund-processing fee.</td></tr>
+                            <tr><td>Ticket email is missing</td><td>Resend a valid ticket if it can still be used. A missing email alone does not require refunding a usable purchase.</td></tr>
+                            <tr><td>Valid ticket holder refused entry because the venue is oversold.</td><td>Refund available.</td></tr>
+                            <tr><td>Buyer decides not to attend</td><td>Normally no refund, unless the organiser policy allows it.</td></tr>
+                            <tr><td>Buyer breaches disclosed age or conduct rules</td><td>Normally no refund, subject to the facts and applicable law.</td></tr>
+                            <tr><td>Event stops halfway through</td><td>Assess full or partial refund based on delivery and legal obligations.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
             @include('legal.partials.siblings')
 
         </div>

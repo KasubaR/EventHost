@@ -1051,7 +1051,7 @@ setting, so it can never promise a window the job is not enforcing. Account dele
   `payer_name`/`payer_email` snapshot; `failed`, `cancelled` and never-finished `pending` ones are deleted with the
   account. `PaymentCompletionService::reverse()` and `complete()` tolerate a null `user_id` — don't reintroduce a
   `User::...->firstOrFail()` on `$payment->user_id`. `credit_transactions` and `custom_quotes` still cascade. Privacy §7,
-  Terms §10 and the Settings → Account warning describe this; keep them in step
+  Terms §15 and the Settings → Account warning describe this; keep them in step
 - **Slugs of purged events are freed** — a new event can later take a URL that was printed on an old invitation.
   Accepted deliberately (no tombstone table); see the plan §10
 
@@ -1448,7 +1448,7 @@ to them.
   `<span class="legal-token">` and rendering to visitors as-is. Grep `legal-token` to find it
 - The **liability cap is now stated**: total fees paid in the twelve months before the claim, falling back
   to the price of one event credit when nothing was paid. Still unreviewed by a lawyer
-- The governing-law/dispute clause is written as prose, not a token, and has **not** been filled in
+- The terms (19 numbered sections plus a refund-scenarios table) now carry organiser ticketing terms: commission, payouts (5 business days after the event), ticket refunds, chargebacks. Supplied by the owner, not reviewed by a lawyer; the governing-law clause is plain prose
 - The three pages cross-link via `legal/partials/siblings.blade.php` and share
   `legal/partials/contact-card.blade.php`
 - The contents rail is a bare `<nav>`, so `global.css`'s `nav {}` rule applies — `legal.css` overrides it

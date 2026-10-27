@@ -257,3 +257,27 @@ nav.legal-toc {
   .legal-hero { padding: 64px 20px 56px; }
   .legal-main { padding: 44px 20px 64px; }
 }
+
+/* Scenario table (terms: refund scenarios) */
+.legal-table-wrap { overflow-x: auto; margin: 0 0 16px; }
+.legal-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+.legal-table th,
+.legal-table td {
+  text-align: left;
+  vertical-align: top;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  color: #4a4a63;
+}
+.legal-table th {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  color: var(--text-dark);
+  background: var(--gray-light);
+}
+.legal-table td:first-child { color: var(--text-dark); font-weight: 600; min-width: 200px; }
