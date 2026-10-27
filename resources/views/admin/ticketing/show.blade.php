@@ -49,6 +49,8 @@
         <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Hero image saved. It is the banner on the public ticket page.</div>
     @elseif (session('status') === 'ticketing-terms-updated')
         <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Negotiated terms saved.</div>
+    @elseif (session('status') === 'ticketing-organizer-updated')
+        <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Organizer details saved.</div>
     @elseif (session('status') === 'ticketing-capacity-updated')
         <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Event capacity saved.</div>
     @elseif (session('status') === 'ticketing-commission-updated')
@@ -192,6 +194,29 @@
                     </dd>
                 </div>
             </dl>
+
+            @if (auth('admin')->user()?->can('ticketing.organizer_manage'))
+                <form method="post" action="{{ route('admin.ticketing.organizer', $ev) }}" class="profile-form admin-mt-md">
+                    @csrf
+                    @method('PATCH')
+                    @foreach ([
+                        'organizer_name' => ['Organizer name', 'text', 120],
+                        'organizer_phone' => ['Contact number', 'tel', 40],
+                        'organizer_email' => ['Contact email', 'email', 255],
+                    ] as $field => [$label, $type, $max])
+                        <label for="{{ $field }}" class="profile-label admin-mt-sm">{{ $label }}</label>
+                        <input id="{{ $field }}" name="{{ $field }}" type="{{ $type }}" required maxlength="{{ $max }}"
+                               class="profile-input {{ $errors->has($field) ? 'profile-input--error' : '' }}"
+                               value="{{ old($field, $ev->{$field}) }}">
+                        @error($field)
+                            <p class="profile-field-error"><i class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
+                        @enderror
+                    @endforeach
+                    <div class="admin-actions admin-mt-md">
+                        <button type="submit" class="btn-primary">Save organizer details</button>
+                    </div>
+                </form>
+            @endif
 
             @if ($canApprove && $ev->canEditCommissionMode())
                 <form method="post" action="{{ route('admin.ticketing.commission', $ev) }}" class="profile-form admin-mt-md">

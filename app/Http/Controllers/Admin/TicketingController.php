@@ -12,6 +12,7 @@ use App\Http\Requests\Admin\ApproveTicketingRequest;
 use App\Http\Requests\Admin\RejectTicketingRequest;
 use App\Http\Requests\Admin\StoreAdminTicketedEventRequest;
 use App\Http\Requests\Admin\UpdateAdminEventCommissionRequest;
+use App\Http\Requests\Admin\UpdateEventOrganizerRequest;
 use App\Http\Requests\Admin\UpdateEventTicketCapacityRequest;
 use App\Http\Requests\Admin\UpdateEventTicketingTermsRequest;
 use App\Http\Requests\Admin\UpdateTicketedHeroRequest;
@@ -232,6 +233,28 @@ class TicketingController extends Controller
         return redirect()
             ->route('admin.ticketing.show', $event)
             ->with('status', 'ticketing-terms-updated');
+    }
+
+    /**
+     * Corrects the organizer's name and contact details. Like updateTerms(), not tied to
+     * ticketing_status. The payout account is deliberately untouched: only the client sets it.
+     */
+    public function updateOrganizer(UpdateEventOrganizerRequest $request, Event $event): RedirectResponse
+    {
+        abort_unless($event->isTicketed(), 404);
+
+        $previous = $event->only(['organizer_name', 'organizer_phone', 'organizer_email']);
+        $event->forceFill($request->validated())->save();
+
+        AdminActivity::log('Admin updated organizer details', [
+            'event_id' => $event->id,
+            'from' => $previous,
+            'to' => $event->only(['organizer_name', 'organizer_phone', 'organizer_email']),
+        ]);
+
+        return redirect()
+            ->route('admin.ticketing.show', $event)
+            ->with('status', 'ticketing-organizer-updated');
     }
 
     /**

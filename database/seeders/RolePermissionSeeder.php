@@ -32,6 +32,7 @@ class RolePermissionSeeder extends Seeder
         'audio_reports.manage',
         'ticketing.view',
         'ticketing.approve',
+        'ticketing.organizer_manage',
         'ticketing.payouts.manage',
         'ticketing.reconcile',
         'settings.manage',

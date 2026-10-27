@@ -224,8 +224,12 @@ Route::prefix('admin')
             Route::get('/ticketing/{event}', [AdminTicketingController::class, 'show'])->name('ticketing.show');
         });
 
+        Route::middleware(['permission:ticketing.organizer_manage,admin', 'throttle:admin-mutations'])->group(function (): void {
+            Route::patch('/ticketing/{event}/organizer', [AdminTicketingController::class, 'updateOrganizer'])->name('ticketing.organizer');
+        });
+
         Route::middleware(['permission:ticketing.approve,admin', 'throttle:admin-mutations'])->group(function (): void {
-            Route::post('/ticketing/create', [AdminTicketingController::class, 'store'])->name('ticketing.store');
+            Route::post('/ticketing/create',[AdminTicketingController::class, 'store'])->name('ticketing.store');
 
             Route::post('/ticketing/{event}/hero', [AdminTicketingController::class, 'updateHero'])->name('ticketing.hero');
             Route::post('/ticketing/{event}/approve', [AdminTicketingController::class, 'approve'])->name('ticketing.approve');

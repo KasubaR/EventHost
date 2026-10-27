@@ -18,6 +18,20 @@
         $commissionAmount = round($faceValue * (float) $commissionPercent / 100, 2);
         $buyerTotal = $isPassThrough ? $faceValue + $commissionAmount : $faceValue;
         $earliestExpiry = $reservations->min('expires_at');
+
+        // The booking fee is shown folded into each line, not as its own row. Each line takes its
+        // share of the fee by face value; the last line absorbs rounding so the lines add up to the total.
+        $lineTotals = [];
+        $feeLeft = $isPassThrough ? $commissionAmount : 0.0;
+        $count = $reservations->count();
+        foreach ($reservations->values() as $i => $reservation) {
+            $line = (float) $reservation->unit_price_snapshot * $reservation->quantity;
+            $share = ($i === $count - 1 || $faceValue <= 0)
+                ? $feeLeft
+                : round($commissionAmount * $line / $faceValue, 2);
+            $feeLeft = round($feeLeft - $share, 2);
+            $lineTotals[$reservation->getKey()] = $line + $share;
+        }
     @endphp
 
     <article class="tkc-page"
@@ -122,15 +136,9 @@
                     @foreach ($reservations as $reservation)
                         <div class="tkc-summary-item">
                             <span>{{ $reservation->quantity }} × {{ $reservation->ticketType->name }}</span>
-                            <span>K{{ number_format((float) $reservation->unit_price_snapshot * $reservation->quantity, 2) }}</span>
+                            <span>K{{ number_format($lineTotals[$reservation->getKey()], 2) }}</span>
                         </div>
                     @endforeach
-                    @if ($isPassThrough)
-                        <div class="tkc-summary-item">
-                            <span>EventHost booking fee</span>
-                            <span>K{{ number_format($commissionAmount, 2) }}</span>
-                        </div>
-                    @endif
                     <div class="tkc-summary-total">
                         <span>Total</span>
                         <span>K{{ number_format($buyerTotal, 2) }}</span>

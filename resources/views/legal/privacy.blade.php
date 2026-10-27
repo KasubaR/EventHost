@@ -66,11 +66,9 @@
 
                 <h3>Payment information</h3>
                 <p>
-                    Payments for event credits and tickets are taken by our payment providers: Lenco for mobile money and bank
-                    transfer@if (\App\Services\AstragateService::cardEnabled()), and Astragate for card payments@endif.
-                    Card and mobile-money details are entered on their systems, not ours. <strong>We never see or store your full
-                    card number or mobile-money PIN</strong>. We keep a record of each transaction: amount,
-                    currency, reference, status and timestamp.
+                    Payments are processed securely through our trusted payment providers. Your sensitive payment details are
+                    handled by the payment provider, not stored by EventHost. We retain transaction records for payment
+                    verification and reconciliation.
                 </p>
                 <p>
                     To pay out ticket sales we also ask a host of a ticketed event for a bank payout account: the account holder
