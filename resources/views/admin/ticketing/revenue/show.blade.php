@@ -75,7 +75,7 @@
                         <th>Gross</th>
                         <th>Platform fee</th>
                         <th>Host amount</th>
-                        <th>Operator</th>
+                        <th>Method</th>
                         <th>Status</th>
                     </tr>
                 </thead>
