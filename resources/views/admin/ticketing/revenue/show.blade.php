@@ -75,7 +75,8 @@
                         <th>Gross</th>
                         <th>Platform fee</th>
                         <th>Host amount</th>
-                        <th>Payment</th>
+                        <th>Operator</th>
+                        <th>Status</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -87,20 +88,20 @@
                             <td>{{ \App\Support\TicketingSettings::formatZmw($order->face_value) }}</td>
                             <td>{{ \App\Support\TicketingSettings::formatZmw($order->commission_amount) }}</td>
                             <td>{{ \App\Support\TicketingSettings::formatZmw($order->host_amount) }}</td>
+                            @php
+                                $pay = $order->payment;
+                                // The mobile-money operator (who took the money), not the internal method name.
+                                $operator = match (true) {
+                                    $pay === null => null,
+                                    $pay->payment_method === 'card' => 'Card',
+                                    $pay->payment_method === 'bank_transfer' => 'Bank transfer',
+                                    filled($pay->provider) => strtoupper($pay->provider) === 'MTN' ? 'MTN' : \Illuminate\Support\Str::headline($pay->provider),
+                                    default => \Illuminate\Support\Str::headline((string) $pay->payment_method),
+                                };
+                            @endphp
+                            <td>{{ $operator ?? '-' }}</td>
                             <td>
-                                @php
-                                    $pay = $order->payment;
-                                    // Show who took the money (the mobile-money operator), not the internal method name.
-                                    $operator = match (true) {
-                                        $pay === null => null,
-                                        $pay->payment_method === 'card' => 'Card',
-                                        $pay->payment_method === 'bank_transfer' => 'Bank transfer',
-                                        filled($pay->provider) => strtoupper($pay->provider) === 'MTN' ? 'MTN' : \Illuminate\Support\Str::headline($pay->provider),
-                                        default => \Illuminate\Support\Str::headline((string) $pay->payment_method),
-                                    };
-                                @endphp
                                 @if ($pay)
-                                    {{ $operator }} ·
                                     <span class="tkt-sales-status {{ $pay->status === 'completed' ? 'tkt-sales-status--on' : 'tkt-sales-status--off' }}">{{ \Illuminate\Support\Str::headline($pay->status) }}</span>
                                 @else
                                     -
