@@ -25,12 +25,23 @@
                 <div class="evt-stat-value">{{ \App\Support\TicketingSettings::formatZmw($pendingPayable) }}</div>
                 <div class="evt-stat-label">Pending payout</div>
             </div>
+            <div class="evt-stat-card">
+                <div class="evt-stat-value">{{ ['none' => 'Not paid yet', 'partial' => 'Partly paid', 'paid' => 'Paid in full'][$payoutState] }}</div>
+                <div class="evt-stat-label">Payout status</div>
+            </div>
         </div>
 
         <div class="evt-section">
             <div class="evt-section-head">
                 <h2>Payout history</h2>
-                <p>Payouts are recorded by EventHost on the date agreed with you. There is no self-service payout request here.</p>
+                <p>
+                    @if ($payoutState !== 'paid' && $expectedPayoutDate)
+                        We expect to initiate your payout by {{ $expectedPayoutDate->format('j M Y') }}
+                        ({{ $event->agreed_payout_on ? 'the date agreed with you' : '5 business days after the event' }}).
+                        Your bank or mobile money provider may need extra time before the money arrives.
+                    @endif
+                    Payouts are recorded by EventHost; there is no self-service payout request here.
+                </p>
             </div>
             <div class="evt-section-body evt-table-wrap">
                 @if ($payouts->isEmpty())
@@ -42,6 +53,7 @@
                                 <th>Date</th>
                                 <th>Amount</th>
                                 <th>Note</th>
+                                <th>Proof</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -50,6 +62,13 @@
                                     <td>{{ $payout->paid_on->format('j M Y') }}</td>
                                     <td>{{ \App\Support\TicketingSettings::formatZmw($payout->amount) }}</td>
                                     <td>{{ $payout->note ?? '-' }}</td>
+                                    <td>
+                                        @if ($payout->hasProof())
+                                            <a href="{{ route('public-events.tickets.payouts.proof', [$event, $payout]) }}" target="_blank" rel="noopener">View</a>
+                                        @else
+                                            -
+                                        @endif
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>

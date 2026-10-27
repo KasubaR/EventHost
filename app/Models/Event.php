@@ -977,6 +977,20 @@ class Event extends Model
         return round($price + round($price * (float) $this->commissionPercent() / 100, 2), 2);
     }
 
+    /**
+     * When the host can expect to be paid: the date an admin agreed on approval, else the terms' default of
+     * 5 business days after the event. Null when the event has no date. A promise of when payment is
+     * initiated, not of when it arrives.
+     */
+    public function expectedPayoutDate(): ?\Illuminate\Support\Carbon
+    {
+        if ($this->agreed_payout_on !== null) {
+            return $this->agreed_payout_on->copy();
+        }
+
+        return $this->event_date?->copy()->addWeekdays(5);
+    }
+
     public function hasCommissionOverride(): bool
     {
         return $this->commission_percent_override !== null;

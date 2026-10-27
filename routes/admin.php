@@ -214,6 +214,7 @@ Route::prefix('admin')
             // needing to precede /checkin/{staffToken} in routes/web.php.
             Route::get('/ticketing/revenue', [TicketRevenueController::class, 'index'])->name('ticketing.revenue.index');
             Route::get('/ticketing/revenue/{event}', [TicketRevenueController::class, 'show'])->name('ticketing.revenue.show');
+            Route::get('/ticketing/revenue/{event}/payouts/{payout}/proof', [TicketRevenueController::class, 'proof'])->name('ticketing.revenue.payouts.proof');
 
             // Same early-registration reasoning as /ticketing/revenue above —
             // must precede /ticketing/{event}.

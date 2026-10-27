@@ -46,7 +46,7 @@ Set these in production `.env`. Copy from `.env.example` for any missing keys.
 - [ ] `LENCO_STUCK_PAYMENT_HOURS=2`
 - [ ] `LENCO_POLL_MAX_PER_RUN=50`
 - [ ] `LENCO_POLL_THROTTLE_MS=200`
-- [ ] `LENCO_BANK_TRANSFER_ENABLED=true` *(set `false` until Lenco confirms bank initiate API)*
+- [ ] `LENCO_BANK_TRANSFER_ENABLED=false` *(default; set `true` only once Lenco confirms bank initiate API)*
 
 ### Payment logging
 

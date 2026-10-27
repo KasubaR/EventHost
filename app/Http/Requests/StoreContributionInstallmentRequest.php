@@ -24,7 +24,7 @@ class StoreContributionInstallmentRequest extends FormRequest
     public function rules(): array
     {
         $allowedMethods = ['mobile_money'];
-        if (config('services.lenco.bank_transfer_enabled', true)) {
+        if (config('services.lenco.bank_transfer_enabled', false)) {
             $allowedMethods[] = 'bank_transfer';
         }
 

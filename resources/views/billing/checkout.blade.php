@@ -180,7 +180,7 @@
                         <i class="fa-solid fa-mobile-screen-button" aria-hidden="true"></i>
                         <span>Mobile Money</span>
                     </button>
-                    @if ($bankTransferEnabled ?? true)
+                    @if ($bankTransferEnabled ?? false)
                         <button type="button" class="billing-method-tab" data-method="bank_transfer" role="tab" aria-selected="false">
                             <i class="fa-solid fa-building-columns" aria-hidden="true"></i>
                             <span>Bank Transfer</span>
@@ -227,7 +227,7 @@
                     </div>
                 </div>
 
-                @if ($bankTransferEnabled ?? true)
+                @if ($bankTransferEnabled ?? false)
                 <div class="billing-method-panel" data-panel="bank_transfer">
                     <div class="billing-phone-field">
                         <label class="profile-label" for="billing-bank">

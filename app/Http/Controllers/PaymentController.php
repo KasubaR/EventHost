@@ -58,7 +58,7 @@ class PaymentController extends Controller
             'banks' => $banks,
             'user' => $user,
             'selectedPlan' => $request->query('plan'),
-            'bankTransferEnabled' => (bool) config('services.lenco.bank_transfer_enabled', true),
+            'bankTransferEnabled' => (bool) config('services.lenco.bank_transfer_enabled', false),
             'activeTemplateCount' => InvitationTemplate::activeCount(),
             'popularPlanKey' => $popularPlans->resolve(),
             'pendingCustomQuote' => CustomQuote::pendingFor($user),

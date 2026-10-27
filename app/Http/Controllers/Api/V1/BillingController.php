@@ -53,7 +53,7 @@ class BillingController extends Controller
             'plans' => BillingPlan::plansForCheckout($user),
             'currency' => BillingPlan::currency(),
             'banks' => $banks,
-            'bank_transfer_enabled' => (bool) config('services.lenco.bank_transfer_enabled', true),
+            'bank_transfer_enabled' => (bool) config('services.lenco.bank_transfer_enabled', false),
             'active_template_count' => InvitationTemplate::activeCount(),
             'popular_plan_key' => $popularPlans->resolve(),
             'pending_custom_quote' => $pendingQuote === null ? null : [

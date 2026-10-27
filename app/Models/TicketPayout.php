@@ -48,6 +48,11 @@ class TicketPayout extends Model
         return $this->belongsTo(Admin::class, 'paid_by');
     }
 
+    public function hasProof(): bool
+    {
+        return $this->proof_path !== null && $this->proof_path !== '';
+    }
+
     /**
      * @return array<string, string>
      */

@@ -7,8 +7,10 @@ use App\Models\Admin;
 use App\Models\Event;
 use App\Models\TicketPayout;
 use App\Models\TicketRevenueEntry;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * The only place that should write to ticket_payouts (and, alongside it, the
@@ -25,8 +27,15 @@ class TicketPayoutService
         private readonly TicketRevenueLedgerService $ledger,
     ) {}
 
+    /** Private disk: not reachable by URL, read only through the authorised proof routes. */
+    public const PROOF_DISK = 'local';
+
     /**
-     * @throws TicketPayoutExceedsBalanceException when $amount is <= 0 or
+     * @param  bool  $settleInFull  pay whatever the balance is at the moment of the lock, ignoring $amount
+     *                              (so "paid in full" can never leave a stray ngwee behind)
+     * @param  UploadedFile|null  $proof  optional receipt; stored privately, and removed again if the payout fails
+     *
+     * @throws TicketPayoutExceedsBalanceException when the amount is <= 0 or
      *                                             exceeds the event's current pending balance
      */
     public function recordPayout(
@@ -35,11 +44,40 @@ class TicketPayoutService
         float $amount,
         ?string $note,
         Carbon $paidOn,
+        ?UploadedFile $proof = null,
+        bool $settleInFull = false,
     ): TicketPayout {
-        return DB::transaction(function () use ($event, $admin, $amount, $note, $paidOn): TicketPayout {
+        $proofPath = $proof?->store('payout-proofs/'.$event->id, self::PROOF_DISK);
+
+        try {
+            return $this->record($event, $admin, $amount, $note, $paidOn, $proof, $proofPath, $settleInFull);
+        } catch (\Throwable $e) {
+            if ($proofPath !== null) {
+                Storage::disk(self::PROOF_DISK)->delete($proofPath);
+            }
+
+            throw $e;
+        }
+    }
+
+    private function record(
+        Event $event,
+        Admin $admin,
+        float $amount,
+        ?string $note,
+        Carbon $paidOn,
+        ?UploadedFile $proof,
+        ?string $proofPath,
+        bool $settleInFull,
+    ): TicketPayout {
+        return DB::transaction(function () use ($event, $admin, $amount, $note, $paidOn, $proof, $proofPath, $settleInFull): TicketPayout {
             $locked = Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
 
             $balance = $this->ledger->balanceFor($locked);
+
+            if ($settleInFull) {
+                $amount = round($balance, 2);
+            }
 
             if ($amount <= 0 || $amount > $balance) {
                 throw new TicketPayoutExceedsBalanceException;
@@ -69,6 +107,8 @@ class TicketPayoutService
                 'currency' => 'ZMW',
                 'paid_on' => $paidOn->toDateString(),
                 'note' => $note !== null && $note !== '' ? $note : null,
+                'proof_path' => $proofPath,
+                'proof_original_name' => $proof !== null ? mb_substr($proof->getClientOriginalName(), 0, 191) : null,
                 'paid_by' => $admin->id,
             ]);
             $payout->save();

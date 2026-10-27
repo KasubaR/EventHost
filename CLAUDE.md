@@ -349,6 +349,26 @@ phased rollout: `plans/contributions.md` (Phases 1–3, all described below, are
   `email_contribution_updates` key in `User::DEFAULT_NOTIFICATION_PREFERENCES` (defaults `true`,
   toggle lives on `/settings/notifications` alongside the other four)
 
+### Ticket payouts (marking a payout as made)
+
+Manual, admin-recorded, as before; what is new is how a payout is marked and told. Plan: `plans/payout-marking.md`
+(ticket payouts built, contribution payouts not).
+
+- `TicketPayoutService::recordPayout()` takes `?UploadedFile $proof` and `bool $settleInFull`. **Pay in full reads the balance
+  under the event lock and pays exactly that**, ignoring any posted amount; a part payment is the amount, at most the balance.
+  Nothing is ever edited or reversed (no reversal feature, by decision); the ledger stays append-only
+- **Proof of payment is optional and private**: jpg/png/webp/pdf, 5 MB, on the `local` disk at `payout-proofs/{event}`
+  (`TicketPayoutService::PROOF_DISK`), stored before the transaction and deleted again if it fails. Served only through
+  `App\Support\TicketPayoutProof::response()` from `admin.ticketing.revenue.payouts.proof` (`ticketing.view`) and
+  `public-events.tickets.payouts.proof` (event owner and co-hosts). Never emailed, never a public URL. Purging an event does not
+  delete these files yet
+- Status is **derived**, `TicketRevenueLedgerService::payoutStateFor()`: `none | partial | paid`. New sales after a full payout
+  correctly read as `partial` again
+- `Event::expectedPayoutDate()` is `agreed_payout_on`, else 5 business days after `event_date` (Terms §12); the host's Payouts
+  page words it as when payment is *initiated*
+- The host is emailed on every payout (`TicketPayoutRecordedNotification`, `email_payout_updates`, default on), after the
+  commit, failures reported and never rethrown. Keep Terms §12 in step with these rules
+
 ### Subscription Tiers
 
 `App\Enums\SubscriptionTier` ranks accounts `none < base < pro < pro_plus < enterprise` and gates

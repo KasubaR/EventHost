@@ -81,7 +81,7 @@
                             <button type="button" class="tkc-method-tab is-active" data-method="mobile_money" role="tab" aria-selected="true">
                                 <i class="fa-solid fa-mobile-screen-button" aria-hidden="true"></i> Mobile Money
                             </button>
-                            @if ($bankTransferEnabled ?? config('services.lenco.bank_transfer_enabled', true))
+                            @if ($bankTransferEnabled ?? config('services.lenco.bank_transfer_enabled', false))
                                 <button type="button" class="tkc-method-tab" data-method="bank_transfer" role="tab" aria-selected="false">
                                     <i class="fa-solid fa-building-columns" aria-hidden="true"></i> Bank Transfer
                                 </button>

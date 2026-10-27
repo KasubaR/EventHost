@@ -24,6 +24,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'email_payment_receipts' => true,
         'sms_reminders' => false,
         'email_contribution_updates' => true,
+        'email_payout_updates' => true,
         // Slice E (Android push) — parallel keys, not a reuse of the email_*
         // ones (locked decision, plans/android-implementation.md). Only
         // push_rsvp_updates is wired to an actual send today
@@ -185,6 +186,11 @@ class User extends Authenticatable implements MustVerifyEmail
     public function wantsEmailEventReminders(): bool
     {
         return (bool) ($this->notification_preferences['email_event_reminders'] ?? true);
+    }
+
+    public function wantsEmailPayoutUpdates(): bool
+    {
+        return (bool) ($this->notification_preferences['email_payout_updates'] ?? true);
     }
 
     public function wantsEmailContributionUpdates(): bool

@@ -37,7 +37,7 @@ class EventContributionController extends Controller
 
         return response()->json([
             'event' => new PublicEventListResource($event),
-            'bank_transfer_enabled' => (bool) config('services.lenco.bank_transfer_enabled', true),
+            'bank_transfer_enabled' => (bool) config('services.lenco.bank_transfer_enabled', false),
         ]);
     }
 

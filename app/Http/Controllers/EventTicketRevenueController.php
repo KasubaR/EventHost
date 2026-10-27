@@ -3,10 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
+use App\Models\TicketPayout;
 use App\Models\TicketRevenueEntry;
 use App\Services\TicketRevenueAnalyticsService;
 use App\Services\TicketRevenueLedgerService;
+use App\Support\TicketPayoutProof;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Host-side Revenue and Payouts tabs (Phase 23) — read-only. Payouts are
@@ -44,7 +47,20 @@ class EventTicketRevenueController extends Controller
         return view('events.tickets.payouts', [
             'event' => $event,
             'pendingPayable' => $ledger->balanceFor($event),
+            'payoutState' => $ledger->payoutStateFor($event),
+            'expectedPayoutDate' => $event->expectedPayoutDate(),
             'payouts' => $analytics->payoutsFor($event),
         ]);
+    }
+
+    /**
+     * The host's copy of a payout's proof of payment, from the private disk. Owner and co-hosts only.
+     */
+    public function payoutProof(Event $event, TicketPayout $payout): StreamedResponse
+    {
+        $this->authorize('update', $event);
+        abort_unless($event->isTicketed() && $payout->event_id === $event->id, 404);
+
+        return TicketPayoutProof::response($payout);
     }
 }

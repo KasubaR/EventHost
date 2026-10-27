@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Event;
 use App\Models\TicketOrder;
+use App\Models\TicketPayout;
 use App\Models\TicketRevenueEntry;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
@@ -85,6 +86,20 @@ class TicketRevenueLedgerService
         return (float) TicketRevenueEntry::query()
             ->where('event_id', $event->id)
             ->sum('host_amount');
+    }
+
+    /**
+     * Where an event stands on paying its host: `none` (nothing paid yet), `partial` (some paid, some
+     * still pending) or `paid` (paid, nothing pending). Derived, never stored. New sales after a full
+     * payout move it back to `partial`, which is the honest answer.
+     */
+    public function payoutStateFor(Event $event): string
+    {
+        if (! TicketPayout::query()->where('event_id', $event->id)->exists()) {
+            return 'none';
+        }
+
+        return round($this->balanceFor($event), 2) > 0 ? 'partial' : 'paid';
     }
 
     /**

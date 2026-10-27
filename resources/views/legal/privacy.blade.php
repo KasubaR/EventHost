@@ -177,7 +177,7 @@
                 <h2 id="sharing">5. Who we share it with</h2>
                 <p>We do not sell personal information. We share it only with the service providers we need to run the platform:</p>
                 <ul>
-                    <li><strong>Lenco</strong>: payment processing (mobile money and bank transfer)</li>
+                    <li><strong>Lenco</strong>: payment processing (mobile money{{ config("services.lenco.bank_transfer_enabled") ? " and bank transfer" : "" }})</li>
                     @if (\App\Services\AstragateService::cardEnabled())
                     <li><strong>Astragate</strong>: card payment processing</li>
                     @endif

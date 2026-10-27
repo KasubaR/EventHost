@@ -10,6 +10,7 @@
         'email_marketing'       => ['label' => 'Tips & Announcements', 'desc' => 'Occasional product updates and event hosting tips', 'icon' => 'fa-bullhorn', 'soon' => true],
         'sms_reminders'         => ['label' => 'SMS Reminders', 'desc' => 'Text message reminders sent to your phone', 'icon' => 'fa-mobile-screen-button', 'soon' => true],
         'email_contribution_updates' => ['label' => 'Contribution Updates', 'desc' => 'Get notified when a guest contributes to your event', 'icon' => 'fa-hand-holding-dollar'],
+        'email_payout_updates'  => ['label' => 'Payout Updates', 'desc' => 'Get an email when we send you money from your ticket sales', 'icon' => 'fa-money-bill-transfer'],
         'push_rsvp_updates'     => ['label' => 'Push RSVP Updates', 'desc' => 'Push notifications on your phone when guests respond', 'icon' => 'fa-bell'],
         'push_event_reminders'  => ['label' => 'Push Event Reminders', 'desc' => 'Push notifications on your phone before your events', 'icon' => 'fa-bell', 'soon' => true],
     ];

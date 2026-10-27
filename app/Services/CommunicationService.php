@@ -13,7 +13,9 @@ use App\Models\Guest;
 use App\Models\GuestRemoval;
 use App\Models\NotificationLog;
 use App\Models\Rsvp;
+use App\Models\TicketPayout;
 use App\Models\User;
+use App\Notifications\TicketPayoutRecordedNotification;
 use App\Notifications\ContributionReceiptNotification;
 use App\Notifications\EventUpdatedNotification;
 use App\Notifications\GuestEventReminderNotification;
@@ -369,6 +371,34 @@ class CommunicationService
 
         try {
             $host->notify(new NewContributionReceivedNotification($contribution, $payment));
+            $this->markSent($log);
+        } catch (\Throwable $e) {
+            $this->markFailed($log, $e);
+            throw $e;
+        }
+    }
+
+    /**
+     * Tells the host an admin has recorded a payout (full or part). Keyed on the payout id so a retry never
+     * sends it twice. Called after the payout has committed; the caller reports but never rethrows, since a
+     * mail failure must not look like a failed payout.
+     */
+    public function notifyHostPayoutRecorded(User $host, Event $event, TicketPayout $payout, float $remaining): void
+    {
+        if (! $host->wantsEmailPayoutUpdates()) {
+            return;
+        }
+
+        $log = $this->startLog($event, null, 'email', 'host_payout_recorded', 'ticket-payout:'.$payout->id, [
+            'host_user_id' => $host->id,
+            'ticket_payout_id' => $payout->id,
+        ]);
+        if ($log === null) {
+            return;
+        }
+
+        try {
+            $host->notify(new TicketPayoutRecordedNotification($event, $payout, $remaining));
             $this->markSent($log);
         } catch (\Throwable $e) {
             $this->markFailed($log, $e);

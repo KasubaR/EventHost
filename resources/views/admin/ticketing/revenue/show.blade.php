@@ -19,7 +19,13 @@
     </x-slot>
 
     @if (session('status') === 'payout-recorded')
-        <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i> Payout recorded.</div>
+        <div class="profile-success evt-flash" role="status"><i class="fa-solid fa-circle-check"></i>
+            @if ((float) session('payout_remaining', 0) > 0)
+                Part payment recorded. {{ \App\Support\TicketingSettings::formatZmw(session('payout_remaining')) }} is still pending.
+            @else
+                Payout recorded. Paid in full.
+            @endif
+        </div>
     @endif
     @if ($errors->any())
         <div class="evt-flash admin-tpl-error" role="alert">
@@ -87,7 +93,10 @@
     </div>
 
     <div class="admin-panel-card admin-mt-lg">
-        <h2>Payouts</h2>
+        <h2>Payouts
+            <span class="admin-muted">&middot;
+                {{ ['none' => 'Not paid yet', 'partial' => 'Partly paid', 'paid' => 'Paid in full'][$payoutState] }}</span>
+        </h2>
         @if ($payouts->isEmpty())
             <p class="admin-muted">No payouts recorded yet.</p>
         @else
@@ -97,6 +106,7 @@
                         <th>Date</th>
                         <th>Amount</th>
                         <th>Note</th>
+                        <th>Proof</th>
                         <th>Recorded by</th>
                     </tr>
                 </thead>
@@ -106,6 +116,13 @@
                             <td>{{ $payout->paid_on->format('j M Y') }}</td>
                             <td>{{ \App\Support\TicketingSettings::formatZmw($payout->amount) }}</td>
                             <td>{{ $payout->note ?? '-' }}</td>
+                            <td>
+                                @if ($payout->hasProof())
+                                    <a href="{{ route('admin.ticketing.revenue.payouts.proof', [$adminEvent, $payout]) }}" target="_blank" rel="noopener">View</a>
+                                @else
+                                    -
+                                @endif
+                            </td>
                             <td>{{ $payout->paidBy?->name ?? '-' }}</td>
                         </tr>
                     @endforeach
@@ -115,14 +132,20 @@
 
         @if (auth('admin')->user()?->can('ticketing.payouts.manage') && $pendingPayable > 0)
             <h3 class="admin-mt-lg">Record a payout</h3>
-            <form method="post" action="{{ route('admin.ticketing.revenue.payouts.store', $adminEvent) }}" class="profile-fields">
+            <form method="post" action="{{ route('admin.ticketing.revenue.payouts.store', $adminEvent) }}" class="profile-fields" enctype="multipart/form-data">
                 @csrf
+                @php $paymentType = old('payment_type', 'full'); @endphp
                 <div class="profile-field">
-                    <label for="payout_amount" class="profile-label">Amount</label>
+                    <span class="profile-label">What are you paying?</span>
+                    <label><input type="radio" name="payment_type" value="full" @checked($paymentType === 'full')> Pay in full: {{ \App\Support\TicketingSettings::formatZmw($pendingPayable) }}</label>
+                    <label><input type="radio" name="payment_type" value="part" @checked($paymentType === 'part')> Part payment</label>
+                </div>
+                <div class="profile-field" id="payout_amount_field">
+                    <label for="payout_amount" class="profile-label">Amount <span class="admin-muted">(part payment only)</span></label>
                     <input id="payout_amount" type="number" name="amount" step="0.01" min="0.01" max="{{ $pendingPayable }}"
-                           value="{{ old('amount', number_format($pendingPayable, 2, '.', '')) }}"
-                           class="profile-input {{ $errors->has('amount') ? 'profile-input--error' : '' }}" required>
-                    <p class="admin-muted">Up to the current pending payout of {{ \App\Support\TicketingSettings::formatZmw($pendingPayable) }}.</p>
+                           value="{{ old('amount') }}"
+                           class="profile-input {{ $errors->has('amount') ? 'profile-input--error' : '' }}">
+                    <p class="admin-muted">Less than the current pending payout of {{ \App\Support\TicketingSettings::formatZmw($pendingPayable) }}; the rest stays pending.</p>
                 </div>
                 <div class="profile-field">
                     <label for="payout_paid_on" class="profile-label">Date</label>
@@ -134,10 +157,28 @@
                     <input id="payout_note" type="text" name="note" maxlength="500" value="{{ old('note') }}" placeholder="e.g. bank transfer ref"
                            class="profile-input {{ $errors->has('note') ? 'profile-input--error' : '' }}">
                 </div>
+                <div class="profile-field">
+                    <label for="payout_proof" class="profile-label">Proof of payment <span class="admin-muted">(optional)</span></label>
+                    <input id="payout_proof" type="file" name="proof" accept=".jpg,.jpeg,.png,.webp,.pdf"
+                           class="profile-input {{ $errors->has('proof') ? 'profile-input--error' : '' }}">
+                    <p class="admin-muted">A receipt photo or PDF, up to 5 MB. Kept privately; only you and the event's host can open it.</p>
+                </div>
                 <div class="profile-actions">
                     <button type="submit" class="btn-primary">Record payout</button>
                 </div>
             </form>
+            <script>
+                (function () {
+                    var radios = document.querySelectorAll('input[name="payment_type"]');
+                    var field = document.getElementById('payout_amount_field');
+                    function sync() {
+                        var part = document.querySelector('input[name="payment_type"]:checked');
+                        field.style.display = part && part.value === 'part' ? '' : 'none';
+                    }
+                    for (var i = 0; i < radios.length; i++) { radios[i].addEventListener('change', sync); }
+                    sync();
+                })();
+            </script>
         @endif
     </div>
 </x-admin-layout>

@@ -457,6 +457,8 @@ Route::middleware(['auth', 'account.active', 'verified'])->group(function () {
             ->name('public-events.tickets.revenue');
         Route::get('/public-events/{event}/tickets/payouts', [EventTicketRevenueController::class, 'payouts'])
             ->name('public-events.tickets.payouts');
+        Route::get('/public-events/{event}/tickets/payouts/{payout}/proof', [EventTicketRevenueController::class, 'payoutProof'])
+            ->name('public-events.tickets.payouts.proof');
         Route::get('/public-events/{event}/tickets/export', [EventTicketManagementController::class, 'export'])
             ->name('public-events.tickets.export');
         Route::get('/public-events/{event}/tickets', [EventTicketManagementController::class, 'index'])

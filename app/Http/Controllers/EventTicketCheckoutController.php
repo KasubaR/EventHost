@@ -49,7 +49,7 @@ class EventTicketCheckoutController extends Controller
         return view('events.tickets.checkout', [
             'event' => $event,
             'reservations' => $held,
-            'bankTransferEnabled' => (bool) config('services.lenco.bank_transfer_enabled', true),
+            'bankTransferEnabled' => (bool) config('services.lenco.bank_transfer_enabled', false),
             'buyer' => $request->user(),
         ]);
     }

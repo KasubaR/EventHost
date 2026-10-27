@@ -50,7 +50,7 @@ class PublicRegistrationPaymentController extends Controller
             'amount' => (float) $event->public_registration_quote_amount,
             'currency' => BillingPlan::currency(),
             'banks' => $banks,
-            'bankTransferEnabled' => (bool) config('services.lenco.bank_transfer_enabled', true),
+            'bankTransferEnabled' => (bool) config('services.lenco.bank_transfer_enabled', false),
         ]);
     }
 }

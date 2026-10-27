@@ -49,7 +49,7 @@ class RemoveBrandingController extends Controller
             'addon' => BillingPlan::getAddon('remove_branding'),
             'currency' => BillingPlan::currency(),
             'banks' => $banks,
-            'bankTransferEnabled' => (bool) config('services.lenco.bank_transfer_enabled', true),
+            'bankTransferEnabled' => (bool) config('services.lenco.bank_transfer_enabled', false),
         ]);
     }
 }

@@ -54,7 +54,7 @@ return [
         'stuck_payment_hours' => (int) env('LENCO_STUCK_PAYMENT_HOURS', 2),
         'poll_max_per_run' => (int) env('LENCO_POLL_MAX_PER_RUN', 50),
         'poll_throttle_ms' => (int) env('LENCO_POLL_THROTTLE_MS', 200),
-        'bank_transfer_enabled' => filter_var(env('LENCO_BANK_TRANSFER_ENABLED', true), FILTER_VALIDATE_BOOL),
+        'bank_transfer_enabled' => filter_var(env('LENCO_BANK_TRANSFER_ENABLED', false), FILTER_VALIDATE_BOOL),
     ],
 
     // Google Maps (venue picker on the event edit form, embedded map + directions on

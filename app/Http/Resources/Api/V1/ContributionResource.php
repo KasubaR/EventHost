@@ -42,7 +42,7 @@ class ContributionResource extends JsonResource
             // TicketHoldResource's subtotal/total in Slice B2).
             'remaining_amount' => number_format($this->remainingAmount(), 2, '.', ''),
             'completed_at' => $this->completed_at?->toIso8601String(),
-            'bank_transfer_enabled' => (bool) config('services.lenco.bank_transfer_enabled', true),
+            'bank_transfer_enabled' => (bool) config('services.lenco.bank_transfer_enabled', false),
             'latest_payment' => $payment === null ? null : [
                 'status' => $payment->status,
                 'failure_reason' => $payment->failure_reason,

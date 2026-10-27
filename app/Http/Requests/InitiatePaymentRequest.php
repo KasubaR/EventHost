@@ -25,7 +25,7 @@ class InitiatePaymentRequest extends FormRequest
     public function rules(): array
     {
         $allowedMethods = ['mobile_money'];
-        if (config('services.lenco.bank_transfer_enabled', true)) {
+        if (config('services.lenco.bank_transfer_enabled', false)) {
             $allowedMethods[] = 'bank_transfer';
         }
         if (AstragateService::cardEnabled()) {
@@ -137,7 +137,7 @@ class InitiatePaymentRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'payment_method.in' => config('services.lenco.bank_transfer_enabled', true)
+            'payment_method.in' => config('services.lenco.bank_transfer_enabled', false)
                 ? 'Invalid payment method.'
                 : 'Bank transfer is unavailable. Please use mobile money.',
             'quote_id.required_if' => 'A custom quote is required to pay for Enterprise.',
