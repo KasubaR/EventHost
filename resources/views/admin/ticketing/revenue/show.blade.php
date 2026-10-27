@@ -66,12 +66,15 @@
         @if ($orders->isEmpty())
             <p class="admin-muted">No paid orders yet.</p>
         @else
-            <table class="admin-table">
+            {{-- Scrolls sideways when the columns do not fit; the min-width keeps dates and times on one line. --}}
+            <div class="admin-table-wrap">
+            <table class="admin-table" style="min-width: 980px; white-space: nowrap;">
                 <thead>
                     <tr>
                         <th>Order</th>
                         <th>Buyer</th>
-                        <th>Paid</th>
+                        <th>Date</th>
+                        <th>Time</th>
                         <th>Gross</th>
                         <th>Platform fee</th>
                         <th>Host amount</th>
@@ -84,7 +87,8 @@
                         <tr>
                             <td>{{ $order->order_reference }}</td>
                             <td>{{ $order->buyer_name }}<br><span class="admin-muted">{{ $order->buyer_email }}</span></td>
-                            <td>{{ $order->paid_at?->format('j M Y H:i') ?? '-' }}</td>
+                            <td>{{ $order->paid_at?->format('j M Y') ?? '-' }}</td>
+                            <td>{{ $order->paid_at?->format('H:i') ?? '-' }}</td>
                             <td>{{ \App\Support\TicketingSettings::formatZmw($order->face_value) }}</td>
                             <td>{{ \App\Support\TicketingSettings::formatZmw($order->commission_amount) }}</td>
                             <td>{{ \App\Support\TicketingSettings::formatZmw($order->host_amount) }}</td>
@@ -111,6 +115,7 @@
                     @endforeach
                 </tbody>
             </table>
+            </div>
             <div class="evt-pagination">{{ $orders->links() }}</div>
         @endif
     </div>
