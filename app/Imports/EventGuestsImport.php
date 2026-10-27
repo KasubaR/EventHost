@@ -73,6 +73,9 @@ class EventGuestsImport implements ToCollection, WithHeadingRow, WithMultipleShe
     /** @var array<string, int> Group name => id, for the batch being written. */
     private array $groupIds = [];
 
+    /** @var array<string, true> nameKey of every group the event has, plus the new ones this batch has reserved (the cap counts both). */
+    private array $knownGroupKeys = [];
+
     private ?EmailValidator $emailValidator = null;
 
     /** @var (Closure(self): void)|null */
@@ -154,6 +157,8 @@ class EventGuestsImport implements ToCollection, WithHeadingRow, WithMultipleShe
 
         // A group deleted by hand between batches must not be reused by id.
         $this->groupIds = [];
+        $this->knownGroupKeys = GuestGroup::query()->where('event_id', $this->event->id)->pluck('name')
+            ->mapWithKeys(fn (string $name) => [GuestGroup::nameKey($name) => true])->all();
         $pending = [];
 
         // Row 1 is the heading row; a chunk read starts wherever the reader says it does.
@@ -241,6 +246,13 @@ class EventGuestsImport implements ToCollection, WithHeadingRow, WithMultipleShe
                 continue;
             }
 
+            $groupLabel = mb_substr($this->cell($row, 'group'), 0, 191);
+            if (($groupProblem = $this->groupRefusal($groupLabel)) !== null) {
+                $this->refuse($rowNumber, $groupProblem);
+
+                continue;
+            }
+
             $tableLabel = $this->cell($row, 'table');
 
             $pending[] = [
@@ -248,7 +260,7 @@ class EventGuestsImport implements ToCollection, WithHeadingRow, WithMultipleShe
                 'email' => $email,
                 'phone_key' => $phoneKey,
                 'exact_key' => $exactKey,
-                'group' => mb_substr($this->cell($row, 'group'), 0, 191),
+                'group' => $groupLabel,
                 'attributes' => [
                     'event_id' => $this->event->id,
                     'event_table_id' => $tableLabel !== '' ? $tablesByLabel->get(mb_strtolower($tableLabel))?->id : null,
@@ -343,6 +355,31 @@ class EventGuestsImport implements ToCollection, WithHeadingRow, WithMultipleShe
         $key = GuestGroup::nameKey($clean);
 
         return $this->groupIds[$key] ??= $this->findOrCreateGroup($clean, $key);
+    }
+
+    /**
+     * Whether a row's group would make the event pass its group cap. A name the event already has (or one this batch already reserved)
+     * is always fine; a new one reserves a place. The row is refused, not imported without its group, so nobody ends up quietly ungrouped.
+     */
+    private function groupRefusal(string $label): ?string
+    {
+        $clean = GuestGroup::cleanName($label);
+        if ($clean === null) {
+            return null;
+        }
+
+        $key = GuestGroup::nameKey($clean);
+        if (isset($this->knownGroupKeys[$key])) {
+            return null;
+        }
+
+        if (count($this->knownGroupKeys) >= GuestGroup::MAX_PER_EVENT) {
+            return 'this event already has the maximum of '.GuestGroup::MAX_PER_EVENT.' groups, so the group "'.Str::limit($clean, 40).'" cannot be created. Use an existing group name, or leave the group blank.';
+        }
+
+        $this->knownGroupKeys[$key] = true;
+
+        return null;
     }
 
     private function findOrCreateGroup(string $clean, string $key): int

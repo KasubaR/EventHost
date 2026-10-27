@@ -1,6 +1,10 @@
 <x-admin-layout>
     @push('styles')
         <link rel="stylesheet" href="{{ asset('css/events-admin.css') }}">
+        <link rel="stylesheet" href="{{ asset('css/datetime-picker.css') }}">
+    @endpush
+    @push('scripts')
+        <script src="{{ asset('js/datetime-picker.js') }}" defer></script>
     @endpush
 
     <x-slot name="title">Revenue | {{ $adminEvent->name }}</x-slot>
@@ -137,8 +141,22 @@
                 @php $paymentType = old('payment_type', 'full'); @endphp
                 <div class="profile-field">
                     <span class="profile-label">What are you paying?</span>
-                    <label><input type="radio" name="payment_type" value="full" @checked($paymentType === 'full')> Pay in full: {{ \App\Support\TicketingSettings::formatZmw($pendingPayable) }}</label>
-                    <label><input type="radio" name="payment_type" value="part" @checked($paymentType === 'part')> Part payment</label>
+                    <div class="evt-product-choice">
+                        <label class="evt-product-choice-card">
+                            <input type="radio" name="payment_type" value="full" class="evt-check-input" @checked($paymentType === 'full')>
+                            <span>
+                                <strong>Pay in full</strong>
+                                <span class="evt-product-choice-hint">{{ \App\Support\TicketingSettings::formatZmw($pendingPayable) }}, everything pending.</span>
+                            </span>
+                        </label>
+                        <label class="evt-product-choice-card">
+                            <input type="radio" name="payment_type" value="part" class="evt-check-input" @checked($paymentType === 'part')>
+                            <span>
+                                <strong>Part payment</strong>
+                                <span class="evt-product-choice-hint">Pay some now; the rest stays pending.</span>
+                            </span>
+                        </label>
+                    </div>
                 </div>
                 <div class="profile-field" id="payout_amount_field">
                     <label for="payout_amount" class="profile-label">Amount <span class="admin-muted">(part payment only)</span></label>
@@ -149,7 +167,7 @@
                 </div>
                 <div class="profile-field">
                     <label for="payout_paid_on" class="profile-label">Date</label>
-                    <input id="payout_paid_on" type="date" name="paid_on" value="{{ old('paid_on', now()->toDateString()) }}" max="{{ now()->toDateString() }}"
+                    <input id="payout_paid_on" type="date" name="paid_on" data-dtp value="{{ old('paid_on', now()->toDateString()) }}" max="{{ now()->toDateString() }}"
                            class="profile-input {{ $errors->has('paid_on') ? 'profile-input--error' : '' }}" required>
                 </div>
                 <div class="profile-field">
@@ -160,7 +178,7 @@
                 <div class="profile-field">
                     <label for="payout_proof" class="profile-label">Proof of payment <span class="admin-muted">(optional)</span></label>
                     <input id="payout_proof" type="file" name="proof" accept=".jpg,.jpeg,.png,.webp,.pdf"
-                           class="profile-input {{ $errors->has('proof') ? 'profile-input--error' : '' }}">
+                           class="profile-input evt-design-media-file {{ $errors->has('proof') ? 'profile-input--error' : '' }}">
                     <p class="admin-muted">A receipt photo or PDF, up to 5 MB. Kept privately; only you and the event's host can open it.</p>
                 </div>
                 <div class="profile-actions">

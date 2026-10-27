@@ -8,9 +8,11 @@ use App\Models\GroupLinkRemoval;
 use App\Models\Guest;
 use App\Models\GuestEdit;
 use App\Models\GuestGroup;
+use App\Models\Rsvp;
 use App\Models\User;
 use App\Services\GuestGroupDeleter;
 use App\Services\GuestGroupNamer;
+use App\Services\GuestUpdater;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -600,5 +602,200 @@ class GuestGroupEdgeCasesTest extends TestCase
         $this->assertSame(2, Guest::query()->where('guest_group_id', $existing->id)->count());
         $this->assertSame(2, Guest::query()->where('guest_group_id', $friends->id)->count());
         $this->assertNull(Guest::query()->where('email', 'eve@example.test')->sole()->guest_group_id);
+    }
+
+    // ---------------------------------------------------------------- Phase 4: scale
+
+    private function fillGroups(int $count, ?Event $event = null): void
+    {
+        $event ??= $this->event;
+        $now = now();
+        DB::table('guest_groups')->insert(array_map(fn (int $i): array => [
+            'event_id' => $event->id, 'name' => 'Group '.$i, 'created_at' => $now, 'updated_at' => $now,
+        ], range(0, $count - 1)));
+    }
+
+    public function test_an_event_cannot_get_a_201st_group_but_can_still_rename_and_delete(): void
+    {
+        $this->fillGroups(GuestGroup::MAX_PER_EVENT);
+
+        $this->createGroupByForm('One too many')->assertSessionHasErrors('name');
+        Sanctum::actingAs($this->host);
+        $this->postJson("/api/v1/host/events/{$this->event->id}/guest-groups", ['name' => 'One too many'])
+            ->assertUnprocessable()->assertJsonValidationErrors('name');
+        $this->assertSame(GuestGroup::MAX_PER_EVENT, GuestGroup::query()->where('event_id', $this->event->id)->count());
+
+        $first = GuestGroup::query()->where('name', 'Group 0')->firstOrFail();
+        $this->actingAs($this->host)
+            ->put(route('events.guest-groups.update', ['event' => $this->event, 'guest_group' => $first->id]), ['name' => 'Renamed'])
+            ->assertSessionHasNoErrors();
+        $this->actingAs($this->host)
+            ->delete(route('events.guest-groups.destroy', ['event' => $this->event, 'guest_group' => $first->id]));
+
+        $this->createGroupByForm('Now there is room')->assertSessionHasNoErrors();
+    }
+
+    public function test_an_event_already_over_the_cap_keeps_its_groups_and_can_manage_them(): void
+    {
+        $this->fillGroups(GuestGroup::MAX_PER_EVENT + 10);
+        $group = GuestGroup::query()->where('name', 'Group 3')->firstOrFail();
+
+        $this->actingAs($this->host)
+            ->put(route('events.guest-groups.update', ['event' => $this->event, 'guest_group' => $group->id]), ['name' => 'Still editable'])
+            ->assertSessionHasNoErrors();
+        $this->createGroupByForm('Not allowed')->assertSessionHasErrors('name');
+
+        $this->assertSame(GuestGroup::MAX_PER_EVENT + 10, GuestGroup::query()->where('event_id', $this->event->id)->count());
+    }
+
+    public function test_the_import_refuses_a_row_whose_new_group_would_pass_the_cap_but_not_one_naming_an_existing_group(): void
+    {
+        $this->fillGroups(GuestGroup::MAX_PER_EVENT - 1);
+        $csv = "name,email,group\n"
+            ."Ann,ann@example.test,Group 5\n"
+            ."Bob,bob@example.test,Fresh One\n"
+            ."Cat,cat@example.test,fresh one\n"
+            ."Dan,dan@example.test,Fresh Two\n"
+            ."Eve,eve@example.test,\n";
+
+        $this->actingAs($this->host)->post(route('events.guests.import.store', $this->event), [
+            'file' => UploadedFile::fake()->createWithContent('guests.csv', $csv),
+        ])->assertSessionHas('import_problems', fn (array $p) => count($p) === 1
+            && str_contains($p[0]['message'], 'maximum of '.GuestGroup::MAX_PER_EVENT.' groups')
+            && str_contains($p[0]['message'], 'Fresh Two'));
+
+        $emails = Guest::query()->where('event_id', $this->event->id)->pluck('email')->all();
+        $this->assertEqualsCanonicalizing(['ann@example.test', 'bob@example.test', 'cat@example.test', 'eve@example.test'], $emails);
+        $this->assertSame(GuestGroup::MAX_PER_EVENT, GuestGroup::query()->where('event_id', $this->event->id)->count());
+        $this->assertSame(
+            GuestGroup::query()->where('name', 'Fresh One')->value('id'),
+            Guest::query()->where('email', 'cat@example.test')->value('guest_group_id')
+        );
+    }
+
+    public function test_the_groups_page_is_paged(): void
+    {
+        $this->fillGroups(60);
+
+        $first = $this->actingAs($this->host)->get(route('events.guest-groups.index', $this->event))->assertOk();
+        $second = $this->actingAs($this->host)->get(route('events.guest-groups.index', ['event' => $this->event, 'page' => 2]))->assertOk();
+
+        $this->assertCount(50, $first->viewData('groups')->items());
+        $this->assertSame(60, $first->viewData('groups')->total());
+        $this->assertCount(10, $second->viewData('groups')->items());
+    }
+
+    public function test_seat_totals_for_a_page_of_pooled_groups_are_right_and_cost_a_fixed_number_of_queries(): void
+    {
+        $groups = [];
+        for ($i = 0; $i < 30; $i++) {
+            $group = $this->group("Pool {$i}", null, 5);
+            $a = Guest::factory()->for($this->event)->create(['guest_group_id' => $group->id]);
+            $b = Guest::factory()->for($this->event)->create(['guest_group_id' => $group->id]);
+            Rsvp::factory()->forGuest($a)->accepted(2)->create(['host_approval_status' => RsvpApprovalStatus::Approved]);
+            Rsvp::factory()->forGuest($b)->accepted(1)->create(['host_approval_status' => RsvpApprovalStatus::Pending]);
+            $groups[] = $group;
+        }
+
+        DB::enableQueryLog();
+        $page = $this->actingAs($this->host)->get(route('events.guest-groups.index', $this->event))->assertOk();
+        $queries = count(DB::getQueryLog());
+        DB::disableQueryLog();
+
+        $page->assertSee('3 of 5 seats taken')->assertSee('1 awaiting your approval');
+        $this->assertLessThan(60, $queries, "the groups page used {$queries} queries for 30 pooled groups");
+    }
+
+    public function test_the_member_count_links_to_that_groups_guests(): void
+    {
+        $group = $this->group('Committee', null, null);
+        Guest::factory()->for($this->event)->create(['guest_group_id' => $group->id, 'name' => 'Member One']);
+
+        $this->actingAs($this->host)
+            ->get(route('events.guest-groups.index', $this->event))
+            ->assertSee('group='.$group->id, false);
+        $this->actingAs($this->host)
+            ->get(route('events.guests.index', ['event' => $this->event, 'group' => $group->id]))
+            ->assertSee('Member One');
+    }
+
+    public function test_a_bulk_move_into_a_pool_fills_it_then_skips_in_a_handful_of_queries(): void
+    {
+        $pool = $this->group('Pool', null, 100);
+        $joiner = $this->join($this->group('Source'));
+        $source = GuestGroup::query()->where('name', 'Source')->firstOrFail();
+        $ids = [];
+        for ($i = 0; $i < 250; $i++) {
+            $guest = Guest::factory()->for($this->event)->create(['guest_group_id' => $source->id]);
+            Rsvp::factory()->forGuest($guest)->accepted(1)->create();
+            $ids[] = $guest->id;
+        }
+        $declined = [];
+        for ($i = 0; $i < 5; $i++) {
+            $guest = Guest::factory()->for($this->event)->create(['guest_group_id' => $source->id]);
+            Rsvp::factory()->forGuest($guest)->declined()->create();
+            $declined[] = $guest->id;
+        }
+        $this->assertNotNull($joiner->fresh()->group_link_joined_at);
+
+        DB::enableQueryLog();
+        $result = app(GuestUpdater::class)->moveManyToGroup($this->event, array_merge($ids, $declined, [$joiner->id]), $pool->id, $this->host->id);
+        $queries = count(DB::getQueryLog());
+        DB::disableQueryLog();
+
+        // The joiner holds a pending seat too, so 251 seat holders compete for 100 seats; the five who hold none always fit.
+        $this->assertSame(100 + 5, $result['moved']);
+        $this->assertSame(251 - 100, $result['skipped']);
+        $this->assertStringContainsString('has no seats left', (string) $result['reason']);
+        $this->assertSame(100, $pool->fresh()->seatsTaken());
+        $this->assertSame(105, Guest::query()->where('guest_group_id', $pool->id)->count());
+        $this->assertSame(105, GuestEdit::query()->where('user_id', $this->host->id)->count());
+        $this->assertNull(Guest::query()->where('guest_group_id', $pool->id)->whereNotNull('group_link_joined_at')->first());
+        $this->assertLessThan(40, $queries, "a 256-guest bulk move used {$queries} queries");
+    }
+
+    public function test_a_bulk_move_records_where_each_guest_came_from_and_went(): void
+    {
+        $from = $this->group('From', null, null);
+        $to = $this->group('To', null, null);
+        $a = Guest::factory()->for($this->event)->create(['guest_group_id' => $from->id]);
+        $b = Guest::factory()->for($this->event)->create(['guest_group_id' => null]);
+        $already = Guest::factory()->for($this->event)->create(['guest_group_id' => $to->id]);
+
+        $result = app(GuestUpdater::class)->moveManyToGroup($this->event, [$a->id, $b->id, $already->id], $to->id, $this->host->id);
+
+        $this->assertSame(3, $result['moved']);
+        $this->assertSame(['From', 'To'], GuestEdit::query()->where('guest_id', $a->id)->sole()->changes['group']);
+        $this->assertSame([null, 'To'], GuestEdit::query()->where('guest_id', $b->id)->sole()->changes['group']);
+        $this->assertSame(0, GuestEdit::query()->where('guest_id', $already->id)->count());
+    }
+
+    public function test_a_bulk_action_names_at_most_five_hundred_guests(): void
+    {
+        $tooMany = range(1, 501);
+
+        $this->actingAs($this->host)
+            ->post(route('events.guests.bulk', $this->event), ['action' => 'mark_sent', 'guest_ids' => $tooMany])
+            ->assertSessionHasErrors(['guest_ids' => 'Select up to 500 guests at a time.']);
+        Sanctum::actingAs($this->host);
+        $this->postJson("/api/v1/host/events/{$this->event->id}/guests/bulk", ['action' => 'mark_sent', 'guest_ids' => $tooMany])
+            ->assertUnprocessable()->assertJsonValidationErrors('guest_ids');
+    }
+
+    public function test_a_bulk_action_refuses_guests_from_another_event_with_one_check(): void
+    {
+        $mine = Guest::factory()->for($this->event)->create();
+        $other = Event::factory()->for($this->host)->published()->create(['is_public' => false]);
+        $foreign = Guest::factory()->for($other)->create();
+
+        $this->actingAs($this->host)
+            ->post(route('events.guests.bulk', $this->event), ['action' => 'mark_sent', 'guest_ids' => [$mine->id, $foreign->id]])
+            ->assertSessionHasErrors('guest_ids');
+        $this->assertFalse((bool) $mine->fresh()->invitation_sent);
+
+        $this->actingAs($this->host)
+            ->post(route('events.guests.bulk', $this->event), ['action' => 'mark_sent', 'guest_ids' => [$mine->id, $mine->id]])
+            ->assertSessionHasNoErrors();
+        $this->assertTrue((bool) $mine->fresh()->invitation_sent);
     }
 }

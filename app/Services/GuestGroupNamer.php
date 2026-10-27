@@ -33,6 +33,7 @@ class GuestGroupNamer
 
                 $clean = $this->cleaned($name);
                 $this->refuseIfTaken($event, $clean, null);
+                $this->refuseIfAtCap($event);
 
                 return $event->guestGroups()->create($attributes + ['name' => $clean]);
             });
@@ -82,6 +83,13 @@ class GuestGroupNamer
     {
         if (in_array(GuestGroup::nameKey($clean), $this->takenKeys($event, $ignoreGroupId), true)) {
             throw $this->taken();
+        }
+    }
+
+    private function refuseIfAtCap(Event $event): void
+    {
+        if ($event->guestGroups()->count() >= GuestGroup::MAX_PER_EVENT) {
+            throw ValidationException::withMessages(['name' => ['An event can have up to '.GuestGroup::MAX_PER_EVENT.' groups. Remove one you no longer need first.']]);
         }
     }
 

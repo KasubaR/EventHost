@@ -14,6 +14,8 @@ use Illuminate\View\View;
 
 class GuestGroupController extends Controller
 {
+    private const PER_PAGE = 50;
+
     public function index(Event $event): View
     {
         $this->authorizeInvitation($event);
@@ -24,7 +26,9 @@ class GuestGroupController extends Controller
                 'guests as joiners_count' => fn ($q) => $q->whereNotNull('group_link_joined_at'),
                 'guests as pending_count' => fn ($q) => $q->whereHas('rsvp', fn ($r) => $r->where('host_approval_status', RsvpApprovalStatus::Pending)),
             ])
-            ->get();
+            ->paginate(self::PER_PAGE);
+
+        GuestGroup::preloadSeatTotals($groups->items());
 
         return view('events.guest-groups.index', compact('event', 'groups'));
     }

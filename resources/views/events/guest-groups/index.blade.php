@@ -86,7 +86,7 @@
                                             <button type="submit" class="evt-btn-outline evt-btn-tiny">Save</button>
                                         </form>
                                     </td>
-                                    <td>{{ $group->guests_count }}</td>
+                                    <td><a href="{{ route('events.guests.index', ['event' => $event, 'group' => $group->id]) }}">{{ $group->guests_count }}</a></td>
                                     <td class="evt-table-actions">
                                         <form method="post" action="{{ route('events.guest-groups.destroy', ['event' => $event, 'guest_group' => $group->id]) }}" class="evt-inline-form evt-confirm-form" data-evt-confirm="{{ $group->removalWarning() }}">
                                             @csrf
@@ -154,6 +154,8 @@
                             @endforeach
                         </tbody>
                     </table>
+
+                    {{ $groups->links() }}
                 @endif
             </div>
         </div>

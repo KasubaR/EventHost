@@ -209,6 +209,12 @@ class GuestUpdater
             return null;
         }
 
+        return self::refusalMessage($group, $guest, $held, $left);
+    }
+
+    /** The sentence for a guest who holds $held seats where only $left are free. One wording for the single move and the bulk move. */
+    private static function refusalMessage(GuestGroup $group, Guest $guest, int $held, int $left): string
+    {
         $holds = $held === 1 ? '1 seat' : "{$held} seats";
 
         return $left === 0
@@ -231,38 +237,75 @@ class GuestUpdater
 
             $group = $groupId !== null ? GuestGroup::query()->where('event_id', $event->id)->find($groupId) : null;
 
-            $moved = 0;
-            $skipped = 0;
-            $reason = null;
+            // The pool is read once and counted down in memory (plans/guest-groups-gaps.md Phase 4); the writes come after, in chunks.
+            $left = $group !== null && $group->hasSeatPool() ? $group->seatsRemaining() : null;
 
-            Guest::query()
+            $guests = Guest::query()
                 ->where('event_id', $event->id)
                 ->whereIn('id', $guestIds)
                 ->with(['rsvp', 'group'])
                 ->lockForUpdate()
-                ->get()
-                ->each(function (Guest $guest) use ($group, $groupId, $actorUserId, &$moved, &$skipped, &$reason): void {
-                    if (($guest->guest_group_id !== null ? (int) $guest->guest_group_id : null) !== $groupId) {
-                        $refusal = $group !== null ? self::poolRefusal($group, $guest) : null;
+                ->get();
 
-                        if ($refusal !== null) {
-                            $skipped++;
-                            $reason ??= str_replace(' Tick "Allow over the pool" to move them anyway.', ' Move them from their own page to go over the pool.', $refusal);
+            /** @var array<int, string|null> $moving guest id => the group name they leave */
+            $moving = [];
+            $moved = 0;
+            $skipped = 0;
+            $reason = null;
 
-                            return;
-                        }
+            foreach ($guests as $guest) {
+                if (($guest->guest_group_id !== null ? (int) $guest->guest_group_id : null) === $groupId) {
+                    $moved++;
 
-                        $was = $guest->group?->name;
-                        $guest->forceFill(['guest_group_id' => $groupId, 'group_link_joined_at' => null])->save();
-                        $guest->unsetRelation('group');
-                        GuestEdit::record($guest, $actorUserId, ['group' => [$was, $guest->load('group')->group?->name]]);
+                    continue;
+                }
+
+                $held = $guest->rsvp?->heldSeats() ?? 0;
+
+                if ($left !== null && $held > 0) {
+                    if ($held > $left) {
+                        $skipped++;
+                        $reason ??= str_replace(' Tick "Allow over the pool" to move them anyway.', ' Move them from their own page to go over the pool.', self::refusalMessage($group, $guest, $held, $left));
+
+                        continue;
                     }
 
-                    $moved++;
-                });
+                    $left -= $held;
+                }
+
+                $moving[$guest->id] = $guest->group?->name;
+                $moved++;
+            }
+
+            $this->writeMoves($event, $moving, $groupId, $group?->name, $actorUserId);
 
             return ['moved' => $moved, 'skipped' => $skipped, 'reason' => $reason];
         });
+    }
+
+    /**
+     * @param  array<int, string|null>  $moving  guest id => the group name they leave
+     */
+    private function writeMoves(Event $event, array $moving, ?int $groupId, ?string $newName, ?int $actorUserId): void
+    {
+        foreach (array_chunk($moving, 500, true) as $chunk) {
+            $now = now();
+
+            // A hand move clears the "signed up through the group link" mark, exactly as a single edit does.
+            Guest::query()->whereIn('id', array_keys($chunk))->update([
+                'guest_group_id' => $groupId,
+                'group_link_joined_at' => null,
+                'updated_at' => $now,
+            ]);
+
+            DB::table('guest_edits')->insert(array_map(fn (int $guestId, ?string $was): array => [
+                'event_id' => $event->id,
+                'guest_id' => $guestId,
+                'user_id' => $actorUserId,
+                'changes' => json_encode(['group' => [$was, $newName]]),
+                'created_at' => $now,
+            ], array_keys($chunk), array_values($chunk)));
+        }
     }
 
     public const STALE_MESSAGE = 'This guest was changed somewhere else since you opened this page, so your edits were not saved. Open the latest version and make them again.';

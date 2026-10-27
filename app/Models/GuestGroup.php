@@ -16,6 +16,12 @@ class GuestGroup extends Model
     /** @use HasFactory<GuestGroupFactory> */
     use HasFactory;
 
+    /** The most groups one event can have (plans/guest-groups-gaps.md Phase 4). Existing events over it keep theirs; only new groups are refused. */
+    public const MAX_PER_EVENT = 200;
+
+    /** @var array{taken: int, pending: int}|null seat totals loaded for a whole page of groups at once; not an attribute, so it is never saved */
+    private ?array $preloadedSeats = null;
+
     /** The longest group name: the column is VARCHAR(191) on MySQL (see Guest::NAME_MAX). */
     public const NAME_MAX = Guest::NAME_MAX;
 
@@ -126,6 +132,10 @@ class GuestGroup extends Model
      */
     public function seatsTaken(?int $exceptGuestId = null): int
     {
+        if ($exceptGuestId === null && $this->preloadedSeats !== null) {
+            return $this->preloadedSeats['taken'];
+        }
+
         return (int) Rsvp::query()
             ->whereIn('guest_id', $this->guests()->select('guests.id'))
             ->when($exceptGuestId !== null, fn ($q) => $q->where('guest_id', '!=', $exceptGuestId))
@@ -136,11 +146,46 @@ class GuestGroup extends Model
 
     public function seatsPending(): int
     {
+        if ($this->preloadedSeats !== null) {
+            return $this->preloadedSeats['pending'];
+        }
+
         return (int) Rsvp::query()
             ->whereIn('guest_id', $this->guests()->select('guests.id'))
             ->where('status', RsvpStatus::Accepted)
             ->where('host_approval_status', RsvpApprovalStatus::Pending)
             ->sum('attendee_count');
+    }
+
+    /**
+     * Seats taken and awaiting approval for every group in the list that has a seat pool, in one grouped query, so a page of groups
+     * costs one query instead of two per group. The groups then answer seatsTaken() / seatsPending() from memory.
+     *
+     * @param  iterable<GuestGroup>  $groups
+     */
+    public static function preloadSeatTotals(iterable $groups): void
+    {
+        $pooled = collect($groups)->filter(fn (GuestGroup $group) => $group->hasSeatPool());
+        if ($pooled->isEmpty()) {
+            return;
+        }
+
+        $totals = Rsvp::query()
+            ->join('guests', 'guests.id', '=', 'rsvps.guest_id')
+            ->whereIn('guests.guest_group_id', $pooled->pluck('id')->all())
+            ->where('rsvps.status', RsvpStatus::Accepted)
+            ->where('rsvps.host_approval_status', '!=', RsvpApprovalStatus::Rejected)
+            ->groupBy('guests.guest_group_id')
+            ->selectRaw('guests.guest_group_id as group_id, SUM(rsvps.attendee_count) as taken, SUM(CASE WHEN rsvps.host_approval_status = ? THEN rsvps.attendee_count ELSE 0 END) as pending', [RsvpApprovalStatus::Pending->value])
+            ->get()
+            ->keyBy('group_id');
+
+        foreach ($pooled as $group) {
+            $group->preloadedSeats = [
+                'taken' => (int) ($totals[$group->id]->taken ?? 0),
+                'pending' => (int) ($totals[$group->id]->pending ?? 0),
+            ];
+        }
     }
 
     public function seatsRemaining(?int $exceptGuestId = null): int
