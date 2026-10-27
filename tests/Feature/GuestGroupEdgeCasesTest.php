@@ -798,4 +798,78 @@ class GuestGroupEdgeCasesTest extends TestCase
             ->assertSessionHasNoErrors();
         $this->assertTrue((bool) $mine->fresh()->invitation_sent);
     }
+
+    // ---------------------------------------------------------------- Phase 5: someone else's group looks like no group
+
+    /** @return array{0: Event, 1: GuestGroup} another user's event and one of its groups */
+    private function strangersGroup(): array
+    {
+        $stranger = User::factory()->pro()->create();
+        $theirEvent = Event::factory()->for($stranger)->published()->create(['is_public' => false]);
+
+        return [$theirEvent, $this->group('Theirs', $theirEvent)];
+    }
+
+    public function test_a_group_owned_by_someone_else_is_a_404_on_every_web_route_just_like_a_group_that_does_not_exist(): void
+    {
+        [, $theirs] = $this->strangersGroup();
+        $this->actingAs($this->host);
+
+        foreach ([$theirs->id, 987654] as $id) {
+            $params = ['event' => $this->event, 'guest_group' => $id];
+
+            $this->put(route('events.guest-groups.update', $params), ['name' => 'Taken'])->assertNotFound();
+            $this->put(route('events.guest-groups.update', $params), ['name' => ''])->assertNotFound(); // bad input must not tell them apart either
+            $this->delete(route('events.guest-groups.destroy', $params))->assertNotFound();
+            $this->put(route('events.guest-groups.link.update', $params), ['seat_limit' => 3])->assertNotFound();
+            $this->patch(route('events.guest-groups.link.toggle', $params))->assertNotFound();
+            $this->delete(route('events.guest-groups.link.destroy', $params))->assertNotFound();
+        }
+
+        $this->assertSame('Theirs', $theirs->fresh()->name);
+    }
+
+    public function test_a_group_owned_by_someone_else_is_a_404_on_the_api_just_like_a_group_that_does_not_exist(): void
+    {
+        [, $theirs] = $this->strangersGroup();
+        Sanctum::actingAs($this->host);
+
+        foreach ([$theirs->id, 987654] as $id) {
+            $url = "/api/v1/host/events/{$this->event->id}/guest-groups/{$id}";
+
+            $this->patchJson($url, ['name' => 'Taken'])->assertNotFound();
+            $this->patchJson($url, ['name' => ''])->assertNotFound();
+            $this->deleteJson($url)->assertNotFound();
+        }
+
+        $this->assertSame('Theirs', $theirs->fresh()->name);
+    }
+
+    public function test_naming_someone_elses_event_in_the_url_is_still_a_403(): void
+    {
+        [$theirEvent, $theirs] = $this->strangersGroup();
+        $params = ['event' => $theirEvent, 'guest_group' => $theirs->id];
+        $this->actingAs($this->host);
+
+        $this->put(route('events.guest-groups.update', $params), ['name' => 'Taken'])->assertForbidden();
+        $this->delete(route('events.guest-groups.destroy', $params))->assertForbidden();
+        $this->put(route('events.guest-groups.link.update', $params), ['seat_limit' => 3])->assertForbidden();
+        $this->patch(route('events.guest-groups.link.toggle', $params))->assertForbidden();
+        $this->delete(route('events.guest-groups.link.destroy', $params))->assertForbidden();
+
+        $this->assertSame('Theirs', $theirs->fresh()->name);
+        $this->assertSame(1, GuestGroup::query()->whereKey($theirs->id)->count());
+    }
+
+    public function test_the_hosts_own_group_still_updates_through_their_own_event(): void
+    {
+        $mine = $this->group('Mine', null, null);
+        $this->actingAs($this->host)
+            ->put(route('events.guest-groups.update', ['event' => $this->event, 'guest_group' => $mine->id]), ['name' => 'Mine renamed'])
+            ->assertSessionHasNoErrors();
+        Sanctum::actingAs($this->host);
+        $this->patchJson("/api/v1/host/events/{$this->event->id}/guest-groups/{$mine->id}", ['name' => 'Mine again'])->assertOk();
+
+        $this->assertSame('Mine again', $mine->fresh()->name);
+    }
 }

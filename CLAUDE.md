@@ -660,7 +660,9 @@ say, a 100-person committee that gets 10 seats. Plan: `plans/group-rsvp-links.md
   **Limits:** an event has at most `GuestGroup::MAX_PER_EVENT` (200) groups (the namer refuses the 201st; the import refuses a row whose new group would pass it; renaming and deleting are
   never blocked), the groups page pages 50 at a time with `GuestGroup::preloadSeatTotals()` instead of two queries per group, and a bulk action names at most
   `GuestBulkActionRequest::MAX_GUESTS` (500) guests, membership checked with one count.
-  Plan: `plans/guest-groups-gaps.md` (Phases 0 to 4 built; the 403/404 fix is still planned)
+  **Access:** a group that is not in the event named in the URL is a 404 before anything about its owner can show (`UpdateGuestGroupRequest::groupMustBelongToEvent()`, the API request and
+  controller, the link controller's `guard()`), so another user's group id looks like no group; naming someone else's *event* is still a 403.
+  Plan: `plans/guest-groups-gaps.md` (all phases built)
 
 **Host contact number.** `events.host_contact_phone` is entered on the create/edit form and **required for web invitation
 events** (`StoreEventRequest` / `UpdateEventRequest`), optional for the Android API so its contract stays additive.

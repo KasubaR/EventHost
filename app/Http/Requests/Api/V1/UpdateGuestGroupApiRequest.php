@@ -12,6 +12,9 @@ class UpdateGuestGroupApiRequest extends UpdateGuestGroupRequest
 {
     public function authorize(): bool
     {
+        // The controller authorises through the policy; this only makes a foreign group a 404 before validation can say otherwise.
+        $this->groupMustBelongToEvent();
+
         return true;
     }
 

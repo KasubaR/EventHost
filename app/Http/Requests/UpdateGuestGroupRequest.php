@@ -9,8 +9,24 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateGuestGroupRequest extends FormRequest
 {
+    /**
+     * A group that is not in the event named in the URL does not exist as far as this request is concerned: 404 before anything about
+     * who owns it can show (a 403 here would tell a caller that group id exists in someone else's event). plans/guest-groups-gaps.md Phase 5.
+     */
+    protected function groupMustBelongToEvent(): void
+    {
+        /** @var Event $event */
+        $event = $this->route('event');
+        /** @var GuestGroup $guestGroup */
+        $guestGroup = $this->route('guest_group');
+
+        abort_unless($guestGroup->event_id === $event->id, 404);
+    }
+
     public function authorize(): bool
     {
+        $this->groupMustBelongToEvent();
+
         /** @var GuestGroup $guestGroup */
         $guestGroup = $this->route('guest_group');
         $guestGroup->loadMissing('event');

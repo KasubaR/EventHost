@@ -91,14 +91,21 @@ rows for joiners only), then deletes the group or calls `disableLink()`. It retu
 - Tests: 10 more in `GuestGroupEdgeCasesTest` (cap on web, API, rename/delete at and over the cap, import at the cap, paging, seat totals and query count, members link, bulk move
   fill and skip, bulk move history, the 500 ceiling, the other-event check)
 
-## Phase 5: access
+## Phase 5: access (BUILT)
 
-- The group routes check `group.event_id === event.id` (404) **before** authorising, in the web update request and controller, so a group the user does not own
-  and an id that does not exist look the same. API already does this; add tests for every route
+- **The leak was real, and wider than the plan said.** Tested before fixing: a group owned by another user, reached through the caller's *own* event URL, gave 403 where a group that does
+  not exist gives 404, on the web rename (the form request authorised before the controller's "belongs to this event" check) **and on the API rename** (the controller authorised first, and
+  the API request's validation ran before either, so a blank name was a 422 for a foreign group and a 404 for a missing one). The web delete and all three link routes already checked the event first
+- `UpdateGuestGroupRequest::groupMustBelongToEvent()` aborts 404 before anything else in `authorize()`; `UpdateGuestGroupApiRequest::authorize()` calls it too (before validation), and the API
+  controller's `update()` now checks the event before the policy, as `destroy()` already did
+- **Naming someone else's *event* in the URL stays a 403**, like every other event route: that is "you may not touch this event", not a statement about a group id. Pinned by a test
+- Tests: foreign group vs nonexistent id on every web route (rename with good and blank input, delete, link update/toggle/off) and the API (rename with good and blank input, delete); the 403
+  for a foreign event; the host's own group still renames through web and API
 
-## Phase 6: docs
+## Phase 6: docs (BUILT, folded into the phases above)
 
-- A "Guest groups" section in CLAUDE.md (or fold into the guest-adding section), Privacy §3 for the link tombstone, API additions listed as additive
+- CLAUDE.md's "Group RSVP Links" section carries the deleter, the closed-link page, names, limits and access; Privacy §3 / §7 cover the link fingerprint (Phase 2). The API gained nothing
+  new for groups beyond validation messages (DELETE still returns 204), so there are no additive fields to list
 
 ## Decisions (made)
 

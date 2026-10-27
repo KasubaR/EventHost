@@ -44,8 +44,8 @@ class GuestGroupController extends Controller
     public function update(UpdateGuestGroupApiRequest $request, Event $event, GuestGroup $guest_group, GuestGroupNamer $namer): JsonResponse
     {
         $guest_group->loadMissing('event');
-        $this->authorize('update', $guest_group);
         abort_unless($guest_group->event_id === $event->id, 404);
+        $this->authorize('update', $guest_group);
         abort_unless($event->isInvitation(), 404);
 
         $namer->rename($event, $guest_group, $request->validated()['name']);
