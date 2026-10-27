@@ -4,6 +4,7 @@ namespace App\Http\Resources\Api\V1;
 
 use App\Models\Event;
 use App\Models\Guest;
+use App\Services\EmailDeliveryProblems;
 use App\Support\EmailTypo;
 use App\Support\GuestPhone;
 use Illuminate\Http\Request;
@@ -48,6 +49,9 @@ class GuestResource extends JsonResource
             'phone' => $this->phone,
             // Additive: a likely fix when the address looks like a typo of a common provider (gmial.com), else null.
             'email_suggestion' => EmailTypo::suggest($this->email),
+            // Additive: {kind: bounced|failed, reason, suppressed} when email to this guest is not getting through, else null.
+            // A bounced address gets no more email from any event until the host retries it on the web guest list.
+            'email_delivery' => app(EmailDeliveryProblems::class)->for($this->resource),
             // Additive: the number as the list shows it (0971234567 reads "097 123 4567"); `phone` stays as stored.
             'phone_display' => GuestPhone::display($this->phone),
             'guest_group_id' => $this->guest_group_id,

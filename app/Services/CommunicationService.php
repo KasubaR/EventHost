@@ -6,6 +6,7 @@ use App\Enums\EventAudience;
 use App\Enums\RsvpApprovalStatus;
 use App\Enums\RsvpStatus;
 use App\Models\ContributionPayment;
+use App\Models\EmailSuppression;
 use App\Models\Event;
 use App\Models\EventContribution;
 use App\Models\Guest;
@@ -27,6 +28,7 @@ use App\Notifications\RsvpConfirmationNotification;
 use App\Notifications\RsvpExtraSeatPendingNotification;
 use App\Notifications\RsvpRejectedNotification;
 use App\Notifications\RsvpReminderNotification;
+use App\Support\EmailSkips;
 use App\Support\EventReminderBuckets;
 use App\Support\ShortText;
 use App\Support\WhatsAppEventReminderBuckets;
@@ -50,13 +52,22 @@ class CommunicationService
         private readonly WhatsAppService $whatsAppService,
     ) {}
 
+    /**
+     * A guest address worth sending to: present, and not one that hard-bounced (EmailSuppression, plans/email-gaps.md).
+     * Bulk actions call it too, to count the guests they skip.
+     */
+    public static function canEmail(?string $email): bool
+    {
+        return is_string($email) && trim($email) !== '' && ! EmailSuppression::isSuppressed($email);
+    }
+
     public function sendRsvpReminder(Event $event, Guest $guest, int $daysUntilDeadline, ?string $idempotencyKey = null): void
     {
         if (! $event->ownerCanSendAutomatedReminders()) {
             return;
         }
 
-        if (! is_string($guest->email) || $guest->email === '') {
+        if (! self::canEmail($guest->email)) {
             return;
         }
 
@@ -73,7 +84,7 @@ class CommunicationService
 
         try {
             Notification::route('mail', $guest->email)
-                ->notify(new RsvpReminderNotification($event, $guest, $daysUntilDeadline));
+                ->notify((new RsvpReminderNotification($event, $guest, $daysUntilDeadline))->withLog($log));
             $this->markSent($log);
         } catch (\Throwable $e) {
             $this->markFailed($log, $e);
@@ -83,7 +94,7 @@ class CommunicationService
 
     public function sendRsvpConfirmation(Event $event, Guest $guest, Rsvp $rsvp): void
     {
-        if (! is_string($guest->email) || $guest->email === '') {
+        if (! self::canEmail($guest->email)) {
             return;
         }
 
@@ -94,7 +105,7 @@ class CommunicationService
 
         try {
             Notification::route('mail', $guest->email)
-                ->notify(new RsvpConfirmationNotification($event, $guest, $rsvp));
+                ->notify((new RsvpConfirmationNotification($event, $guest, $rsvp))->withLog($log));
             $this->markSent($log);
         } catch (\Throwable $e) {
             $this->markFailed($log, $e);
@@ -108,7 +119,7 @@ class CommunicationService
      */
     public function sendRsvpExtraSeatPending(Event $event, Guest $guest, Rsvp $rsvp): void
     {
-        if (! is_string($guest->email) || $guest->email === '') {
+        if (! self::canEmail($guest->email)) {
             return;
         }
 
@@ -119,7 +130,7 @@ class CommunicationService
 
         try {
             Notification::route('mail', $guest->email)
-                ->notify(new RsvpExtraSeatPendingNotification($event, $guest, $rsvp));
+                ->notify((new RsvpExtraSeatPendingNotification($event, $guest, $rsvp))->withLog($log));
             $this->markSent($log);
         } catch (\Throwable $e) {
             $this->markFailed($log, $e);
@@ -146,7 +157,7 @@ class CommunicationService
         }
 
         try {
-            $host->notify(new NewRsvpReceivedNotification($event, $guest, $rsvp, $rsvp->previousAnswer));
+            $host->notify((new NewRsvpReceivedNotification($event, $guest, $rsvp, $rsvp->previousAnswer))->withLog($log));
             $this->markSent($log);
         } catch (\Throwable $e) {
             $this->markFailed($log, $e);
@@ -173,7 +184,7 @@ class CommunicationService
         }
 
         try {
-            $host->notify(new RsvpAwaitingApprovalNotification($event, $guest, $rsvp));
+            $host->notify((new RsvpAwaitingApprovalNotification($event, $guest, $rsvp))->withLog($log));
             $this->markSent($log);
         } catch (\Throwable $e) {
             $this->markFailed($log, $e);
@@ -187,7 +198,7 @@ class CommunicationService
      */
     public function sendRsvpRejection(Event $event, Guest $guest, Rsvp $rsvp, string $note, bool $extraSeatOnly = false): void
     {
-        if (! is_string($guest->email) || $guest->email === '') {
+        if (! self::canEmail($guest->email)) {
             return;
         }
 
@@ -198,7 +209,7 @@ class CommunicationService
 
         try {
             Notification::route('mail', $guest->email)
-                ->notify(new RsvpRejectedNotification($event, $guest, $rsvp, $note, $extraSeatOnly));
+                ->notify((new RsvpRejectedNotification($event, $guest, $rsvp, $note, $extraSeatOnly))->withLog($log));
             $this->markSent($log);
         } catch (\Throwable $e) {
             $this->markFailed($log, $e);
@@ -211,7 +222,7 @@ class CommunicationService
      */
     public function sendPlusOneRemoved(Event $event, Guest $guest): void
     {
-        if (! is_string($guest->email) || $guest->email === '') {
+        if (! self::canEmail($guest->email)) {
             return;
         }
 
@@ -222,7 +233,7 @@ class CommunicationService
 
         try {
             Notification::route('mail', $guest->email)
-                ->notify(new PlusOneRemovedNotification($event, $guest));
+                ->notify((new PlusOneRemovedNotification($event, $guest))->withLog($log));
             $this->markSent($log);
         } catch (\Throwable $e) {
             $this->markFailed($log, $e);
@@ -462,18 +473,18 @@ class CommunicationService
 
     public function sendEventUpdate(Event $event, Guest $guest, string $updateMessage, string $logType = 'event_update'): void
     {
-        if (! is_string($guest->email) || $guest->email === '') {
+        if (! self::canEmail($guest->email)) {
             return;
         }
 
-        $log = $this->startLog($event, $guest, 'email', $logType, null, null);
+        $log = $this->startLog($event, $guest, 'email', $logType, null, ['message_hash' => EmailSkips::messageHash($updateMessage)]);
         if ($log === null) {
             return;
         }
 
         try {
             Notification::route('mail', $guest->email)
-                ->notify(new EventUpdatedNotification($event, $guest, $updateMessage));
+                ->notify((new EventUpdatedNotification($event, $guest, $updateMessage))->withLog($log));
             $this->markSent($log);
         } catch (\Throwable $e) {
             $this->markFailed($log, $e);
@@ -487,7 +498,7 @@ class CommunicationService
      */
     public function sendGuestRemoved(Event $event, GuestRemoval $removal): bool
     {
-        if (! $removal->canBeTold()) {
+        if (! $removal->canBeTold() || ! self::canEmail($removal->email)) {
             return false;
         }
 
@@ -498,7 +509,7 @@ class CommunicationService
 
         try {
             Notification::route('mail', $removal->email)
-                ->notify(new GuestRemovedNotification($event, $removal->name));
+                ->notify((new GuestRemovedNotification($event, $removal->name))->withLog($log));
             $this->markSent($log);
         } catch (\Throwable $e) {
             $this->markFailed($log, $e);
@@ -870,7 +881,7 @@ class CommunicationService
             return 'skipped';
         }
 
-        if (! is_string($guest->email) || trim($guest->email) === '') {
+        if (! self::canEmail($guest->email)) {
             return 'skipped';
         }
 
@@ -928,7 +939,7 @@ class CommunicationService
 
         try {
             Notification::route('mail', trim($guest->email))
-                ->notify(new GuestEventReminderNotification($event, $guest, $bucket));
+                ->notify((new GuestEventReminderNotification($event, $guest, $bucket))->withLog($log));
             $this->markSent($log);
 
             return 'sent';
@@ -1003,6 +1014,8 @@ class CommunicationService
                     'status' => NotificationLog::STATUS_PENDING,
                     'response' => null,
                     'sent_at' => null,
+                    'delivery_status' => null,
+                    'error_code' => null,
                     'meta' => $meta,
                 ])->save();
 
@@ -1032,6 +1045,18 @@ class CommunicationService
 
     private function markFailed(NotificationLog $log, \Throwable $e): void
     {
+        // A mail exception's message can carry the guest's address; store what kind of failure it was instead.
+        if ($log->channel === 'email') {
+            $log->forceFill([
+                'status' => NotificationLog::STATUS_FAILED,
+                'delivery_status' => NotificationLog::DELIVERY_FAILED,
+                'error_code' => NotificationLog::emailFailureCode($e),
+                'response' => class_basename($e),
+            ])->save();
+
+            return;
+        }
+
         $log->forceFill([
             'status' => NotificationLog::STATUS_FAILED,
             'response' => substr($e->getMessage(), 0, 65535),

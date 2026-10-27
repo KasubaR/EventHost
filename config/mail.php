@@ -79,11 +79,11 @@ return [
             'transport' => 'array',
         ],
 
+        // Never end this list with `log`: a failed send would be "delivered" into the log file, guest details and all.
         'failover' => [
             'transport' => 'failover',
             'mailers' => [
                 'smtp',
-                'log',
             ],
             'retry_after' => 60,
         ],
@@ -126,5 +126,30 @@ return [
     */
 
     'support_address' => env('MAIL_SUPPORT_ADDRESS', env('MAIL_FROM_ADDRESS', 'info@eventhostzm.com')),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Bounces
+    |--------------------------------------------------------------------------
+    |
+    | Every outgoing email carries `bounce_address` as its Return-Path, so the
+    | reports from servers that could not deliver it land in that mailbox, and
+    | `mail:process-bounces` reads them over IMAP. Both are off while unset.
+    | See plans/email-gaps.md and docs/deployment.md §3e.
+    |
+    */
+
+    'bounce_address' => env('MAIL_BOUNCE_ADDRESS'),
+
+    'bounce_imap' => [
+        'host' => env('MAIL_BOUNCE_IMAP_HOST'),
+        'port' => (int) env('MAIL_BOUNCE_IMAP_PORT', 993),
+        'encryption' => env('MAIL_BOUNCE_IMAP_ENCRYPTION', 'ssl'),
+        'validate_cert' => (bool) env('MAIL_BOUNCE_IMAP_VALIDATE_CERT', true),
+        'username' => env('MAIL_BOUNCE_IMAP_USERNAME'),
+        'password' => env('MAIL_BOUNCE_IMAP_PASSWORD'),
+        'folder' => env('MAIL_BOUNCE_IMAP_FOLDER', 'INBOX'),
+        'processed_folder' => env('MAIL_BOUNCE_IMAP_PROCESSED_FOLDER', 'Processed'),
+    ],
 
 ];

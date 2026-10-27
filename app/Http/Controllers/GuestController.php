@@ -9,6 +9,7 @@ use App\Http\Requests\RejectRsvpApprovalRequest;
 use App\Http\Requests\SetGuestRsvpRequest;
 use App\Http\Requests\StoreGuestRequest;
 use App\Http\Requests\UpdateGuestRequest;
+use App\Models\EmailSuppression;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Models\GuestEdit;
@@ -16,6 +17,7 @@ use App\Models\GuestImport;
 use App\Models\GuestRemoval;
 use App\Models\NotificationLog;
 use App\Services\CommunicationService;
+use App\Services\EmailDeliveryProblems;
 use App\Services\GuestCreator;
 use App\Services\GuestDeleter;
 use App\Services\GuestUpdater;
@@ -105,6 +107,7 @@ class GuestController extends Controller
         $pageGuestIds = $guests->getCollection()->pluck('id')->all();
         $lastShared = $whatsAppShare->lastOpened($event, $pageGuestIds);
         $undeliveredWhatsApp = app(WhatsAppDeliveryStatusService::class)->undeliveredInvitations($event, $pageGuestIds);
+        $emailProblems = app(EmailDeliveryProblems::class);
 
         // A background import shows here while it runs, and its result once, the first time the list is opened after it finished.
         $latestImport = GuestImport::query()->where('event_id', $event->id)->latest('id')->first();
@@ -114,7 +117,7 @@ class GuestController extends Controller
         // Who the host removed lately, with a way to tell them (plans/guest-deletion-gaps.md Phase 5).
         $removedGuests = $event->guestRemovals()->orderByDesc('removed_at')->orderByDesc('id')->limit(GuestRemoval::LIST_LIMIT)->get();
 
-        return view('events.guests.index', compact('event', 'guests', 'filter', 'groups', 'tables', 'stats', 'whatsappSendEnabled', 'latestImport', 'unseenImport', 'removedGuests', 'whatsAppShare', 'shareBlockedReason', 'lastShared', 'undeliveredWhatsApp'));
+        return view('events.guests.index', compact('event', 'guests', 'filter', 'groups', 'tables', 'stats', 'whatsappSendEnabled', 'latestImport', 'unseenImport', 'removedGuests', 'whatsAppShare', 'shareBlockedReason', 'lastShared', 'undeliveredWhatsApp', 'emailProblems'));
     }
 
     public function export(Request $request, Event $event): StreamedResponse
@@ -340,6 +343,10 @@ class GuestController extends Controller
             return $back->withErrors(['plus_one' => $guest->name.' has no email address, so tell them yourself.']);
         }
 
+        if (EmailSuppression::isSuppressed($guest->email)) {
+            return $back->withErrors(['plus_one' => 'Email to '.$guest->name.' bounced, so nothing was sent. Check the address, or tell them yourself.']);
+        }
+
         if (($reason = $event->rsvpClosedReason()) !== null) {
             return $back->withErrors(['plus_one' => $reason.' Their link would lead to a closed form, so nothing was sent.']);
         }
@@ -383,6 +390,10 @@ class GuestController extends Controller
             return $back->withErrors(['removed' => $removal->name.' has no email address, so tell them yourself.']);
         }
 
+        if (EmailSuppression::isSuppressed($removal->email)) {
+            return $back->withErrors(['removed' => 'Email to '.$removal->name.' bounced before, so nothing was sent. Tell them yourself.']);
+        }
+
         if (! $removal->canBeTold()) {
             return $back->withErrors(['removed' => $removal->name.' was never sent an invitation or answered, so there is nothing to tell them.']);
         }
@@ -390,6 +401,23 @@ class GuestController extends Controller
         $communications->sendGuestRemoved($event, $removal);
 
         return $back->with('status', 'removed-guest-told')->with('removed_told', $removal->name);
+    }
+
+    /**
+     * "Try this address again": the host has checked a bounced address and says it is right, so it comes off the bounced list
+     * (for every event, as the list is). The next bounce puts it back. Owner only. plans/email-gaps.md Phase 3.
+     */
+    public function retryEmail(Event $event, Guest $guest): RedirectResponse
+    {
+        $this->authorize('pause', $event);
+        abort_unless($event->isInvitation() && $guest->event_id === $event->id, 404);
+
+        EmailSuppression::forEmail($guest->email)?->delete();
+        app(EmailDeliveryProblems::class)->forget($event->id);
+
+        return redirect()->route('events.guests.index', $event)
+            ->with('status', 'email-retry')
+            ->with('email_retry', $guest->name);
     }
 
     /**

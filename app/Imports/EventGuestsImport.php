@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\EventTable;
 use App\Models\Guest;
 use App\Models\GuestGroup;
+use App\Rules\GuestEmail;
 use App\Support\GuestPhone;
 use Closure;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -424,7 +425,7 @@ class EventGuestsImport implements ToCollection, WithHeadingRow, WithMultipleShe
     {
         $this->emailValidator ??= Validator::make([], ['email' => ['email:rfc', 'max:'.Guest::EMAIL_MAX]]);
 
-        return $this->emailValidator->setData(['email' => $email])->passes();
+        return $this->emailValidator->setData(['email' => $email])->passes() && GuestEmail::hasDottedDomain($email);
     }
 
     /**

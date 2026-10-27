@@ -7,6 +7,7 @@ use App\Exceptions\RsvpUnavailableException;
 use App\Http\Requests\Concerns\ValidatesRsvpPayload;
 use App\Models\Event;
 use App\Models\Guest;
+use App\Rules\GuestEmail;
 use App\Rules\GuestPhoneNumber;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
@@ -103,6 +104,7 @@ class StoreOpenRsvpRequest extends FormRequest
             'email' => [
                 'required',
                 'email:rfc',
+                new GuestEmail,
                 'max:'.Guest::EMAIL_MAX,
                 Rule::unique('guests', 'email')
                     ->where(fn ($q) => $q->where('event_id', $event->id))

@@ -171,8 +171,15 @@ class GuestDeletionEdgeCasesTest extends TestCase
     {
         Notification::fake();
         $guest = $this->acceptedGuest();
+        $made = $make($this->event, $guest, $guest->rsvp);
 
-        $restored = unserialize(serialize($make($this->event, $guest, $guest->rsvp)));
+        // An RSVP reminder is for someone who has not answered; anyone who has is dropped at send time (EmailSendTimeChecksTest).
+        if ($made instanceof RsvpReminderNotification) {
+            $guest = $this->guest();
+            $made = $make($this->event, $guest, null);
+        }
+
+        $restored = unserialize(serialize($made));
 
         $this->assertTrue($restored->shouldSend(new AnonymousNotifiable, 'mail'));
         $this->assertSame($guest->id, $restored->guest->id);

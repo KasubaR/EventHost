@@ -5,7 +5,7 @@ namespace App\Notifications;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Models\Rsvp;
-use App\Notifications\Concerns\SkipsWhenGuestDeleted;
+use App\Notifications\Concerns\GuardsGuestMail;
 use App\Support\ShortText;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -19,8 +19,8 @@ use Illuminate\Notifications\Notification;
  */
 class RsvpRejectedNotification extends Notification implements ShouldQueue
 {
+    use GuardsGuestMail;
     use Queueable;
-    use SkipsWhenGuestDeleted;
 
     public function __construct(
         public Event $event,
@@ -68,6 +68,6 @@ class RsvpRejectedNotification extends Notification implements ShouldQueue
                 ->action('View your RSVP', $rsvpUrl);
         }
 
-        return $message->salutation('The '.config('app.name').' Team');
+        return $this->tagMail($message->salutation('The '.config('app.name').' Team'));
     }
 }

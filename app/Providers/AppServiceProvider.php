@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Mail\Bounces\BounceMailbox;
+use App\Mail\Bounces\ImapBounceMailbox;
+use App\Services\EmailDeliveryProblems;
 use App\Services\NullPushNotificationService;
 use App\Services\NullSmsService;
 use App\Services\NullWhatsAppService;
@@ -63,6 +66,11 @@ class AppServiceProvider extends ServiceProvider
 
             return new TwilioWhatsAppService($client, $twilio['whatsapp_from'], $statusCallback);
         });
+
+        $this->app->bind(BounceMailbox::class, fn () => new ImapBounceMailbox((array) config('mail.bounce_imap')));
+
+        // Per request (or job): the guest list and GuestResource ask once per guest, and it loads a whole event at a time.
+        $this->app->scoped(EmailDeliveryProblems::class);
     }
 
     public function boot(): void

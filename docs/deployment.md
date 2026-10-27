@@ -130,6 +130,48 @@ Check it afterwards in `notification_logs` (type `guest_event_reminder_email`). 
 `config:cache`; the Privacy wording reverts with it. The RSVP-deadline reminder email is separate and is already on for Pro+ hosts —
 it now carries the same stop link.
 
+## 3e. Email bounces (off until the mailbox exists)
+
+Added with `plans/email-gaps.md`. The code ships with the normal deploy: the `email_suppressions` and
+`notification_logs.delivery_status` migrations run in `composer deploy`, and the `webklex/php-imap` package comes with
+`composer install` (pure PHP; the `imap` extension is **not** needed). Until the settings below exist, nothing changes:
+`mail:process-bounces` runs every 15 minutes, prints "not configured" and exits. To go live, in order:
+
+1. **Create the mailbox in cPanel** (Email Accounts): `bounces@eventhostzm.com`, with a strong password. It only receives
+   machine reports; nobody needs to read it. Make sure the account's quota is generous (processed reports are moved to a
+   `Processed` folder, not deleted) or empty that folder now and then
+2. **Set the env values** and `php artisan config:cache`:
+
+   ```env
+   MAIL_BOUNCE_ADDRESS=bounces@eventhostzm.com
+   MAIL_BOUNCE_IMAP_HOST=mail.eventhostzm.com
+   MAIL_BOUNCE_IMAP_PORT=993
+   MAIL_BOUNCE_IMAP_ENCRYPTION=ssl
+   MAIL_BOUNCE_IMAP_USERNAME=bounces@eventhostzm.com
+   MAIL_BOUNCE_IMAP_PASSWORD=...
+   ```
+
+   `MAIL_BOUNCE_IMAP_VALIDATE_CERT=false` only if the host's certificate does not match the mail host name (a shared-host
+   name such as `server123.hostingprovider.com` usually does match; use that as the host instead of turning checks off)
+3. **Restart the queue workers** (`php artisan queue:restart`, part of `composer deploy`) so they pick up the Return-Path
+4. **Check the envelope sender is not rewritten.** Send yourself a guest email (add yourself as a guest, send an update) to
+   a Gmail address, open it, "Show original", and confirm `Return-Path: <bounces@eventhostzm.com>`. Some cPanel hosts force
+   the envelope sender to the authenticated SMTP user; if the Return-Path shows the `MAIL_USERNAME` address instead, either
+   ask the host to allow it, or point `MAIL_BOUNCE_ADDRESS` and the IMAP login at that same mailbox
+5. **Rehearse** (reads and counts, changes nothing, moves nothing):
+
+   ```bash
+   php artisan mail:process-bounces --dry-run
+   ```
+
+   Then send a guest email to an address that does not exist (`no-such-user-12345@gmail.com`), wait a few minutes and run the
+   dry run again: it should count one hard bounce. The real run (the scheduler, or the command without `--dry-run`) then marks
+   that email "bounced", stops email to the address on every event, and the guest list says "Email bounced"
+
+The command prints counts only, never addresses. A bounce that does not match an email we sent in the last 7 days changes
+nothing. Addresses come off the list after 365 days with no new bounce, or when a host presses "Try this address again".
+Privacy §3 and §7 describe the list and are always on.
+
 ## 3d. Invitation page: assets, small photo copies, caching, and a real-browser check
 
 Added with `plans/invitation-page-resilience.md`. Nothing here is a migration; none of it can break a deploy.

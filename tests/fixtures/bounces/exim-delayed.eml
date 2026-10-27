@@ -1,0 +1,35 @@
+Return-path: <>
+X-Failed-Recipients: slow@example.org
+Auto-Submitted: auto-replied
+From: Mail Delivery System <Mailer-Daemon@server.eventhost.test>
+To: bounces@eventhost.test
+Content-Type: multipart/report; report-type=delivery-status; boundary=1760544999-eximdsn-42
+MIME-Version: 1.0
+Subject: Warning: message 1tXyZ-0001Ab-2d delayed 24 hours
+
+--1760544999-eximdsn-42
+Content-type: text/plain; charset=us-ascii
+
+This message was created automatically by mail delivery software.
+A message that you sent has not yet been delivered to one or more of its
+recipients after more than 24 hours on the queue. No action is required on your part.
+
+--1760544999-eximdsn-42
+Content-type: message/delivery-status
+
+Reporting-MTA: dns; server.eventhost.test
+
+Action: delayed
+Final-Recipient: rfc822;slow@example.org
+Status: 4.0.0
+Remote-MTA: dns; mx.example.org
+Diagnostic-Code: smtp; 451 4.4.1 Temporary local problem - please try later
+
+--1760544999-eximdsn-42
+Content-type: text/rfc822-headers
+
+From: EventHost <hello@eventhost.test>
+To: slow@example.org
+X-EventHost-Ref: __REF__
+
+--1760544999-eximdsn-42--

@@ -332,6 +332,7 @@ class EventController extends Controller
         $needsPublishCredit = false;
         $chargeable = false;
         $notifyGuestsCount = 0;
+        $notifyGuestsChange = null;
 
         // Closed on the deadline (or the event start) before this save? Compared with the state after it to
         // tell the host the RSVP reopened. plans/rsvp-deadline-fixes.md D7.
@@ -351,7 +352,7 @@ class EventController extends Controller
                 $removeCover = true;
             }
 
-            DB::transaction(function () use ($request, &$event, $newCoverPath, $removeCover, $stagedCover, $shouldPublish, $credits, &$previousCover, &$needsPublishCredit, &$chargeable, &$notifyGuestsCount): void {
+            DB::transaction(function () use ($request, &$event, $newCoverPath, $removeCover, $stagedCover, $shouldPublish, $credits, &$previousCover, &$needsPublishCredit, &$chargeable, &$notifyGuestsCount, &$notifyGuestsChange): void {
                 $event = Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
                 $wasPublished = $event->is_published;
                 $data = $request->validated();
@@ -426,14 +427,14 @@ class EventController extends Controller
                 $event->fill($data);
 
                 // A guest who already has this event's invitation link or has
-                // already RSVP'd was never told the venue/location changed —
+                // already RSVP'd was never told the date, time or venue changed —
                 // nothing pushes an update to them automatically. Surface a
                 // count here so the host can be prompted to send one instead
                 // of the change going out silently. Scoped to an event that
                 // was *already* live: a draft becoming published in this same
                 // save has no guests relying on a version of the page they
                 // have already seen.
-                if ($wasPublished && $event->isDirty(['venue', 'location_name', 'latitude', 'longitude'])) {
+                if ($wasPublished && ($notifyGuestsChange = $event->guestFacingChangeSentence()) !== null) {
                     $notifyGuestsCount = $event->guestsHoldingInvitationCount();
                 }
 
@@ -524,6 +525,7 @@ class EventController extends Controller
                     'status' => 'event-updated',
                     'notify_guests' => [
                         'count' => $notifyGuestsCount,
+                        'changed' => $notifyGuestsChange,
                         'url' => route('events.guests.index', $event),
                     ],
                 ]);
@@ -532,6 +534,7 @@ class EventController extends Controller
             return back()->with([
                 'status' => 'event-updated',
                 'notify_guests_count' => $notifyGuestsCount,
+                'notify_guests_changed' => $notifyGuestsChange,
             ]);
         }
 

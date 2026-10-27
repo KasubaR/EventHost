@@ -64,7 +64,7 @@ class GuestAddEdgeCasesTest extends TestCase
     {
         Notification::fake();
         $owner = User::factory()->proPlus()->create();
-        $event = Event::factory()->for($owner)->create();
+        $event = Event::factory()->for($owner)->published()->create();
         $withEmail = Guest::factory()->for($event)->create(['email' => 'has@example.test']);
         $noEmail = Guest::factory()->for($event)->create(['email' => null]);
 

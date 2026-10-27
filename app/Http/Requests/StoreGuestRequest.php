@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Event;
 use App\Models\Guest;
+use App\Rules\GuestEmail;
 use App\Rules\GuestPhoneNumber;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
@@ -57,6 +58,7 @@ class StoreGuestRequest extends FormRequest
             'email' => [
                 'nullable',
                 'email:rfc',
+                new GuestEmail,
                 'max:'.Guest::EMAIL_MAX,
                 Rule::unique('guests', 'email')->where(fn ($q) => $q->where('event_id', $event->id)),
             ],

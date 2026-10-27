@@ -376,6 +376,8 @@ Route::middleware(['auth', 'account.active', 'verified'])->group(function () {
         ->name('events.guests.removed.notify');
     Route::post('/events/{event}/guests/{guest}/regenerate-link', [GuestController::class, 'regenerateLink'])
         ->name('events.guests.regenerate-link');
+    Route::post('/events/{event}/guests/{guest}/email-retry', [GuestController::class, 'retryEmail'])
+        ->name('events.guests.email-retry');
     Route::patch('/events/{event}/guests/{guest}/invitation-sent', [GuestController::class, 'markInvitationSent'])
         ->name('events.guests.mark-invitation-sent');
 

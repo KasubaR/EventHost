@@ -776,9 +776,9 @@ What happens to a guest's answer, link, queued mail and re-sign-up when the host
  and `notified_at`. It goes with the event (cascade, so with a purge). `GuestRemoval::forToken()` / `forTokenInEvent()` are the lookups. A link the host
  *replaced* (`regenerate-link`) is not tombstoned: that guest still exists. **Privacy §3 and §7 describe it** and are always on: keep them in step
 - **Queued guest mail survives a deletion.** `$deleteWhenMissingModels` on a notification does nothing (Laravel reads it from `SendQueuedNotifications`), so
- the nine guest/RSVP notifications use `Notifications\Concerns\SkipsWhenGuestDeleted`: a missing `Guest` or `Rsvp` is restored as an empty stand-in and
- `shouldSend()` refuses it, so the job ends with no mail and no `failed_jobs` row. **A new notification that holds a `Guest` must use the trait.** A missing
- Event still fails. The `notification_logs` row stays `sent` (it records the hand-off to the queue)
+ the guest/RSVP notifications use `Notifications\Concerns\GuardsGuestMail`: a missing `Guest`, `Rsvp` or `Event` is restored as an empty stand-in and
+ `shouldSend()` refuses it, so the job ends with no mail and no `failed_jobs` row. **A new notification that holds a `Guest` must use the trait** (see
+ "Guest email" below for everything else it checks). The `notification_logs` row stays `sent` and its `delivery_status` becomes `superseded`
 - **What a removed guest sees.** The guest-link 404 handler in `bootstrap/app.php` checks the tombstone first, only after the link failed to match: web
  pages (`show`, `thanks`, `pass`, `pass-download`, a POST to `store`) answer **410** with `rsvp/guest-removed.blade.php` (the event, the host number, never the
  guest's name). Unknown links keep `rsvp/link-not-found` (404); the image routes stay a plain 404; the API keeps its 404 and adds `code: invitation_removed`.
@@ -794,7 +794,7 @@ What happens to a guest's answer, link, queued mail and re-sign-up when the host
  a tombstone of that event (`GuestRemoval::matchesContact()`); `RsvpSubmissionService` then holds an acceptance for host approval whatever `require_rsvp_approval`
  says, `Event::hasRsvpApprovalQueue()` turns the approval filter on, the list shows "Previously removed" and the API adds `previously_removed`. The host's own add
  (`GuestCreator`), the import and the API add never set it. A decline or maybe is not a review. The flag is permanent
-- **Not covered:** undo; an event deleted while its guest mail is queued (a missing Event still fails the job); a bulk send racing a delete inside the request
+- **Not covered:** undo; a bulk send racing a delete inside the request
  (the loop reads its guests once); the bulk action's own confirm dialog is generic (the result flash carries the detail); a removed guest who returns by the
  host's own re-adding them is not labelled
 
@@ -834,6 +834,45 @@ A plus-one is `rsvps.attendee_count = 2`; an invitation RSVP is only ever 1 or 2
   the last-seat race is only proven by `RsvpLastSeatConcurrencyTest`, which forks real processes and runs on MySQL in the "MySQL compatibility" workflow
   (`phpunit.mysql.xml`); locally it is skipped
 - Not built: a waitlist for freed seats; "Remove plus-one" and a disallow bulk action on the API
+
+### Guest email: send-time checks, delivery and bounces
+
+What happens to a guest email between `CommunicationService` and the guest's inbox. Plan: `plans/email-gaps.md` (all four phases built). Tests:
+`EmailSendTimeChecksTest`, `EmailDeliveryTrackingTest`, `EmailBounceTest` (fixtures in `tests/fixtures/bounces/`), `EmailDuplicatesTest`.
+
+- **Every queued guest email is checked again when the worker sends it** (`Notifications\Concerns\GuardsGuestMail::shouldSend()`). Shared reasons:
+ guest/RSVP/event deleted or purged (restored as an empty stand-in, never a `failed_jobs` row), queued more than 24 h ago (`expired`; not `retryUntil`,
+ which would make the worker ignore `tries`), the address changed since (`address_changed`, the `routes['mail']` vs the guest's current email), the
+ address hard-bounced since (`suppressed`). Then each notification's own `whyNoLongerRelevant()`: the RSVP reminder skips a guest who answered, stopped
+ reminders, or whose RSVP closed (`acceptsRsvps()`) and works out "in N days" again; the event reminder skips cancelled, not attending, moved date
+ (`forDate`), past, or a day-of reminder after the start; the confirmation skips when the answer changed since (`answerOf()`), so Accept-then-Decline
+ sends one email. A skip sets the log's `delivery_status = superseded` with `meta.skipped`. A new guest notification uses the trait, wraps `toMail()` in
+ `tagMail()`, and is sent as `(new X(...))->withLog($log)`
+- **The log says what happened.** `status = sent` still means "queued". `delivery_status`: `accepted` (the `NotificationSent` listener
+ `RecordEmailAccepted`), `failed` (the trait's `failed()` after the last try, or at once for an address Symfony refuses), `bounced`
+ (`mail:process-bounces`), `superseded`. `error_code` is `invalid_address`, `transport`, `error` or the bounce status (`5.1.1`);
+ `NotificationLog::emailFailureReason()` turns it into the host's sentence. **No exception message is stored** (it can hold the address): `response` is the class name
+- **Retries:** 4 tries, 1 / 5 / 15 minutes apart (`backoff()` in the trait). The `failover` mailer is SMTP only; never end it with `log`
+- **Bounces.** Every message's Return-Path is `MAIL_BOUNCE_ADDRESS` (`SetBounceReturnPath` on `MessageSending`) and carries `X-EventHost-Ref`
+ (`NotificationLog::mailRef()`, HMAC-signed log id). `mail:process-bounces` (every 15 min) reads the mailbox over IMAP (`BounceMailbox` /
+ `ImapBounceMailbox`, `webklex/php-imap`, no `ext-imap`), parses with `App\Support\BounceReport` (RFC 3464; Exim's generic `5.0.0` takes the real code from
+ the diagnostic), and `EmailBounceProcessor` matches the report to a log: the signed ref (only if that guest still has the address), else the newest guest email
+ to that address in 7 days. **Unmatched changes nothing**, so a forged report cannot block an address. Hard = `5.x` except `5.2.2` (full) and `5.7.x` (policy,
+ about the sender); a soft one only notes `meta.bounce`. Prints counts only, never addresses
+- **Suppression (`email_suppressions` / `EmailSuppression`) is platform-wide**, one row per lower-cased address. `CommunicationService::canEmail()` is checked before
+ `startLog()` by every guest send, the guard checks again at send time, bulk email actions count it (`App\Support\EmailSkips`, "1 email bounced"), and
+ plus-one / removed-guest "Tell them" refuse. Ticket and contribution receipts are untouched. It goes when a host presses **"Try this address again"**
+ (`POST events/{event}/guests/{guest}/email-retry`, owner only), or 365 days after the last bounce (`KEEP_DAYS`, pruned by the command). Changing the guest's
+ email bypasses it naturally. **Privacy §3 and §7 describe it** and are always on
+- **What the host sees:** under the address on the guest list, "Email bounced: {reason}. Check the address" (with the retry button) or "Email not delivered: {reason}"
+ for a failed send, from `App\Services\EmailDeliveryProblems` (scoped, one load per event; a later accepted email clears a failure; a failure to an old address is
+ hidden through `GuestUpdater`'s `contact_change` mark). API: additive `GuestResource::email_delivery` (`kind`, `reason`, `suppressed`, or null)
+- **Duplicates and changes.** Bulk "send update email" (web and API) skips a guest sent the same text (`meta.message_hash`, sha1) in the last 10 minutes. A save that
+ changes the date or time of a live event now prompts like a venue change (`Event::guestFacingChangeSentence()`; `notify_guests.changed` in JSON / API,
+ `notify_guests_changed` flash); `event_time` is compared on `H:i`. The update email restates the current date, time and venue. The bulk reminder is refused on an
+ unpublished event (its link would say "Invitation unavailable")
+- **Guest addresses** need a dotted domain (`App\Rules\GuestEmail`, after `email:rfc`, on every add path and the import; an edit only checks a changed address)
+- **Not covered:** spam complaints (no feedback loop on cPanel SMTP), delivery beyond "the SMTP server accepted it", an automatic "event cancelled" email, MX lookups
 
 ### WhatsApp: share link vs automated send
 

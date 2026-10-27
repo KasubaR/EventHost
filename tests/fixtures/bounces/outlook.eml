@@ -1,0 +1,40 @@
+From: postmaster@outlook.com
+To: bounces@eventhost.test
+Date: Thu, 15 Oct 2026 16:00:07 +0000
+Content-Type: multipart/report; report-type=delivery-status;
+	boundary="5f1c2d3e-0000-4a4a-b1b1-NDR"
+MIME-Version: 1.0
+Subject: Undeliverable: Your invitation
+Auto-Submitted: auto-replied
+
+--5f1c2d3e-0000-4a4a-b1b1-NDR
+Content-Type: text/plain; charset="us-ascii"
+
+Your message to missing.person@outlook.com couldn't be delivered.
+missing.person wasn't found at outlook.com.
+
+--5f1c2d3e-0000-4a4a-b1b1-NDR
+Content-Type: message/delivery-status
+
+Reporting-MTA: dns;DM6PR00MB0000.namprd00.prod.outlook.com
+Received-From-MTA: dns;mail.eventhost.test
+Arrival-Date: Thu, 15 Oct 2026 16:00:06 +0000
+
+Original-Recipient: rfc822;Missing.Person@outlook.com
+Final-Recipient: rfc822;Missing.Person@outlook.com
+Action: failed
+Status: 5.1.10
+Diagnostic-Code: smtp;550 5.1.10 RESOLVER.ADR.RecipientNotFound; Recipient
+ Missing.Person@outlook.com not found by SMTP address lookup
+
+--5f1c2d3e-0000-4a4a-b1b1-NDR
+Content-Type: message/rfc822
+
+From: EventHost <hello@eventhost.test>
+To: Missing.Person@outlook.com
+Subject: Your invitation
+Message-ID: <ghi789@eventhost.test>
+
+You're invited.
+
+--5f1c2d3e-0000-4a4a-b1b1-NDR--

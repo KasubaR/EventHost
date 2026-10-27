@@ -17,7 +17,8 @@
         "maatwebsite/excel": "^3.1",
         "spatie/laravel-activitylog": "^4.12",
         "spatie/laravel-permission": "^6.25",
-        "twilio/sdk": "^8.12"
+        "twilio/sdk": "^8.12",
+        "webklex/php-imap": "^6.2"
     },
     "require-dev": {
         "brianium/paratest": "^7.8",

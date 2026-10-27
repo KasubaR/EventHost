@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Guest;
 use App\Rules\AttendeeCount;
+use App\Rules\GuestEmail;
 use App\Rules\GuestPhoneNumber;
 use App\Services\GroupRsvpResolver;
 use Illuminate\Foundation\Http\FormRequest;
@@ -47,7 +48,7 @@ class StoreGroupRsvpRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:'.Guest::NAME_MAX],
-            'email' => ['required', 'email:rfc', 'max:'.Guest::EMAIL_MAX],
+            'email' => ['required', 'email:rfc', new GuestEmail, 'max:'.Guest::EMAIL_MAX],
             'phone' => ['bail', 'required', 'string', 'max:50', new GuestPhoneNumber],
             'attendee_count' => ['bail', 'required', new AttendeeCount($perPerson, fn (): bool => true)],
             'message' => ['nullable', 'string', 'max:1000'],

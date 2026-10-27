@@ -5,7 +5,7 @@ namespace App\Notifications;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Models\Rsvp;
-use App\Notifications\Concerns\SkipsWhenGuestDeleted;
+use App\Notifications\Concerns\GuardsGuestMail;
 use App\Services\GuestPassImageService;
 use App\Services\GuestPassPdfService;
 use App\Services\QrCodeService;
@@ -19,15 +19,33 @@ use Illuminate\Support\Str;
 
 class RsvpConfirmationNotification extends Notification implements ShouldQueue
 {
+    use GuardsGuestMail;
     use Queueable;
-    use SkipsWhenGuestDeleted;
+
+    /** The answer this confirms, as queued. A newer answer has its own confirmation queued, so this one is dropped. */
+    public string $answer;
 
     public function __construct(
         public Event $event,
         public Guest $guest,
         public Rsvp $rsvp,
     ) {
+        $this->answer = self::answerOf($rsvp);
         $this->onQueue('default');
+    }
+
+    public static function answerOf(Rsvp $rsvp): string
+    {
+        return implode('|', [
+            $rsvp->status?->value,
+            (int) $rsvp->attendee_count,
+            $rsvp->host_approval_status?->value,
+        ]);
+    }
+
+    public function whyNoLongerRelevant(): ?string
+    {
+        return self::answerOf($this->rsvp) === $this->answer ? null : 'answer_changed';
     }
 
     /**
@@ -73,7 +91,7 @@ class RsvpConfirmationNotification extends Notification implements ShouldQueue
             $message->line('If anything changes, submit again using the same RSVP option you used before.');
         }
 
-        return $message->salutation('The '.config('app.name').' Team');
+        return $this->tagMail($message->salutation('The '.config('app.name').' Team'));
     }
 
     /**

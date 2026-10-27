@@ -1,0 +1,49 @@
+Return-path: <>
+Envelope-to: bounces@eventhost.test
+Received: from mailnull by server.eventhost.test with local (Exim 4.98)
+	id 1tXyZ-0001Ab-2c
+	for bounces@eventhost.test; Thu, 15 Oct 2026 18:00:05 +0200
+X-Failed-Recipients: gone@example.org
+Auto-Submitted: auto-replied
+From: Mail Delivery System <Mailer-Daemon@server.eventhost.test>
+To: bounces@eventhost.test
+Content-Type: multipart/report; report-type=delivery-status; boundary=1760544005-eximdsn-1804289383
+MIME-Version: 1.0
+Subject: Mail delivery failed: returning message to sender
+
+--1760544005-eximdsn-1804289383
+Content-type: text/plain; charset=us-ascii
+
+This message was created automatically by mail delivery software.
+
+A message that you sent could not be delivered to one or more of its
+recipients. This is a permanent error. The following address(es) failed:
+
+  gone@example.org
+    host mx.example.org [203.0.113.5]
+    SMTP error from remote mail server after RCPT TO:<gone@example.org>:
+    550 5.1.1 <gone@example.org>: Recipient address rejected: User unknown
+
+--1760544005-eximdsn-1804289383
+Content-type: message/delivery-status
+
+Reporting-MTA: dns; server.eventhost.test
+
+Action: failed
+Final-Recipient: rfc822;gone@example.org
+Status: 5.0.0
+Remote-MTA: dns; mx.example.org
+Diagnostic-Code: smtp; 550 5.1.1 <gone@example.org>: Recipient address rejected: User unknown
+
+--1760544005-eximdsn-1804289383
+Content-type: text/rfc822-headers
+
+Return-path: <bounces@eventhost.test>
+Received: from [127.0.0.1] by server.eventhost.test with esmtpsa (Exim 4.98)
+From: EventHost <hello@eventhost.test>
+To: gone@example.org
+Subject: Your RSVP is confirmed
+X-EventHost-Ref: __REF__
+Message-ID: <def456@eventhost.test>
+
+--1760544005-eximdsn-1804289383--

@@ -96,7 +96,7 @@ class BulkActionTest extends TestCase
     {
         Notification::fake();
         $owner = User::factory()->proPlus()->create();
-        $event = Event::factory()->for($owner)->create();
+        $event = Event::factory()->for($owner)->published()->create();
         $guest = Guest::factory()->for($event)->create(['email' => 'reminder@example.test']);
 
         $this->withHeader('Authorization', 'Bearer '.$this->tokenFor($owner))

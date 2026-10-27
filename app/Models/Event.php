@@ -1352,6 +1352,27 @@ class Event extends Model
     }
 
     /**
+     * The sentence the "tell your guests" prompt opens with when an unsaved edit changes what guests were already sent (their
+     * confirmation and pass carry the date, time and place), or null when it changes none of that. Read before save().
+     * plans/email-gaps.md Phase 4.
+     */
+    public function guestFacingChangeSentence(): ?string
+    {
+        $place = $this->isDirty(['venue', 'location_name', 'latitude', 'longitude']);
+
+        // event_time has no cast: MySQL hands back "18:00:00" for a submitted "18:00", so compare the minutes only.
+        $minutes = fn ($value): ?string => blank($value) ? null : substr((string) $value, 0, 5);
+        $schedule = $this->isDirty('event_date') || $minutes($this->getOriginal('event_time')) !== $minutes($this->event_time);
+
+        return match (true) {
+            $place && $schedule => 'You changed the date or time, and the venue or location.',
+            $schedule => 'You changed the date or time.',
+            $place => 'You changed the venue or location.',
+            default => null,
+        };
+    }
+
+    /**
      * Guests who already have this invitation: it was marked sent, or they have answered. Nothing is pushed to
      * them when the venue or the layout changes, so the host is told this count instead.
      */

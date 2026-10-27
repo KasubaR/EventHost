@@ -9,6 +9,7 @@ use App\Services\CommunicationService;
 use App\Services\GuestDeleter;
 use App\Services\GuestUpdater;
 use App\Services\WhatsAppShareService;
+use App\Support\EmailSkips;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 
@@ -62,6 +63,11 @@ class GuestBulkActionController extends Controller
             return back()->withErrors(['action' => $reason.' Extend the RSVP deadline first, then try again.']);
         }
 
+        // The reminder's link would show "Invitation unavailable" until then, so the email is dropped when it is sent anyway.
+        if ($action === 'send_reminder_email' && ! $event->is_published) {
+            return back()->withErrors(['action' => 'Publish the event first. Until then, guest links show "Invitation unavailable".']);
+        }
+
         // Nothing is sent from here: the queue page opens each guest's chat on the host's own phone, one at a time, and a guest
         // is marked sent only when their chat is opened (plans/whatsapp-sharing-gaps.md).
         if ($action === 'prepare_whatsapp_share') {
@@ -77,12 +83,13 @@ class GuestBulkActionController extends Controller
             return redirect()->route('events.guests.whatsapp-queue', $event);
         }
 
-        // Guests the action could not reach: no email for the two email actions.
+        // Guests the action could not reach. The two email actions count theirs by reason (EmailSkips).
         $skippedCount = 0;
         $skipReason = null;
         $removedSummary = null;
+        $emailSkips = new EmailSkips;
 
-        DB::transaction(function () use ($request, $event, $ids, $action, $validated, $communicationService, $guestUpdater, $guestDeleter, &$removedSummary, &$bulkCount, &$skippedCount, &$skipReason): void {
+        DB::transaction(function () use ($request, $event, $ids, $action, $validated, $communicationService, $guestUpdater, $guestDeleter, $emailSkips, &$removedSummary, &$bulkCount, &$skippedCount, &$skipReason): void {
             $builder = Guest::query()
                 ->where('event_id', $event->id)
                 ->whereIn('id', $ids)
@@ -146,10 +153,8 @@ class GuestBulkActionController extends Controller
                     if ($guest->hasStoppedEmailReminders()) {
                         continue;
                     }
-                    // Nothing can be sent, so the bucket stays unused for when an email is added.
-                    if (blank($guest->email)) {
-                        $skippedCount++;
-
+                    // Nothing can be sent, so the bucket stays unused for when an email is added or the address is retried.
+                    if ($emailSkips->unreachable($guest)) {
                         continue;
                     }
                     $daysUntil = (int) ($validated['days_until'] ?? 3);
@@ -175,9 +180,7 @@ class GuestBulkActionController extends Controller
                     if ($updateMessage === '') {
                         continue;
                     }
-                    if (blank($guest->email)) {
-                        $skippedCount++;
-
+                    if ($emailSkips->unreachable($guest) || $emailSkips->sameUpdateRecently($guest, $updateMessage)) {
                         continue;
                     }
                     $communicationService->sendEventUpdate($event, $guest, $updateMessage);
@@ -185,6 +188,11 @@ class GuestBulkActionController extends Controller
                 }
             }
         });
+
+        if (in_array($action, ['send_reminder_email', 'send_update_email'], true)) {
+            $skippedCount = $emailSkips->total();
+            $skipReason = $emailSkips->summary();
+        }
 
         $filters = array_filter([
             'q' => $request->input('q'),

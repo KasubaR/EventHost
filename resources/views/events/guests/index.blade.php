@@ -173,6 +173,8 @@
         @endif
     @elseif (session('status') === 'removed-guest-told')
         <div class="evt-admin-flash">Told <bdi>{{ session('removed_told') }}</bdi> they were removed.</div>
+    @elseif (session('status') === 'email-retry')
+        <div class="evt-admin-flash">Email to <bdi>{{ session('email_retry') }}</bdi> will be sent again. If it bounces again, it will show here.</div>
     @elseif (session('status') === 'guest-invitation-marked-sent')
         <div class="evt-admin-flash">Invitation marked as sent.</div>
     @elseif (session('status') === 'guest-whatsapp-sent')
@@ -221,14 +223,14 @@
         <div class="evt-admin-flash">
             Reminder emails queued for {{ session('bulk_count', 0) }} guest(s).
             @if (session('bulk_skipped', 0) > 0)
-                {{ session('bulk_skipped') }} skipped because they have no email address.
+                {{ session('bulk_skipped') }} skipped: {{ session('bulk_skip_reason') }}.
             @endif
         </div>
     @elseif (session('status') === 'guests-bulk-update')
         <div class="evt-admin-flash">
             Update emails queued for {{ session('bulk_count', 0) }} guest(s).
             @if (session('bulk_skipped', 0) > 0)
-                {{ session('bulk_skipped') }} skipped because they have no email address.
+                {{ session('bulk_skipped') }} skipped: {{ session('bulk_skip_reason') }}.
             @endif
         </div>
     @elseif (session('status') === 'guests-bulk-plus-one')
@@ -444,6 +446,19 @@
                                     <td class="evt-guest-contact-cell">
                                         @if ($guestRow->email)
                                             <span class="evt-guest-contact-line">{{ $guestRow->email }}</span>
+                                            @if ($emailProblem = $emailProblems->for($guestRow))
+                                                @if ($emailProblem['kind'] === 'bounced')
+                                                    <span class="evt-guest-email-failed">Email bounced: {{ $emailProblem['reason'] }}. Check the address.</span>
+                                                    @can('pause', $event)
+                                                        <form method="POST" action="{{ route('events.guests.email-retry', [$event, $guestRow]) }}" class="evt-guest-email-retry">
+                                                            @csrf
+                                                            <button type="submit" class="evt-btn-outline evt-btn-tiny">Try this address again</button>
+                                                        </form>
+                                                    @endcan
+                                                @else
+                                                    <span class="evt-guest-email-failed">Email not delivered: {{ $emailProblem['reason'] }}</span>
+                                                @endif
+                                            @endif
                                         @endif
                                         @if ($guestRow->phone)
                                             <span class="evt-guest-contact-line evt-guest-phone" dir="ltr">{{ \App\Support\GuestPhone::display($guestRow->phone) }}@if (\App\Support\GuestPhone::isZambianLandline($guestRow->phone))

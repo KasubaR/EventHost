@@ -27,6 +27,8 @@ Schedule::command('payments:poll-pending')
     ->withoutOverlapping()
     ->runInBackground();
 Schedule::command('credits:audit')->daily();
+// Reads bounce reports and stops guest email to dead addresses; a no-op until MAIL_BOUNCE_IMAP_* is set (plans/email-gaps.md).
+Schedule::command('mail:process-bounces')->everyFifteenMinutes()->withoutOverlapping()->runInBackground();
 Schedule::command('tickets:expire-reservations')->everyMinute()->withoutOverlapping();
 Schedule::command('tickets:poll-pending')
     ->everyFiveMinutes()

@@ -10,6 +10,7 @@ use App\Services\CommunicationService;
 use App\Services\GuestDeleter;
 use App\Services\GuestUpdater;
 use App\Services\WhatsAppShareService;
+use App\Support\EmailSkips;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 
@@ -52,18 +53,26 @@ class GuestBulkActionController extends Controller
             ], 422);
         }
 
+        if ($action === 'send_reminder_email' && ! $event->is_published) {
+            return response()->json([
+                'error' => 'unpublished',
+                'message' => 'Publish the event first. Until then, guest links show "Invitation unavailable".',
+            ], 422);
+        }
+
         // Nothing is sent and nobody is marked sent: the client opens each wa.me link on the host's phone and marks the guest
         // with mark_sent (or the single mark-sent endpoint) once it has (plans/whatsapp-sharing-gaps.md).
         if ($action === 'prepare_whatsapp_share') {
             return $this->whatsAppShareLinks($event, $ids);
         }
 
-        // Guests the action could not reach: no email for the two email actions.
+        // Guests the action could not reach. The two email actions count theirs by reason (EmailSkips).
         $skippedCount = 0;
         $skipReason = null;
         $removedSummary = null;
+        $emailSkips = new EmailSkips;
 
-        DB::transaction(function () use ($request, $event, $ids, $action, $validated, $communicationService, &$removedSummary, &$bulkCount, &$skippedCount, &$skipReason): void {
+        DB::transaction(function () use ($request, $event, $ids, $action, $validated, $communicationService, $emailSkips, &$removedSummary, &$bulkCount, &$skippedCount, &$skipReason): void {
             $builder = Guest::query()
                 ->where('event_id', $event->id)
                 ->whereIn('id', $ids)
@@ -126,10 +135,8 @@ class GuestBulkActionController extends Controller
                     if ($guest->hasStoppedEmailReminders()) {
                         continue;
                     }
-                    // Nothing can be sent, so the bucket stays unused for when an email is added.
-                    if (blank($guest->email)) {
-                        $skippedCount++;
-
+                    // Nothing can be sent, so the bucket stays unused for when an email is added or the address is retried.
+                    if ($emailSkips->unreachable($guest)) {
                         continue;
                     }
                     $daysUntil = (int) ($validated['days_until'] ?? 3);
@@ -155,9 +162,7 @@ class GuestBulkActionController extends Controller
                     if ($updateMessage === '') {
                         continue;
                     }
-                    if (blank($guest->email)) {
-                        $skippedCount++;
-
+                    if ($emailSkips->unreachable($guest) || $emailSkips->sameUpdateRecently($guest, $updateMessage)) {
                         continue;
                     }
                     $communicationService->sendEventUpdate($event, $guest, $updateMessage);
@@ -166,11 +171,17 @@ class GuestBulkActionController extends Controller
             }
         });
 
+        if (in_array($action, ['send_reminder_email', 'send_update_email'], true)) {
+            $skippedCount = $emailSkips->total();
+            $skipReason = $emailSkips->summary();
+        }
+
         return response()->json([
             'action' => $action,
             'affected_count' => $bulkCount,
             'skipped_count' => $skippedCount,
-            // Additive: why the first guest was skipped (a group move that would overfill the seat pool); null otherwise.
+            // Additive: why guests were skipped (a group move that would overfill the seat pool; for the email actions, the
+            // count per reason: no address, bounced, same update in the last 10 minutes); null otherwise.
             'skipped_reason' => $skipReason,
             // Additive, delete only: seats the removed guests held, null for every other action.
             'seats_freed' => $removedSummary['seats_freed'] ?? null,

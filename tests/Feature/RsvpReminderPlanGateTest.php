@@ -104,7 +104,7 @@ class RsvpReminderPlanGateTest extends TestCase
         Notification::fake();
 
         $owner = User::factory()->proPlus()->create();
-        $event = Event::factory()->for($owner)->create();
+        $event = Event::factory()->for($owner)->published()->create();
         $guest = Guest::factory()->for($event)->create([
             'email' => 'bulk-proplus@example.test',
             'rsvp_reminders_sent' => [],

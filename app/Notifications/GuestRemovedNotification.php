@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Event;
+use App\Notifications\Concerns\GuardsGuestMail;
 use App\Support\ShortText;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -12,10 +13,11 @@ use Illuminate\Notifications\Notification;
 /**
  * Guest-facing: the host removed them from the guest list. Sent only when the host presses "Tell them" on a removed guest
  * (plans/guest-deletion-gaps.md Phase 5), never automatically. Carries the name as a string, not a Guest model: the guest
- * no longer exists, so a model here would fail to restore on the queue (see SkipsWhenGuestDeleted).
+ * no longer exists, so a model here would fail to restore on the queue (see GuardsGuestMail).
  */
 class GuestRemovedNotification extends Notification implements ShouldQueue
 {
+    use GuardsGuestMail;
     use Queueable;
 
     public function __construct(
@@ -46,6 +48,6 @@ class GuestRemovedNotification extends Notification implements ShouldQueue
             ? 'If you think this is a mistake, please contact the host on '.$phone.'.'
             : 'If you think this is a mistake, please contact the host.');
 
-        return $message->salutation('The '.config('app.name').' Team');
+        return $this->tagMail($message->salutation('The '.config('app.name').' Team'));
     }
 }

@@ -117,6 +117,13 @@
                     address (not the address itself, and no names) so that anyone who opens it is told it was closed. It is deleted
                     with the event.
                 </p>
+                <p>
+                    <strong>When an email to a guest bounces</strong> because the address does not exist or cannot take mail, we
+                    add that address to a list of addresses we no longer email, with the reason the receiving server gave and
+                    when it happened. It applies to every event on the platform, so one bad address is not tried again by
+                    each host who has it, and it protects our ability to deliver everyone else's email. We tell you on your guest
+                    list, and you can ask us to try the address again once you have checked it.
+                </p>
             </section>
 
             <section>
@@ -212,6 +219,7 @@
                     <li><strong>Account data</strong>: until you delete your account</li>
                     <li><strong>Closed group links</strong>: a fingerprint of the old address, until the event is permanently deleted</li>
                     <li><strong>Records of removed guests</strong>: until the event they belonged to is permanently deleted. A guest's RSVP and answer history are deleted at once when you remove them; only the short removal record described in section 3 is kept</li>
+                    <li><strong>Addresses that bounced</strong>: {{ \App\Models\EmailSuppression::KEEP_DAYS }} days after the last bounce, or until a host whose guest has that address asks us to try it again</li>
                     @if ($retentionDays > 0)
                         <li>
                             <strong>Event and guest data</strong>: until you delete the event. A deleted event stays in

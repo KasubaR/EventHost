@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Event;
 use App\Models\Guest;
+use App\Rules\GuestEmail;
 use App\Rules\GuestPhoneNumber;
 use App\Services\GuestUpdater;
 use Closure;
@@ -75,6 +76,12 @@ class UpdateGuestRequest extends FormRequest
             'email' => [
                 'nullable',
                 'email:rfc',
+                // An address saved before this rule existed stays saveable unchanged, the same way a legacy phone does.
+                function (string $attribute, mixed $value, Closure $fail) use ($guest): void {
+                    if (is_string($value) && mb_strtolower(trim($value)) !== mb_strtolower(trim((string) $guest->email))) {
+                        (new GuestEmail)->validate($attribute, $value, $fail);
+                    }
+                },
                 'max:'.Guest::EMAIL_MAX,
                 Rule::unique('guests', 'email')
                     ->where(fn ($q) => $q->where('event_id', $event->id))

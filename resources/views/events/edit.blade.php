@@ -80,7 +80,7 @@
             @php $notifyCount = session('notify_guests_count'); @endphp
             <div class="evt-flash evt-flash--warn">
                 <i class="fa-solid fa-triangle-exclamation"></i>
-                You changed the venue or location. {{ $notifyCount }} {{ $notifyCount === 1 ? 'guest' : 'guests' }}
+                {{ session('notify_guests_changed') ?? 'You changed the venue or location.' }} {{ $notifyCount }} {{ $notifyCount === 1 ? 'guest' : 'guests' }}
                 already {{ $notifyCount === 1 ? 'has' : 'have' }} an invitation or RSVP for this event and
                 will not be told automatically.
                 <a href="{{ route('events.guests.index', $event) }}">Notify them from the guest list</a>.

@@ -6,7 +6,7 @@ use App\Models\Event;
 use App\Models\Guest;
 use App\Models\Rsvp;
 use App\Notifications\Channels\FcmChannel;
-use App\Notifications\Concerns\SkipsWhenGuestDeleted;
+use App\Notifications\Concerns\GuardsGuestMail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -22,8 +22,8 @@ use Illuminate\Notifications\Notification;
  */
 class RsvpAwaitingApprovalNotification extends Notification implements ShouldQueue
 {
+    use GuardsGuestMail;
     use Queueable;
-    use SkipsWhenGuestDeleted;
 
     public function __construct(
         public Event $event,

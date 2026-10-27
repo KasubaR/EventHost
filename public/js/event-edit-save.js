@@ -241,7 +241,7 @@
         // A plain redirect (the common case) is followed transparently by
         // fetch() and lands here with an empty/HTML body — .json() on that
         // rejects, which is fine, it just means there is nothing to report.
-        // The one case with something to report — venue/location changed on
+        // The one case with something to report — date, time or venue changed on
         // a live event with guests already invited/RSVP'd — returns real
         // JSON directly instead of a redirect specifically so it survives
         // the fetch, see EventController::update().
@@ -339,7 +339,7 @@
             if (notifyGuests && notifyGuests.count > 0) {
                 const noun = notifyGuests.count === 1 ? 'guest already has' : 'guests already have';
                 const goToGuests = window.confirm(
-                    'You changed the venue or location. ' + notifyGuests.count + ' ' + noun +
+                    (notifyGuests.changed || 'You changed the venue or location.') + ' ' + notifyGuests.count + ' ' + noun +
                     ' an invitation or RSVP for this event and will not be told automatically. ' +
                     'Go to the guest list to notify them now?'
                 );

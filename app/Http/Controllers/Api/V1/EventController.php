@@ -200,6 +200,7 @@ class EventController extends Controller
         $needsPublishCredit = false;
         $chargeable = false;
         $notifyGuestsCount = 0;
+        $notifyGuestsChange = null;
         $plusOnesWereAllowed = (bool) $event->allow_plus_one;
 
         try {
@@ -215,7 +216,7 @@ class EventController extends Controller
                 $removeCover = true;
             }
 
-            DB::transaction(function () use ($request, &$event, $newCoverPath, $removeCover, $stagedCover, $shouldPublish, $credits, &$previousCover, &$needsPublishCredit, &$chargeable, &$notifyGuestsCount): void {
+            DB::transaction(function () use ($request, &$event, $newCoverPath, $removeCover, $stagedCover, $shouldPublish, $credits, &$previousCover, &$needsPublishCredit, &$chargeable, &$notifyGuestsCount, &$notifyGuestsChange): void {
                 $event = Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
                 $wasPublished = $event->is_published;
                 $data = $request->validated();
@@ -279,7 +280,7 @@ class EventController extends Controller
 
                 $event->fill($data);
 
-                if ($wasPublished && $event->isDirty(['venue', 'location_name', 'latitude', 'longitude'])) {
+                if ($wasPublished && ($notifyGuestsChange = $event->guestFacingChangeSentence()) !== null) {
                     $notifyGuestsCount = $event->guestsHoldingInvitationCount();
                 }
 
@@ -318,6 +319,8 @@ class EventController extends Controller
             'event' => new EventResource($event->fresh()),
             'notify_guests' => $notifyGuestsCount > 0 ? [
                 'count' => $notifyGuestsCount,
+                // Additive: what changed, as the sentence to show ("You changed the date or time.").
+                'changed' => $notifyGuestsChange,
                 'url' => route('api.v1.host.events.show', $event),
             ] : null,
             // Additive. Set only when this save switched plus-ones off while confirmed ones remain

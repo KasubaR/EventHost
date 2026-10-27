@@ -317,7 +317,9 @@ class GuestUpdater
         NotificationLog::query()
             ->where('guest_id', $guest->id)
             ->whereIn('channel', $channels)
-            ->whereNotNull('idempotency_key')
+            // An undelivered row too: "Email bounced" belongs to the old address, not the new one.
+            ->where(fn ($query) => $query->whereNotNull('idempotency_key')
+                ->orWhereIn('delivery_status', [...NotificationLog::EMAIL_UNDELIVERED_STATUSES, ...NotificationLog::UNDELIVERED_STATUSES]))
             ->get()
             ->each(function (NotificationLog $log): void {
                 $log->forceFill([

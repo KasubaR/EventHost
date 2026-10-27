@@ -4,8 +4,8 @@ namespace App\Notifications;
 
 use App\Models\Event;
 use App\Models\Guest;
+use App\Notifications\Concerns\GuardsGuestMail;
 use App\Notifications\Concerns\OffersReminderOptOut;
-use App\Notifications\Concerns\SkipsWhenGuestDeleted;
 use App\Support\ShortText;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -14,19 +14,23 @@ use Illuminate\Notifications\Notification;
 
 class RsvpReminderNotification extends Notification implements ShouldQueue
 {
+    use GuardsGuestMail;
     use OffersReminderOptOut;
     use Queueable;
-    use SkipsWhenGuestDeleted;
 
-    public int $tries = 3;
+    /** The deadline's day when this was queued (Event::rsvpDeadlineKeyStamp()). */
+    public string $deadlineStamp;
 
-    public int $backoff = 120;
+    /** The venue's date when this was queued; "in N days" is worked out again if it is sent on a later day. */
+    public string $queuedOn;
 
     public function __construct(
         public Event $event,
         public Guest $guest,
         public int $daysUntilDeadline,
     ) {
+        $this->deadlineStamp = $event->rsvpDeadlineKeyStamp();
+        $this->queuedOn = Event::venueToday()->toDateString();
         $this->onQueue('default');
     }
 
@@ -38,12 +42,52 @@ class RsvpReminderNotification extends Notification implements ShouldQueue
         return ['mail'];
     }
 
+    public function whyNoLongerRelevant(): ?string
+    {
+        if ($this->guest->rsvp()->exists()) {
+            return 'answered';
+        }
+
+        if ($this->guest->hasStoppedEmailReminders()) {
+            return 'reminders_stopped';
+        }
+
+        // Covers cancelled, paused, unpublished, closed by hand and a deadline already passed.
+        if (! $this->event->acceptsRsvps()) {
+            return 'rsvp_closed';
+        }
+
+        // A host's own reminder may have no deadline at all; only one that had a deadline when queued is stale without it.
+        if ($this->deadlineStamp !== 'none' && $this->event->rsvpDeadlineAt() === null) {
+            return 'deadline_removed';
+        }
+
+        return null;
+    }
+
+    /** Days to the deadline as of sending: the queued figure, unless the deadline or the day has changed since. */
+    public function daysUntilDeadlineNow(): int
+    {
+        $deadline = $this->event->rsvpDeadlineAt();
+
+        if ($deadline === null
+            || ($this->event->rsvpDeadlineKeyStamp() === $this->deadlineStamp && Event::venueToday()->toDateString() === $this->queuedOn)) {
+            return $this->daysUntilDeadline;
+        }
+
+        $today = now($this->event->venueTimezone())->startOfDay();
+
+        return max(0, (int) $today->diffInDays($deadline->copy()->startOfDay(), false));
+    }
+
     public function toMail(object $notifiable): MailMessage
     {
+        $days = $this->daysUntilDeadlineNow();
+
         $when = match (true) {
-            $this->daysUntilDeadline <= 0 => 'today',
-            $this->daysUntilDeadline === 1 => 'tomorrow',
-            default => 'in '.$this->daysUntilDeadline.' days',
+            $days <= 0 => 'today',
+            $days === 1 => 'tomorrow',
+            default => 'in '.$days.' days',
         };
 
         $mail = (new MailMessage)
@@ -69,7 +113,7 @@ class RsvpReminderNotification extends Notification implements ShouldQueue
             );
         }
 
-        return $this->withReminderOptOut($mail, $this->guest, $this->event->name)
-            ->salutation('The '.config('app.name').' Team');
+        return $this->tagMail($this->withReminderOptOut($mail, $this->guest, $this->event->name)
+            ->salutation('The '.config('app.name').' Team'));
     }
 }

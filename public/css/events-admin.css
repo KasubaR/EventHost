@@ -1909,6 +1909,20 @@ body > .evt-more-menu .evt-more-item--danger:hover {
     color: var(--pink, #e00e4f);
 }
 
+/* Guest email that bounced or could not be sent (plans/email-gaps.md), under the address in the contact cell. */
+.evt-guest-email-failed {
+    display: block;
+    max-width: 220px;
+    margin-top: 2px;
+    font-size: 11px;
+    line-height: 1.35;
+    color: var(--pink, #e00e4f);
+}
+
+.evt-guest-email-retry {
+    margin: 4px 0 2px;
+}
+
 .evt-copy-row {
     display: flex;
     flex-wrap: wrap;

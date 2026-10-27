@@ -2,10 +2,12 @@
 
 namespace App\Notifications;
 
+use App\Enums\RsvpApprovalStatus;
+use App\Enums\RsvpStatus;
 use App\Models\Event;
 use App\Models\Guest;
+use App\Notifications\Concerns\GuardsGuestMail;
 use App\Notifications\Concerns\OffersReminderOptOut;
-use App\Notifications\Concerns\SkipsWhenGuestDeleted;
 use App\Support\EventReminderBuckets;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -23,20 +25,51 @@ use Illuminate\Support\Carbon;
  */
 class GuestEventReminderNotification extends Notification implements ShouldQueue
 {
+    use GuardsGuestMail;
     use OffersReminderOptOut;
     use Queueable;
-    use SkipsWhenGuestDeleted;
 
-    public int $tries = 3;
-
-    public int $backoff = 120;
+    /** The event's date when this was queued; a moved event is reminded afresh for its new date, never with this one. */
+    public ?string $forDate;
 
     public function __construct(
         public Event $event,
         public Guest $guest,
         public string $bucket,
     ) {
+        $this->forDate = $event->event_date?->format('Y-m-d');
         $this->onQueue('default');
+    }
+
+    public function whyNoLongerRelevant(): ?string
+    {
+        if ($this->event->isCancelled()) {
+            return 'cancelled';
+        }
+
+        $rsvp = $this->guest->rsvp()->first();
+        if ($rsvp === null || $rsvp->status !== RsvpStatus::Accepted || $rsvp->host_approval_status === RsvpApprovalStatus::Rejected) {
+            return 'not_attending';
+        }
+
+        if ($this->guest->hasStoppedEmailReminders()) {
+            return 'reminders_stopped';
+        }
+
+        if ($this->event->event_date?->format('Y-m-d') !== $this->forDate) {
+            return 'event_moved';
+        }
+
+        if ($this->event->event_date !== null && $this->event->event_date->isBefore(Event::venueToday())) {
+            return 'expired';
+        }
+
+        // Same rule as CommunicationService::sendGuestEventReminderEmail(): "today is the day" after the start reads as a mistake.
+        if ($this->bucket === EventReminderBuckets::BUCKET_0 && $this->event->hasStartTime() && $this->event->startsAt()?->isPast()) {
+            return 'started';
+        }
+
+        return null;
     }
 
     /**
@@ -89,7 +122,7 @@ class GuestEventReminderNotification extends Notification implements ShouldQueue
 
         $mail->line('You are receiving this because you accepted the invitation to '.$name.'.');
 
-        return $this->withReminderOptOut($mail, $this->guest, $name)
-            ->salutation('The '.config('app.name').' Team');
+        return $this->tagMail($this->withReminderOptOut($mail, $this->guest, $name)
+            ->salutation('The '.config('app.name').' Team'));
     }
 }
